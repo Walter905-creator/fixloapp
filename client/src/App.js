@@ -68,8 +68,8 @@ function App() {
           <Route path="/contact" element={<ContactSupport />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/subscribe" element={<Subscribe />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin-login" element={<AdminLogin />} />
+          <Route path="/admin-dashboard" element={<AdminDashboard />} />
         </Routes>
 
         <Footer />
