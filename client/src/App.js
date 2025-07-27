@@ -29,6 +29,9 @@ import ExitIntentModal from "./components/ExitIntentModal";
 import StickySignupBar from "./components/StickySignupBar";
 import StickyMobileCTA from "./components/StickyMobileCTA";
 
+// 🛡️ Import Fixlo Shield client-side security
+import './shield/guard';
+
 function App() {
   useEffect(() => {
     console.log("🔥 LIVE DEPLOY: Fixlo main loaded");
