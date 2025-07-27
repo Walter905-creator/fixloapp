@@ -9,6 +9,7 @@ import Subscribe from "./pages/Subscribe";
 import Terms from "./pages/Terms";
 import TermsOfService from "./pages/TermsOfService";
 import AdminDashboard from "./pages/AdminDashboard";
+import NewAdminDashboard from "./pages/AdminDashboard.jsx";
 import AdminLogin from "./pages/AdminLogin";
 import DownloadApp from "./pages/DownloadApp";
 import HowItWorks from "./pages/HowItWorks";
@@ -69,6 +70,7 @@ function App() {
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/subscribe" element={<Subscribe />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin-dashboard" element={<NewAdminDashboard />} />
           <Route path="/admin/login" element={<AdminLogin />} />
         </Routes>
 
