@@ -10,6 +10,7 @@ const { Server } = require("socket.io");
 const { generalRateLimit, authRateLimit, adminRateLimit } = require("./middleware/rateLimiter");
 const securityHeaders = require("./middleware/security");
 const sanitizeInput = require("./middleware/sanitization");
+const shield = require("./middleware/shield");
 const errorHandler = require("./middleware/errorHandler");
 const requestLogger = require("./middleware/logger");
 const path = require("path");
@@ -235,6 +236,14 @@ try {
   console.log('✅ Input sanitization middleware loaded');
 } catch (error) {
   console.error('❌ Input sanitization middleware failed:', error.message);
+}
+
+// ✅ Apply shield security middleware
+try {
+  app.use(shield);
+  console.log('✅ Shield security middleware loaded');
+} catch (error) {
+  console.error('❌ Shield security middleware failed:', error.message);
 }
 
 // ✅ Apply rate limiting
