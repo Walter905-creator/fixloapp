@@ -49,13 +49,17 @@ export default function AdminLogin() {
 
   const handleLogin = async () => {
     try {
-      const res = await axios.post(`${import.meta.env.VITE_API_URL || process.env.REACT_APP_API_URL || 'https://fixloapp.onrender.com'}/api/admin/login`, {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+      console.log('🔐 Admin login attempt with API URL:', API_URL);
+      const res = await axios.post(`${API_URL}/api/admin/login`, {
         email,
         password
       });
+      console.log('✅ Login successful:', res.data);
       localStorage.setItem('admin_token', res.data.token);
       navigate('/admin-dashboard');
     } catch (err) {
+      console.error('❌ Login failed:', err);
       setError('Invalid credentials');
     }
   };
