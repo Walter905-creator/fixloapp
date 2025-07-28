@@ -5,10 +5,12 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const http = require("http");
+const axios = require("axios");
 const { Server } = require("socket.io");
 const { generalRateLimit, authRateLimit, adminRateLimit } = require("./middleware/rateLimiter");
 const securityHeaders = require("./middleware/security");
 const sanitizeInput = require("./middleware/sanitization");
+const shield = require("./middleware/shield");
 const errorHandler = require("./middleware/errorHandler");
 const requestLogger = require("./middleware/logger");
 const path = require("path");
@@ -236,6 +238,14 @@ try {
   console.error('❌ Input sanitization middleware failed:', error.message);
 }
 
+// ✅ Apply shield security middleware
+try {
+  app.use(shield);
+  console.log('✅ Shield security middleware loaded');
+} catch (error) {
+  console.error('❌ Shield security middleware failed:', error.message);
+}
+
 // ✅ Apply rate limiting
 try {
   app.use(generalRateLimit);
@@ -411,6 +421,50 @@ app.post("/api/pro-signup", async (req, res) => {
     // Save to database
     await newPro.save();
     console.log(`✅ New professional saved (pending payment): ${name} (${email}) - ${trade} in ${location}`);
+
+    // ✅ Checkr Background Check Integration
+    if (process.env.CHECKR_API_KEY) {
+      try {
+        console.log(`🔍 Starting background check for ${name}...`);
+        
+        // 1. Create candidate with Checkr
+        const candidateRes = await axios.post('https://api.checkr.com/v1/candidates', {
+          first_name: name.split(' ')[0],
+          last_name: name.split(' ')[1] || '',
+          email: email,
+          phone: phone,
+          dob: dob,
+          copy_requested: true
+        }, {
+          auth: { username: process.env.CHECKR_API_KEY, password: '' }
+        });
+
+        const candidateId = candidateRes.data.id;
+        console.log(`✅ Checkr candidate created: ${candidateId}`);
+
+        // 2. Create invitation for background check
+        const invitationRes = await axios.post('https://api.checkr.com/v1/invitations', {
+          candidate_id: candidateId,
+          package: 'tasker_pro_package'
+        }, {
+          auth: { username: process.env.CHECKR_API_KEY, password: '' }
+        });
+
+        console.log(`✅ Background check invitation sent: ${invitationRes.data.id}`);
+
+        // 3. Update professional record with Checkr candidate ID
+        newPro.checkrCandidateId = candidateId;
+        newPro.backgroundCheckStatus = 'pending';
+        await newPro.save();
+
+      } catch (checkrError) {
+        console.error('❌ Checkr integration error:', checkrError.message);
+        // Don't fail the signup if background check fails - log it and continue
+        console.log('⚠️  Continuing with signup - background check can be initiated manually');
+      }
+    } else {
+      console.log('⚠️  CHECKR_API_KEY not configured - skipping background check');
+    }
 
     // Create Stripe Checkout session
     if (!process.env.STRIPE_SECRET_KEY) {
@@ -835,10 +889,51 @@ app.post("/api/homeowner-lead-proxy", (req, res) => {
   });
 });
 
-// ✅ Webhook for Checkr (background checks for Fixlo professionals)
-app.post("/webhook/checkr", (req, res) => {
-  console.log("🔔 Fixlo Checkr webhook received:", req.body);
-  res.status(200).send("Fixlo webhook received");
+// ✅ Webhook for Checkr (background checks for Fixlo professionals)  
+app.post("/webhook/checkr", async (req, res) => {
+  console.log("🔔 Checkr webhook received:", req.body);
+  
+  try {
+    const { type, data } = req.body;
+    
+    // Handle report.completed events
+    if (type === 'report.completed') {
+      const report = data.object;
+      const candidateId = report.candidate_id;
+      const status = report.status; // 'clear', 'consider', 'suspended'
+      
+      console.log(`📋 Background check completed for candidate ${candidateId}: ${status}`);
+      
+      // Find the professional by Checkr candidate ID and update status
+      const professional = await Pro.findOneAndUpdate(
+        { checkrCandidateId: candidateId },
+        { 
+          backgroundCheckStatus: status,
+          isVerified: status === 'clear' // Only mark as verified if background check is clear
+        },
+        { new: true }
+      );
+      
+      if (professional) {
+        console.log(`✅ Professional background check status updated: ${professional.name} (${professional.email}) - ${status}`);
+        
+        // TODO: Send notification to professional about background check results
+        // TODO: If status is 'consider' or 'suspended', may need additional review process
+        
+      } else {
+        console.error(`❌ Professional not found for Checkr candidate ID: ${candidateId}`);
+      }
+      
+    } else {
+      console.log(`ℹ️  Checkr webhook event type '${type}' - no action needed`);
+    }
+    
+    res.status(200).send("Checkr webhook processed successfully");
+    
+  } catch (error) {
+    console.error('❌ Error processing Checkr webhook:', error);
+    res.status(500).send("Webhook processing error");
+  }
 });
 
 // ✅ Basic health check
@@ -884,7 +979,8 @@ app.get("/api/env-check", (req, res) => {
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY ? 'set ✅' : 'missing ❌ (required for payments)',
     STRIPE_FIRST_MONTH_PRICE_ID: process.env.STRIPE_FIRST_MONTH_PRICE_ID ? 'set ✅' : 'missing ❌',
     STRIPE_MONTHLY_PRICE_ID: process.env.STRIPE_MONTHLY_PRICE_ID ? 'set ✅' : 'missing ❌',
-    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET ? 'set ✅' : 'missing ❌ (required for webhooks)'
+    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET ? 'set ✅' : 'missing ❌ (required for webhooks)',
+    CHECKR_API_KEY: process.env.CHECKR_API_KEY ? 'set ✅' : 'missing ❌ (required for background checks)'
   };
 
   res.json({

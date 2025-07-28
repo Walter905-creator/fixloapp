@@ -1,7 +1,32 @@
 const express = require("express");
+const jwt = require('jsonwebtoken');
 const router = express.Router();
 const Pro = require("../models/Pro");
 const adminAuth = require("../middleware/adminAuth");
+const fs = require('fs');
+const path = require('path');
+
+router.post('/login', (req, res) => {
+  console.log('🔐 Admin login attempt:', req.body);
+  const { email, password } = req.body;
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+  const JWT_SECRET = process.env.JWT_SECRET;
+
+  console.log('🔍 Environment check:');
+  console.log('ADMIN_EMAIL:', ADMIN_EMAIL);
+  console.log('ADMIN_PASSWORD:', ADMIN_PASSWORD ? 'set' : 'not set');
+  console.log('JWT_SECRET:', JWT_SECRET ? 'set' : 'not set');
+
+  if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+    console.log('✅ Login successful');
+    const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: '2h' });
+    return res.json({ token });
+  }
+
+  console.log('❌ Login failed - invalid credentials');
+  return res.status(401).json({ message: 'Unauthorized' });
+});
 
 // ✅ Test endpoint for debugging - kept public for troubleshooting
 router.get("/test", async (req, res) => {
@@ -133,6 +158,17 @@ router.get("/stats", adminAuth, async (req, res) => {
   } catch (err) {
     console.error("❌ Error fetching stats:", err);
     res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ✅ Shield log endpoint - View blocked requests
+router.get('/shield-log', (req, res) => {
+  const logPath = path.join(__dirname, '../logs/shield.log');
+  if (fs.existsSync(logPath)) {
+    const content = fs.readFileSync(logPath, 'utf8');
+    res.type('text/plain').send(content);
+  } else {
+    res.status(404).send('No logs found.');
   }
 });
 

@@ -24,11 +24,11 @@ const Footer = () => {
             Professional home services made simple. Connect with verified professionals 
             for all your home repair and maintenance needs.
           </p>
-          <p style={{ fontSize: '0.9rem', color: '#aaa' }}>
-            📍 Serving the United States<br/>
-            📞 (555) 123-FIXLO<br/>
-            📧 support@fixloapp.com
-          </p>
+          <div style={{ textAlign: 'center', fontSize: '0.875rem', color: '#6b7280', marginTop: '1.5rem' }}>
+            📧 <a href="mailto:pro4u.improvements@gmail.com" style={{ textDecoration: 'underline', color: '#6b7280' }}>
+              pro4u.improvements@gmail.com
+            </a>
+          </div>
         </div>
 
         {/* Services */}

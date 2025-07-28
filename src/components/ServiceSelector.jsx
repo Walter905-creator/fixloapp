@@ -17,17 +17,19 @@ export default function ServiceSelector() {
   const [selectedService, setSelectedService] = useState(null);
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-      {services.map(service => (
-        <button
-          key={service.name}
-          onClick={() => setSelectedService(service)}
-          className="border border-gray-300 p-4 rounded-lg text-center hover:bg-blue-100 transition"
-        >
-          <div className="text-3xl mb-2">{service.emoji}</div>
-          <div className="font-medium">{service.name}</div>
-        </button>
-      ))}
+    <>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {services.map(service => (
+          <button
+            key={service.name}
+            onClick={() => setSelectedService(service)}
+            className="border border-gray-300 p-4 rounded-lg text-center hover:bg-blue-100 transition"
+          >
+            <div className="text-3xl mb-2">{service.emoji}</div>
+            <div className="font-medium">{service.name}</div>
+          </button>
+        ))}
+      </div>
 
       {selectedService && (
         <ServiceRequestModal
@@ -35,6 +37,6 @@ export default function ServiceSelector() {
           onClose={() => setSelectedService(null)}
         />
       )}
-    </div>
+    </>
   );
 }

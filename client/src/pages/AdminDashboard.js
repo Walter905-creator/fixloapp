@@ -11,13 +11,13 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if admin is authenticated
-    const token = localStorage.getItem('adminToken');
+    const token = localStorage.getItem('admin_token');
     if (!token) {
-      window.location.href = '/admin/login';
-      return;
+      window.location.href = '/admin-login';
     }
+  }, []);
 
+  useEffect(() => {
     // Fetch dashboard data
     fetchDashboardData();
   }, []);
@@ -25,24 +25,24 @@ const AdminDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       const API_URL = process.env.REACT_APP_API_URL || 'https://fixloapp.onrender.com';
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('admin_token');
       
-      const response = await axios.get(`${API_URL}/api/admin/dashboard`, {
+      const response = await axios.get(`${API_URL}/api/admin/stats`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       setStats(response.data.stats);
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
-      localStorage.removeItem('adminToken');
-      window.location.href = '/admin/login';
+      localStorage.removeItem('admin_token');
+      window.location.href = '/admin-login';
     } finally {
       setLoading(false);
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('adminToken');
+    localStorage.removeItem('admin_token');
     window.location.href = '/';
   };
 
