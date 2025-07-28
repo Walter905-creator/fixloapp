@@ -1,79 +1,35 @@
-import React, { useEffect } from "react";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import axios from "axios";
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#667eea" />
+    <meta name="description" content="Fixlo - Connect with trusted home repair professionals. Find verified contractors for plumbing, electrical, HVAC, carpentry, house cleaning, and more." />
+    <title>Fixlo - Trusted Home Repair Professionals</title>
 
-import Home from "./pages/Home";
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
-import Subscribe from "./pages/Subscribe";
-import Terms from "./pages/Terms";
-import TermsOfService from "./pages/TermsOfService";
-import AdminDashboard from "./pages/AdminDashboard";
-import AdminLogin from "./pages/AdminLogin";
-import DownloadApp from "./pages/DownloadApp";
-import HowItWorks from "./pages/HowItWorks";
-import Support from "./pages/Support";
-import Pricing from "./pages/Pricing";
-import SignUp from "./pages/SignUp";
-import ProSupport from "./pages/ProSupport";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import ContactUs from "./pages/ContactUs";
-import PaymentSuccess from "./pages/PaymentSuccess";
+    <!-- Optimize resource loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="preconnect" href="https://js.stripe.com" />
 
-// 🚀 New conversion-focused components
-import GeoHeader from "./components/GeoHeader";
-import UrgencyPopup from "./components/UrgencyPopup";
-import LiveJobFeed from "./components/LiveJobFeed";
-import ExitIntentModal from "./components/ExitIntentModal";
-import StickySignupBar from "./components/StickySignupBar";
-import StickyMobileCTA from "./components/StickyMobileCTA";
+    <!-- Tailwind CSS for conversion components styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
 
-function App() {
-  useEffect(() => {
-    console.log("🔥 LIVE DEPLOY: Fixlo main loaded");
-    const API_URL = process.env.REACT_APP_API_URL || 'https://fixloapp.onrender.com';
-    
-    axios
-      .get(`${API_URL}/api`)
-      .then((res) => console.log('Backend connected:', res.data.message))
-      .catch(() => console.log("Error connecting to backend"));
-  }, []);
+    <!-- Favicon fallback -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠️</text></svg>" />
 
-  return (
-    <Router>
-      <div style={{ fontFamily: "sans-serif" }}>
-        <Navbar />
-        
-        {/* 🚀 Conversion-focused UX components */}
-        <GeoHeader />
-        <UrgencyPopup />
-        <LiveJobFeed />
-        <ExitIntentModal />
-        <StickySignupBar />
-        <StickyMobileCTA />
-        
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/download" element={<DownloadApp />} />
-          <Route path="/how-it-works" element={<HowItWorks />} />
-          <Route path="/support" element={<Support />} />
-          <Route path="/pricing" element={<Pricing />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/pro-support" element={<ProSupport />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/terms-of-service" element={<TermsOfService />} />
-          <Route path="/privacy" element={<PrivacyPolicy />} />
-          <Route path="/contact" element={<ContactUs />} />
-          <Route path="/subscribe" element={<Subscribe />} />
-          <Route path="/success" element={<PaymentSuccess />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/login" element={<AdminLogin />} />
-        </Routes>
-
-        <Footer />
-      </div>
-    </Router>
-  );
-}
-
-export default App;
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17355871496"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'AW-17355871496');
+    </script>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+  </body>
+</html>

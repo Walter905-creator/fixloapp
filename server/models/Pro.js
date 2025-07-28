@@ -109,6 +109,16 @@ const proSchema = new mongoose.Schema({
   },
   verificationDate: Date,
   
+  // Background check (Checkr integration)
+  backgroundCheckStatus: {
+    type: String,
+    enum: ['pending', 'clear', 'consider', 'suspended', 'failed'],
+    default: 'pending'
+  },
+  checkrCandidateId: {
+    type: String
+  },
+  
   // Contact preferences
   notificationSettings: {
     email: { type: Boolean, default: true },
