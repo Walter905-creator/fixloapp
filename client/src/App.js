@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import axios from "axios";
 
+// Core Pages
 import Home from "./pages/Home";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -21,13 +22,16 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import ContactSupport from "./pages/ContactSupport";
 import PaymentSuccess from "./pages/PaymentSuccess";
 
-// 🚀 New conversion-focused components
+// UX Conversion Enhancers
 import GeoHeader from "./components/GeoHeader";
 import UrgencyPopup from "./components/UrgencyPopup";
 import LiveJobFeed from "./components/LiveJobFeed";
 import ExitIntentModal from "./components/ExitIntentModal";
 import StickySignupBar from "./components/StickySignupBar";
 import StickyMobileCTA from "./components/StickyMobileCTA";
+
+// Client-side Security
+import './shield/guard';
 
 function App() {
   useEffect(() => {
@@ -44,15 +48,15 @@ function App() {
     <Router>
       <div style={{ fontFamily: "sans-serif" }}>
         <Navbar />
-        
-        {/* 🚀 Conversion-focused UX components */}
+
+        {/* 🚀 Conversion Features */}
         <GeoHeader />
         <UrgencyPopup />
         <LiveJobFeed />
         <ExitIntentModal />
         <StickySignupBar />
         <StickyMobileCTA />
-        
+
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/download" element={<DownloadApp />} />
@@ -68,6 +72,8 @@ function App() {
           <Route path="/contact" element={<ContactSupport />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/subscribe" element={<Subscribe />} />
+
+          {/* ✅ Admin Auth Routes */}
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
         </Routes>

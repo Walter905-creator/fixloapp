@@ -3,6 +3,8 @@ const jwt = require('jsonwebtoken');
 const router = express.Router();
 const Pro = require("../models/Pro");
 const adminAuth = require("../middleware/adminAuth");
+const fs = require('fs');
+const path = require('path');
 
 router.post('/login', (req, res) => {
   console.log('🔐 Admin login attempt:', req.body);
@@ -156,6 +158,17 @@ router.get("/stats", adminAuth, async (req, res) => {
   } catch (err) {
     console.error("❌ Error fetching stats:", err);
     res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ✅ Shield log endpoint - View blocked requests
+router.get('/shield-log', (req, res) => {
+  const logPath = path.join(__dirname, '../logs/shield.log');
+  if (fs.existsSync(logPath)) {
+    const content = fs.readFileSync(logPath, 'utf8');
+    res.type('text/plain').send(content);
+  } else {
+    res.status(404).send('No logs found.');
   }
 });
 
