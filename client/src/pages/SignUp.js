@@ -45,6 +45,7 @@ const SignUp = () => {
     try {
       const API_URL = process.env.REACT_APP_API_URL || 'https://fixloapp.onrender.com';
       
+      // Submit to API to register user
       const response = await axios.post(`${API_URL}/api/auth/register`, {
         name: formData.name,
         email: formData.email,
@@ -52,18 +53,24 @@ const SignUp = () => {
         password: formData.password,
         trade: formData.trade,
         experience: formData.experience,
-        location: formData.location,
-        userType: 'professional'
+        location: formData.location
       });
 
       if (response.data.success) {
-        setMessage('Registration successful! Please check your email for next steps.');
-        // Redirect to Stripe checkout if needed
-        if (response.data.checkoutUrl) {
-          window.location.href = response.data.checkoutUrl;
-        }
+        const userId = response.data.user._id;
+        const email = response.data.user.email;
+
+        // Create Stripe checkout session
+        const checkoutRes = await axios.post(`${API_URL}/api/stripe/create-checkout-session`, {
+          email,
+          userId
+        });
+
+        // Redirect to Stripe
+        window.location.href = checkoutRes.data.url;
       }
     } catch (error) {
+      console.error("Signup error:", error);
       setMessage(error.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
