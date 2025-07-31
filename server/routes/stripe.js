@@ -19,6 +19,16 @@ router.post('/create-checkout-session', async (req, res) => {
   try {
     console.log('🔔 Stripe checkout session requested');
     
+    // Get email and userId from request body
+    const { email, userId } = req.body;
+    
+    if (!email || !userId) {
+      return res.status(400).json({
+        error: 'Missing required parameters',
+        message: 'Email and userId are required'
+      });
+    }
+    
     // Verify Stripe is initialized
     if (!stripe) {
       console.error('❌ Stripe not initialized - missing STRIPE_SECRET_KEY');
@@ -29,17 +39,11 @@ router.post('/create-checkout-session', async (req, res) => {
     }
 
     // Check required environment variables
-    const clientUrl = process.env.CLIENT_URL;
-    if (!clientUrl) {
-      console.error('❌ CLIENT_URL environment variable not set');
-      return res.status(500).json({ 
-        error: 'Configuration error',
-        message: 'CLIENT_URL is required for payment processing'
-      });
-    }
-
+    const clientUrl = process.env.CLIENT_URL || 'https://www.fixloapp.com';
+    
     // Get price ID from environment variables
-    const priceId = process.env.STRIPE_FIRST_MONTH_PRICE_ID || 
+    const priceId = process.env.STRIPE_PRO_PRICE_ID || 
+                   process.env.STRIPE_FIRST_MONTH_PRICE_ID || 
                    process.env.STRIPE_MONTHLY_PRICE_ID || 
                    process.env.STRIPE_PRICE_ID;
     
@@ -53,32 +57,35 @@ router.post('/create-checkout-session', async (req, res) => {
 
     console.log(`💰 Creating checkout session with price ID: ${priceId}`);
     console.log(`🔗 Using client URL: ${clientUrl}`);
+    console.log(`👤 Customer email: ${email}, User ID: ${userId}`);
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
+      mode: 'subscription',
+      customer_email: email,
       line_items: [
         {
           price: priceId,
           quantity: 1,
         },
       ],
-      mode: 'subscription',
-      success_url: `${clientUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${clientUrl}/cancel`,
       metadata: {
+        userId: userId,
         service: 'fixlo-pro-subscription',
         timestamp: new Date().toISOString()
-      }
+      },
+      success_url: `${clientUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${clientUrl}/pricing`,
     });
 
     console.log(`✅ Checkout session created: ${session.id}`);
-    res.json({ url: session.url });
+    res.status(200).json({ url: session.url });
 
   } catch (error) {
     console.error('❌ Error creating checkout session:', error.message);
     res.status(500).json({ 
-      error: 'Payment processing error',
+      error: 'Failed to create Stripe session',
       message: error.message 
     });
   }

@@ -1,35 +1,23 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#667eea" />
-    <meta name="description" content="Fixlo - Connect with trusted home repair professionals. Find verified contractors for plumbing, electrical, HVAC, carpentry, house cleaning, and more." />
-    <title>Fixlo - Trusted Home Repair Professionals</title>
+import React from "react";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import SignUp from "./pages/SignUp";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import Home from "./pages/Home";
+import PricingPage from "./pages/PricingPage";
 
-    <!-- Optimize resource loading -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="preconnect" href="https://js.stripe.com" />
+function App() {
+  return (
+    <Router>
+      <div className="App">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
+        </Routes>
+      </div>
+    </Router>
+  );
+}
 
-    <!-- Tailwind CSS for conversion components styling -->
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Favicon fallback -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠️</text></svg>" />
-
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17355871496"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'AW-17355871496');
-    </script>
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-  </body>
-</html>
+export default App;
