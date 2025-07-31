@@ -112,46 +112,39 @@ router.post('/register', async (req, res) => {
       paymentStatus: 'pending'
     });
 
-    // Temporarily comment out MongoDB save for testing
-    console.log("✅ Would save new pro:", newPro);
-    return res.status(200).json({
+    // Proper MongoDB save with detailed error handling
+    let savedPro;
+    try {
+      savedPro = await newPro.save({ timeout: 10000 });
+    } catch (saveError) {
+      console.error('❌ MongoDB save error:', saveError.stack || saveError);
+      throw saveError;
+    }
+
+    const token = jwt.sign(
+      {
+        id: savedPro._id,
+        email: savedPro.email,
+        role: 'professional'
+      },
+      process.env.JWT_SECRET || 'fallback-secret',
+      { expiresIn: '24h' }
+    );
+
+    console.log(`✅ New Pro registered: ${savedPro.email}`);
+
+    res.status(201).json({
       success: true,
-      message: "Mock registration success",
-      mockUser: newPro,
+      message: 'Registration successful',
+      user: {
+        _id: savedPro._id,
+        name: savedPro.name,
+        email: savedPro.email,
+        trade: savedPro.trade,
+        paymentStatus: savedPro.paymentStatus
+      },
+      token
     });
-
-    // let savedPro;
-    // try {
-    //   savedPro = await newPro.save({ timeout: 10000 });
-    // } catch (saveError) {
-    //   console.error('❌ MongoDB save error:', saveError.stack || saveError);
-    //   throw saveError;
-    // }
-
-    // const token = jwt.sign(
-    //   {
-    //     id: savedPro._id,
-    //     email: savedPro.email,
-    //     role: 'professional'
-    //   },
-    //   process.env.JWT_SECRET || 'fallback-secret',
-    //   { expiresIn: '24h' }
-    // );
-
-    // console.log(`✅ New Pro registered: ${savedPro.email}`);
-
-    // res.status(201).json({
-    //   success: true,
-    //   message: 'Registration successful',
-    //   user: {
-    //     _id: savedPro._id,
-    //     name: savedPro.name,
-    //     email: savedPro.email,
-    //     trade: savedPro.trade,
-    //     paymentStatus: savedPro.paymentStatus
-    //   },
-    //   token
-    // });
 
   } catch (error) {
     console.error('❌ Registration error:', error.stack || error);
