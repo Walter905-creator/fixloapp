@@ -4,7 +4,7 @@ export default function GeoHeader() {
   const [city, setCity] = useState(null);
 
   useEffect(() => {
-    fetch('https://ipapi.co/json')
+    fetch('/api/ipinfo')
       .then(res => res.json())
       .then(data => setCity(data.city))
       .catch(() => setCity('Your Area')); // Fallback if geolocation fails

@@ -5,7 +5,7 @@ export default function UrgencyPopup() {
   const [city, setCity] = useState('your city');
 
   useEffect(() => {
-    fetch('https://ipapi.co/json')
+    fetch('/api/ipinfo')
       .then(res => res.json())
       .then(data => setCity(data.city || 'your city'))
       .catch(() => setCity('your city'));
