@@ -89,6 +89,18 @@ router.post('/register', async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // Process experience field - handle string values like "10+"
+    let processedExperience = 0;
+    if (experience) {
+      if (typeof experience === 'string') {
+        // Handle cases like "10+", "5-10", etc.
+        const numMatch = experience.match(/\d+/);
+        processedExperience = numMatch ? parseInt(numMatch[0], 10) : 0;
+      } else if (typeof experience === 'number') {
+        processedExperience = experience;
+      }
+    }
+
     // For now, use basic geocoding (in production, you'd use Google Maps API)
     // Set default coordinates for the location (this should be geocoded properly)
     const coordinates = [-74.006, 40.7128]; // Default to NYC coordinates
@@ -100,7 +112,7 @@ router.post('/register', async (req, res) => {
       phone,
       password: hashedPassword,
       trade,
-      experience: experience || 0,
+      experience: processedExperience,
       location: {
         type: 'Point',
         coordinates: coordinates,

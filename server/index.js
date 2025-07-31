@@ -38,6 +38,9 @@ console.log('🌐 Environment CORS_ALLOWED_ORIGINS:', process.env.CORS_ALLOWED_O
 const app = express();
 const server = http.createServer(app);
 
+// ✅ Trust proxy setting for rate limiting when deployed behind proxy (Render, etc.)
+app.set('trust proxy', 1);
+
 // ✅ EARLY OPTIONS HANDLER - Bypass ALL middleware to prevent redirects
 app.use((req, res, next) => {
   if (req.method === 'OPTIONS') {
