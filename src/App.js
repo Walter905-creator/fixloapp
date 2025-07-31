@@ -11,6 +11,10 @@ import ServiceSelector from './components/ServiceSelector';
 import HomePage from './components/HomePage';
 import Admin from './components/Admin';
 
+// Cache busting - show build info in console
+const buildId = process.env.REACT_APP_BUILD_ID || 'dev';
+console.log(`🚀 Fixlo App loaded - Build: ${buildId}`);
+
 function App() {
   return (
     <Router>
@@ -39,6 +43,10 @@ function App() {
 
                 <footer className="footer">
                   <p>&copy; {new Date().getFullYear()} Fixlo. All rights reserved.</p>
+                  {/* Debug info for cache busting */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <p style={{fontSize: '0.8em', opacity: 0.7}}>Build: {buildId}</p>
+                  )}
                 </footer>
               </div>
             }
