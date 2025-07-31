@@ -4,7 +4,8 @@
   "outputDirectory": "build",
   "framework": null,
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://fixlo-backend.onrender.com/api/$1" },
+    { "source": "/api/(.*)", "destination": "https://fixloapp.onrender.com/api/$1" },
+    { "source": "/admin", "destination": "https://fixloapp.onrender.com/admin" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
