@@ -1057,10 +1057,17 @@ if (process.env.MONGO_URI) {
   mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 10000, // 10 second timeout
+    socketTimeoutMS: 45000, // 45 second socket timeout
+    bufferCommands: false, // Disable mongoose buffering
+    maxPoolSize: 10, // Maintain up to 10 socket connections
+    minPoolSize: 5, // Maintain a minimum of 5 socket connections
+    retryWrites: true
   })
   .then(() => {
     console.log("✅ MongoDB connected successfully");
     console.log(`📊 Database: ${mongoose.connection.name}`);
+    console.log(`🔗 Connection state: ${mongoose.connection.readyState}`);
   })
   .catch((err) => {
     console.error("❌ MongoDB connection failed:", err.message);
@@ -1078,6 +1085,14 @@ if (process.env.MONGO_URI) {
 
   mongoose.connection.on('reconnected', () => {
     console.log('✅ MongoDB reconnected');
+  });
+
+  mongoose.connection.on('connecting', () => {
+    console.log('🔄 MongoDB connecting...');
+  });
+
+  mongoose.connection.on('connected', () => {
+    console.log('✅ MongoDB connected');
   });
 } else {
   console.log("📝 No MONGO_URI provided - running in database-free mode");
