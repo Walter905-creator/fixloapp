@@ -2,13 +2,11 @@ import React, { useEffect, useState } from 'react';
 
 export default function UrgencyPopup() {
   const [show, setShow] = useState(false);
-  const [city, setCity] = useState('your city');
+  const [city, setCity] = useState('your area');
 
   useEffect(() => {
-    fetch('https://ipapi.co/json')
-      .then(res => res.json())
-      .then(data => setCity(data.city || 'your city'))
-      .catch(() => setCity('your city'));
+    // Use a static fallback instead of external API to avoid CORS issues
+    setCity('your area');
 
     const timer = setTimeout(() => setShow(true), 5000);
     return () => clearTimeout(timer);
