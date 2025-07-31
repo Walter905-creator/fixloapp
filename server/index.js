@@ -124,6 +124,9 @@ app.use('/webhook/stripe', express.raw({ type: 'application/json' }));
 
 app.use(express.json());
 
+// ✅ Serve static files from server directory (for admin assets like logo)
+app.use(express.static(__dirname));
+
 // ✅ EXPLICIT OPTIONS HANDLERS - Before any other routes to prevent redirects
 app.options('/api/pro-signup', (req, res) => {
   const requestOrigin = req.headers.origin;
