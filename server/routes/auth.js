@@ -41,6 +41,7 @@ router.post("/login", async (req, res) => {
 
 // ✅ Pro registration
 router.post('/register', async (req, res) => {
+  console.log("📥 Incoming registration request:", req.body);
   try {
     const { name, email, phone, password, trade, experience, location } = req.body;
 
@@ -111,7 +112,14 @@ router.post('/register', async (req, res) => {
       paymentStatus: 'pending'
     });
 
-    const savedPro = await newPro.save({ timeout: 10000 });
+    // Proper MongoDB save with detailed error handling
+    let savedPro;
+    try {
+      savedPro = await newPro.save({ timeout: 10000 });
+    } catch (saveError) {
+      console.error('❌ MongoDB save error:', saveError.stack || saveError);
+      throw saveError;
+    }
 
     const token = jwt.sign(
       {
@@ -139,7 +147,7 @@ router.post('/register', async (req, res) => {
     });
 
   } catch (error) {
-    console.error("❌ Registration error:", error.message || error);
+    console.error('❌ Registration error:', error.stack || error);
     if (error.code === 11000) {
       return res.status(400).json({
         success: false,

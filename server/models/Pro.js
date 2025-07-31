@@ -51,7 +51,7 @@ const proSchema = new mongoose.Schema({
     },
     coordinates: {
       type: [Number], // [longitude, latitude]
-      required: true
+      default: [-74.006, 40.7128] // Default to NYC
     },
     address: {
       type: String,
