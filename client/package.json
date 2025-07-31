@@ -38,5 +38,8 @@
       "last 1 safari version"
     ]
   },
-  "proxy": "https://fixloapp.onrender.com"
+  "proxy": "https://fixloapp.onrender.com",
+  "devDependencies": {
+    "postcss": "^8.5.6"
+  }
 }
