@@ -18,15 +18,17 @@ const SignUp = () => {
     confirmPassword: '',
     trade: '',
     experience: '',
-    location: ''
+    location: '',
+    smsConsent: false
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
   const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: type === 'checkbox' ? checked : value
     });
   };
 
@@ -38,6 +40,12 @@ const SignUp = () => {
     // Validation
     if (formData.password !== formData.confirmPassword) {
       setMessage('Passwords do not match');
+      setLoading(false);
+      return;
+    }
+
+    if (!formData.smsConsent) {
+      setMessage('You must agree to receive SMS messages to continue');
       setLoading(false);
       return;
     }
@@ -202,6 +210,28 @@ const SignUp = () => {
             placeholder="Confirm your password"
             minLength="6"
           />
+        </div>
+
+        <div className="form-group">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              name="smsConsent"
+              checked={formData.smsConsent}
+              onChange={handleChange}
+              required
+              style={{ 
+                width: 'auto',
+                marginRight: '8px',
+                transform: 'scale(1.2)'
+              }}
+            />
+            <span style={{ fontSize: '0.9rem', lineHeight: '1.4' }}>
+              I agree to receive SMS messages from Fixlo about my account and job opportunities. 
+              Message and data rates may apply. Reply STOP to unsubscribe.{' '}
+              <a href="/privacy" target="_blank" style={{ color: '#667eea' }}>Privacy Policy</a>.
+            </span>
+          </label>
         </div>
 
         {/* Twilio SMS Opt-in Disclaimer */}
