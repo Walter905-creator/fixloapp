@@ -23,10 +23,10 @@ router.get('/login', (req, res) => {
     
     if (jobId) {
         // Redirect to job-specific login page
-        res.redirect(`https://fixlo.com/login?job=${jobId}&source=${source}`);
+        res.redirect(`https://www.fixloapp.com/login?job=${jobId}&source=${source}`);
     } else {
         // General login redirect
-        res.redirect(`https://fixlo.com/login?source=${source}`);
+        res.redirect(`https://www.fixloapp.com/login?source=${source}`);
     }
 });
 
@@ -44,9 +44,9 @@ router.get('/dashboard', (req, res) => {
     });
     
     if (jobId) {
-        res.redirect(`https://fixlo.com/dashboard?job=${jobId}&source=${source}`);
+        res.redirect(`https://www.fixloapp.com/dashboard?job=${jobId}&source=${source}`);
     } else {
-        res.redirect(`https://fixlo.com/dashboard?source=${source}`);
+        res.redirect(`https://www.fixloapp.com/dashboard?source=${source}`);
     }
 });
 
@@ -63,7 +63,7 @@ router.get('/jobs/:jobId', (req, res) => {
         ip: req.ip
     });
     
-    res.redirect(`https://fixlo.com/jobs/${jobId}?source=${source}`);
+    res.redirect(`https://www.fixloapp.com/jobs/${jobId}?source=${source}`);
 });
 
 // Contract viewing redirect
@@ -79,7 +79,7 @@ router.get('/contracts/:jobId', (req, res) => {
         ip: req.ip
     });
     
-    res.redirect(`https://fixlo.com/contracts/${jobId}?source=${source}`);
+    res.redirect(`https://www.fixloapp.com/contracts/${jobId}?source=${source}`);
 });
 
 // Profile completion redirect
@@ -93,7 +93,7 @@ router.get('/profile', (req, res) => {
         ip: req.ip
     });
     
-    res.redirect(`https://fixlo.com/profile?source=${source}`);
+    res.redirect(`https://www.fixloapp.com/profile?source=${source}`);
 });
 
 // Short URL redirects (r/shortcode)
@@ -109,7 +109,7 @@ router.get('/r/:shortId', (req, res) => {
         ip: req.ip
     });
     
-    res.redirect(`https://fixlo.com/dashboard?ref=${shortId}`);
+    res.redirect(`https://www.fixloapp.com/dashboard?ref=${shortId}`);
 });
 
 // Compliance tracking endpoint
