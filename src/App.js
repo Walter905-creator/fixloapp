@@ -1,34 +1,18 @@
 // src/App.js
 import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
-import UrgencyPopup from './components/UrgencyPopup';
-import ExitIntentModal from './components/ExitIntentModal';
-import StickyCTA from './components/StickyCTA';
-import ServiceSelector from './components/ServiceSelector';
+import HomePage from './components/HomePage';
+import Admin from './components/Admin';
 
 function App() {
   return (
-    <>
-      <UrgencyPopup />
-      <ExitIntentModal />
-      <StickyCTA />
-      <div className="app">
-        <header className="header">
-          <img src="/assets/fixlo-logo.png" alt="Fixlo Logo" className="logo" />
-          <h1>Welcome to Fixlo</h1>
-          <p>Your one-stop hub for trusted professionals and home projects</p>
-        </header>
-
-        <section className="services">
-          <h2>Select a Service</h2>
-          <ServiceSelector />
-        </section>
-
-        <footer className="footer">
-          <p>&copy; {new Date().getFullYear()} Fixlo. All rights reserved.</p>
-        </footer>
-      </div>
-    </>
+    <Router>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/admin" element={<Admin />} />
+      </Routes>
+    </Router>
   );
 }
 
