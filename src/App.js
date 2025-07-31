@@ -1,6 +1,7 @@
 // src/App.js
 import React from 'react';
 import './App.css';
+import { Analytics } from '@vercel/analytics/react';
 import UrgencyPopup from './components/UrgencyPopup';
 import ExitIntentModal from './components/ExitIntentModal';
 import StickyCTA from './components/StickyCTA';
@@ -28,6 +29,7 @@ function App() {
           <p>&copy; {new Date().getFullYear()} Fixlo. All rights reserved.</p>
         </footer>
       </div>
+      <Analytics />
     </>
   );
 }
