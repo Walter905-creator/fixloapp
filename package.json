@@ -17,7 +17,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "GENERATE_SOURCEMAP=false react-scripts build",
-    "build:deploy": "GENERATE_SOURCEMAP=false REACT_APP_BUILD_ID=$npm_package_version-$(date +%s) react-scripts build",
+    "build:deploy": "GENERATE_SOURCEMAP=false REACT_APP_BUILD_ID=$npm_package_version-$(date +%s) REACT_APP_BUILD_TIMESTAMP=$(date +%s) react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
