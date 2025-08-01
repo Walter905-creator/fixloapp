@@ -61,7 +61,7 @@ router.post('/register', async (req, res) => {
 
     const existingPro = await Pro.findOne({
       $or: [{ email: email.toLowerCase() }, { phone }]
-    }).timeout(5000);
+    });
 
     if (existingPro) {
       return res.status(400).json({
@@ -115,7 +115,7 @@ router.post('/register', async (req, res) => {
     // Proper MongoDB save with detailed error handling
     let savedPro;
     try {
-      savedPro = await newPro.save({ timeout: 10000 });
+      savedPro = await newPro.save();
     } catch (saveError) {
       console.error('❌ MongoDB save error:', saveError.stack || saveError);
       throw saveError;
