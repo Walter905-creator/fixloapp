@@ -387,8 +387,7 @@
     </div>
 
     <script>
-        // API configuration - use production backend or local development server
-        const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3001' : 'https://fixloapp.onrender.com';
+        const API_BASE = window.location.origin;
         let authToken = localStorage.getItem('adminToken');
 
         // Check if already logged in
