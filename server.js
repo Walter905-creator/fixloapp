@@ -425,7 +425,13 @@ app.get('/api/admin/stats', requireAdmin, (req, res) => {
     const serviceRequests = Array.from(storage.serviceRequests.values());
     const professionals = Array.from(storage.professionals.values());
     
+    const activePros = professionals.filter(pro => pro.status === 'active' || pro.isActive).length;
+    const pendingPros = professionals.filter(pro => pro.status === 'pending_payment' || pro.paymentStatus === 'pending').length;
+    
     const stats = {
+        totalPros: professionals.length,
+        activePros: activePros,
+        pendingPros: pendingPros,
         overview: {
             totalServiceRequests: serviceRequests.length,
             totalProfessionals: professionals.length,
@@ -491,16 +497,39 @@ app.get('/api/admin/professionals', requireAdmin, (req, res) => {
 // Admin pros endpoint (alias for compatibility with admin.html)
 app.get('/api/admin/pros', requireAdmin, (req, res) => {
     const professionals = Array.from(storage.professionals.values())
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        .sort((a, b) => new Date(b.createdAt || b.timestamp) - new Date(a.createdAt || a.timestamp));
     
-    res.json({
-        success: true,
-        professionals
-    });
+    // Return the professionals array directly (admin.html expects an array)
+    res.json(professionals);
 });
 
 // Admin pro toggle endpoint
 app.post('/api/admin/pros/:id/toggle', requireAdmin, (req, res) => {
+    const { id } = req.params;
+    const professional = storage.professionals.get(id);
+    
+    if (!professional) {
+        return res.status(404).json({
+            success: false,
+            error: 'Professional not found'
+        });
+    }
+    
+    // Toggle active status
+    professional.isActive = !professional.isActive;
+    professional.lastUpdated = new Date().toISOString();
+    
+    storage.professionals.set(id, professional);
+    
+    res.json({
+        success: true,
+        message: `Professional ${professional.isActive ? 'activated' : 'deactivated'}`,
+        professional
+    });
+});
+
+// Admin pro toggle endpoint (PUT method for compatibility with admin.html)
+app.put('/api/admin/pros/:id/toggle', requireAdmin, (req, res) => {
     const { id } = req.params;
     const professional = storage.professionals.get(id);
     
@@ -594,40 +623,55 @@ app.listen(PORT, () => {
 function addSampleProfessionals() {
     const samplePros = [
         {
+            _id: 'pro-1',
             id: 'pro-1',
             name: 'John Smith',
             email: 'john@example.com',
             phone: '+1234567890',
+            trade: 'plumbing',
             primaryTrade: 'plumbing',
             serviceLocation: 'New York, NY',
             yearsExperience: 8,
             status: 'active',
+            isActive: true,
+            paymentStatus: 'active',
             smsConsent: true,
-            verificationStatus: 'verified'
+            verificationStatus: 'verified',
+            createdAt: new Date().toISOString()
         },
         {
+            _id: 'pro-2',
             id: 'pro-2',
             name: 'Sarah Johnson',
             email: 'sarah@example.com',
             phone: '+1234567891',
+            trade: 'electrical',
             primaryTrade: 'electrical',
             serviceLocation: 'New York, NY',
             yearsExperience: 5,
             status: 'active',
+            isActive: true,
+            paymentStatus: 'active',
             smsConsent: true,
-            verificationStatus: 'verified'
+            verificationStatus: 'verified',
+            createdAt: new Date().toISOString()
         },
         {
+            _id: 'pro-3',
             id: 'pro-3',
             name: 'Mike Wilson',
             email: 'mike@example.com',
             phone: '+1234567892',
+            trade: 'carpentry',
             primaryTrade: 'carpentry',
             serviceLocation: 'New York, NY',
             yearsExperience: 12,
-            status: 'active',
+            status: 'pending_payment',
+            isActive: false,
+            paymentStatus: 'pending',
             smsConsent: true,
-            verificationStatus: 'verified'
+            verificationStatus: 'verified',
+            createdAt: new Date().toISOString()
         }
     ];
 
