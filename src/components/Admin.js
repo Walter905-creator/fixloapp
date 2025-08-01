@@ -10,7 +10,9 @@ function Admin() {
   const [loading, setLoading] = useState(false);
   const [adminEmail, setAdminEmail] = useState('');
 
-  const API_BASE = window.location.origin;
+  // API configuration - use environment variable or fallback to production backend
+  const API_BASE = process.env.REACT_APP_API_URL || 
+                  (process.env.NODE_ENV === 'development' ? 'http://localhost:3001' : 'https://fixloapp.onrender.com');
 
   useEffect(() => {
     if (authToken) {
@@ -25,8 +27,13 @@ function Admin() {
     const password = e.target.password.value;
     setLoginError('');
 
+    console.log('Login attempt with API_BASE:', API_BASE);
+
     try {
-      const response = await fetch(`${API_BASE}/api/auth/login`, {
+      const url = `${API_BASE}/api/auth/login`;
+      console.log('Calling URL:', url);
+      
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -34,14 +41,18 @@ function Admin() {
         body: JSON.stringify({ email, password })
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+
       const data = await response.json();
+      console.log('Response data:', data);
 
       if (response.ok && data.token) {
         setAuthToken(data.token);
         localStorage.setItem('adminToken', data.token);
         setAdminEmail(email);
         setIsLoggedIn(true);
-        loadDashboard();
+        loadDashboard(data.token);  // Pass token directly
       } else {
         setLoginError(data.message || 'Login failed');
       }
@@ -59,12 +70,13 @@ function Admin() {
     setAdminEmail('');
   };
 
-  const loadDashboard = async () => {
+  const loadDashboard = async (token) => {
+    const tokenToUse = token || authToken;
     try {
       // Load stats
       const statsResponse = await fetch(`${API_BASE}/api/admin/stats`, {
         headers: {
-          'Authorization': `Bearer ${authToken}`
+          'Authorization': `Bearer ${tokenToUse}`
         }
       });
 
@@ -78,19 +90,20 @@ function Admin() {
       }
 
       // Load professionals
-      loadProfessionals();
+      loadProfessionals(tokenToUse);
     } catch (error) {
       console.error('Error loading dashboard:', error);
     }
   };
 
-  const loadProfessionals = async () => {
+  const loadProfessionals = async (token) => {
+    const tokenToUse = token || authToken;
     setLoading(true);
 
     try {
       const response = await fetch(`${API_BASE}/api/admin/pros`, {
         headers: {
-          'Authorization': `Bearer ${authToken}`
+          'Authorization': `Bearer ${tokenToUse}`
         }
       });
 
@@ -100,7 +113,7 @@ function Admin() {
       }
 
       const pros = await response.json();
-      setProfessionals(pros);
+      setProfessionals(Array.isArray(pros) ? pros : []);
     } catch (error) {
       console.error('Error loading professionals:', error);
     } finally {
