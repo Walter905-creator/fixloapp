@@ -12,11 +12,28 @@ Disallow: /build/
 Disallow: /android/
 Disallow: /ios/
 
+# Disallow duplicate content directories
+Disallow: /public/
+Disallow: /client/public/
+Disallow: /website/
+
+# Disallow private pages
+Disallow: /dashboard.html
+Disallow: /login.html
+Disallow: /payment-success.html
+Disallow: /payment-cancel.html
+
+# Disallow test files
+Disallow: /test*.html
+Disallow: /admin*.html
+
 # Disallow parameters that might create duplicate content
 Disallow: /*?utm_*
 Disallow: /*?ref=*
 Disallow: /*?source=*
 Disallow: /*?campaign=*
+Disallow: /*?session_id=*
+Disallow: /*?professional_id=*
 
 # Allow important CSS, JS, and image files
 Allow: /assets/

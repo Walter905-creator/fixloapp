@@ -32,7 +32,28 @@
     }
   ],
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://fixloapp.onrender.com/api/$1" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/api/(.*)", "destination": "https://fixloapp.onrender.com/api/$1" }
+  ],
+  "redirects": [
+    {
+      "source": "/build/(.*)",
+      "destination": "/$1",
+      "permanent": true
+    },
+    {
+      "source": "/public/(.*)",
+      "destination": "/$1", 
+      "permanent": true
+    },
+    {
+      "source": "/client/public/(.*)",
+      "destination": "/$1",
+      "permanent": true
+    },
+    {
+      "source": "/website/(.*)",
+      "destination": "/$1",
+      "permanent": true
+    }
   ]
 }
