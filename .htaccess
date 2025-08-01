@@ -20,6 +20,16 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^(.+)/$ /$1 [R=301,L]
 
+# Redirect duplicate content directories to canonical versions
+RewriteRule ^build/(.*)$ /$1 [R=301,L]
+RewriteRule ^public/(.*)$ /$1 [R=301,L]
+RewriteRule ^client/public/(.*)$ /$1 [R=301,L]
+RewriteRule ^website/(.*)$ /$1 [R=301,L]
+
+# Redirect contact subdirectory to main contact page
+RewriteRule ^contact/$ /contact.html [R=301,L]
+RewriteRule ^contact/index\.html$ /contact.html [R=301,L]
+
 # Prevent access to sensitive files
 <FilesMatch "\.(env|log|sql|sqlite|bak|backup|old)$">
     Order allow,deny
@@ -34,6 +44,11 @@ RewriteRule ^(.+)/$ /$1 [R=301,L]
 <Location "/api">
     Header set X-Robots-Tag "noindex, nofollow"
 </Location>
+
+# Add noindex to test files and directories
+<FilesMatch "^(test|admin).*\.html$">
+    Header set X-Robots-Tag "noindex, nofollow"
+</FilesMatch>
 
 # Set proper MIME types
 <IfModule mod_mime.c>
