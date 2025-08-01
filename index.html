@@ -1760,11 +1760,42 @@
                         // Submit service request
                         console.log('Submitting service request:', formData);
                         
-                        // Simulate API call for now
-                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        // Map service types to proper case for backend
+                        const serviceMapping = {
+                            'plumbing': 'Plumbing',
+                            'electrical': 'Electrical', 
+                            'carpentry': 'Carpentry',
+                            'painting': 'Painting',
+                            'hvac': 'HVAC',
+                            'roofing': 'Roofing',
+                            'cleaning': 'House Cleaning',
+                            'junk_removal': 'Junk Removal'
+                        };
+                        
+                        const mappedService = serviceMapping[formData.serviceType] || formData.serviceType;
+                        
+                        // Call the real API
+                        const res = await fetch('/api/homeowner-lead', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                service: mappedService,
+                                name: formData.name,
+                                email: formData.email,
+                                phone: formData.phone,
+                                address: formData.address,
+                                description: formData.description
+                            })
+                        });
+                        
+                        if (!res.ok) {
+                            throw new Error(`Status ${res.status}`);
+                        }
+                        
+                        const result = await res.json();
                         
                         // Success message
-                        alert(`Great! We've received your ${formData.serviceType} request. You'll be contacted by qualified professionals within 24 hours. Check your email and phone for updates!`);
+                        alert(`✅ Thanks! Your ${formData.serviceType} request was received. Pros will contact you shortly.`);
                         
                         // Close modal and reset form
                         document.getElementById('serviceRequestModal').style.display = 'none';
@@ -1772,7 +1803,7 @@
                         
                     } catch (error) {
                         console.error('Service request error:', error);
-                        alert('Sorry, there was an error submitting your request. Please try again or contact support.');
+                        alert('Sorry, there was an error submitting your request. Please try again.');
                     } finally {
                         // Re-enable submit button
                         submitBtn.disabled = false;
