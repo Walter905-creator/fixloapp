@@ -3,12 +3,18 @@ import React, { useState } from 'react';
 export default function ServiceRequestModal({ service, onClose }) {
   const [submitted, setSubmitted] = useState(false);
   const [optIn, setOptIn] = useState(false);
-  const [form, setForm] = useState({ name: '', phone: '', description: '' });
+  const [form, setForm] = useState({ name: '', phone: '', address: '', description: '' });
+  const [gettingLocation, setGettingLocation] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!optIn) {
       alert("Please opt in to receive SMS updates.");
+      return;
+    }
+
+    if (!form.address.trim()) {
+      alert("Please provide your address or ZIP code so we can find nearby professionals.");
       return;
     }
 
@@ -22,6 +28,64 @@ export default function ServiceRequestModal({ service, onClose }) {
     } catch (err) {
       console.error("Error submitting form", err);
     }
+  };
+
+  const getCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by this browser.");
+      return;
+    }
+
+    setGettingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          
+          // Use reverse geocoding to get address
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+            {
+              headers: {
+                'User-Agent': 'Fixlo-App/1.0 (https://www.fixloapp.com)'
+              }
+            }
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            const address = data.address;
+            const formattedAddress = `${address.house_number || ''} ${address.road || ''}, ${address.city || address.town || ''}, ${address.state || ''} ${address.postcode || ''}`.trim().replace(/^,\s*/, '');
+            
+            setForm({ ...form, address: formattedAddress });
+          } else {
+            alert("Could not get your address automatically. Please enter it manually.");
+          }
+        } catch (error) {
+          console.error("Error getting address:", error);
+          alert("Could not get your address automatically. Please enter it manually.");
+        } finally {
+          setGettingLocation(false);
+        }
+      },
+      (error) => {
+        setGettingLocation(false);
+        let message = "Could not get your location. Please enter your address manually.";
+        
+        if (error.code === error.PERMISSION_DENIED) {
+          message = "Location access denied. Please enter your address manually.";
+        } else if (error.code === error.POSITION_UNAVAILABLE) {
+          message = "Location information unavailable. Please enter your address manually.";
+        }
+        
+        alert(message);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // 5 minutes
+      }
+    );
   };
 
   return (
@@ -51,6 +115,33 @@ export default function ServiceRequestModal({ service, onClose }) {
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
               className="w-full border border-gray-300 p-2 rounded"
             />
+            <div className="space-y-2">
+              <input
+                type="text"
+                placeholder="Your Address or ZIP Code"
+                required
+                value={form.address}
+                onChange={(e) => setForm({ ...form, address: e.target.value })}
+                className="w-full border border-gray-300 p-2 rounded"
+              />
+              <button
+                type="button"
+                onClick={getCurrentLocation}
+                disabled={gettingLocation}
+                className="w-full bg-gray-100 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              >
+                {gettingLocation ? (
+                  <>
+                    <span className="animate-spin mr-2">⏳</span>
+                    Getting your location...
+                  </>
+                ) : (
+                  <>
+                    📍 Use My Current Location
+                  </>
+                )}
+              </button>
+            </div>
             <textarea
               placeholder="What do you need?"
               required
