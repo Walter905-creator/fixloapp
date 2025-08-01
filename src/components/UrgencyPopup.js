@@ -5,9 +5,44 @@ export default function UrgencyPopup() {
   const [city, setCity] = useState('your area');
 
   useEffect(() => {
-    // You can integrate a geo API later, but for now, use a fallback
-    setCity('your area');
+    // Get user's location to personalize the message
+    const getUserLocation = async () => {
+      if (navigator.geolocation) {
+        try {
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: false,
+              timeout: 10000,
+              maximumAge: 300000 // Cache for 5 minutes
+            });
+          });
 
+          const { latitude, longitude } = position.coords;
+          
+          // Use reverse geocoding to get city name
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+            {
+              headers: {
+                'User-Agent': 'Fixlo-App/1.0 (https://www.fixloapp.com)'
+              }
+            }
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            const address = data.address;
+            const locationName = address.city || address.town || address.village || address.county || 'your area';
+            setCity(locationName);
+          }
+        } catch (error) {
+          console.log('Location detection failed, using fallback:', error);
+          // Keep default "your area" if location fails
+        }
+      }
+    };
+
+    getUserLocation();
     const timer = setTimeout(() => setShow(true), 5000); // show popup after 5 seconds
     return () => clearTimeout(timer);
   }, []);
