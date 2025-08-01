@@ -42,9 +42,8 @@ router.post('/create-checkout-session', async (req, res) => {
     const clientUrl = process.env.CLIENT_URL || 'https://www.fixloapp.com';
     
     // Get price ID from environment variables
-    const priceId = process.env.STRIPE_PRO_PRICE_ID || 
+    const priceId = process.env.STRIPE_MONTHLY_PRICE_ID || 
                    process.env.STRIPE_FIRST_MONTH_PRICE_ID || 
-                   process.env.STRIPE_MONTHLY_PRICE_ID || 
                    process.env.STRIPE_PRICE_ID;
     
     if (!priceId) {
