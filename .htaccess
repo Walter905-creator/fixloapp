@@ -7,13 +7,9 @@ RewriteEngine On
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-# Redirect www to non-www (choose one based on preference)
-RewriteCond %{HTTP_HOST} ^www\.fixloapp\.com$ [NC]
-RewriteRule ^(.*)$ https://fixloapp.com/$1 [R=301,L]
-
-# Or redirect non-www to www (alternative - choose one)
-# RewriteCond %{HTTP_HOST} ^fixloapp\.com$ [NC]
-# RewriteRule ^(.*)$ https://www.fixloapp.com/$1 [R=301,L]
+# Redirect non-www to www (standardize on www.fixloapp.com)
+RewriteCond %{HTTP_HOST} ^fixloapp\.com$ [NC]
+RewriteRule ^(.*)$ https://www.fixloapp.com/$1 [R=301,L]
 
 # Redirect old domain to new domain
 RewriteCond %{HTTP_HOST} ^(www\.)?fixlo\.com$ [NC]
