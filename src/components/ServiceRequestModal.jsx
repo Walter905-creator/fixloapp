@@ -1,10 +1,59 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 export default function ServiceRequestModal({ service, onClose }) {
   const [submitted, setSubmitted] = useState(false);
   const [optIn, setOptIn] = useState(false);
   const [form, setForm] = useState({ name: '', phone: '', address: '', description: '' });
   const [gettingLocation, setGettingLocation] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const modalRef = useRef(null);
+  const firstInputRef = useRef(null);
+
+  // Handle modal animation and focus management
+  useEffect(() => {
+    // Trigger entrance animation
+    const timer = setTimeout(() => setIsVisible(true), 10);
+    
+    // Focus first input when modal opens
+    if (firstInputRef.current) {
+      firstInputRef.current.focus();
+    }
+
+    // Handle escape key
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        handleClose();
+      }
+    };
+
+    // Add event listeners
+    document.addEventListener('keydown', handleEscape);
+    
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+      clearTimeout(timer);
+    };
+  }, []);
+
+  // Handle closing with animation
+  const handleClose = () => {
+    setIsVisible(false);
+    // Wait for animation to complete before actually closing
+    setTimeout(() => {
+      onClose();
+    }, 200);
+  };
+
+  // Handle backdrop click
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      handleClose();
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -89,9 +138,23 @@ export default function ServiceRequestModal({ service, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white p-6 rounded-lg max-w-md w-full shadow-xl">
-        <h2 className="text-xl font-bold mb-4">Request {service.name}</h2>
+    <div 
+      className={`fixed inset-0 z-50 bg-black transition-opacity duration-200 flex items-center justify-center px-4 ${
+        isVisible ? 'bg-opacity-50' : 'bg-opacity-0'
+      }`}
+      onClick={handleBackdropClick}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+    >
+      <div 
+        ref={modalRef}
+        className={`bg-white p-6 rounded-lg max-w-md w-full shadow-xl transform transition-all duration-200 ${
+          isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 id="modal-title" className="text-xl font-bold mb-4">Request {service.name}</h2>
 
         {submitted ? (
           <p className="text-green-600 text-center">
@@ -100,6 +163,7 @@ export default function ServiceRequestModal({ service, onClose }) {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <input
+              ref={firstInputRef}
               type="text"
               placeholder="Your Name"
               required
@@ -169,8 +233,8 @@ export default function ServiceRequestModal({ service, onClose }) {
         )}
 
         <button
-          onClick={onClose}
-          className="text-sm text-gray-600 mt-4 block mx-auto"
+          onClick={handleClose}
+          className="text-sm text-gray-600 mt-4 block mx-auto hover:text-gray-800 transition-colors"
         >
           Close
         </button>
