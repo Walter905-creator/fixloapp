@@ -1,8 +1,6 @@
 node_modules
-build
 
 # Prevent deployment of duplicate content directories
-public/index.html
 client/public/
 website/
 _client-disabled/
@@ -10,6 +8,9 @@ _server-backup/
 deployment-archive/
 android/
 ios/
+
+# Static files that conflict with React build
+index-static-backup.html
 
 # Test and admin files
 test*.html
