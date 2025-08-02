@@ -17,7 +17,7 @@ console.log(`🚀 Fixlo App loaded - Build: ${buildId}`);
 
 function App() {
   return (
-    <Router>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <>
         {/* Conversion & UI Enhancement Components */}
         <UrgencyPopup />
