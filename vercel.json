@@ -1,7 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "npm install && npm run build:deploy",
-  "outputDirectory": "build",
+  "buildCommand": "",
+  "outputDirectory": ".",
   "framework": null,
   "headers": [
     {
