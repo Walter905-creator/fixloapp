@@ -1,7 +1,14 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
+  "buildCommand": "npm ci && npm run build",
   "outputDirectory": "build",
+  "installCommand": "npm ci",
+  "framework": "create-react-app",
+  "nodeVersion": "18.x",
+  "env": {
+    "SKIP_PREFLIGHT_CHECK": "true",
+    "GENERATE_SOURCEMAP": "false"
+  },
   "rewrites": [
     { "source": "/admin", "destination": "https://fixloapp.onrender.com/admin" },
     { "source": "/api/(.*)", "destination": "https://fixloapp.onrender.com/api/$1" },
