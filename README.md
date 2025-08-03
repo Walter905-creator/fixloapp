@@ -139,7 +139,7 @@ A full-stack web application connecting homeowners with verified handyman profes
 ```
 MONGO_URI=mongodb://localhost:27017/handyman-connect
 JWT_SECRET=your_jwt_secret_here
-ADMIN_EMAIL=admin@handyman-connect.com
+ADMIN_EMAIL=pro4u.improvememnts@gmail.com
 ADMIN_PASSWORD=your_admin_password
 TWILIO_ACCOUNT_SID=your_twilio_account_sid
 TWILIO_AUTH_TOKEN=your_twilio_auth_token
@@ -175,5 +175,5 @@ REACT_APP_API_URL=http://localhost:10000
 This project is licensed under the MIT License - see the LICENSE file for details.
 # Force new deployment Sun Jun 29 03:25:23 UTC 2025
 Deploy trigger: Fri Aug  1 23:17:56 UTC 2025 - Force cache bust deployment
-<!-- trigger build -->
+
 <!-- trigger build -->
