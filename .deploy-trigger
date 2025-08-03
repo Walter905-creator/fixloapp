@@ -1,6 +1,6 @@
-# Deploy trigger - Sat Aug  3 14:20:00 UTC 2025
-# Cache busting deployment - Fix module type mismatch - 1722694800  
+# Deploy trigger - Sun Aug  3 15:05:00 UTC 2025
+# FIXED: Switched to static HTML deployment
 # FORCE_VERCEL_REBUILD=true
 # NODE_VERSION=18.x
 # CLEAR_BUILD_CACHE=true
-# FIX_ESM_COMPILATION=true
+# STATIC_HTML_DEPLOYMENT=true

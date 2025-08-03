@@ -16,6 +16,9 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    <meta name="build-timestamp" content="1733332800000">
+    <meta name="cache-bust" content="fixlo-static-v1.0.1">
+    <meta name="last-updated" content="2025-08-03">
     
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -275,7 +278,7 @@
     <section class="hero">
         <img src="/fixlo-logo.png" alt="Fixlo Logo" class="logo">
         <h1>Book Trusted Home Services Near You</h1>
-        <p>Your one-stop hub for finding trusted professionals and managing your home projects effortlessly.</p>
+        <p>Your one-stop hub for finding trusted professionals and managing your home projects effortlessly. ✨ <strong>Updated August 2025</strong></p>
         <div>
             <button class="btn" onclick="openModal('contactModal')">Get Service</button>
             <a href="/pro-signup.html" class="btn btn-secondary">Join as a Pro</a>
@@ -484,6 +487,36 @@
         
         // Add some loading animations
         document.addEventListener('DOMContentLoaded', function() {
+            // Show deployment info in console
+            console.log('🚀 Fixlo Website Loaded - Static HTML Version');
+            console.log('📅 Build Date: August 3, 2025');
+            console.log('🔄 Cache Bust: fixlo-static-v1.0.1');
+            
+            // Add visible indicator that the site is updated
+            const updateIndicator = document.createElement('div');
+            updateIndicator.innerHTML = '✅ Website Updated';
+            updateIndicator.style.cssText = `
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                background: #22c55e;
+                color: white;
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 600;
+                z-index: 9999;
+                opacity: 1;
+                transition: opacity 3s ease;
+            `;
+            document.body.appendChild(updateIndicator);
+            
+            // Fade out after 3 seconds
+            setTimeout(() => {
+                updateIndicator.style.opacity = '0';
+                setTimeout(() => updateIndicator.remove(), 3000);
+            }, 3000);
+            
             // Animate service buttons on scroll
             const observerOptions = {
                 threshold: 0.1,
