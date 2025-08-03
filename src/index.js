@@ -5,13 +5,14 @@ import App from "./App";
 
 // Force cache invalidation on app load
 const buildTimestamp = process.env.REACT_APP_BUILD_TIMESTAMP || Date.now();
-const buildId = process.env.REACT_APP_BUILD_ID || 'dev';
+const buildId = process.env.REACT_APP_BUILD_ID || 'dev-v1.0.1';
 
 // Log deployment info for debugging
 console.log(`🚀 Fixlo Deployment Info:`, {
   buildId,
   buildTimestamp,
-  deployTime: new Date(parseInt(buildTimestamp) * 1000).toISOString()
+  deployTime: new Date(parseInt(buildTimestamp) * 1000).toISOString(),
+  version: '1.0.1-force-refresh'
 });
 
 // Clear any stale caches when new build is detected
