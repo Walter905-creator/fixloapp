@@ -64,8 +64,7 @@ const Footer = () => {
             <Link to="/contact" style={{ color: '#ccc', textDecoration: 'none', fontSize: '0.9rem' }}>Contact Us</Link>
             <Link to="/terms-of-service" style={{ color: '#ccc', textDecoration: 'none', fontSize: '0.9rem' }}>Terms of Service</Link>
             <Link to="/privacy" style={{ color: '#ccc', textDecoration: 'none', fontSize: '0.9rem' }}>Privacy Policy</Link>
-            <a href="mailto:support@fixloapp.com" style={{ color: '#ccc', textDecoration: 'none', fontSize: '0.9rem' }}>Email Support</a>
-            <a href="tel:+15551234596" style={{ color: '#ccc', textDecoration: 'none', fontSize: '0.9rem' }}>Call Support</a>
+            <a href="mailto:pro4u.improvements@gmail.com" style={{ color: '#ccc', textDecoration: 'none', fontSize: '0.9rem' }}>Email Support</a>
           </div>
         </div>
       </div>
