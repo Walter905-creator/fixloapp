@@ -16,7 +16,8 @@ import Admin from './components/Admin';
 
 // Cache busting - show build info in console
 const buildId = process.env.REACT_APP_BUILD_ID || 'dev';
-console.log(`🚀 Fixlo App loaded - Build: ${buildId}`);
+const deploymentForceRefresh = 'v1.0.1-fix-' + Date.now();
+console.log(`🚀 Fixlo App loaded - Build: ${buildId} - Deploy: ${deploymentForceRefresh}`);
 
 function App() {
   return (
@@ -36,7 +37,7 @@ function App() {
                 <header className="header">
                   <img src="/assets/fixlo-logo.png" alt="Fixlo Logo" className="logo" />
                   <h1>Welcome to Fixlo</h1>
-                  <p>Your one-stop hub for trusted professionals and home projects</p>
+                  <p>Your one-stop hub for trusted professionals and home projects 🔧</p>
                 </header>
 
                 <section className="services">

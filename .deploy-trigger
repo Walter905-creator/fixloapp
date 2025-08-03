@@ -1,5 +1,6 @@
-# Deploy trigger - Sat Aug  3 14:00:00 UTC 2025
-# Cache busting deployment - Fix react-scripts build error - 1722693600
+# Deploy trigger - Sat Aug  3 14:20:00 UTC 2025
+# Cache busting deployment - Fix module type mismatch - 1722694800  
 # FORCE_VERCEL_REBUILD=true
 # NODE_VERSION=18.x
 # CLEAR_BUILD_CACHE=true
+# FIX_ESM_COMPILATION=true
