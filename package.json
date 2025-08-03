@@ -2,7 +2,8 @@
   "name": "fixlo-client",
   "version": "1.0.1",
   "private": true,
-  "dependencies": {
+   "type": "module"
+    "dependencies": {
     "@vercel/analytics": "^1.5.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
