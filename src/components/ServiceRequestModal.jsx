@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 export default function ServiceRequestModal({ service, onClose }) {
   const [submitted, setSubmitted] = useState(false);
   const [optIn, setOptIn] = useState(false);
-  const [form, setForm] = useState({ name: '', phone: '', address: '', description: '' });
+  const [form, setForm] = useState({ name: '', phone: '', email: '', address: '', description: '' });
   const [gettingLocation, setGettingLocation] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const modalRef = useRef(null);
@@ -68,14 +68,35 @@ export default function ServiceRequestModal({ service, onClose }) {
     }
 
     try {
-      const res = await fetch('https://fixloapp.onrender.com/api/homeowner-lead', {
+      // Use environment variable for API URL, with fallback to local development server
+      const API_BASE = process.env.REACT_APP_API_URL || 
+                      (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://fixloapp.onrender.com');
+      
+      console.log('Submitting service request to:', `${API_BASE}/api/service-request`);
+      
+      const res = await fetch(`${API_BASE}/api/service-request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, service: service.name })
+        body: JSON.stringify({ 
+          serviceType: service.name,
+          name: form.name,
+          phone: form.phone,
+          email: form.email || '',
+          address: form.address,
+          description: form.description,
+          urgency: 'medium'
+        })
       });
-      if (res.ok) setSubmitted(true);
+      
+      if (res.ok) {
+        setSubmitted(true);
+        console.log('Service request submitted successfully');
+      } else {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
     } catch (err) {
       console.error("Error submitting form", err);
+      alert("There was an error submitting your request. Please try again or contact support.");
     }
   };
 
@@ -177,6 +198,14 @@ export default function ServiceRequestModal({ service, onClose }) {
               required
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              className="w-full border border-gray-300 p-2 rounded"
+            />
+            <input
+              type="email"
+              placeholder="Your Email"
+              required
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
               className="w-full border border-gray-300 p-2 rounded"
             />
             <div className="space-y-2">
