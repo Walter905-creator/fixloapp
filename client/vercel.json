@@ -2,7 +2,11 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "build",
-  "framework": null,
+  "rewrites": [
+    { "source": "/admin", "destination": "https://fixloapp.onrender.com/admin" },
+    { "source": "/api/(.*)", "destination": "https://fixloapp.onrender.com/api/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
   "headers": [
     {
       "source": "/static/(.*)",
@@ -16,49 +20,11 @@
     {
       "source": "/(.*)",
       "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
-        },
-        {
-          "key": "Pragma",
-          "value": "no-cache"
-        },
-        {
-          "key": "Expires",
-          "value": "0"
-        },
-        {
-          "key": "X-Cache-Bust",
-          "value": "force-refresh"
-        }
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
+        { "key": "Pragma", "value": "no-cache" },
+        { "key": "Expires", "value": "0" },
+        { "key": "X-Cache-Bust", "value": "force-refresh" }
       ]
-    }
-  ],
-  "rewrites": [
-    { "source": "/admin", "destination": "https://fixloapp.onrender.com/admin" },
-    { "source": "/api/(.*)", "destination": "https://fixloapp.onrender.com/api/$1" }
-  ],
-  "redirects": [
-    {
-      "source": "/build/(.*)",
-      "destination": "/$1",
-      "permanent": true
-    },
-    {
-      "source": "/public/(.*)",
-      "destination": "/$1", 
-      "permanent": true
-    },
-    {
-      "source": "/client/public/(.*)",
-      "destination": "/$1",
-      "permanent": true
-    },
-    {
-      "source": "/website/(.*)",
-      "destination": "/$1",
-      "permanent": true
     }
   ]
 }
