@@ -7,6 +7,9 @@ import UrgencyPopup from './components/UrgencyPopup';
 import ExitIntentModal from './components/ExitIntentModal';
 import StickyCTA from './components/StickyCTA';
 import ServiceSelector from './components/ServiceSelector';
+import LiveJobFeed from './components/LiveJobFeed';
+import ReferralSystem from './components/ReferralSystem';
+import DynamicLandingPageRoute from './components/DynamicLandingPageRoute';
 
 import HomePage from './components/HomePage';
 import Admin from './components/Admin';
@@ -39,6 +42,14 @@ function App() {
                 <section className="services">
                   <h2>Select a Service</h2>
                   <ServiceSelector />
+                  
+                  {/* Live Job Feed for conversion */}
+                  <LiveJobFeed />
+                  
+                  {/* Referral System */}
+                  <div className="mt-8 text-center">
+                    <ReferralSystem />
+                  </div>
                 </section>
 
                 <footer className="footer">
@@ -51,6 +62,10 @@ function App() {
               </div>
             }
           />
+
+          {/* Dynamic landing pages for city + service combinations */}
+          <Route path="/services/:service" element={<DynamicLandingPageRoute />} />
+          <Route path="/services/:service/:city" element={<DynamicLandingPageRoute />} />
 
           {/* Admin dashboard route */}
           <Route path="/admin" element={<Admin />} />
