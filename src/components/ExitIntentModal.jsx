@@ -20,21 +20,21 @@ export default function ExitIntentModal() {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
       <div className="bg-white rounded-lg p-6 shadow-lg text-center max-w-md">
-        <h2 className="text-xl font-bold mb-2">Leaving already?</h2>
+        <h2 className="text-xl font-bold mb-2">⚠️ Leaving already?</h2>
         <p className="mb-4">
-          Homeowners in your area are looking for pros like you. Don't miss out.
+          Homeowners are waiting. Sign up now and start earning with Fixlo.
         </p>
         <a
           href="/signup"
           className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
-          Sign Up Now
+          🚀 Sign Up & Start Earning
         </a>
         <button
           onClick={() => setShow(false)}
           className="mt-4 text-sm text-gray-500"
         >
-          Close
+          Maybe later
         </button>
       </div>
     </div>
