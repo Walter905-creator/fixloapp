@@ -1,9 +1,8 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
-  "outputDirectory": "build",
+  "buildCommand": "cd client && npm install && npm run build",
+  "outputDirectory": "client/build",
   "framework": null,
-  "rootDirectory": "client",
   "headers": [
     {
       "source": "/static/(.*)",
