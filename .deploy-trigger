@@ -1,6 +1,7 @@
-# Deploy trigger - Sun Aug  3 15:05:00 UTC 2025
-# FIXED: Switched to static HTML deployment
+# Deploy trigger - Sat Aug  3 22:54:00 UTC 2025
+# FIXED: React build deployment with proper cache busting
 # FORCE_VERCEL_REBUILD=true
 # NODE_VERSION=18.x
 # CLEAR_BUILD_CACHE=true
-# STATIC_HTML_DEPLOYMENT=true
+# REACT_BUILD_DEPLOYMENT=true
+# BUILD_TIMESTAMP=1754261584
