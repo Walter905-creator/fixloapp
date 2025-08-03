@@ -14,7 +14,19 @@ function HomePage() {
       <div className="app">
         <header className="header">
           <img src="/assets/fixlo-logo.png" alt="Fixlo Logo" className="logo" />
-          <h1>Welcome to Fixlo</h1>
+          <h1>Welcome to Fixlo 
+            <span style={{
+              marginLeft: '10px',
+              fontSize: '12px',
+              background: '#10b981',
+              color: 'white',
+              padding: '2px 8px',
+              borderRadius: '12px',
+              fontWeight: 'normal'
+            }}>
+              ✅ UPDATED
+            </span>
+          </h1>
           <p>Your one-stop hub for trusted professionals and home projects</p>
           <div className="build-info" style={{
             fontSize: '11px', 
@@ -25,7 +37,7 @@ function HomePage() {
             borderRadius: '4px',
             display: 'inline-block'
           }}>
-            ✅ Latest Build: {process.env.REACT_APP_BUILD_ID || 'dev'} | {new Date().toLocaleString()}
+            🚀 Build: {process.env.REACT_APP_BUILD_ID || 'dev'} | {new Date().toLocaleString()}
           </div>
         </header>
 
