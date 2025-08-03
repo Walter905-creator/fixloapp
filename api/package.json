@@ -2,6 +2,7 @@
   "name": "fixlo-backend-vercel",
   "version": "1.0.0",
   "description": "Fixlo Backend on Vercel",
+  "type": "module",
   "main": "api/index.js",
   "scripts": {
     "start": "node api/index.js"
