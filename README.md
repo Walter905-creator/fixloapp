@@ -175,5 +175,4 @@ REACT_APP_API_URL=http://localhost:10000
 This project is licensed under the MIT License - see the LICENSE file for details.
 # Force new deployment Sun Jun 29 03:25:23 UTC 2025
 Deploy trigger: Fri Aug  1 23:17:56 UTC 2025 - Force cache bust deployment
-
 <!-- trigger build -->
