@@ -10,19 +10,6 @@ const Support = () => {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginBottom: '4rem' }}>
         
         <div style={{ 
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
-          color: 'white', 
-          padding: '2rem', 
-          borderRadius: '15px',
-          textAlign: 'center'
-        }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📞</div>
-          <h3>Phone Support</h3>
-          <p><strong>(555) 123-FIXLO</strong></p>
-          <p>Mon-Fri: 8AM-8PM EST<br/>Sat-Sun: 10AM-6PM EST</p>
-        </div>
-
-        <div style={{ 
           background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%)', 
           color: 'white', 
           padding: '2rem', 
@@ -31,7 +18,7 @@ const Support = () => {
         }}>
           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📧</div>
           <h3>Email Support</h3>
-          <p><strong>support@fixloapp.com</strong></p>
+          <p><strong>pro4u.improvements@gmail.com</strong></p>
           <p>Response within 2-4 hours<br/>24/7 for emergencies</p>
         </div>
 

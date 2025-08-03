@@ -6,7 +6,7 @@ import './ContactUs.css';
 Twilio Sample Messages for verification purposes:
 1. "You are now subscribed to Fixlo alerts. Reply STOP to unsubscribe."
 2. "You have successfully been unsubscribed. Reply START to resubscribe."
-3. "Reply STOP to unsubscribe. Msg & Data rates may apply. For help, contact support@fixloapp.com"
+3. "Reply STOP to unsubscribe. Msg & Data rates may apply. For help, contact pro4u.improvements@gmail.com"
 */
 
 const ContactUs = () => {
@@ -66,17 +66,7 @@ const ContactUs = () => {
           <h3>Get Support</h3>
           <div className="contact-method">
             <h4>📧 Email</h4>
-            <p>support@fixloapp.com</p>
-          </div>
-          <div className="contact-method">
-            <h4>📱 Phone</h4>
-            <p>(555) 123-FIXLO</p>
-          </div>
-          <div className="contact-method">
-            <h4>⏰ Hours</h4>
-            <p>Monday - Friday: 8am - 8pm EST<br />
-               Saturday: 9am - 5pm EST<br />
-               Sunday: Closed</p>
+            <p>pro4u.improvements@gmail.com</p>
           </div>
           <div className="contact-method">
             <h4>🚨 Emergency</h4>
