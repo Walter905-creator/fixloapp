@@ -1,16 +1,22 @@
 {
-  "name": "fixlo-frontend",
-  "version": "3.0.0",
-  "private": true,
+  "name": "fixlo",
+  "version": "1.0.0",
+  "description": "A full-stack web application connecting homeowners with verified handyman professionals",
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "start": "cd server && NODE_ENV=production npm start",
+    "build": "npm install && cd server && npm install && REACT_APP_API_URL=https://fixloapp.onrender.com npm run build:client && cd .. && rm -rf public build && mkdir -p public build && cp -r server/client-build/* public/ && cp -r server/client-build/* build/",
+    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+    "server:dev": "cd server && npm run dev",
+    "client:dev": "react-scripts start",
+    "install:all": "npm install && cd server && npm install",
+    "client:build": "react-scripts build",
+    "client:test": "react-scripts test",
+    "client:eject": "react-scripts eject"
   },
   "dependencies": {
     "@vercel/analytics": "^1.5.0",
     "axios": "^1.10.0",
+    "concurrently": "^8.2.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.30.1",
@@ -34,5 +40,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+  "keywords": ["fixlo", "handyman", "connect", "react", "nodejs", "mongodb"],
+  "author": "",
+  "license": "MIT"
 }
