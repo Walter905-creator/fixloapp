@@ -1,12 +1,34 @@
 {
-  "name": "fixlo-frontend",
+  "name": "fixlo",
   "version": "3.0.0",
+  "description": "A full-stack web application connecting homeowners with verified handyman professionals",
   "private": true,
+  "workspaces": [
+    "server",
+    "fixlo-app"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
+    "start": "npm run start:frontend",
+    "start:frontend": "react-scripts start",
+    "start:server": "cd server && npm start",
+    "start:mobile": "cd fixlo-app && npm start",
+    "build": "npm run build:frontend",
+    "build:frontend": "react-scripts build",
+    "build:server": "cd server && npm install",
+    "build:mobile": "cd fixlo-app && npm install",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "test:server": "cd server && npm test",
+    "eject": "react-scripts eject",
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:server\"",
+    "dev:frontend": "react-scripts start",
+    "dev:server": "cd server && npm run dev",
+    "install:all": "cd server && npm install && cd ../fixlo-app && npm install",
+    "clean": "rm -rf node_modules server/node_modules fixlo-app/node_modules",
+    "clean:build": "rm -rf build server/dist"
   },
   "dependencies": {
     "@vercel/analytics": "^1.5.0",
@@ -20,6 +42,7 @@
   },
   "devDependencies": {
     "autoprefixer": "^10.4.21",
+    "concurrently": "^8.2.2",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17"
   },
@@ -34,5 +57,21 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+  "keywords": [
+    "fixlo",
+    "handyman",
+    "react",
+    "nodejs",
+    "mongodb",
+    "full-stack",
+    "monorepo"
+  ],
+  "author": "Fixlo Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Walter905-creator/fixloapp.git"
+  },
+  "homepage": "https://fixloapp.com"
 }
