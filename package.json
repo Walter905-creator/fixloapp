@@ -10,6 +10,10 @@
   },
   "dependencies": {
     "@vercel/analytics": "^1.5.0",
+       copilot/fix-24f03c80-144f-43f5-b5e1-27f15bd39550
+
+    "ajv": "^8.17.1",
+      "main
     "axios": "^1.10.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
