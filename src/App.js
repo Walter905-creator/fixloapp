@@ -11,6 +11,9 @@ import ServiceSelector from './components/ServiceSelector';
 import LiveJobFeed from './components/LiveJobFeed';
 import ReferralSystem from './components/ReferralSystem';
 import DynamicLandingPageRoute from './components/DynamicLandingPageRoute';
+import Features from './components/Features';
+import HowItWorks from './components/HowItWorks';
+import Footer from './components/Footer';
 
 import HomePage from './components/HomePage';
 import Admin from './components/Admin';
@@ -47,6 +50,10 @@ function App() {
                   <h2>Select a Service</h2>
                   <ServiceSelector />
                 </section>
+
+                <Features />
+                <HowItWorks />
+                <Footer />
               </div>
             }
           />
