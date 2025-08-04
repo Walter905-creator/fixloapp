@@ -1,3 +1,4 @@
+import { Analytics } from '@vercel/analytics/react';
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
@@ -21,15 +22,17 @@ console.log(`🚀 Fixlo App loaded - Build: ${buildId} - Deploy: ${deploymentFor
 
 function App() {
   return (
-    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <Router>
       <>
         {/* Conversion & UI Enhancement Components */}
         <UrgencyPopup />
         <ExitIntentModal />
         <StickyCTA />
+        <ReferralSystem />
+        <LiveJobFeed />
 
         <Routes>
-          {/* Homepage with full layout */}
+          {/* Homepage */}
           <Route
             path="/"
             element={
@@ -43,37 +46,20 @@ function App() {
                 <section className="services">
                   <h2>Select a Service</h2>
                   <ServiceSelector />
-                  
-                  {/* Live Job Feed for conversion */}
-                  <LiveJobFeed />
-                  
-                  {/* Referral System */}
-                  <div className="mt-8 text-center">
-                    <ReferralSystem />
-                  </div>
                 </section>
-
-                <footer className="footer">
-                  <p>&copy; {new Date().getFullYear()} Fixlo. All rights reserved.</p>
-                  {/* Debug info for cache busting */}
-                  {process.env.NODE_ENV === 'development' && (
-                    <p style={{fontSize: '0.8em', opacity: 0.7}}>Build: {buildId}</p>
-                  )}
-                </footer>
               </div>
             }
           />
 
-          {/* Dynamic landing pages for city + service combinations */}
-          <Route path="/services/:service" element={<DynamicLandingPageRoute />} />
-          <Route path="/services/:service/:city" element={<DynamicLandingPageRoute />} />
+          {/* Admin Panel */}
+          <Route path="/admin/*" element={<Admin />} />
 
-          {/* Admin dashboard route */}
-          <Route path="/admin" element={<Admin />} />
+          {/* Dynamic Landing Pages for SEO */}
+          <Route path="/services/:serviceName-in-:cityName" element={<DynamicLandingPageRoute />} />
         </Routes>
 
-        {/* Google Ads + GA4 analytics, etc */}
         <AnalyticsWrapper />
+        <Analytics />
       </>
     </Router>
   );
