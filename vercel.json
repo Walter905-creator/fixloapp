@@ -1,10 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "npm run build:deploy",
+  "buildCommand": "npm run build",
   "outputDirectory": "build",
-  "installCommand": "npm install",
-  "framework": null,
-  "nodeVersion": "18.x",
   "rewrites": [
     { "source": "/admin", "destination": "https://fixloapp.onrender.com/admin" },
     { "source": "/api/(.*)", "destination": "https://fixloapp.onrender.com/api/$1" },
@@ -12,12 +9,21 @@
   ],
   "headers": [
     {
+      "source": "/static/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
       "source": "/(.*)",
       "headers": [
         { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
         { "key": "Pragma", "value": "no-cache" },
         { "key": "Expires", "value": "0" },
-        { "key": "X-Cache-Bust", "value": "force-refresh-react-build" }
+        { "key": "X-Cache-Bust", "value": "force-refresh" }
       ]
     }
   ]
