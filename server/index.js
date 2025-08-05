@@ -263,10 +263,13 @@ try {
 // ✅ Routes with specific rate limiting
 app.use('/api/admin', adminRateLimit, require('./routes/admin'));
 app.use('/api/auth', authRateLimit, require('./routes/auth'));
+app.use('/api/pros', authRateLimit, require('./routes/proRoutes')); // Pro authentication and management
 app.use("/api/homeowner-lead", require("./routes/homeownerLead")); // Service request handler
 app.use("/api/notify", require("./routes/notify"));
 app.use("/api/stripe", require("./routes/stripe")); // Stripe subscription
 app.use("/api/subscribe", require("./routes/subscribe")); // Subscription form handler
+app.use("/api/upload", require("./routes/upload")); // Cloudinary image upload
+app.use("/api/reviews", require("./routes/reviews")); // Professional reviews
 app.use("/api", require("./routes/ipinfo")); // IP information proxy
 app.use('/api', require('./routes/upload')); // Image upload route
 app.use('/api/reviews', require('./routes/reviews')); // Professional reviews route

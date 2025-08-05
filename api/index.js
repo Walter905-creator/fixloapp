@@ -1,6 +1,15 @@
 // Vercel Serverless Function for Fixlo Backend
-const express = require("express");
-const cors = require("cors");
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+
+// Import route modules
+import proAuthRoutes from './routes/proAuth.js';
+import uploadPhotosRoutes from './routes/uploadPhotos.js';
+import reviewsRoutes from './routes/reviews.js';
+
+// Load environment variables
+dotenv.config();
 
 const app = express();
 
@@ -23,6 +32,11 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// Use route modules
+app.use('/api/pro-auth', proAuthRoutes);
+app.use('/api/upload', uploadPhotosRoutes);
+app.use('/api/reviews', reviewsRoutes);
 
 // Professional Signup Endpoint
 app.post("/api/pro-signup", (req, res) => {
@@ -88,4 +102,4 @@ app.get("/", (req, res) => {
   });
 });
 
-module.exports = app;
+export default app;
