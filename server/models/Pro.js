@@ -136,6 +136,10 @@ const proSchema = new mongoose.Schema({
     type: String, // Cloudinary URL
     default: null
   },
+  profilePhotoUrl: {
+    type: String, // Alias for profileImage for consistency
+    default: null
+  },
   gallery: [{
     type: String // Array of Cloudinary URLs for work photos
   }],
@@ -166,6 +170,11 @@ proSchema.methods.updateRating = function(newRating) {
   this.rating = ((this.rating * this.completedJobs) + newRating) / (this.completedJobs + 1);
   this.completedJobs += 1;
 };
+
+// Virtual for backward compatibility
+proSchema.virtual('profileUrl').get(function() {
+  return this.profilePhotoUrl || this.profileImage;
+});
 
 // Static methods
 proSchema.statics.findNearbyPros = function(trade, coordinates, maxDistance = 30) {

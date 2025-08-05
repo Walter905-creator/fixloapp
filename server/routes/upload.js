@@ -60,9 +60,9 @@ router.post('/', upload.single('image'), async (req, res) => {
       cloudinary.uploader.upload_stream(
         {
           resource_type: 'image',
-          folder: 'fixlo-pro-images', // Organize uploads in a folder
+          folder: 'fixlo/uploads', // Use the folder specified in problem statement
           transformation: [
-            { width: 1200, height: 800, crop: 'limit' }, // Limit max dimensions
+            { width: 800, height: 800, crop: 'limit' }, // Limit max dimensions for profiles
             { quality: 'auto' }, // Auto optimize quality
             { fetch_format: 'auto' } // Auto choose best format
           ]
@@ -82,6 +82,7 @@ router.post('/', upload.single('image'), async (req, res) => {
     // Return success response with image URL
     res.json({
       success: true,
+      url: result.secure_url, // Return url field as specified in problem statement
       data: {
         url: result.secure_url,
         publicId: result.public_id,
@@ -96,7 +97,7 @@ router.post('/', upload.single('image'), async (req, res) => {
     console.error('❌ Upload endpoint error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to upload image'
+      error: 'Upload failed'
     });
   }
 });
