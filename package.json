@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "install-client": "cd client && npm install",
-    "build-client": "cd client && npm run build",
+    "build-client": "cd client && REACT_APP_API_URL=https://fixloapp.onrender.com npm run build",
     "start-client": "cd client && npm start",
-    "build": "npm run build-client"
+    "build": "npm run install-client && npm run build-client"
   }
 }
