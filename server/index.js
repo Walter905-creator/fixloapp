@@ -273,6 +273,8 @@ app.use("/api/reviews", require("./routes/reviews")); // Professional reviews
 app.use("/api", require("./routes/ipinfo")); // IP information proxy
 app.use('/api', require('./routes/upload')); // Image upload route
 app.use('/api/reviews', require('./routes/reviews')); // Professional reviews route
+app.use("/api/ai", require("./routes/ai")); // AI assistant route
+app.use("/api/contact", require("./routes/contact")); // Contact form route
 
 // ✅ Simple Subscribe Endpoint for PricingPage.jsx
 app.post("/api/subscribe", async (req, res) => {
@@ -1155,11 +1157,60 @@ app.get("/admin-test", (req, res) => {
 });
 
 // ✅ Socket.io connection handling
+const activeUsers = new Map();
+
 io.on('connection', (socket) => {
   console.log('🔌 User connected:', socket.id);
   
+  // Handle user joining a chat room
+  socket.on('join-room', (userData) => {
+    const { userId, userName, chatType } = userData;
+    console.log(`👤 User ${userName} (${userId}) joined ${chatType} chat`);
+    
+    // Store user info
+    activeUsers.set(socket.id, { userId, userName, chatType });
+    
+    // Join the room
+    socket.join(chatType);
+    
+    // Notify others in the room
+    socket.to(chatType).emit('user-joined', { userId, userName });
+    
+    // Send current online users to the new user
+    const onlineUsers = Array.from(activeUsers.values())
+      .filter(user => user.chatType === chatType);
+    socket.emit('online-users', onlineUsers);
+  });
+  
+  // Handle sending messages
+  socket.on('send-message', (messageData) => {
+    const { userId, userName, content, chatType, timestamp } = messageData;
+    console.log(`💬 Message from ${userName}: ${content.substring(0, 50)}...`);
+    
+    // Broadcast message to all users in the room
+    io.to(chatType).emit('message', {
+      userId,
+      userName,
+      content,
+      timestamp,
+      type: 'user'
+    });
+  });
+  
+  // Handle disconnection
   socket.on('disconnect', () => {
     console.log('❌ User disconnected:', socket.id);
+    
+    const userData = activeUsers.get(socket.id);
+    if (userData) {
+      const { userId, userName, chatType } = userData;
+      
+      // Notify others in the room
+      socket.to(chatType).emit('user-left', { userId, userName });
+      
+      // Remove from active users
+      activeUsers.delete(socket.id);
+    }
   });
 });
 
