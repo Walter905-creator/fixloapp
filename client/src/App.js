@@ -19,8 +19,9 @@ import ProDashboard from './components/ProDashboard';
 
 // Cache busting - show build info in console
 const buildId = process.env.REACT_APP_BUILD_ID || 'dev';
+const buildTimestamp = process.env.REACT_APP_BUILD_TIMESTAMP || 'dev';
 const deploymentForceRefresh = 'v1.0.1-fix-' + Date.now();
-console.log(`🚀 Fixlo App loaded - Build: ${buildId} - Deploy: ${deploymentForceRefresh}`);
+console.log(`🚀 Fixlo App loaded - Build: ${buildId} - Timestamp: ${buildTimestamp} - Deploy: ${deploymentForceRefresh}`);
 
 function App() {
   return (
@@ -61,7 +62,10 @@ function App() {
                     <p>&copy; {new Date().getFullYear()} Fixlo. All rights reserved.</p>
                     {/* Debug info for cache busting */}
                     {process.env.NODE_ENV === 'development' && (
-                      <p style={{fontSize: '0.8em', opacity: 0.7}}>Build: {buildId}</p>
+                      <div style={{fontSize: '0.8em', opacity: 0.7}}>
+                        <p>Build: {buildId}</p>
+                        <p>Timestamp: {buildTimestamp}</p>
+                      </div>
                     )}
                   </footer>
                 </div>
