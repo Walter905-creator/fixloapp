@@ -267,6 +267,8 @@ app.use("/api/homeowner-lead", require("./routes/homeownerLead")); // Service re
 app.use("/api/notify", require("./routes/notify"));
 app.use("/api/stripe", require("./routes/stripe")); // Stripe subscription
 app.use("/api/subscribe", require("./routes/subscribe")); // Subscription form handler
+app.use("/api/upload", require("./routes/upload")); // Cloudinary image upload
+app.use("/api/reviews", require("./routes/reviews")); // Professional reviews
 app.use("/api", require("./routes/ipinfo")); // IP information proxy
 
 // ✅ Simple Subscribe Endpoint for PricingPage.jsx
