@@ -13,6 +13,7 @@ import DynamicLandingPageRoute from './components/DynamicLandingPageRoute';
 
 import HomePage from './components/HomePage';
 import Admin from './components/Admin';
+import ProDashboard from './components/ProDashboard';
 
 // Cache busting - show build info in console
 const buildId = process.env.REACT_APP_BUILD_ID || 'dev';
@@ -70,6 +71,9 @@ function App() {
 
           {/* Admin dashboard route */}
           <Route path="/admin" element={<Admin />} />
+
+          {/* Professional dashboard route */}
+          <Route path="/pro-dashboard" element={<ProDashboard />} />
         </Routes>
 
         {/* Google Ads + GA4 analytics, etc */}

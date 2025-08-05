@@ -1,0 +1,252 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import LoginModal from './LoginModal';
+import UploadWork from './UploadWork';
+import ProReviews from './ProReviews';
+
+const ProDashboard = () => {
+  const [professional, setProfessional] = useState(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('proToken');
+    const proData = localStorage.getItem('proData');
+    
+    if (token && proData) {
+      try {
+        setProfessional(JSON.parse(proData));
+      } catch (error) {
+        // If data is corrupted, remove it
+        localStorage.removeItem('proToken');
+        localStorage.removeItem('proData');
+      }
+    }
+    setLoading(false);
+  }, []);
+
+  const handleLogin = (proData) => {
+    setProfessional(proData);
+    setShowLoginModal(false);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('proToken');
+    localStorage.removeItem('proData');
+    setProfessional(null);
+    navigate('/');
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-xl">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!professional) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8 text-center">
+          <img 
+            src="/assets/fixlo-logo.png" 
+            alt="Fixlo Logo" 
+            className="mx-auto mb-6 h-16 w-auto"
+          />
+          <h1 className="text-2xl font-bold text-gray-800 mb-4">
+            Professional Dashboard
+          </h1>
+          <p className="text-gray-600 mb-6">
+            Sign in to access your professional dashboard and manage your work portfolio.
+          </p>
+          <button
+            onClick={() => setShowLoginModal(true)}
+            className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition-colors"
+          >
+            Sign In / Sign Up
+          </button>
+          <button
+            onClick={() => navigate('/')}
+            className="w-full mt-3 text-gray-600 hover:text-gray-800 transition-colors"
+          >
+            Back to Home
+          </button>
+        </div>
+
+        <LoginModal
+          isOpen={showLoginModal}
+          onClose={() => setShowLoginModal(false)}
+          onLogin={handleLogin}
+        />
+      </div>
+    );
+  }
+
+  const tabButtons = [
+    { id: 'overview', label: 'Overview', icon: '📊' },
+    { id: 'upload', label: 'Upload Work', icon: '📸' },
+    { id: 'reviews', label: 'Reviews', icon: '⭐' },
+    { id: 'profile', label: 'Profile', icon: '👤' }
+  ];
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center">
+              <img 
+                src="/assets/fixlo-logo.png" 
+                alt="Fixlo Logo" 
+                className="h-8 w-auto mr-4"
+              />
+              <h1 className="text-xl font-semibold text-gray-800">
+                Professional Dashboard
+              </h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-600">
+                Welcome, {professional.name}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="text-sm text-red-600 hover:text-red-800 transition-colors"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Tab Navigation */}
+        <div className="mb-8">
+          <nav className="flex space-x-8">
+            {tabButtons.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  activeTab === tab.id
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <span className="mr-2">{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {/* Tab Content */}
+        <div className="bg-white rounded-lg shadow-sm">
+          {activeTab === 'overview' && (
+            <div className="p-6">
+              <h2 className="text-2xl font-bold text-gray-800 mb-6">Dashboard Overview</h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h3 className="text-lg font-semibold text-blue-800 mb-2">Rating</h3>
+                  <div className="text-3xl font-bold text-blue-600">
+                    {professional.rating || 0}/5
+                  </div>
+                  <p className="text-sm text-blue-600">
+                    Based on {professional.reviewCount || 0} reviews
+                  </p>
+                </div>
+                
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <h3 className="text-lg font-semibold text-green-800 mb-2">Services</h3>
+                  <div className="text-3xl font-bold text-green-600">
+                    {professional.services?.length || 0}
+                  </div>
+                  <p className="text-sm text-green-600">Active services</p>
+                </div>
+                
+                <div className="bg-purple-50 p-4 rounded-lg">
+                  <h3 className="text-lg font-semibold text-purple-800 mb-2">Location</h3>
+                  <div className="text-lg font-bold text-purple-600">
+                    {professional.location || 'Not set'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
+                <div className="flex flex-wrap gap-4">
+                  <button
+                    onClick={() => setActiveTab('upload')}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                  >
+                    Upload New Work
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('reviews')}
+                    className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors"
+                  >
+                    View Reviews
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'upload' && <UploadWork professional={professional} />}
+          
+          {activeTab === 'reviews' && <ProReviews professional={professional} />}
+          
+          {activeTab === 'profile' && (
+            <div className="p-6">
+              <h2 className="text-2xl font-bold text-gray-800 mb-6">Profile Information</h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <div className="text-lg text-gray-900">{professional.name}</div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <div className="text-lg text-gray-900">{professional.email}</div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  <div className="text-lg text-gray-900">{professional.phone}</div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Services</label>
+                  <div className="flex flex-wrap gap-2">
+                    {professional.services?.map((service, index) => (
+                      <span
+                        key={index}
+                        className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
+                      >
+                        {service}
+                      </span>
+                    )) || <span className="text-gray-500">No services listed</span>}
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                  <div className="text-lg text-gray-900">{professional.location || 'Not set'}</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ProDashboard;
