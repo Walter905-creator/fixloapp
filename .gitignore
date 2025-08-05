@@ -1,7 +1,8 @@
 node_modules
+client/node_modules/
+client/build/
 
 # Prevent deployment of duplicate content directories
-client/public/
 website/
 _client-disabled/
 _server-backup/
