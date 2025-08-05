@@ -1,4 +1,23 @@
 const express = require('express');
+ copilot/fix-c712f8a9-ce66-41bc-a37c-14ffb352365d
+const multer = require('multer');
+const cloudinary = require('../utils/cloudinary');
+const router = express.Router();
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+
+router.post('/upload', upload.single('image'), async (req, res) => {
+  try {
+    const fileStr = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    const uploadedResponse = await cloudinary.uploader.upload(fileStr, {
+      folder: 'fixlo-pros',
+    });
+    res.json({ url: uploadedResponse.secure_url });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Upload failed' });
+
 const router = express.Router();
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
@@ -130,6 +149,7 @@ router.delete('/:publicId', async (req, res) => {
       success: false,
       error: 'Failed to delete image'
     });
+ main
   }
 });
 

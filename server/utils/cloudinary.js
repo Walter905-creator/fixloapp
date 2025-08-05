@@ -1,3 +1,14 @@
+ copilot/fix-c712f8a9-ce66-41bc-a37c-14ffb352365d
+const { v2: cloudinary } = require('cloudinary');
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+module.exports = cloudinary;
+
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
@@ -35,3 +46,4 @@ const upload = multer({
 });
 
 module.exports = { cloudinary, upload };
+ main
