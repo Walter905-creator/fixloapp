@@ -1,5 +1,19 @@
 const express = require('express');
 const router = express.Router();
+ copilot/fix-c712f8a9-ce66-41bc-a37c-14ffb352365d
+
+let reviews = [];
+
+router.post('/', (req, res) => {
+  const { proId, reviewerName, rating, comment } = req.body;
+  reviews.push({ proId, reviewerName, rating, comment, date: new Date() });
+  res.json({ success: true });
+});
+
+router.get('/:proId', (req, res) => {
+  const proReviews = reviews.filter(r => r.proId === req.params.proId);
+  res.json(proReviews);
+
 const Review = require('../models/Review');
 const Pro = require('../models/Pro');
 const mongoose = require('mongoose');
@@ -227,6 +241,7 @@ router.get('/:proId/stats', async (req, res) => {
       error: 'Failed to fetch review statistics'
     });
   }
+ main
 });
 
 module.exports = router;
