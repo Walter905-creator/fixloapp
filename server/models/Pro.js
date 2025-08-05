@@ -129,7 +129,20 @@ const proSchema = new mongoose.Schema({
     email: { type: Boolean, default: true },
     sms: { type: Boolean, default: true },
     push: { type: Boolean, default: true }
-  }
+  },
+
+  // Professional portfolio
+  profileImage: {
+    type: String, // Cloudinary URL
+    default: null
+  },
+  gallery: [{
+    type: String // Array of Cloudinary URLs for work photos
+  }],
+  reviews: [{ 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Review' 
+  }]
 }, {
   timestamps: true
 });
