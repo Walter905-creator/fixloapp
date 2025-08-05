@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import LoginModal from './LoginModal';
 import UploadWork from './UploadWork';
 import ProReviews from './ProReviews';
+import ProUpload from './ProUpload';
 
 const ProDashboard = () => {
   const [professional, setProfessional] = useState(null);
@@ -206,6 +207,26 @@ const ProDashboard = () => {
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-800 mb-6">Profile Information</h2>
               
+              {/* Profile Photo Section */}
+              <div className="mb-8 flex items-start gap-6">
+                <div className="flex-shrink-0">
+                  {professional.profilePhotoUrl || professional.profileImage ? (
+                    <img 
+                      src={professional.profilePhotoUrl || professional.profileImage} 
+                      alt="Profile" 
+                      className="rounded-full w-32 h-32 object-cover border-2 border-gray-200" 
+                    />
+                  ) : (
+                    <div className="rounded-full w-32 h-32 bg-gray-200 flex items-center justify-center">
+                      <span className="text-gray-500 text-2xl">👤</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <ProUpload />
+                </div>
+              </div>
+              
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
@@ -220,6 +241,11 @@ const ProDashboard = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
                   <div className="text-lg text-gray-900">{professional.phone}</div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Trade</label>
+                  <div className="text-lg text-gray-900">{professional.trade || 'Not specified'}</div>
                 </div>
                 
                 <div>
