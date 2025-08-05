@@ -26,8 +26,9 @@ import Footer from './components/Footer';
 
 // Cache busting - show build info in console
 const buildId = process.env.REACT_APP_BUILD_ID || 'dev';
+const buildTimestamp = process.env.REACT_APP_BUILD_TIMESTAMP || 'dev';
 const deploymentForceRefresh = 'v1.0.1-fix-' + Date.now();
-console.log(`🚀 Fixlo App loaded - Build: ${buildId} - Deploy: ${deploymentForceRefresh}`);
+console.log(`🚀 Fixlo App loaded - Build: ${buildId} - Timestamp: ${buildTimestamp} - Deploy: ${deploymentForceRefresh}`);
 
 function App() {
   return (
@@ -78,12 +79,28 @@ function App() {
                 }
               />
 
+ copilot/fix-dc9dfb4c-d28d-429d-90fb-85ae378facfa
               {/* Dynamic landing pages for city + service combinations */}
               <Route path="/services/:service" element={<DynamicLandingPageRoute />} />
               <Route path="/services/:service/:city" element={<DynamicLandingPageRoute />} />
 
               {/* Admin dashboard route */}
               <Route path="/admin" element={<Admin />} />
+
+                  <footer className="footer">
+                    <p>&copy; {new Date().getFullYear()} Fixlo. All rights reserved.</p>
+                    {/* Debug info for cache busting */}
+                    {process.env.NODE_ENV === 'development' && (
+                      <div style={{fontSize: '0.8em', opacity: 0.7}}>
+                        <p>Build: {buildId}</p>
+                        <p>Timestamp: {buildTimestamp}</p>
+                      </div>
+                    )}
+                  </footer>
+                </div>
+              }
+            />
+ main
 
               {/* Professional dashboard route */}
               <Route path="/pro-dashboard" element={<ProDashboard />} />
