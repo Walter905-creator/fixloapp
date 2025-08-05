@@ -268,6 +268,8 @@ app.use("/api/notify", require("./routes/notify"));
 app.use("/api/stripe", require("./routes/stripe")); // Stripe subscription
 app.use("/api/subscribe", require("./routes/subscribe")); // Subscription form handler
 app.use("/api", require("./routes/ipinfo")); // IP information proxy
+app.use('/api', require('./routes/upload')); // Image upload route
+app.use('/api/reviews', require('./routes/reviews')); // Professional reviews route
 
 // ✅ Simple Subscribe Endpoint for PricingPage.jsx
 app.post("/api/subscribe", async (req, res) => {
