@@ -15,7 +15,11 @@
   "dependencies": {
     "axios": "^1.10.0",
     "bcryptjs": "^2.4.3",
+ copilot/fix-f57fe295-0681-4443-9c0f-9e0950b52081
+    "cloudinary": "^2.7.0",
+
     "cloudinary": "^1.41.3",
+ main
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
@@ -23,7 +27,10 @@
     "jsonwebtoken": "^9.0.0",
     "mongoose": "^7.0.3",
     "multer": "^2.0.2",
+ copilot/fix-f57fe295-0681-4443-9c0f-9e0950b52081
+
     "multer-storage-cloudinary": "^4.0.0",
+ main
     "socket.io": "^4.6.0",
     "stripe": "^12.0.0",
     "twilio": "^5.7.1",
