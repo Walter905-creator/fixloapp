@@ -12,8 +12,11 @@ import DynamicLandingPageRoute from './components/DynamicLandingPageRoute';
 
 import HomePage from './components/HomePage';
 import Admin from './components/Admin';
+ copilot/fix-b49cc502-3ae8-4389-b20e-c865ce4d1bed
+
 import ProSignin from './components/ProSignin';
 import ProSignup from './components/ProSignup';
+ main
 import ProDashboard from './components/ProDashboard';
 
 // Cache busting - show build info in console
@@ -73,10 +76,15 @@ function App() {
           {/* Admin dashboard route */}
           <Route path="/admin" element={<Admin />} />
 
+ copilot/fix-b49cc502-3ae8-4389-b20e-c865ce4d1bed
+          {/* Professional dashboard route */}
+          <Route path="/pro-dashboard" element={<ProDashboard />} />
+
           {/* Professional routes */}
           <Route path="/pro/signin" element={<ProSignin />} />
           <Route path="/pro/signup" element={<ProSignup />} />
           <Route path="/pro/dashboard" element={<ProDashboard />} />
+ main
         </Routes>
 
         {/* Google Ads + GA4 analytics, etc */}
