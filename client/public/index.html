@@ -27,6 +27,23 @@
     <meta name="build-id" content="%REACT_APP_BUILD_ID%">
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Fallback content in case JavaScript fails to load -->
+      <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background-color: #f8f9fa; font-family: system-ui, -apple-system, sans-serif;">
+        <div style="text-align: center; padding: 2rem;">
+          <div style="font-size: 4rem; margin-bottom: 1rem;">🔧</div>
+          <h1 style="font-size: 1.5rem; color: #333; margin-bottom: 0.5rem;">
+            Fixlo
+          </h1>
+          <p style="color: #666; margin-bottom: 1rem;">Book Trusted Home Services Near You</p>
+          <p style="color: #888; font-size: 0.9rem;">Loading application...</p>
+          <noscript>
+            <p style="color: #e74c3c; font-size: 0.9rem; margin-top: 1rem;">
+              Please enable JavaScript to use Fixlo.
+            </p>
+          </noscript>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
