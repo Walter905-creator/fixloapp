@@ -4,8 +4,10 @@
   "private": true,
   "scripts": {
     "install-client": "cd client && npm install",
-    "build-client": "cd client && npm run build",
+    "build-client": "cd client && REACT_APP_API_URL=https://fixloapp.onrender.com REACT_APP_BUILD_TIMESTAMP=$(date +%s) REACT_APP_BUILD_ID=$(date +%Y%m%d-%H%M%S) npm run build",
     "start-client": "cd client && npm start",
-    "build": "npm run build-client"
+    "build": "npm run install-client && npm run build-client",
+    "verify-deployment": "node verify-deployment.js",
+    "force-deploy": "./force-vercel-deploy.sh"
   }
 }
