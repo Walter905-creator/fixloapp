@@ -263,6 +263,7 @@ try {
 // ✅ Routes with specific rate limiting
 app.use('/api/admin', adminRateLimit, require('./routes/admin'));
 app.use('/api/auth', authRateLimit, require('./routes/auth'));
+app.use('/api/pros', authRateLimit, require('./routes/proRoutes')); // Pro authentication and management
 app.use("/api/homeowner-lead", require("./routes/homeownerLead")); // Service request handler
 app.use("/api/notify", require("./routes/notify"));
 app.use("/api/stripe", require("./routes/stripe")); // Stripe subscription

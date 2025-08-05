@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+ copilot/fix-f57fe295-0681-4443-9c0f-9e0950b52081
 // Review Schema for professionals
 const reviewSchema = new mongoose.Schema({
   proId: {
@@ -18,6 +19,13 @@ const reviewSchema = new mongoose.Schema({
     required: true,
     lowercase: true,
     trim: true
+
+const ReviewSchema = new mongoose.Schema({
+  pro: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Pro',
+    required: true
+ main
   },
   rating: {
     type: Number,
@@ -31,6 +39,7 @@ const reviewSchema = new mongoose.Schema({
     trim: true,
     maxlength: 1000
   },
+ copilot/fix-f57fe295-0681-4443-9c0f-9e0950b52081
   jobDate: {
     type: Date,
     default: Date.now
@@ -38,11 +47,22 @@ const reviewSchema = new mongoose.Schema({
   verified: {
     type: Boolean,
     default: false
+
+  reviewer: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  createdAt: { 
+    type: Date, 
+    default: Date.now 
+ main
   }
 }, {
   timestamps: true
 });
 
+ copilot/fix-f57fe295-0681-4443-9c0f-9e0950b52081
 // Index for efficient querying by proId
 reviewSchema.index({ proId: 1, createdAt: -1 });
 
@@ -68,3 +88,9 @@ reviewSchema.statics.getAverageRating = async function(proId) {
 };
 
 module.exports = mongoose.model('Review', reviewSchema);
+
+// Create index for efficient pro lookups
+ReviewSchema.index({ pro: 1, createdAt: -1 });
+
+module.exports = mongoose.model('Review', ReviewSchema);
+ main

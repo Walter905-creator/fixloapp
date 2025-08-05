@@ -1,6 +1,5 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import './App.css';
 
 import AnalyticsWrapper from './components/AnalyticsWrapper';
 import UrgencyPopup from './components/UrgencyPopup';
@@ -13,6 +12,9 @@ import DynamicLandingPageRoute from './components/DynamicLandingPageRoute';
 
 import HomePage from './components/HomePage';
 import Admin from './components/Admin';
+import ProSignin from './components/ProSignin';
+import ProSignup from './components/ProSignup';
+import ProDashboard from './components/ProDashboard';
 
 // Cache busting - show build info in console
 const buildId = process.env.REACT_APP_BUILD_ID || 'dev';
@@ -70,6 +72,11 @@ function App() {
 
           {/* Admin dashboard route */}
           <Route path="/admin" element={<Admin />} />
+
+          {/* Professional routes */}
+          <Route path="/pro/signin" element={<ProSignin />} />
+          <Route path="/pro/signup" element={<ProSignup />} />
+          <Route path="/pro/dashboard" element={<ProDashboard />} />
         </Routes>
 
         {/* Google Ads + GA4 analytics, etc */}
