@@ -78,7 +78,7 @@ const ProSignup = () => {
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <img
           className="mx-auto h-12 w-auto"
-          src="/assets/fixlo-logo.png"
+          src="./assets/fixlo-logo.png"
           alt="Fixlo"
         />
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
