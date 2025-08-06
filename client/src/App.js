@@ -1,5 +1,6 @@
 import React from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
+import { Helmet, HelmetProvider } from 'react-helmet-async';
 
 import ErrorBoundary from './components/ErrorBoundary';
 import AnalyticsWrapper from './components/AnalyticsWrapper';
@@ -33,8 +34,12 @@ console.log(`🚀 Fixlo App loaded - Build: ${buildId} - Timestamp: ${buildTimes
 
 function App() {
   return (
-    <ErrorBoundary>
-      <Router>
+    <HelmetProvider>
+      <Helmet>
+        <link rel="canonical" href={window.location.href} />
+      </Helmet>
+      <ErrorBoundary>
+        <Router>
         <div className="min-h-screen flex flex-col">
           {/* Navigation */}
           <Navigation />
@@ -136,6 +141,7 @@ function App() {
         </div>
       </Router>
     </ErrorBoundary>
+    </HelmetProvider>
   );
 }
 
