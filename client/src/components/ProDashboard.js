@@ -123,7 +123,7 @@ const ProDashboard = () => {
             <div className="flex items-center">
               <img
                 className="h-8 w-auto"
-                src="./assets/fixlo-logo.png"
+                src="/assets/fixlo-logo.png"
                 alt="Fixlo"
               />
               <h1 className="ml-3 text-2xl font-bold text-gray-900">

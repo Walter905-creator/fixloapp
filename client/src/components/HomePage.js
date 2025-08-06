@@ -13,7 +13,7 @@ function HomePage() {
       <StickyCTA />
       <div className="app">
         <header className="header">
-          <img src="./assets/fixlo-logo.png" alt="Fixlo Logo" className="logo" />
+          <img src="/assets/fixlo-logo.png" alt="Fixlo Logo" className="logo" />
           <h1>Welcome to Fixlo 
             <span style={{
               marginLeft: '10px',

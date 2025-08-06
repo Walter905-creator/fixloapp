@@ -5,7 +5,7 @@ const SEOHead = ({
   title = "Fixlo - Connect with Trusted Home Improvement Professionals",
   description = "Find verified professionals for plumbing, electrical, HVAC, landscaping, and more. Instant SMS notifications, AI assistant, and secure payments. Get your home projects done right.",
   keywords = "home improvement, professionals, plumbing, electrical, HVAC, landscaping, handyman, contractors, home repair, maintenance",
-  image = "./assets/fixlo-logo.png",
+  image = "/assets/fixlo-logo.png",
   url = "https://www.fixloapp.com"
 }) => {
   return (
