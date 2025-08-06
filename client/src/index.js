@@ -52,14 +52,49 @@ const LoadingFallback = () => (
   </div>
 );
 
-try {
-  root.render(
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
-  );
-} catch (error) {
-  console.error('Failed to render React app:', error);
-  // Fallback to basic HTML if React fails
-  root.render(<LoadingFallback />);
-}
+// Enhanced initialization with timeout protection
+const initializeApp = () => {
+  try {
+    // Set a maximum time for app initialization
+    const initTimeout = setTimeout(() => {
+      console.warn('App initialization taking too long, showing fallback UI');
+      root.render(<LoadingFallback />);
+    }, 10000); // 10 second timeout
+
+    root.render(
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
+    );
+
+    // Clear timeout if app renders successfully
+    clearTimeout(initTimeout);
+  } catch (error) {
+    console.error('Failed to render React app:', error);
+    // Fallback to basic HTML if React fails
+    root.render(<LoadingFallback />);
+  }
+};
+
+// Initialize with retry mechanism
+const maxRetries = 3;
+let retryCount = 0;
+
+const tryInitialize = () => {
+  try {
+    initializeApp();
+  } catch (error) {
+    console.error(`App initialization failed (attempt ${retryCount + 1}):`, error);
+    retryCount++;
+    
+    if (retryCount < maxRetries) {
+      console.log(`Retrying initialization in 2 seconds...`);
+      setTimeout(tryInitialize, 2000);
+    } else {
+      console.error('Max retries reached, showing fallback UI');
+      root.render(<LoadingFallback />);
+    }
+  }
+};
+
+tryInitialize();
