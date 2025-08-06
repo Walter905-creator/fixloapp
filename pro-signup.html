@@ -16,8 +16,9 @@
         .signup-form { background: #f8f9fa; padding: 40px; border-radius: 15px; max-width: 600px; margin: 0 auto; }
         .form-group { margin-bottom: 20px; }
         .form-group input, .form-group select { width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; }
-        .btn { background: #28a745; color: white; padding: 15px 30px; border: none; border-radius: 50px; cursor: pointer; font-size: 16px; width: 100%; }
-        .btn:hover { background: #218838; }
+        .btn { background: #28a745; color: white; padding: 15px 30px; border: none; border-radius: 50px; cursor: pointer; font-size: 16px; width: 100%; transition: all 0.3s ease; }
+        .btn:hover:not(:disabled) { background: #218838; }
+        .btn:disabled { background: #6c757d; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -39,21 +40,21 @@
         <div class="container">
             <div class="signup-form">
                 <h2 style="text-align: center; margin-bottom: 30px;">Professional Registration</h2>
-                <form>
+                <form id="proSignupForm">
                     <div class="form-group">
-                        <input type="text" placeholder="Full Name" required>
+                        <input type="text" id="fullName" placeholder="Full Name" required>
                     </div>
                     <div class="form-group">
-                        <input type="email" placeholder="Email Address" required>
+                        <input type="email" id="email" placeholder="Email Address" required>
                     </div>
                     <div class="form-group">
-                        <input type="tel" placeholder="Phone Number" required>
+                        <input type="tel" id="phone" placeholder="Phone Number" required>
                     </div>
                     <div class="form-group">
-                        <input type="password" placeholder="Password" required>
+                        <input type="password" id="password" placeholder="Password" required>
                     </div>
                     <div class="form-group">
-                        <select required>
+                        <select id="trade" required>
                             <option value="">Select Your Trade</option>
                             <option value="plumbing">🚰 Plumbing</option>
                             <option value="electrical">💡 Electrical</option>
@@ -76,9 +77,13 @@
                         <div id="locationStatus" style="font-size: 12px; color: #666; margin-top: 5px; display: none;"></div>
                     </div>
                     
+                    <div class="form-group">
+                        <input type="date" id="dob" placeholder="Date of Birth" required max="2006-01-01" title="You must be 18 or older">
+                    </div>
+                    
                     <div class="form-group" style="margin-bottom: 20px;">
                         <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 0.9rem; line-height: 1.4;">
-                            <input type="checkbox" required style="margin-top: 3px; transform: scale(1.2);">
+                            <input type="checkbox" id="smsConsent" required style="margin-top: 3px; transform: scale(1.2);">
                             <span>
                                 I agree to receive SMS messages from Fixlo about my account and job opportunities. 
                                 Message and data rates may apply. Reply STOP to unsubscribe. 
@@ -93,7 +98,14 @@
                     </p>
                     
                     <div style="text-align: center;">
-                        <button type="submit" class="btn">Start Application ($59.99/month)</button>
+                        <button type="submit" id="submitBtn" class="btn">
+                            <span id="submitText">Start Application ($59.99/month)</span>
+                            <span id="loadingText" style="display: none;">Processing... Please wait</span>
+                        </button>
+                    </div>
+                    
+                    <div id="errorMessage" style="margin-top: 15px; padding: 15px; background: #f8d7da; color: #721c24; border-radius: 8px; display: none;">
+                        <!-- Error messages will appear here -->
                     </div>
                 </form>
                 
@@ -216,6 +228,110 @@
                     maximumAge: 300000 // 5 minutes
                 }
             );
+        });
+
+        // Form submission handler for professional signup
+        document.getElementById('proSignupForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const submitText = document.getElementById('submitText');
+            const loadingText = document.getElementById('loadingText');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // Hide any previous error messages
+            errorMessage.style.display = 'none';
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            submitText.style.display = 'none';
+            loadingText.style.display = 'inline';
+            
+            try {
+                // Collect form data
+                const formData = {
+                    name: document.getElementById('fullName').value.trim(),
+                    email: document.getElementById('email').value.trim(),
+                    phone: document.getElementById('phone').value.trim(),
+                    password: document.getElementById('password').value,
+                    trade: document.getElementById('trade').value,
+                    location: document.getElementById('serviceArea').value.trim(),
+                    dob: document.getElementById('dob').value,
+                    role: 'professional'
+                };
+                
+                // Basic validation
+                if (!formData.name || !formData.email || !formData.phone || !formData.trade || !formData.location || !formData.dob) {
+                    throw new Error('Please fill in all required fields');
+                }
+                
+                // Validate age (must be 18+)
+                const birthDate = new Date(formData.dob);
+                const age = Math.floor((Date.now() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+                if (age < 18) {
+                    throw new Error('You must be 18 or older to join Fixlo as a professional');
+                }
+                
+                // Validate email format
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(formData.email)) {
+                    throw new Error('Please enter a valid email address');
+                }
+                
+                console.log('🔧 Submitting professional signup:', formData);
+                
+                // Determine the API base URL
+                const apiBaseUrl = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:3000'
+                    : 'https://fixloapp.onrender.com';
+                
+                // Submit to backend API
+                const response = await fetch(`${apiBaseUrl}/api/pro-signup`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.message || `HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                console.log('✅ Professional signup successful:', result);
+                
+                // If we get a Stripe checkout URL, redirect to payment
+                if (result.paymentUrl) {
+                    console.log('🔀 Redirecting to Stripe checkout:', result.paymentUrl);
+                    window.location.href = result.paymentUrl;
+                } else if (result.success) {
+                    // Fallback if no Stripe URL but signup was successful
+                    console.log('✅ Signup successful but no Stripe URL, showing success message');
+                    alert('Registration successful! Please check your email for further instructions.');
+                    // Optional: redirect to a success page
+                    // window.location.href = '/signup-success.html';
+                } else {
+                    throw new Error(result.message || 'Registration failed');
+                }
+                
+            } catch (error) {
+                console.error('❌ Professional signup error:', error);
+                
+                // Show error message to user
+                errorMessage.textContent = error.message;
+                errorMessage.style.display = 'block';
+                
+                // Reset form state
+                submitBtn.disabled = false;
+                submitText.style.display = 'inline';
+                loadingText.style.display = 'none';
+                
+                // Scroll to error message
+                errorMessage.scrollIntoView({ behavior: 'smooth' });
+            }
         });
     </script>
 </body>
