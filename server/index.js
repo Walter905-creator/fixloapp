@@ -1062,6 +1062,19 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
+// ✅ Status API endpoint (alternative endpoint that might be called by external services)
+app.get("/status-api", (req, res) => {
+  console.log(`🔍 Status API request from origin: ${req.headers.origin || 'unknown'}`);
+  res.json({ 
+    status: 'operational',
+    message: "Fixlo Backend API is live!", 
+    timestamp: new Date().toISOString(),
+    cors: "enabled",
+    version: "2.3.0-fixlo-backend",
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
 // ✅ MongoDB connection (optional - app works without it)
 if (process.env.MONGO_URI) {
   console.log("🔍 Connecting to MongoDB...");

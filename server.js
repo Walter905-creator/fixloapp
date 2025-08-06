@@ -588,6 +588,25 @@ app.get('/api/status', (req, res) => {
     });
 });
 
+// Alternative status-api endpoint (for external services that might call this)
+app.get('/status-api', (req, res) => {
+    console.log(`🔍 Status API request from origin: ${req.headers.origin || 'unknown'}`);
+    res.json({
+        success: true,
+        status: 'operational',
+        message: 'Fixlo Server is running',
+        timestamp: new Date().toISOString(),
+        version: '1.0.0',
+        environment: process.env.NODE_ENV || 'development',
+        stats: {
+            totalServiceRequests: storage.serviceRequests.size,
+            totalProfessionals: storage.professionals.size,
+            activeJobs: Array.from(storage.serviceRequests.values())
+                .filter(job => job.status === 'open').length
+        }
+    });
+});
+
 // Serve static files and handle routes
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
