@@ -36,7 +36,16 @@ export default function UrgencyPopup() {
             setCity(locationName);
           }
         } catch (error) {
-          console.log('Location detection failed, using fallback:', error);
+          // Handle geolocation errors more gracefully
+          if (error.code === 1) {
+            console.log('Location access denied by user - using fallback location');
+          } else if (error.code === 2) {
+            console.log('Location unavailable - using fallback location');
+          } else if (error.code === 3) {
+            console.log('Location request timeout - using fallback location');
+          } else {
+            console.log('Location detection failed - using fallback location:', error.message);
+          }
           // Keep default "your area" if location fails
         }
       }
