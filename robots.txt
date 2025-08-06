@@ -16,6 +16,9 @@ Disallow: /ios/
 Disallow: /public/
 Disallow: /client/public/
 Disallow: /website/
+Disallow: /contact/
+Disallow: /signup/
+Disallow: /sms-optin/
 
 # Disallow private pages
 Disallow: /dashboard.html

@@ -30,6 +30,17 @@ RewriteRule ^website/(.*)$ /$1 [R=301,L]
 RewriteRule ^contact/$ /contact.html [R=301,L]
 RewriteRule ^contact/index\.html$ /contact.html [R=301,L]
 
+# Redirect signup subdirectory to main signup page
+RewriteRule ^signup/$ /signup.html [R=301,L]
+RewriteRule ^signup/index\.html$ /signup.html [R=301,L]
+
+# Redirect sms-optin subdirectory to main sms-compliance page
+RewriteRule ^sms-optin/$ /sms-compliance.html [R=301,L]
+RewriteRule ^sms-optin/index\.html$ /sms-compliance.html [R=301,L]
+
+# Redirect services subdirectory to maintain clean URLs
+RewriteRule ^services/index\.html$ /services/ [R=301,L]
+
 # Prevent access to sensitive files
 <FilesMatch "\.(env|log|sql|sqlite|bak|backup|old)$">
     Order allow,deny
