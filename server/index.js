@@ -378,6 +378,15 @@ app.post("/api/pro-signup", async (req, res) => {
   }
 
   try {
+    // Check if database is available before proceeding
+    if (mongoose.connection.readyState !== 1) {
+      console.log('❌ Database not available for professional signup');
+      return res.status(503).json({
+        success: false,
+        message: "Professional signup service is temporarily unavailable. Please try again later or contact support."
+      });
+    }
+    
     // Normalize trade value for consistent checking
     const tradeNormalized = trade.trim().toLowerCase();
     
