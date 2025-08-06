@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ServiceRequestModal from './ServiceRequestModal';
+import geolocationService from '../utils/geolocationService';
 
 export default function DynamicLandingPage({ city, service }) {
   const [showModal, setShowModal] = useState(false);
@@ -7,35 +8,24 @@ export default function DynamicLandingPage({ city, service }) {
 
   // Auto-detect city if not provided
   useEffect(() => {
-    if (!city && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          try {
-            const { latitude, longitude } = position.coords;
-            const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
-              {
-                headers: {
-                  'User-Agent': 'Fixlo-App/1.0 (https://www.fixloapp.com)'
-                }
-              }
-            );
-            
-            if (response.ok) {
-              const data = await response.json();
-              const address = data.address;
-              const locationName = address.city || address.town || address.village || 'your area';
-              setDetectedCity(locationName);
-            }
-          } catch (error) {
-            console.log('Location detection failed:', error);
-          }
-        },
-        (error) => {
-          console.log('Geolocation error:', error);
-        },
-        { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
-      );
+    if (!city && geolocationService.isGeolocationSupported()) {
+      const detectLocation = async () => {
+        try {
+          console.log('🌍 Auto-detecting user location for personalization...');
+          const result = await geolocationService.getCurrentLocationWithAddress();
+          const locationName = result.addressDetails.city || 
+                              result.addressDetails.town || 
+                              result.addressDetails.village || 
+                              'your area';
+          setDetectedCity(locationName);
+          console.log(`✅ Detected city: ${locationName}`);
+        } catch (error) {
+          console.log('ℹ️ Location detection failed (non-critical):', error.message);
+          // Keep default "your area" if location fails - this is not critical for the landing page
+        }
+      };
+
+      detectLocation();
     }
   }, [city]);
 

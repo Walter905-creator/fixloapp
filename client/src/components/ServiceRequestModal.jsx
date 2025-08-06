@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import geolocationService from '../utils/geolocationService';
 
 export default function ServiceRequestModal({ service, onClose }) {
   const [submitted, setSubmitted] = useState(false);
   const [optIn, setOptIn] = useState(false);
   const [form, setForm] = useState({ name: '', phone: '', email: '', address: '', description: '' });
   const [gettingLocation, setGettingLocation] = useState(false);
+  const [locationError, setLocationError] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
   const modalRef = useRef(null);
   const firstInputRef = useRef(null);
@@ -113,76 +115,35 @@ export default function ServiceRequestModal({ service, onClose }) {
     }
   };
 
-  const getCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      alert("Geolocation is not supported by this browser.");
+  const getCurrentLocation = async () => {
+    if (!geolocationService.isGeolocationSupported()) {
+      const message = geolocationService.getErrorMessage({ message: 'GEOLOCATION_NOT_SUPPORTED' });
+      alert(message);
       return;
     }
 
     setGettingLocation(true);
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          const { latitude, longitude } = position.coords;
-          
-          // Add timeout to prevent hanging requests
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-          
-          // Use reverse geocoding to get address
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
-            {
-              headers: {
-                'User-Agent': 'Fixlo-App/1.0 (https://www.fixloapp.com)'
-              },
-              signal: controller.signal
-            }
-          );
-          
-          clearTimeout(timeoutId);
-          
-          if (response.ok) {
-            const data = await response.json();
-            const address = data.address;
-            const formattedAddress = `${address.house_number || ''} ${address.road || ''}, ${address.city || address.town || ''}, ${address.state || ''} ${address.postcode || ''}`.trim().replace(/^,\s*/, '');
-            
-            setForm({ ...form, address: formattedAddress });
-          } else {
-            console.error('Geocoding API error:', response.status, response.statusText);
-            alert("Could not get your address automatically. Please enter it manually.");
-          }
-        } catch (error) {
-          console.error("Error getting address:", error);
-          if (error.name === 'AbortError') {
-            alert("Location request timed out. Please enter your address manually.");
-          } else {
-            alert("Could not get your address automatically. Please enter it manually.");
-          }
-        } finally {
-          setGettingLocation(false);
-        }
-      },
-      (error) => {
-        setGettingLocation(false);
-        let message = "Could not get your location. Please enter your address manually.";
-        
-        if (error.code === error.PERMISSION_DENIED) {
-          message = "Location access denied. Please enter your address manually.";
-        } else if (error.code === error.POSITION_UNAVAILABLE) {
-          message = "Location information unavailable. Please enter your address manually.";
-        } else if (error.code === error.TIMEOUT) {
-          message = "Location request timed out. Please enter your address manually.";
-        }
-        
-        alert(message);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 300000 // 5 minutes
-      }
-    );
+    setLocationError(null);
+    
+    try {
+      console.log('🗺️ Getting current location with address...');
+      const result = await geolocationService.getCurrentLocationWithAddress();
+      
+      // Format the address for the form
+      const address = result.addressDetails;
+      const formattedAddress = `${address.house_number || ''} ${address.road || ''}, ${address.city || address.town || ''}, ${address.state || ''} ${address.postcode || ''}`.trim().replace(/^,\s*/, '');
+      
+      setForm({ ...form, address: formattedAddress });
+      console.log(`✅ Location set: ${formattedAddress}`);
+      
+    } catch (error) {
+      console.error('❌ Location error:', error);
+      const message = geolocationService.getErrorMessage(error);
+      setLocationError(message);
+      alert(message);
+    } finally {
+      setGettingLocation(false);
+    }
   };
 
   return (
@@ -244,11 +205,16 @@ export default function ServiceRequestModal({ service, onClose }) {
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
                 className="w-full border border-gray-300 p-2 rounded"
               />
+              {locationError && (
+                <div className="text-red-600 text-sm">
+                  ⚠️ {locationError}
+                </div>
+              )}
               <button
                 type="button"
                 onClick={getCurrentLocation}
                 disabled={gettingLocation}
-                className="w-full bg-gray-100 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                className="w-full bg-gray-100 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
               >
                 {gettingLocation ? (
                   <>
@@ -261,6 +227,11 @@ export default function ServiceRequestModal({ service, onClose }) {
                   </>
                 )}
               </button>
+              {!geolocationService.isSecureContext() && (
+                <div className="text-amber-600 text-xs">
+                  ⚠️ Location services work best on secure (HTTPS) connections
+                </div>
+              )}
             </div>
             <textarea
               placeholder="What do you need?"
