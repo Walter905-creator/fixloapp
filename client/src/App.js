@@ -1,7 +1,7 @@
 import React from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 
-import ErrorBoundary from './components/ErrorBoundary';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import AnalyticsWrapper from './components/AnalyticsWrapper';
 import UrgencyPopup from './components/UrgencyPopup';
 import ExitIntentModal from './components/ExitIntentModal';
