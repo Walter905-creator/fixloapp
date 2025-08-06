@@ -68,11 +68,15 @@ export default function ServiceRequestModal({ service, onClose }) {
     }
 
     try {
-      // Use environment variable for API URL, with fallback to local development server
+      // Use environment variable for API URL, with better fallback handling
       const API_BASE = process.env.REACT_APP_API_URL || 
-                      (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://fixloapp.onrender.com');
+                      (process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://fixloapp.onrender.com');
       
       console.log('Submitting service request to:', `${API_BASE}/api/service-request`);
+      
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
       
       const res = await fetch(`${API_BASE}/api/service-request`, {
         method: 'POST',
@@ -85,18 +89,27 @@ export default function ServiceRequestModal({ service, onClose }) {
           address: form.address,
           description: form.description,
           urgency: 'medium'
-        })
+        }),
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       if (res.ok) {
         setSubmitted(true);
         console.log('Service request submitted successfully');
       } else {
+        const errorText = await res.text();
+        console.error('Server error response:', errorText);
         throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       }
     } catch (err) {
       console.error("Error submitting form", err);
-      alert("There was an error submitting your request. Please try again or contact support.");
+      if (err.name === 'AbortError') {
+        alert("Request timed out. Please check your connection and try again.");
+      } else {
+        alert("There was an error submitting your request. Please try again or contact support.");
+      }
     }
   };
 
@@ -112,15 +125,22 @@ export default function ServiceRequestModal({ service, onClose }) {
         try {
           const { latitude, longitude } = position.coords;
           
+          // Add timeout to prevent hanging requests
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+          
           // Use reverse geocoding to get address
           const response = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
             {
               headers: {
                 'User-Agent': 'Fixlo-App/1.0 (https://www.fixloapp.com)'
-              }
+              },
+              signal: controller.signal
             }
           );
+          
+          clearTimeout(timeoutId);
           
           if (response.ok) {
             const data = await response.json();
@@ -129,11 +149,16 @@ export default function ServiceRequestModal({ service, onClose }) {
             
             setForm({ ...form, address: formattedAddress });
           } else {
+            console.error('Geocoding API error:', response.status, response.statusText);
             alert("Could not get your address automatically. Please enter it manually.");
           }
         } catch (error) {
           console.error("Error getting address:", error);
-          alert("Could not get your address automatically. Please enter it manually.");
+          if (error.name === 'AbortError') {
+            alert("Location request timed out. Please enter your address manually.");
+          } else {
+            alert("Could not get your address automatically. Please enter it manually.");
+          }
         } finally {
           setGettingLocation(false);
         }
@@ -146,6 +171,8 @@ export default function ServiceRequestModal({ service, onClose }) {
           message = "Location access denied. Please enter your address manually.";
         } else if (error.code === error.POSITION_UNAVAILABLE) {
           message = "Location information unavailable. Please enter your address manually.";
+        } else if (error.code === error.TIMEOUT) {
+          message = "Location request timed out. Please enter your address manually.";
         }
         
         alert(message);
