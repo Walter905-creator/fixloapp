@@ -23,6 +23,7 @@ import AIAssistant from './components/AIAssistant';
 import ChatComponent from './components/ChatComponent';
 import Navigation from './components/Navigation';
 import Footer from './components/Footer';
+import FixloLogo from './components/FixloLogo';
 
 // Cache busting - show build info in console
 const buildId = process.env.REACT_APP_BUILD_ID || 'dev';
@@ -53,7 +54,9 @@ function App() {
                   <div className="app">
                     <header className="header bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16 px-4">
                       <div className="max-w-4xl mx-auto text-center">
-                        <img src="./assets/fixlo-logo.png" alt="Fixlo Logo" className="logo mx-auto mb-4 h-16" />
+                        <div className="text-center my-6">
+                          <FixloLogo />
+                        </div>
                         <h1 className="text-4xl md:text-5xl font-bold mb-4">Welcome to Fixlo</h1>
                         <p className="text-xl text-blue-100">Your one-stop hub for trusted professionals and home projects 🔧</p>
                       </div>
