@@ -6,13 +6,19 @@ A full-stack web application connecting homeowners with verified handyman profes
 
 ## Features
 
+For a comprehensive list of all implemented features, see **[FEATURES.md](./FEATURES.md)** - complete documentation of all 40+ features including Pro Dashboard, AI Assistant, Mobile App, SEO optimization, and more.
+
+### Key Features Summary:
 - **Service Request System**: Homeowners can request services from verified professionals
 - **SMS Notifications**: Twilio integration for real-time notifications to pros
 - **AI Assistant**: OpenAI-powered assistant for home improvement guidance
 - **Admin Dashboard**: Manage professionals and view job requests
-- **Subscription System**: Stripe integration for professional memberships
+- **Subscription System**: Stripe integration for professional memberships ($59.99/month)
 - **Real-time Chat**: Socket.io for live communication
 - **Background Checks**: Integration with Checkr for professional verification
+- **Mobile App**: Capacitor-wrapped app ready for App Store/Play Store
+- **SEO Optimization**: Dynamic landing pages, sitemaps, and meta tags
+- **Conversion Features**: Exit intent modal, referral system, live job feed
 
 ## Tech Stack
 
