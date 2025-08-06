@@ -42,16 +42,26 @@ function AnalyticsWrapper() {
       console.log('[Fixlo Analytics] Not on supported domain - Analytics disabled to prevent errors');
     }
 
-    // Prevent analytics errors by intercepting network errors
+    // Prevent analytics errors by intercepting network errors only when analytics shouldn't work
     const originalFetch = window.fetch;
     window.fetch = function(...args) {
       const url = args[0];
       
-      // Block analytics requests that would cause 405 errors
+      // Only block analytics requests if analytics shouldn't be working on this domain
       if (typeof url === 'string' && url.includes('/_vercel/insights')) {
-        console.log('[Fixlo Analytics] Blocked analytics request to prevent 405 error:', url);
-        // Return a resolved promise to prevent errors
-        return Promise.resolve(new Response('', { status: 200 }));
+        const currentHostname = window.location.hostname;
+        const currentIsVercelDomain = currentHostname.includes('vercel.app') || currentHostname.includes('vercel.com');
+        const currentIsFixloDomain = currentHostname.includes('fixloapp.com') && 
+                                   !currentHostname.includes('localhost') &&
+                                   !currentHostname.includes('127.0.0.1');
+        const currentIsExplicitlyEnabled = process.env.REACT_APP_ENABLE_ANALYTICS === 'true';
+        const analyticsShouldWork = (isProduction && (currentIsVercelDomain || currentIsFixloDomain)) || currentIsExplicitlyEnabled;
+        
+        if (!analyticsShouldWork) {
+          console.log('[Fixlo Analytics] Blocked analytics request to prevent 405 error:', url);
+          // Return a resolved promise to prevent errors
+          return Promise.resolve(new Response('', { status: 200 }));
+        }
       }
       
       return originalFetch.apply(this, args);
