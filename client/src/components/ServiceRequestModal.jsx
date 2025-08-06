@@ -13,6 +13,9 @@ export default function ServiceRequestModal({ service, onClose }) {
 
   // Handle modal animation and focus management
   useEffect(() => {
+    // Clear any previous location error when modal opens
+    setLocationError(null);
+    
     // Trigger entrance animation
     const timer = setTimeout(() => setIsVisible(true), 10);
     
@@ -123,7 +126,7 @@ export default function ServiceRequestModal({ service, onClose }) {
     }
 
     setGettingLocation(true);
-    setLocationError(null);
+    setLocationError(null); // Clear any previous error when starting location request
     
     try {
       console.log('🗺️ Getting current location with address...');
@@ -134,6 +137,7 @@ export default function ServiceRequestModal({ service, onClose }) {
       const formattedAddress = `${address.house_number || ''} ${address.road || ''}, ${address.city || address.town || ''}, ${address.state || ''} ${address.postcode || ''}`.trim().replace(/^,\s*/, '');
       
       setForm({ ...form, address: formattedAddress });
+      setLocationError(null); // Clear error on successful location get
       console.log(`✅ Location set: ${formattedAddress}`);
       
     } catch (error) {
@@ -202,7 +206,13 @@ export default function ServiceRequestModal({ service, onClose }) {
                 placeholder="Your Address or ZIP Code"
                 required
                 value={form.address}
-                onChange={(e) => setForm({ ...form, address: e.target.value })}
+                onChange={(e) => {
+                  setForm({ ...form, address: e.target.value });
+                  // Clear location error when user starts typing manually
+                  if (locationError) {
+                    setLocationError(null);
+                  }
+                }}
                 className="w-full border border-gray-300 p-2 rounded"
               />
               {locationError && (
