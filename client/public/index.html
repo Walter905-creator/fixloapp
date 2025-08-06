@@ -25,18 +25,53 @@
     <!-- Force reload on changes -->
     <meta name="build-timestamp" content="%REACT_APP_BUILD_TIMESTAMP%">
     <meta name="build-id" content="%REACT_APP_BUILD_ID%">
+    
+    <!-- Initial loading styles -->
+    <style>
+      .initial-loader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+      .loader-content {
+        text-align: center;
+        color: #333;
+      }
+      .loader-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        animation: pulse 2s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+      .loader-text {
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+      }
+      .loader-subtext {
+        font-size: 0.9rem;
+        color: #666;
+      }
+    </style>
   </head>
   <body>
     <div id="root">
-      <!-- Fallback content in case JavaScript fails to load -->
-      <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background-color: #f8f9fa; font-family: system-ui, -apple-system, sans-serif;">
-        <div style="text-align: center; padding: 2rem;">
-          <div style="font-size: 4rem; margin-bottom: 1rem;">🔧</div>
-          <h1 style="font-size: 1.5rem; color: #333; margin-bottom: 0.5rem;">
-            Fixlo
-          </h1>
-          <p style="color: #666; margin-bottom: 1rem;">Book Trusted Home Services Near You</p>
-          <p style="color: #888; font-size: 0.9rem;">Loading application...</p>
+      <!-- Initial loading indicator with improved messaging -->
+      <div class="initial-loader">
+        <div class="loader-content">
+          <div class="loader-icon">🔧</div>
+          <div class="loader-text">Fixlo</div>
+          <div class="loader-subtext">Loading your trusted home services...</div>
           <noscript>
             <p style="color: #e74c3c; font-size: 0.9rem; margin-top: 1rem;">
               Please enable JavaScript to use Fixlo.
