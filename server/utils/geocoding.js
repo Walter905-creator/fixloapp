@@ -1,60 +1,143 @@
 const axios = require('axios');
 
 /**
- * Geocoding utility to convert addresses/ZIP codes to coordinates
- * Uses multiple services for reliability
+ * Enhanced Geocoding utility to convert addresses/ZIP codes to coordinates
+ * Uses multiple services for reliability with improved error handling and caching
  */
 class GeocodingService {
   constructor() {
     this.services = {
       nominatim: 'https://nominatim.openstreetmap.org/search',
-      // Add more services as needed
+      // Add more services as needed for fallback
     };
+    
+    // Simple in-memory cache for server-side
+    this.cache = new Map();
+    this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
+    this.lastApiCall = 0;
+    this.apiCallDelay = 1000; // 1 second between API calls
+    this.maxRetries = 3;
+    
+    // Start cache cleanup timer (every 10 minutes)
+    this.cacheCleanupInterval = setInterval(() => {
+      this.cleanExpiredCache();
+    }, 10 * 60 * 1000);
+  }
+
+  /**
+   * Get cached result if available and not expired
+   */
+  getCachedResult(key) {
+    const cached = this.cache.get(key);
+    if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
+      console.log(`🎯 Using cached geocoding result for: ${key}`);
+      return cached.data;
+    }
+    return null;
+  }
+
+  /**
+   * Cache a result with timestamp
+   */
+  setCacheResult(key, data) {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now()
+    });
+  }
+
+  /**
+   * Rate limiting for external API calls
+   */
+  async enforceRateLimit() {
+    const timeSinceLastCall = Date.now() - this.lastApiCall;
+    if (timeSinceLastCall < this.apiCallDelay) {
+      const delay = this.apiCallDelay - timeSinceLastCall;
+      console.log(`⏳ Rate limiting: waiting ${delay}ms before geocoding API call`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+    this.lastApiCall = Date.now();
   }
 
   /**
    * Convert address/ZIP code to coordinates using OpenStreetMap Nominatim (free)
    * @param {string} location - Address or ZIP code
-   * @returns {Promise<[number, number]>} - [longitude, latitude]
+   * @returns {Promise<object>} - Geocoding result with coordinates, address, and confidence
    */
   async geocodeLocation(location) {
-    try {
-      // First try with OpenStreetMap Nominatim (free service)
-      const response = await axios.get(this.services.nominatim, {
-        params: {
-          q: location,
-          format: 'json',
-          limit: 1,
-          countrycodes: 'us', // Limit to US for now
-          addressdetails: 1
-        },
-        timeout: 5000,
-        headers: {
-          'User-Agent': 'Fixlo-App/1.0 (https://www.fixloapp.com)'
-        }
-      });
+    const cacheKey = `geocode_${location.toLowerCase().trim()}`;
+    const cached = this.getCachedResult(cacheKey);
+    if (cached) return cached;
 
-      if (response.data && response.data.length > 0) {
-        const result = response.data[0];
-        const longitude = parseFloat(result.lon);
-        const latitude = parseFloat(result.lat);
+    await this.enforceRateLimit();
+
+    let lastError;
+    
+    // Try multiple times with exponential backoff
+    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      try {
+        console.log(`🗺️ Geocoding attempt ${attempt}/${this.maxRetries} for: "${location}"`);
         
-        console.log(`✅ Geocoded "${location}" to [${longitude}, ${latitude}]`);
+        // Use OpenStreetMap Nominatim (free service)
+        const response = await axios.get(this.services.nominatim, {
+          params: {
+            q: location,
+            format: 'json',
+            limit: 1,
+            countrycodes: 'us', // Limit to US for now
+            addressdetails: 1
+          },
+          timeout: 8000, // Increased timeout
+          headers: {
+            'User-Agent': 'Fixlo-App/1.0 (https://www.fixloapp.com)'
+          }
+        });
+
+        if (response.data && response.data.length > 0) {
+          const result = response.data[0];
+          const longitude = parseFloat(result.lon);
+          const latitude = parseFloat(result.lat);
+          
+          // Validate coordinates
+          if (isNaN(longitude) || isNaN(latitude)) {
+            throw new Error('Invalid coordinates returned from geocoding service');
+          }
+          
+          const geocoded = {
+            coordinates: [longitude, latitude],
+            address: result.display_name,
+            confidence: parseFloat(result.importance) || 0.5,
+            addressDetails: result.address || {},
+            boundingBox: result.boundingbox || null
+          };
+          
+          console.log(`✅ Geocoded "${location}" to [${longitude}, ${latitude}] (confidence: ${geocoded.confidence})`);
+          
+          // Cache the successful result
+          this.setCacheResult(cacheKey, geocoded);
+          
+          return geocoded;
+        }
         
-        return {
-          coordinates: [longitude, latitude],
-          address: result.display_name,
-          confidence: parseFloat(result.importance) || 0.5
-        };
+        throw new Error('No results found for location');
+        
+      } catch (error) {
+        lastError = error;
+        console.error(`❌ Geocoding attempt ${attempt} failed for "${location}":`, error.message);
+        
+        // If not the last attempt, wait before retrying
+        if (attempt < this.maxRetries) {
+          const backoffDelay = Math.pow(2, attempt) * 1000; // Exponential backoff
+          console.log(`⏳ Waiting ${backoffDelay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, backoffDelay));
+        }
       }
-      
-      throw new Error('No results found');
-    } catch (error) {
-      console.error(`❌ Geocoding failed for "${location}":`, error.message);
-      
-      // Fallback to default coordinates (center of US) if geocoding fails
-      return this.getDefaultCoordinates(location);
     }
+    
+    console.error(`❌ All geocoding attempts failed for "${location}". Using fallback.`);
+    
+    // Fallback to default coordinates (center of US) if geocoding fails
+    return this.getDefaultCoordinates(location);
   }
 
   /**
@@ -63,29 +146,49 @@ class GeocodingService {
    * @returns {object}
    */
   getDefaultCoordinates(location) {
-    // Basic ZIP code to region mapping (very simplified)
+    // Enhanced ZIP code to region mapping
     const zipToRegion = {
-      '0': [-71.0589, 42.3601], // Boston area for 0xxxx
-      '1': [-74.0059, 40.7128], // NYC area for 1xxxx
-      '2': [-77.0369, 38.9072], // DC area for 2xxxx
-      '3': [-84.3880, 33.7490], // Atlanta area for 3xxxx
-      '4': [-86.7816, 36.1627], // Nashville area for 4xxxx
-      '5': [-87.6298, 41.8781], // Chicago area for 5xxxx
-      '6': [-95.3698, 29.7604], // Houston area for 6xxxx
-      '7': [-96.7970, 32.7767], // Dallas area for 7xxxx
-      '8': [-104.9903, 39.7392], // Denver area for 8xxxx
-      '9': [-118.2437, 34.0522], // LA area for 9xxxx
+      '0': [-71.0589, 42.3601], // New England (Boston area)
+      '1': [-74.0059, 40.7128], // Northeast (NYC area)
+      '2': [-77.0369, 38.9072], // Mid-Atlantic (DC area)
+      '3': [-84.3880, 33.7490], // Southeast (Atlanta area)
+      '4': [-86.7816, 36.1627], // South Central (Nashville area)
+      '5': [-87.6298, 41.8781], // Great Lakes (Chicago area)
+      '6': [-95.3698, 29.7604], // South Central (Houston area)
+      '7': [-96.7970, 32.7767], // South Central (Dallas area)
+      '8': [-104.9903, 39.7392], // Mountain (Denver area)
+      '9': [-118.2437, 34.0522], // Pacific (LA area)
     };
 
-    const firstDigit = location.toString().charAt(0);
-    const defaultCoords = zipToRegion[firstDigit] || [-98.5795, 39.8283]; // Center of US
+    // Extract first digit from ZIP code or any number in the string
+    const zipMatch = location.match(/\b(\d{5})\b/);
+    let firstDigit = null;
     
-    console.log(`⚠️  Using default coordinates for "${location}": [${defaultCoords[0]}, ${defaultCoords[1]}]`);
+    if (zipMatch) {
+      firstDigit = zipMatch[1].charAt(0);
+    } else {
+      // Try to find any digit that might indicate a region
+      const digitMatch = location.match(/\d/);
+      if (digitMatch) {
+        firstDigit = digitMatch[0];
+      }
+    }
+    
+    const defaultCoords = firstDigit && zipToRegion[firstDigit] 
+      ? zipToRegion[firstDigit] 
+      : [-98.5795, 39.8283]; // Geographic center of US
+    
+    console.log(`⚠️ Using default coordinates for "${location}": [${defaultCoords[0]}, ${defaultCoords[1]}]`);
     
     return {
       coordinates: defaultCoords,
-      address: location,
-      confidence: 0.1 // Low confidence for fallback
+      address: `${location}, United States`,
+      confidence: 0.1, // Low confidence for fallback
+      addressDetails: {
+        country: 'United States',
+        fallback: true
+      },
+      boundingBox: null
     };
   }
 
@@ -129,9 +232,63 @@ class GeocodingService {
     return (
       typeof lon === 'number' && 
       typeof lat === 'number' &&
+      !isNaN(lon) && !isNaN(lat) &&
       lon >= -180 && lon <= 180 &&
       lat >= -90 && lat <= 90
     );
+  }
+
+  /**
+   * Clear cache (useful for testing or maintenance)
+   */
+  clearCache() {
+    this.cache.clear();
+    console.log('🗑️ Geocoding cache cleared');
+  }
+
+  /**
+   * Get cache statistics
+   */
+  getCacheStats() {
+    const now = Date.now();
+    let validEntries = 0;
+    let expiredEntries = 0;
+
+    for (const [key, entry] of this.cache.entries()) {
+      if (now - entry.timestamp < this.cacheTimeout) {
+        validEntries++;
+      } else {
+        expiredEntries++;
+      }
+    }
+
+    return {
+      totalEntries: this.cache.size,
+      validEntries,
+      expiredEntries,
+      cacheTimeout: this.cacheTimeout
+    };
+  }
+
+  /**
+   * Clean expired cache entries
+   */
+  cleanExpiredCache() {
+    const now = Date.now();
+    let removedCount = 0;
+
+    for (const [key, entry] of this.cache.entries()) {
+      if (now - entry.timestamp >= this.cacheTimeout) {
+        this.cache.delete(key);
+        removedCount++;
+      }
+    }
+
+    if (removedCount > 0) {
+      console.log(`🧹 Removed ${removedCount} expired cache entries`);
+    }
+
+    return removedCount;
   }
 }
 
