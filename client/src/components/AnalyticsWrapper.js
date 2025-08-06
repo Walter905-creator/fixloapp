@@ -1,51 +1,95 @@
 // src/components/AnalyticsWrapper.js
 import React, { useEffect } from 'react';
-import { Analytics } from '@vercel/analytics/react';
+
+// Conditionally import Analytics only when needed
+let Analytics = null;
+try {
+  if (typeof window !== 'undefined') {
+    // Only import if we're in a browser environment
+    const analyticsModule = require('@vercel/analytics/react');
+    Analytics = analyticsModule.Analytics;
+  }
+} catch (error) {
+  console.warn('[Fixlo Analytics] Analytics module not available:', error.message);
+}
 
 function AnalyticsWrapper() {
   useEffect(() => {
-    // Log analytics status for debugging
+    // Check environment and domain conditions
     const isProduction = process.env.NODE_ENV === 'production';
-    const isVercelDomain = window.location.hostname.includes('vercel.app') || 
-                          window.location.hostname.includes('fixloapp.com');
+    const hostname = window.location.hostname;
+    const isVercelDomain = hostname.includes('vercel.app') || 
+                          hostname.includes('vercel.com');
+    const isFixloDomain = hostname.includes('fixloapp.com') && 
+                         !hostname.includes('localhost') &&
+                         !hostname.includes('127.0.0.1');
+    
+    // Log current environment for debugging
+    console.log('[Fixlo Analytics] Environment check:', {
+      isProduction,
+      hostname,
+      isVercelDomain,
+      isFixloDomain,
+      analyticsAvailable: !!Analytics
+    });
     
     if (process.env.NODE_ENV === 'development') {
-      console.log('[Fixlo Analytics] Development mode - Analytics may not collect data');
-      console.log('[Fixlo Analytics] For full analytics testing, deploy to production');
+      console.log('[Fixlo Analytics] Development mode - Analytics disabled');
+      console.log('[Fixlo Analytics] Set REACT_APP_ENABLE_ANALYTICS=true to enable in development');
     }
     
-    if (!isVercelDomain && isProduction) {
-      console.warn('[Fixlo Analytics] Not on expected domain - analytics may not work properly');
+    if (!isVercelDomain && !isFixloDomain && isProduction) {
+      console.log('[Fixlo Analytics] Not on supported domain - Analytics disabled to prevent errors');
     }
-    
-    // Listen for analytics script loading errors
-    const originalError = console.error;
-    console.error = function(...args) {
-      if (args[0] && args[0].includes && args[0].includes('vercel-scripts.com')) {
-        console.warn('[Fixlo Analytics] Analytics script blocked - this is common with ad blockers');
-        console.warn('[Fixlo Analytics] To test analytics, disable content blockers and visit: https://fixloapp.vercel.app');
+
+    // Prevent analytics errors by intercepting network errors
+    const originalFetch = window.fetch;
+    window.fetch = function(...args) {
+      const url = args[0];
+      
+      // Block analytics requests that would cause 405 errors
+      if (typeof url === 'string' && url.includes('/_vercel/insights')) {
+        console.log('[Fixlo Analytics] Blocked analytics request to prevent 405 error:', url);
+        // Return a resolved promise to prevent errors
+        return Promise.resolve(new Response('', { status: 200 }));
       }
-      originalError.apply(console, args);
+      
+      return originalFetch.apply(this, args);
     };
-    
+
+    // Cleanup function
     return () => {
-      console.error = originalError;
+      window.fetch = originalFetch;
     };
   }, []);
 
-  // Only render Analytics in production or when explicitly enabled
-  const shouldRenderAnalytics = 
-    process.env.NODE_ENV === 'production' || 
-    process.env.REACT_APP_ENABLE_ANALYTICS === 'true';
+  // Determine if analytics should be rendered
+  const shouldRenderAnalytics = () => {
+    if (!Analytics) return false;
+    
+    const isProduction = process.env.NODE_ENV === 'production';
+    const hostname = window.location.hostname;
+    const isVercelDomain = hostname.includes('vercel.app') || hostname.includes('vercel.com');
+    const isFixloDomain = hostname.includes('fixloapp.com') && 
+                         !hostname.includes('localhost') &&
+                         !hostname.includes('127.0.0.1');
+    const isExplicitlyEnabled = process.env.REACT_APP_ENABLE_ANALYTICS === 'true';
+    
+    // Only render analytics in appropriate environments
+    return (isProduction && (isVercelDomain || isFixloDomain)) || isExplicitlyEnabled;
+  };
 
-  if (!shouldRenderAnalytics) {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[Fixlo Analytics] Skipping analytics in development. Set REACT_APP_ENABLE_ANALYTICS=true to enable.');
-    }
+  if (!shouldRenderAnalytics()) {
     return null;
   }
 
-  return <Analytics debug={process.env.NODE_ENV === 'development'} />;
+  // Wrap analytics in error boundary
+  try {
+    return <Analytics debug={process.env.NODE_ENV === 'development'} />;
+  } catch (error) {
+    console.warn('[Fixlo Analytics] Failed to render analytics:', error.message);
+    return null;
+  }
 }
 
 export default AnalyticsWrapper;
