@@ -2,7 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import "./index.css";
 import App from "./App";
-import ErrorBoundary from "./components/ErrorBoundary";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 // Force cache invalidation on app load
 const buildTimestamp = process.env.REACT_APP_BUILD_TIMESTAMP || Date.now();
