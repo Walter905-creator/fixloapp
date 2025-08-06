@@ -34,7 +34,7 @@ console.log(`🚀 Fixlo App loaded - Build: ${buildId} - Timestamp: ${buildTimes
 function App() {
   return (
     <ErrorBoundary>
-      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <Router>
         <div className="min-h-screen flex flex-col">
           {/* Navigation */}
           <Navigation />
