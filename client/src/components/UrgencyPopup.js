@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import geolocationService from '../utils/geolocationService';
 
 export default function UrgencyPopup() {
   const [show, setShow] = useState(false);
@@ -7,45 +8,20 @@ export default function UrgencyPopup() {
   useEffect(() => {
     // Get user's location to personalize the message
     const getUserLocation = async () => {
-      if (navigator.geolocation) {
+      if (geolocationService.isGeolocationSupported()) {
         try {
-          const position = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              enableHighAccuracy: false,
-              timeout: 10000,
-              maximumAge: 300000 // Cache for 5 minutes
-            });
-          });
-
-          const { latitude, longitude } = position.coords;
-          
-          // Use reverse geocoding to get city name
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
-            {
-              headers: {
-                'User-Agent': 'Fixlo-App/1.0 (https://www.fixloapp.com)'
-              }
-            }
-          );
-          
-          if (response.ok) {
-            const data = await response.json();
-            const address = data.address;
-            const locationName = address.city || address.town || address.village || address.county || 'your area';
-            setCity(locationName);
-          }
+          console.log('🗺️ Getting location for urgency popup personalization...');
+          const result = await geolocationService.getCurrentLocationWithAddress();
+          const locationName = result.addressDetails.city || 
+                              result.addressDetails.town || 
+                              result.addressDetails.village || 
+                              result.addressDetails.county || 
+                              'your area';
+          setCity(locationName);
+          console.log(`✅ Urgency popup personalized for: ${locationName}`);
         } catch (error) {
           // Handle geolocation errors more gracefully
-          if (error.code === 1) {
-            console.log('Location access denied by user - using fallback location');
-          } else if (error.code === 2) {
-            console.log('Location unavailable - using fallback location');
-          } else if (error.code === 3) {
-            console.log('Location request timeout - using fallback location');
-          } else {
-            console.log('Location detection failed - using fallback location:', error.message);
-          }
+          console.log('ℹ️ Location detection failed for urgency popup (non-critical):', error.message);
           // Keep default "your area" if location fails
         }
       }
