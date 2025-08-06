@@ -12,10 +12,11 @@ const sampleJobs = [
 ];
 
 export default function LiveJobFeed() {
-  const [feed, setFeed] = useState([]);
+  // Initialize with first job to avoid loading state
+  const [feed, setFeed] = useState([sampleJobs[0]]);
 
   useEffect(() => {
-    let i = 0;
+    let i = 1; // Start from second job since first is already shown
     const interval = setInterval(() => {
       setFeed(prev => [sampleJobs[i % sampleJobs.length], ...prev.slice(0, 4)]);
       i++;
