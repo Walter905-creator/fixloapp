@@ -9,6 +9,7 @@ export default function UrgencyPopup() {
   useEffect(() => {
     // Get user's location to personalize the message
     const getUserLocation = async () => {
+ copilot/fix-8447e1e7-8561-4f11-97e9-653cc79a88fc
       if (geolocationService.isGeolocationSupported()) {
         try {
           console.log('🗺️ Getting location for urgency popup personalization...');
@@ -26,6 +27,34 @@ export default function UrgencyPopup() {
           setCity('Charlotte'); // fallback default
           setState('NC');
         }
+
+      if (!geolocationService.isGeolocationSupported()) {
+        console.log('ℹ️ Geolocation not supported for urgency popup personalization');
+        return;
+      }
+
+      // Check if we should request location (not denied)
+      const shouldRequest = await geolocationService.shouldRequestLocation();
+      if (!shouldRequest) {
+        console.log('ℹ️ Geolocation permissions not available for urgency popup personalization');
+        return;
+      }
+
+      try {
+        console.log('🗺️ Getting location for urgency popup personalization...');
+        const result = await geolocationService.getCurrentLocationWithAddress();
+        const locationName = result.addressDetails.city || 
+                            result.addressDetails.town || 
+                            result.addressDetails.village || 
+                            result.addressDetails.county || 
+                            'your area';
+        setCity(locationName);
+        console.log(`✅ Urgency popup personalized for: ${locationName}`);
+      } catch (error) {
+        // Handle geolocation errors more gracefully
+        console.log('ℹ️ Location detection failed for urgency popup (non-critical):', error.message);
+        // Keep default "your area" if location fails
+ main
       }
     };
 

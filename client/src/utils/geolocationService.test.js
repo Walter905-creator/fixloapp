@@ -68,6 +68,83 @@ describe('GeolocationService', () => {
     });
   });
 
+  describe('Permission Checking', () => {
+    test('should return unsupported when geolocation is not available', async () => {
+      delete global.navigator.geolocation;
+      const status = await geolocationService.checkPermissionStatus();
+      expect(status).toBe('unsupported');
+    });
+
+    test('should return permission status when permissions API is available', async () => {
+      // Mock geolocation support
+      const mockGeolocation = {
+        getCurrentPosition: jest.fn()
+      };
+      Object.defineProperty(global.navigator, 'geolocation', {
+        value: mockGeolocation,
+        configurable: true
+      });
+
+      // Mock permissions API
+      const mockPermissions = {
+        query: jest.fn().mockResolvedValue({ state: 'granted' })
+      };
+      Object.defineProperty(global.navigator, 'permissions', {
+        value: mockPermissions,
+        configurable: true
+      });
+
+      const status = await geolocationService.checkPermissionStatus();
+      expect(status).toBe('granted');
+      expect(mockPermissions.query).toHaveBeenCalledWith({ name: 'geolocation' });
+    });
+
+    test('should return prompt when permissions API is not available', async () => {
+      // Mock geolocation support
+      const mockGeolocation = {
+        getCurrentPosition: jest.fn()
+      };
+      Object.defineProperty(global.navigator, 'geolocation', {
+        value: mockGeolocation,
+        configurable: true
+      });
+
+      // Remove permissions API
+      delete global.navigator.permissions;
+
+      const status = await geolocationService.checkPermissionStatus();
+      expect(status).toBe('prompt');
+    });
+
+    test('should return false for shouldRequestLocation when denied', async () => {
+      // Mock permissions API returning denied
+      const mockPermissions = {
+        query: jest.fn().mockResolvedValue({ state: 'denied' })
+      };
+      Object.defineProperty(global.navigator, 'permissions', {
+        value: mockPermissions,
+        configurable: true
+      });
+
+      const shouldRequest = await geolocationService.shouldRequestLocation();
+      expect(shouldRequest).toBe(false);
+    });
+
+    test('should return true for shouldRequestLocation when granted', async () => {
+      // Mock permissions API returning granted
+      const mockPermissions = {
+        query: jest.fn().mockResolvedValue({ state: 'granted' })
+      };
+      Object.defineProperty(global.navigator, 'permissions', {
+        value: mockPermissions,
+        configurable: true
+      });
+
+      const shouldRequest = await geolocationService.shouldRequestLocation();
+      expect(shouldRequest).toBe(true);
+    });
+  });
+
   describe('Coordinate Validation', () => {
     test('should validate valid coordinates', () => {
       expect(geolocationService.validateCoordinates([-74.006, 40.7128])).toBe(true);

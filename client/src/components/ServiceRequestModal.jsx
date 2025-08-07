@@ -118,7 +118,15 @@ export default function ServiceRequestModal({ service, onClose }) {
   const getCurrentLocation = async () => {
     if (!geolocationService.isGeolocationSupported()) {
       const message = geolocationService.getErrorMessage({ message: 'GEOLOCATION_NOT_SUPPORTED' });
-      alert(message);
+      setLocationError(message);
+      return;
+    }
+
+    // Check permission status first
+    const shouldRequest = await geolocationService.shouldRequestLocation();
+    if (!shouldRequest) {
+      const message = 'Location access not available. Please enter your address manually.';
+      setLocationError(message);
       return;
     }
 
@@ -140,7 +148,7 @@ export default function ServiceRequestModal({ service, onClose }) {
       console.error('❌ Location error:', error);
       const message = geolocationService.getErrorMessage(error);
       setLocationError(message);
-      alert(message);
+      // Remove intrusive alert - just show in UI
     } finally {
       setGettingLocation(false);
     }
