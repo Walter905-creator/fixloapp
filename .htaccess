@@ -112,3 +112,21 @@ ErrorDocument 500 /500.html
 RewriteCond %{HTTP_REFERER} !^$
 RewriteCond %{HTTP_REFERER} !^https?://(www\.)?fixloapp\.com [NC]
 RewriteRule \.(jpg|jpeg|png|gif|webp|svg)$ - [F,L]
+
+# Cache busting for static resources
+<IfModule mod_headers.c>
+    # Cache hashed JS files for 1 year (safe due to content-based naming)
+    <FilesMatch "main\.[a-f0-9]{8}\.js$">
+        Header set Cache-Control "max-age=31536000, public, immutable"
+    </FilesMatch>
+    
+    # Short cache for other JS files to prevent stale references
+    <FilesMatch "\.js$">
+        Header set Cache-Control "max-age=300, public"
+    </FilesMatch>
+    
+    # Cache static assets longer
+    <FilesMatch "\.(css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$">
+        Header set Cache-Control "max-age=31536000, public, immutable"
+    </FilesMatch>
+</IfModule>
