@@ -11,6 +11,7 @@ import ServiceSelector from './components/ServiceSelector';
 import LiveJobFeed from './components/LiveJobFeed';
 import ReferralSystem from './components/ReferralSystem';
 import DynamicLandingPageRoute from './components/DynamicLandingPageRoute';
+import SEOHead from './components/SEOHead';
 
 import HomePage from './components/HomePage';
 import Admin from './components/Admin';
@@ -25,6 +26,8 @@ import ChatComponent from './components/ChatComponent';
 import Navigation from './components/Navigation';
 import Footer from './components/Footer';
 import FixloLogo from './components/FixloLogo';
+import NotFound from './components/NotFound';
+import URLRedirectHandler from './components/URLRedirectHandler';
 
 // Cache busting - show build info in console
 const buildId = process.env.REACT_APP_BUILD_ID || 'dev';
@@ -35,12 +38,12 @@ console.log(`🚀 Fixlo App loaded - Build: ${buildId} - Timestamp: ${buildTimes
 function App() {
   return (
     <HelmetProvider>
-      <Helmet>
-        <link rel="canonical" href={window.location.href} />
-      </Helmet>
       <ErrorBoundary>
         <Router>
         <div className="min-h-screen flex flex-col">
+          {/* URL Redirect Handler */}
+          <URLRedirectHandler />
+          
           {/* Navigation */}
           <Navigation />
           
@@ -56,7 +59,13 @@ function App() {
               <Route
                 path="/"
                 element={
-                  <div className="app">
+                  <>
+                    <SEOHead 
+                      title="Fixlo – Book Trusted Home Services Near You"
+                      description="Fixlo connects homeowners with trusted pros for plumbing, electrical, junk removal & more. Fast, easy, nationwide."
+                      url="https://www.fixloapp.com/"
+                    />
+                    <div className="app">
                     <header className="header bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16 px-4">
                       <div className="max-w-4xl mx-auto text-center">
                         <div className="text-center my-6">
@@ -94,6 +103,7 @@ function App() {
                       </div>
                     </section>
                   </div>
+                  </>
                 }
               />
 
@@ -101,45 +111,145 @@ function App() {
               <Route path="/services/:service" element={<DynamicLandingPageRoute />} />
               <Route path="/services/:service/:city" element={<DynamicLandingPageRoute />} />
 
-              {/* Admin dashboard route */}
-              <Route path="/admin" element={<Admin />} />
+              {/* Admin dashboard route - noindex for security */}
+              <Route path="/admin" element={
+                <>
+                  <Helmet>
+                    <meta name="robots" content="noindex, nofollow" />
+                    <title>Admin Dashboard - Fixlo</title>
+                  </Helmet>
+                  <Admin />
+                </>
+              } />
 
-              {/* Professional dashboard route */}
-              <Route path="/pro-dashboard" element={<ProDashboard />} />
+              {/* Professional dashboard route - noindex for privacy */}
+              <Route path="/pro-dashboard" element={
+                <>
+                  <Helmet>
+                    <meta name="robots" content="noindex, nofollow" />
+                    <title>Professional Dashboard - Fixlo</title>
+                  </Helmet>
+                  <ProDashboard />
+                </>
+              } />
 
-              {/* Professional routes */}
-              <Route path="/signup" element={<ProSignup />} />
-              <Route path="/pro/signin" element={<ProSignin />} />
-              <Route path="/pro/signup" element={<ProSignup />} />
-              <Route path="/pro/dashboard" element={<ProDashboard />} />
+              {/* Professional routes with SEO */}
+              <Route path="/signup" element={
+                <>
+                  <SEOHead 
+                    title="Join Fixlo as a Professional - Start Getting Customers Today"
+                    description="Join Fixlo's network of trusted home service professionals. Get connected with customers in your area for plumbing, electrical, and more."
+                    url="https://www.fixloapp.com/signup"
+                  />
+                  <ProSignup />
+                </>
+              } />
+              <Route path="/pro/signin" element={
+                <>
+                  <SEOHead 
+                    title="Professional Sign In - Fixlo"
+                    description="Sign in to your Fixlo professional account to manage bookings and connect with customers."
+                    url="https://www.fixloapp.com/pro/signin"
+                  />
+                  <ProSignin />
+                </>
+              } />
+              <Route path="/pro/signup" element={
+                <>
+                  <SEOHead 
+                    title="Professional Signup - Fixlo"
+                    description="Sign up as a professional on Fixlo and start connecting with customers who need your services."
+                    url="https://www.fixloapp.com/pro/signup"
+                  />
+                  <ProSignup />
+                </>
+              } />
+              <Route path="/pro/dashboard" element={
+                <>
+                  <SEOHead 
+                    title="Professional Dashboard - Fixlo"
+                    description="Manage your Fixlo professional account, view bookings, and connect with customers."
+                    url="https://www.fixloapp.com/pro/dashboard"
+                  />
+                  <ProDashboard />
+                </>
+              } />
 
-              {/* New pages */}
-              <Route path="/contact" element={<ContactUs />} />
-              <Route path="/terms" element={<TermsOfService />} />
-              <Route path="/how-it-works" element={<HowItWorks />} />
+              {/* Contact route with SEO */}
+              <Route path="/contact" element={
+                <>
+                  <SEOHead 
+                    title="Contact Fixlo - Get Support for Home Services"
+                    description="Contact Fixlo for support with home service bookings, professional inquiries, or technical assistance. Available 24/7."
+                    url="https://www.fixloapp.com/contact"
+                  />
+                  <ContactUs />
+                </>
+              } />
+              
+              {/* Terms route with SEO */}
+              <Route path="/terms" element={
+                <>
+                  <SEOHead 
+                    title="Terms of Service - Fixlo"
+                    description="Read Fixlo's terms of service for home service professionals and homeowners."
+                    url="https://www.fixloapp.com/terms"
+                  />
+                  <TermsOfService />
+                </>
+              } />
+              
+              {/* How it works route with SEO */}
+              <Route path="/how-it-works" element={
+                <>
+                  <SEOHead 
+                    title="How Fixlo Works - Connect with Trusted Home Service Pros"
+                    description="Learn how Fixlo connects homeowners with verified professionals for plumbing, electrical, and other home services."
+                    url="https://www.fixloapp.com/how-it-works"
+                  />
+                  <HowItWorks />
+                </>
+              } />
               <Route path="/ai-assistant" element={
-                <div className="min-h-screen bg-gray-50 py-12 px-4">
-                  <div className="max-w-4xl mx-auto">
-                    <div className="text-center mb-8">
-                      <h1 className="text-3xl font-bold text-gray-900 mb-4">AI Home Improvement Assistant</h1>
-                      <p className="text-lg text-gray-600">Get expert advice for your home projects</p>
+                <>
+                  <SEOHead 
+                    title="AI Home Improvement Assistant - Get Expert Advice | Fixlo"
+                    description="Get free expert advice for your home improvement projects with Fixlo's AI assistant. Ask questions about plumbing, electrical, and more."
+                    url="https://www.fixloapp.com/ai-assistant"
+                  />
+                  <div className="min-h-screen bg-gray-50 py-12 px-4">
+                    <div className="max-w-4xl mx-auto">
+                      <div className="text-center mb-8">
+                        <h1 className="text-3xl font-bold text-gray-900 mb-4">AI Home Improvement Assistant</h1>
+                        <p className="text-lg text-gray-600">Get expert advice for your home projects</p>
+                      </div>
+                      <AIAssistant />
                     </div>
-                    <AIAssistant />
                   </div>
-                </div>
+                </>
               } />
               <Route path="/chat" element={
-                <div className="min-h-screen bg-gray-50 py-12 px-4">
-                  <div className="max-w-4xl mx-auto">
-                    <h1 className="text-3xl font-bold text-center mb-8">Project Chat</h1>
-                    <ChatComponent 
-                      userId="demo-user" 
-                      userName="Demo User" 
-                      chatType="general" 
-                    />
+                <>
+                  <SEOHead 
+                    title="Project Chat - Connect with Professionals | Fixlo"
+                    description="Chat with home service professionals on Fixlo. Get real-time answers to your project questions."
+                    url="https://www.fixloapp.com/chat"
+                  />
+                  <div className="min-h-screen bg-gray-50 py-12 px-4">
+                    <div className="max-w-4xl mx-auto">
+                      <h1 className="text-3xl font-bold text-center mb-8">Project Chat</h1>
+                      <ChatComponent 
+                        userId="demo-user" 
+                        userName="Demo User" 
+                        chatType="general" 
+                      />
+                    </div>
                   </div>
-                </div>
+                </>
               } />
+              
+              {/* Catch all route for 404 errors */}
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
 
