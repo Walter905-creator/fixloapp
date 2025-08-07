@@ -8,10 +8,65 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
+// OPTIONS handlers for professional endpoints
+router.options("/register", (req, res) => {
+  const requestOrigin = req.headers.origin;
+  console.log(`🎯 OPTIONS /api/pros/register from origin: "${requestOrigin || 'null'}"`);
+  
+  res.header('Access-Control-Allow-Origin', requestOrigin || '*');
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Max-Age', '86400');
+  res.sendStatus(204);
+});
+
+router.options("/login", (req, res) => {
+  const requestOrigin = req.headers.origin;
+  console.log(`🎯 OPTIONS /api/pros/login from origin: "${requestOrigin || 'null'}"`);
+  
+  res.header('Access-Control-Allow-Origin', requestOrigin || '*');
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Max-Age', '86400');
+  res.sendStatus(204);
+});
+
+router.options("/dashboard", (req, res) => {
+  const requestOrigin = req.headers.origin;
+  console.log(`🎯 OPTIONS /api/pros/dashboard from origin: "${requestOrigin || 'null'}"`);
+  
+  res.header('Access-Control-Allow-Origin', requestOrigin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Max-Age', '86400');
+  res.sendStatus(204);
+});
+
 // Register new pro
 router.post('/register', async (req, res) => {
   try {
     const { name, email, password, phone, trade, location, dob } = req.body;
+
+    // Check if required dependencies are available
+    if (!bcrypt || !jwt) {
+      console.error('❌ Missing required dependencies for professional registration');
+      return res.status(503).json({ 
+        error: 'Registration service temporarily unavailable',
+        message: 'Please try again later or contact support'
+      });
+    }
+
+    // Check if Pro model is available (database connection)
+    if (!Pro || typeof Pro.findOne !== 'function') {
+      console.error('❌ Database not available for professional registration');
+      return res.status(503).json({ 
+        error: 'Registration service temporarily unavailable',
+        message: 'Database connection issue. Please try again later.'
+      });
+    }
 
     // Check if pro already exists
     const existingPro = await Pro.findOne({ $or: [{ email }, { phone }] });
@@ -42,6 +97,14 @@ router.post('/register', async (req, res) => {
     await newPro.save();
 
     // Generate JWT token
+    if (!process.env.JWT_SECRET) {
+      console.error('❌ JWT_SECRET not configured');
+      return res.status(500).json({ 
+        error: 'Authentication system not configured',
+        message: 'Please contact support'
+      });
+    }
+
     const token = jwt.sign(
       { proId: newPro._id, email: newPro.email },
       process.env.JWT_SECRET,
@@ -70,6 +133,24 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Check if required dependencies are available
+    if (!bcrypt || !jwt) {
+      console.error('❌ Missing required dependencies for professional login');
+      return res.status(503).json({ 
+        error: 'Login service temporarily unavailable',
+        message: 'Please try again later or contact support'
+      });
+    }
+
+    // Check if Pro model is available (database connection)
+    if (!Pro || typeof Pro.findOne !== 'function') {
+      console.error('❌ Database not available for professional login');
+      return res.status(503).json({ 
+        error: 'Login service temporarily unavailable',
+        message: 'Database connection issue. Please try again later.'
+      });
+    }
+
     // Find pro by email
     const pro = await Pro.findOne({ email });
     if (!pro) {
@@ -83,6 +164,14 @@ router.post('/login', async (req, res) => {
     }
 
     // Generate JWT token
+    if (!process.env.JWT_SECRET) {
+      console.error('❌ JWT_SECRET not configured');
+      return res.status(500).json({ 
+        error: 'Authentication system not configured',
+        message: 'Please contact support'
+      });
+    }
+
     const token = jwt.sign(
       { proId: pro._id, email: pro.email },
       process.env.JWT_SECRET,
