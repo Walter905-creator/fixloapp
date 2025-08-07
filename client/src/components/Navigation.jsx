@@ -1,17 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import SignupPopup from './SignupPopup';
 
 const Navigation = () => {
-  const [showSignupPopup, setShowSignupPopup] = useState(false);
-  const [signupType, setSignupType] = useState('homeowner');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const handleSignupClick = (type) => {
-    setSignupType(type);
-    setShowSignupPopup(true);
-    setMobileMenuOpen(false);
-  };
 
   return (
     <>
@@ -49,18 +40,12 @@ const Navigation = () => {
               </Link>
               
               {/* Action Buttons */}
-              <button
-                onClick={() => handleSignupClick('homeowner')}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-              >
-                Get Service
-              </button>
-              <button
-                onClick={() => handleSignupClick('professional')}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors"
-              >
-                Join as Pro
-              </button>
+              <Link to="/pro/signin" className="text-gray-700 font-semibold hover:text-blue-600">
+                Pro Sign In
+              </Link>
+              <Link to="/signup" className="bg-orange-600 text-white font-bold px-4 py-2 rounded hover:bg-orange-700 transition">
+                Join Now
+              </Link>
             </div>
 
             {/* Mobile menu button */}
@@ -114,31 +99,26 @@ const Navigation = () => {
                 </Link>
                 
                 <div className="flex flex-col space-y-2 pt-4 border-t border-gray-200">
-                  <button
-                    onClick={() => handleSignupClick('homeowner')}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors text-center"
+                  <Link
+                    to="/pro/signin"
+                    className="text-gray-700 font-semibold hover:text-blue-600 text-center"
+                    onClick={() => setMobileMenuOpen(false)}
                   >
-                    Get Service
-                  </button>
-                  <button
-                    onClick={() => handleSignupClick('professional')}
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors text-center"
+                    Pro Sign In
+                  </Link>
+                  <Link
+                    to="/signup"
+                    className="bg-orange-600 text-white font-bold px-4 py-2 rounded hover:bg-orange-700 transition text-center"
+                    onClick={() => setMobileMenuOpen(false)}
                   >
-                    Join as Pro
-                  </button>
+                    Join Now
+                  </Link>
                 </div>
               </div>
             </div>
           )}
         </div>
       </nav>
-
-      {/* Signup Popup */}
-      <SignupPopup
-        isOpen={showSignupPopup}
-        onClose={() => setShowSignupPopup(false)}
-        userType={signupType}
-      />
     </>
   );
 };

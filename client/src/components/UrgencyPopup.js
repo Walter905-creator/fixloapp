@@ -3,7 +3,8 @@ import geolocationService from '../utils/geolocationService';
 
 export default function UrgencyPopup() {
   const [show, setShow] = useState(false);
-  const [city, setCity] = useState('your area');
+  const [city, setCity] = useState('Charlotte');
+  const [state, setState] = useState('NC');
 
   useEffect(() => {
     // Get user's location to personalize the message
@@ -21,8 +22,9 @@ export default function UrgencyPopup() {
           console.log(`✅ Urgency popup personalized for: ${locationName}`);
         } catch (error) {
           // Handle geolocation errors more gracefully
-          console.log('ℹ️ Location detection failed for urgency popup (non-critical):', error.message);
-          // Keep default "your area" if location fails
+          console.warn('Geolocation failed, using fallback:', error);
+          setCity('Charlotte'); // fallback default
+          setState('NC');
         }
       }
     };
@@ -49,6 +51,11 @@ export default function UrgencyPopup() {
     }}>
       🚨 Only 14 pro spots left in {city}!<br />
       <strong>Join Fixlo now</strong> to claim your area.
+      {city && (
+        <div style={{ fontSize: '14px', color: '#ffcccc', marginTop: '8px' }}>
+          Homeowners in <strong>{city}</strong> need your service!
+        </div>
+      )}
       <button
         onClick={() => setShow(false)}
         style={{
