@@ -18,9 +18,16 @@ const path = require("path");
 // Import models and services
 const Pro = require("./models/Pro");
 const geocodingService = require("./utils/geocoding");
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 dotenv.config();
+
+// Initialize Stripe only if the secret key is available
+let stripe = null;
+if (process.env.STRIPE_SECRET_KEY) {
+  stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+} else {
+  console.warn('⚠️ STRIPE_SECRET_KEY not found - Stripe payments will be unavailable');
+}
 
 // ✅ Define allowed origins (for production and local dev)
 const allowedOrigins = process.env.CORS_ALLOWED_ORIGINS 
@@ -490,7 +497,7 @@ app.post("/api/pro-signup", async (req, res) => {
     }
 
     // Create Stripe Checkout session
-    if (!process.env.STRIPE_SECRET_KEY) {
+    if (!process.env.STRIPE_SECRET_KEY || !stripe) {
       console.error('❌ Stripe secret key not configured');
       return res.status(500).json({
         success: false,
