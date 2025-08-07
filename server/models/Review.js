@@ -63,7 +63,7 @@ reviewSchema.virtual('averageRating').get(function() {
 // Static method to get average rating for a professional
 reviewSchema.statics.getAverageRating = async function(proId) {
   const result = await this.aggregate([
-    { $match: { proId: mongoose.Types.ObjectId(proId) } },
+    { $match: { proId: new mongoose.Types.ObjectId(proId) } },
     {
       $group: {
         _id: null,

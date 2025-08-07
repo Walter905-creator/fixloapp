@@ -271,8 +271,6 @@ app.use("/api/subscribe", require("./routes/subscribe")); // Subscription form h
 app.use("/api/upload", require("./routes/upload")); // Cloudinary image upload
 app.use("/api/reviews", require("./routes/reviews")); // Professional reviews
 app.use("/api", require("./routes/ipinfo")); // IP information proxy
-app.use('/api', require('./routes/upload')); // Image upload route
-app.use('/api/reviews', require('./routes/reviews')); // Professional reviews route
 app.use("/api/ai", require("./routes/ai")); // AI assistant route
 app.use("/api/contact", require("./routes/contact")); // Contact form route
 

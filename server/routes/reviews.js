@@ -8,9 +8,9 @@ const mongoose = require('mongoose');
 router.get('/:proId', async (req, res) => {
   try {
     const { proId } = req.params;
-    const { page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 10, sortBy = 'newest' } = req.query;
 
-    console.log(`📖 Getting reviews for pro: ${proId}`);
+    console.log(`📖 Getting reviews for pro: ${proId}, sortBy: ${sortBy}`);
 
     // Validate proId
     if (!mongoose.Types.ObjectId.isValid(proId)) {
@@ -32,9 +32,27 @@ router.get('/:proId', async (req, res) => {
     // Calculate pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
+    // Determine sort order based on sortBy parameter
+    let sortOrder = { createdAt: -1 }; // Default: newest first
+    switch (sortBy) {
+      case 'oldest':
+        sortOrder = { createdAt: 1 };
+        break;
+      case 'highest':
+        sortOrder = { rating: -1, createdAt: -1 };
+        break;
+      case 'lowest':
+        sortOrder = { rating: 1, createdAt: -1 };
+        break;
+      case 'newest':
+      default:
+        sortOrder = { createdAt: -1 };
+        break;
+    }
+
     // Get reviews with pagination
     const reviews = await Review.find({ proId })
-      .sort({ createdAt: -1 }) // Most recent first
+      .sort(sortOrder)
       .skip(skip)
       .limit(parseInt(limit))
       .select('-customerEmail') // Don't expose customer email in public API
@@ -43,8 +61,32 @@ router.get('/:proId', async (req, res) => {
     // Get total count for pagination
     const totalReviews = await Review.countDocuments({ proId });
 
-    // Calculate average rating
-    const ratingStats = await Review.getAverageRating(proId);
+    // Calculate detailed rating statistics
+    const ratingStats = await Review.aggregate([
+      { $match: { proId: new mongoose.Types.ObjectId(proId) } },
+      {
+        $group: {
+          _id: null,
+          averageRating: { $avg: '$rating' },
+          totalReviews: { $sum: 1 },
+          rating1: { $sum: { $cond: [{ $eq: ['$rating', 1] }, 1, 0] } },
+          rating2: { $sum: { $cond: [{ $eq: ['$rating', 2] }, 1, 0] } },
+          rating3: { $sum: { $cond: [{ $eq: ['$rating', 3] }, 1, 0] } },
+          rating4: { $sum: { $cond: [{ $eq: ['$rating', 4] }, 1, 0] } },
+          rating5: { $sum: { $cond: [{ $eq: ['$rating', 5] }, 1, 0] } }
+        }
+      }
+    ]);
+
+    const statsResult = ratingStats.length > 0 ? ratingStats[0] : {
+      averageRating: 0,
+      totalReviews: 0,
+      rating1: 0,
+      rating2: 0,
+      rating3: 0,
+      rating4: 0,
+      rating5: 0
+    };
 
     console.log(`✅ Found ${reviews.length} reviews for pro ${proId}`);
 
@@ -59,8 +101,15 @@ router.get('/:proId', async (req, res) => {
           pages: Math.ceil(totalReviews / parseInt(limit))
         },
         stats: {
-          averageRating: ratingStats.averageRating || 0,
-          totalReviews: ratingStats.totalReviews || 0
+          averageRating: statsResult.averageRating || 0,
+          totalReviews: statsResult.totalReviews || 0,
+          ratingBreakdown: {
+            1: statsResult.rating1 || 0,
+            2: statsResult.rating2 || 0,
+            3: statsResult.rating3 || 0,
+            4: statsResult.rating4 || 0,
+            5: statsResult.rating5 || 0
+          }
         }
       }
     });
@@ -185,7 +234,7 @@ router.get('/:proId/stats', async (req, res) => {
 
     // Get detailed rating statistics
     const stats = await Review.aggregate([
-      { $match: { proId: mongoose.Types.ObjectId(proId) } },
+      { $match: { proId: new mongoose.Types.ObjectId(proId) } },
       {
         $group: {
           _id: null,
