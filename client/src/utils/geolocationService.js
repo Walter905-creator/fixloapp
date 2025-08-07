@@ -33,6 +33,37 @@ class GeolocationService {
   }
 
   /**
+   * Check current geolocation permission status
+   * Returns 'granted', 'denied', 'prompt', or 'unsupported'
+   */
+  async checkPermissionStatus() {
+    if (!this.isGeolocationSupported()) {
+      return 'unsupported';
+    }
+
+    // Check if permissions API is available
+    if ('permissions' in navigator) {
+      try {
+        const permission = await navigator.permissions.query({ name: 'geolocation' });
+        return permission.state; // 'granted', 'denied', or 'prompt'
+      } catch (error) {
+        console.log('📍 Permissions API not available, will check on request');
+      }
+    }
+
+    // Fallback: can't determine without making a request
+    return 'prompt';
+  }
+
+  /**
+   * Check if we should request geolocation (not denied)
+   */
+  async shouldRequestLocation() {
+    const status = await this.checkPermissionStatus();
+    return status !== 'denied' && status !== 'unsupported';
+  }
+
+  /**
    * Check if we're running on HTTPS (required for geolocation in many browsers)
    */
   isSecureContext() {
