@@ -6,7 +6,7 @@
     "install-client": "cd client && npm install",
     "build-client": "cd client && REACT_APP_API_URL=https://fixloapp.onrender.com REACT_APP_BUILD_TIMESTAMP=$(date +%s) REACT_APP_BUILD_ID=$(date +%Y%m%d-%H%M%S) npm run build",
     "deploy-build": "cp -r client/build/* . && echo 'Build deployed to root directory'",
-    "clean-old-builds": "find static/js -name 'main.*.js' -not -name 'main.edb3d517.js' -delete 2>/dev/null || true",
+    "clean-old-builds": "# Clean old builds - this step now happens before build to avoid conflicts",
     "start-client": "cd client && npm start",
     "build": "npm run install-client && npm run build-client && npm run deploy-build && npm run clean-old-builds",
     "verify-deployment": "node verify-deployment.js",
