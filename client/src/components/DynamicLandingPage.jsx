@@ -72,6 +72,13 @@ export default function DynamicLandingPage({ city, service }) {
       description: 'Professional roofing repairs and installations',
       services: ['Roof repair', 'Shingle replacement', 'Gutter installation', 'Roof inspection'],
       avgPrice: '$500-$2,000'
+    },
+    'junk-removal': {
+      emoji: '🗑️',
+      title: 'Junk Removal',
+      description: 'Professional junk removal and hauling services',
+      services: ['Furniture removal', 'Appliance disposal', 'Construction debris', 'Estate cleanouts'],
+      avgPrice: '$150-$600'
     }
   };
 
