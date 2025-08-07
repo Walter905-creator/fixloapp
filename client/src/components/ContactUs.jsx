@@ -32,7 +32,7 @@ const ContactUs = () => {
       setSuccess(true);
       setFormData({ name: '', email: '', subject: '', message: '' });
     } catch (err) {
-      setError('Failed to send message. Please try again or email us directly at support@fixloapp.com');
+      setError('Failed to send message. Please try again or email us directly at pro4u.improvements@gmail.com');
     } finally {
       setLoading(false);
     }
@@ -62,7 +62,7 @@ const ContactUs = () => {
                 </div>
                 <div className="ml-3">
                   <p className="text-sm font-medium text-gray-900">Email</p>
-                  <p className="text-sm text-gray-600">support@fixloapp.com</p>
+                  <p className="text-sm text-gray-600">pro4u.improvements@gmail.com</p>
                 </div>
               </div>
 

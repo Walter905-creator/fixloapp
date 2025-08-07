@@ -169,7 +169,7 @@ const TermsOfService = () => {
             </p>
             <div className="mt-4 p-4 bg-gray-100 rounded-lg">
               <p className="text-gray-700">
-                <strong>Email:</strong> support@fixloapp.com<br />
+                <strong>Email:</strong> pro4u.improvements@gmail.com<br />
                 <strong>Response Time:</strong> Within 24 hours
               </p>
             </div>
