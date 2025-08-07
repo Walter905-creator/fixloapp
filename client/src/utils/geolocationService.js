@@ -135,21 +135,25 @@ class GeolocationService {
           resolve(result);
         },
         (error) => {
-          console.error('❌ Geolocation error:', error);
+          console.log('📍 Geolocation request failed:', error.message || 'Unknown error');
           
           let errorMessage;
           switch (error.code) {
             case 1: // PERMISSION_DENIED
               errorMessage = 'PERMISSION_DENIED';
+              console.log('📍 Location permission denied - this is normal if user declined');
               break;
             case 2: // POSITION_UNAVAILABLE
               errorMessage = 'POSITION_UNAVAILABLE';
+              console.log('📍 Location unavailable - device may not have GPS');
               break;
             case 3: // TIMEOUT
               errorMessage = 'TIMEOUT';
+              console.log('📍 Location request timed out - network may be slow');
               break;
             default:
               errorMessage = 'UNKNOWN_ERROR';
+              console.log('📍 Unknown geolocation error occurred');
           }
           
           reject(new Error(errorMessage));
@@ -291,7 +295,7 @@ class GeolocationService {
       };
       
     } catch (error) {
-      console.error('❌ Failed to get current location with address:', error.message);
+      console.log('📍 Location detection failed (non-critical):', error.message);
       throw error;
     }
   }
