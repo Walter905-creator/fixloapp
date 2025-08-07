@@ -72,6 +72,16 @@ function App() {
                         <h2 className="text-3xl font-bold text-center mb-12">Select a Service</h2>
                         <ServiceSelector />
                         
+                        {/* Homepage CTA to signup */}
+                        <div className="text-center mt-12">
+                          <a 
+                            href="/signup" 
+                            className="inline-block bg-orange-500 text-white py-3 px-6 rounded-lg text-lg font-semibold shadow-lg hover:bg-orange-600 transition"
+                          >
+                            🧰 Join Fixlo Now – Claim Your Area
+                          </a>
+                        </div>
+                        
                         {/* Live Job Feed for conversion */}
                         <div className="mt-12">
                           <LiveJobFeed />

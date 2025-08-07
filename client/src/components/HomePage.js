@@ -44,6 +44,29 @@ function HomePage() {
         <section className="services">
           <h2>Select a Service</h2>
           <ServiceSelector />
+          
+          {/* Homepage CTA to signup */}
+          <div style={{ textAlign: 'center', marginTop: '32px' }}>
+            <a 
+              href="/signup" 
+              style={{
+                display: 'inline-block',
+                background: '#f97316',
+                color: 'white',
+                padding: '12px 24px',
+                borderRadius: '8px',
+                fontSize: '18px',
+                fontWeight: 'bold',
+                textDecoration: 'none',
+                boxShadow: '0 4px 12px rgba(249, 115, 22, 0.3)',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseOver={(e) => e.target.style.background = '#ea580c'}
+              onMouseOut={(e) => e.target.style.background = '#f97316'}
+            >
+              🧰 Join Fixlo Now – Claim Your Area
+            </a>
+          </div>
         </section>
 
         <footer className="footer">
