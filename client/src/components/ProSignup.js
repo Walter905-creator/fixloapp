@@ -5,8 +5,6 @@ const ProSignup = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    password: '',
-    confirmPassword: '',
     phone: '',
     trade: '',
     location: '',
@@ -42,32 +40,18 @@ const ProSignup = () => {
     setLoading(true);
     setError('');
 
-    // Validate password confirmation
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      setLoading(false);
-      return;
-    }
-
-    // Validate password length
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      setLoading(false);
-      return;
-    }
-
     try {
-      const { confirmPassword, ...submitData } = formData;
-      const response = await axios.post('/api/pros/register', submitData);
+      const response = await axios.post('/api/pro-signup', formData);
       
-      // Store token in localStorage
-      localStorage.setItem('proToken', response.data.token);
-      localStorage.setItem('proData', JSON.stringify(response.data.pro));
-      
-      // Redirect to dashboard
-      window.location.href = '/pro/dashboard';
+      // Redirect to Stripe payment page
+      if (response.data.paymentUrl) {
+        window.location.href = response.data.paymentUrl;
+      } else {
+        // Fallback: redirect to success page
+        window.location.href = '/pro/signup-success';
+      }
     } catch (error) {
-      setError(error.response?.data?.error || 'Registration failed. Please try again.');
+      setError(error.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -215,49 +199,12 @@ const ProSignup = () => {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <div className="mt-1">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                />
-              </div>
-              <p className="mt-1 text-xs text-gray-500">Minimum 6 characters</p>
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                Confirm Password
-              </label>
-              <div className="mt-1">
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                />
-              </div>
-            </div>
-
-            <div>
               <button
                 type="submit"
                 disabled={loading}
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400"
               >
-                {loading ? 'Creating account...' : 'Create Professional Account'}
+                {loading ? 'Processing...' : 'Continue to Payment'}
               </button>
             </div>
           </form>
