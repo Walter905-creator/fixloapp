@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import ServiceRequestModal from './ServiceRequestModal';
 import geolocationService from '../utils/geolocationService';
 
@@ -77,8 +78,55 @@ export default function DynamicLandingPage({ city, service }) {
   const currentService = serviceData[service] || serviceData.plumbing;
   const capitalizedCity = detectedCity.charAt(0).toUpperCase() + detectedCity.slice(1);
 
+  // Generate proper URLs and SEO metadata
+  const baseUrl = 'https://www.fixloapp.com';
+  const currentUrl = city 
+    ? `${baseUrl}/services/${service}/${city.toLowerCase()}`
+    : `${baseUrl}/services/${service}`;
+  
+  const pageTitle = city 
+    ? `${currentService.title} Services in ${capitalizedCity} | Fixlo`
+    : `${currentService.title} Services | Fixlo`;
+    
+  const pageDescription = city
+    ? `Professional ${currentService.title.toLowerCase()} services in ${capitalizedCity}. ${currentService.description} Licensed, insured professionals ready to help.`
+    : `Professional ${currentService.title.toLowerCase()} services nationwide. ${currentService.description} Connect with licensed professionals today.`;
+
   return (
     <div className="min-h-screen bg-gray-50">
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <meta name="keywords" content={`${currentService.title.toLowerCase()}, ${city || 'nationwide'}, home services, ${currentService.services.join(', ')}`} />
+        <link rel="canonical" href={currentUrl} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:url" content={currentUrl} />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={pageDescription} />
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Service",
+            "name": `${currentService.title} Services${city ? ` in ${capitalizedCity}` : ''}`,
+            "description": pageDescription,
+            "provider": {
+              "@type": "Organization",
+              "name": "Fixlo",
+              "url": baseUrl
+            },
+            "areaServed": city ? {
+              "@type": "City",
+              "name": capitalizedCity
+            } : {
+              "@type": "Country", 
+              "name": "United States"
+            },
+            "serviceType": currentService.title
+          })}
+        </script>
+      </Helmet>
       {/* SEO-optimized Hero Section */}
       <section className="bg-gradient-to-br from-blue-900 to-blue-700 text-white py-20">
         <div className="container mx-auto px-4 text-center">
