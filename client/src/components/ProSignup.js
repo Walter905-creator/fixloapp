@@ -57,6 +57,13 @@ const ProSignup = () => {
       return;
     }
 
+    // Validate SMS consent
+    if (!formData.smsConsent) {
+      setError('You must agree to SMS terms.');
+      setLoading(false);
+      return;
+    }
+
     // Validate age (18+)
     const birthDate = new Date(formData.dob);
     const today = new Date();
@@ -306,7 +313,7 @@ const ProSignup = () => {
               </div>
               <div className="ml-3 text-sm">
                 <label htmlFor="smsConsent" className="text-gray-700">
-                  I consent to receive text messages about job opportunities and account updates. Message and data rates may apply. Reply STOP to opt out.
+                  I agree to receive SMS updates about job leads, appointments, and service requests. Reply STOP to unsubscribe.
                 </label>
               </div>
             </div>

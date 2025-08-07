@@ -16,6 +16,7 @@ const services = [
 
 // Major cities to include in sitemap (limit to avoid too many URLs)
 const majorCities = [
+  'miami',
   'new-york',
   'los-angeles', 
   'chicago',
