@@ -130,6 +130,12 @@ const proSchema = new mongoose.Schema({
     sms: { type: Boolean, default: true },
     push: { type: Boolean, default: true }
   },
+  
+  // SMS consent from signup
+  smsConsent: {
+    type: Boolean,
+    default: false
+  },
 
   // Professional portfolio
   profileImage: {

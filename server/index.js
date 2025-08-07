@@ -354,7 +354,7 @@ app.post("/api/subscribe", async (req, res) => {
 app.post("/api/pro-signup", async (req, res) => {
   console.log("🔧 Professional signup request:", req.body);
   
-  const { name, email, phone, trade, location, dob, role } = req.body;
+  const { name, email, phone, trade, location, dob, role, termsConsent, smsConsent } = req.body;
   
   // Validate required fields
   if (!name || !email || !phone || !trade || !location || !dob) {
@@ -437,7 +437,8 @@ app.post("/api/pro-signup", async (req, res) => {
       },
       dob: birthDate,
       isActive: false, // Will be activated after payment
-      paymentStatus: 'pending'
+      paymentStatus: 'pending',
+      smsConsent: Boolean(smsConsent) // Store SMS consent preference
     });
 
     // Save to database
