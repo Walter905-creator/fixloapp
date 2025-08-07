@@ -1,12 +1,61 @@
 const express = require('express');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const Pro = require('../models/Pro');
-const Review = require('../models/Review');
-const { upload } = require('../utils/cloudinary');
-const auth = require('../middleware/auth');
+let bcrypt, jwt, Pro, Review, upload, auth;
+
+// Safely load dependencies
+try {
+  bcrypt = require('bcryptjs');
+} catch (error) {
+  console.warn('⚠️ bcryptjs not available:', error.message);
+}
+
+try {
+  jwt = require('jsonwebtoken');
+} catch (error) {
+  console.warn('⚠️ jsonwebtoken not available:', error.message);
+}
+
+try {
+  Pro = require('../models/Pro');
+} catch (error) {
+  console.warn('⚠️ Pro model not available:', error.message);
+}
+
+try {
+  Review = require('../models/Review');
+} catch (error) {
+  console.warn('⚠️ Review model not available:', error.message);
+}
+
+try {
+  const cloudinaryUtils = require('../utils/cloudinary');
+  upload = cloudinaryUtils.upload;
+} catch (error) {
+  console.warn('⚠️ Cloudinary upload not available:', error.message);
+}
+
+try {
+  auth = require('../middleware/auth');
+} catch (error) {
+  console.warn('⚠️ Auth middleware not available:', error.message);
+}
 
 const router = express.Router();
+
+// Test endpoint to verify router is working
+router.get('/test', (req, res) => {
+  res.json({ 
+    message: 'Professional routes are working!',
+    timestamp: new Date().toISOString(),
+    available: {
+      bcrypt: !!bcrypt,
+      jwt: !!jwt,
+      Pro: !!Pro,
+      Review: !!Review,
+      upload: !!upload,
+      auth: !!auth
+    }
+  });
+});
 
 // OPTIONS handlers for professional endpoints
 router.options("/register", (req, res) => {
@@ -50,12 +99,36 @@ router.post('/register', async (req, res) => {
   try {
     const { name, email, password, phone, trade, location, dob } = req.body;
 
+    // Validate required fields
+    if (!name || !email || !password || !phone || !trade || !location || !dob) {
+      return res.status(400).json({ 
+        error: 'All fields are required: name, email, password, phone, trade, location, dob'
+      });
+    }
+
     // Check if required dependencies are available
-    if (!bcrypt || !jwt) {
-      console.error('❌ Missing required dependencies for professional registration');
+    if (!bcrypt) {
+      console.error('❌ bcrypt not available for professional registration');
       return res.status(503).json({ 
-        error: 'Registration service temporarily unavailable',
-        message: 'Please try again later or contact support'
+        error: 'Registration service configuration error',
+        message: 'Password encryption not available. Please contact support.'
+      });
+    }
+
+    if (!jwt) {
+      console.error('❌ jsonwebtoken not available for professional registration');
+      return res.status(503).json({ 
+        error: 'Registration service configuration error', 
+        message: 'Authentication system not available. Please contact support.'
+      });
+    }
+
+    // Check JWT_SECRET is configured
+    if (!process.env.JWT_SECRET) {
+      console.error('❌ JWT_SECRET not configured');
+      return res.status(503).json({ 
+        error: 'Authentication system not configured',
+        message: 'Please contact support.'
       });
     }
 
