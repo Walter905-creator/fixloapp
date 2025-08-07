@@ -57,15 +57,15 @@ const ProSignup = () => {
     }
 
     try {
-      const { confirmPassword, ...submitData } = formData;
-      const response = await axios.post('/api/pros/register', submitData);
+      const response = await axios.post('/api/pro-signup', formData);
       
-      // Store token in localStorage
-      localStorage.setItem('proToken', response.data.token);
-      localStorage.setItem('proData', JSON.stringify(response.data.pro));
-      
-      // Redirect to dashboard
-      window.location.href = '/pro/dashboard';
+      // Redirect to Stripe payment page
+      if (response.data.paymentUrl) {
+        window.location.href = response.data.paymentUrl;
+      } else {
+        // Fallback: redirect to success page
+        window.location.href = '/pro/signup-success';
+      }
     } catch (error) {
       setError(error.response?.data?.error || 'Registration failed. Please try again.');
     } finally {
