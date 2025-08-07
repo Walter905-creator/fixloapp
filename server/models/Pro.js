@@ -22,7 +22,7 @@ const proSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true,
+    required: false, // Optional during signup, required later for login
     minlength: 6
   },
   trade: {
