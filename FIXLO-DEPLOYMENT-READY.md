@@ -133,7 +133,7 @@ eas build --platform ios
 ## 📞 **SUPPORT & CONTACT**
 
 - **Website**: https://fixloapp.com
-- **Email**: support@fixloapp.com (configure after domain setup)
+- **Email**: pro4u.improvements@gmail.com (configure after domain setup)
 - **Privacy**: privacy@fixloapp.com
 - **Legal**: legal@fixloapp.com
 
