@@ -100,6 +100,16 @@
                         </label>
                     </div>
                     
+                    <!-- SMS Consent -->
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 0.9rem; line-height: 1.4;">
+                            <input type="checkbox" id="smsConsent" name="smsConsent" style="margin-top: 3px; transform: scale(1.2);">
+                            <span>
+                                I consent to receive text messages about job opportunities and account updates. Message and data rates may apply. Reply STOP to opt out.
+                            </span>
+                        </label>
+                    </div>
+                    
                     <div style="text-align: center;">
                         <button type="submit" id="submitBtn" class="btn">
                             <span id="submitText">Join Fixlo</span>
@@ -152,7 +162,8 @@
                     trade: formData.get('trade'),
                     location: formData.get('location'),
                     dob: formData.get('dob'),
-                    termsConsent: formData.get('termsConsent') === 'on'
+                    termsConsent: formData.get('termsConsent') === 'on',
+                    smsConsent: formData.get('smsConsent') === 'on'
                 };
                 
                 // Validate required fields
