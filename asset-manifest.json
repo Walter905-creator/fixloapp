@@ -1,6 +1,7 @@
 {
   "files": {
     "main.css": "./static/css/main.67a887fe.css",
+ copilot/fix-203
     "main.js": "./static/js/main.eac0d04b.js",
     "index.html": "./index.html",
     "main.67a887fe.css.map": "./static/css/main.67a887fe.css.map",
@@ -9,5 +10,15 @@
   "entrypoints": [
     "static/css/main.67a887fe.css",
     "static/js/main.eac0d04b.js"
+
+    "main.js": "./static/js/main.201d3de8.js",
+    "index.html": "./index.html",
+    "main.67a887fe.css.map": "./static/css/main.67a887fe.css.map",
+    "main.201d3de8.js.map": "./static/js/main.201d3de8.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.67a887fe.css",
+    "static/js/main.201d3de8.js"
+ main
   ]
 }

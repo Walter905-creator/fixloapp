@@ -9,7 +9,8 @@ const ProSignup = () => {
     trade: '',
     location: '',
     dob: '',
-    termsConsent: false
+    termsConsent: false,
+    smsConsent: false
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -287,6 +288,25 @@ const ProSignup = () => {
                     Privacy Policy
                   </a>
                   . Background check and monthly subscription required.
+                </label>
+              </div>
+            </div>
+
+            {/* SMS Consent */}
+            <div className="flex items-start">
+              <div className="flex items-center h-5">
+                <input
+                  id="smsConsent"
+                  name="smsConsent"
+                  type="checkbox"
+                  checked={formData.smsConsent}
+                  onChange={handleChange}
+                  className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded"
+                />
+              </div>
+              <div className="ml-3 text-sm">
+                <label htmlFor="smsConsent" className="text-gray-700">
+                  I consent to receive text messages about job opportunities and account updates. Message and data rates may apply. Reply STOP to opt out.
                 </label>
               </div>
             </div>

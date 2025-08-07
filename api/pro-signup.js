@@ -40,7 +40,7 @@ export default async function handler(req, res) {
 
   console.log("🔧 Professional signup request received:", req.body);
   
-  const { name, email, phone, trade, location, dob, termsConsent } = req.body;
+  const { name, email, phone, trade, location, dob, termsConsent, smsConsent } = req.body;
   
   // Enhanced validation
   if (!name || !email || !phone || !trade || !location || !dob) {
@@ -87,7 +87,8 @@ export default async function handler(req, res) {
         trade,
         location,
         dob,
-        termsConsent
+        termsConsent,
+        smsConsent
       })
     });
 
