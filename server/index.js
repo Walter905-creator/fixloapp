@@ -28,7 +28,8 @@ const allowedOrigins = process.env.CORS_ALLOWED_ORIGINS
   : [
     'https://www.fixloapp.com',
     'https://fixloapp.com',
-    'http://localhost:3000'
+    'http://localhost:3000',
+    'http://localhost:8000'
   ];
 
 console.log('🔍 CORS Configuration:');

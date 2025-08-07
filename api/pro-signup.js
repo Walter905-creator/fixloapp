@@ -8,7 +8,7 @@ export default async function handler(req, res) {
     'https://www.fixloapp.com',
     'https://fixloapp.com',
     'https://fixloapp.vercel.app',
-    'http://localhost:3000'
+    'http://localhost:3001'
   ];
   
   // Set CORS headers for allowed origins
