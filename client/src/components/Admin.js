@@ -12,7 +12,7 @@ function Admin() {
 
   // API configuration - use environment variable or fallback to local development server
   const API_BASE = process.env.REACT_APP_API_URL || 
-                  (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://fixloapp.onrender.com');
+                  (process.env.NODE_ENV === 'development' ? 'http://localhost:3001' : 'https://fixloapp.onrender.com');
 
   useEffect(() => {
     if (authToken) {

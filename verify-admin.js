@@ -48,7 +48,7 @@ console.log('\n📋 Next steps:');
 console.log('1. Make sure your environment variables are properly set');
 console.log('2. Run: npm install (if needed)');
 console.log('3. Run: node server.js');
-console.log('4. Visit: http://localhost:3000/admin');
+console.log('4. Visit: http://localhost:3001/admin');
 console.log('5. Use your configured admin credentials to log in');
 
 console.log('\n🔐 Default credentials (if not configured):');

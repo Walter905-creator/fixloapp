@@ -80,7 +80,7 @@ const ProSignup = () => {
       
       // Use absolute URL for better reliability across environments
       const apiUrl = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3000/api/pro-signup'
+        ? 'http://localhost:3001/api/pro-signup'
         : '/api/pro-signup';
       
       const response = await axios.post(apiUrl, formData, {
