@@ -12,6 +12,15 @@ router.get('/:proId', async (req, res) => {
 
     console.log(`📖 Getting reviews for pro: ${proId}`);
 
+    // Check database connection
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: 'Service temporarily unavailable',
+        message: 'Database connection issue. Please try again later.'
+      });
+    }
+
     // Validate proId
     if (!mongoose.Types.ObjectId.isValid(proId)) {
       return res.status(400).json({
@@ -80,6 +89,15 @@ router.post('/', async (req, res) => {
     const { proId, customerName, customerEmail, rating, comment, jobDate } = req.body;
 
     console.log('📝 Creating new review:', { proId, customerName, rating });
+
+    // Check database connection
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: 'Service temporarily unavailable',
+        message: 'Database connection issue. Please try again later.'
+      });
+    }
 
     // Validate required fields
     if (!proId || !customerName || !customerEmail || !rating || !comment) {
@@ -174,6 +192,15 @@ router.get('/:proId/stats', async (req, res) => {
     const { proId } = req.params;
 
     console.log(`📊 Getting review stats for pro: ${proId}`);
+
+    // Check database connection
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: 'Service temporarily unavailable',
+        message: 'Database connection issue. Please try again later.'
+      });
+    }
 
     // Validate proId
     if (!mongoose.Types.ObjectId.isValid(proId)) {
