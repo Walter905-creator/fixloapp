@@ -26,6 +26,11 @@ admin*.html
 .env.test.local
 .env.production.local
 
+# React build artifacts in root
+static/js/*.map
+static/js/*.LICENSE.txt
+asset-manifest.json
+
 # IDE files
 .vscode/
 .idea/
