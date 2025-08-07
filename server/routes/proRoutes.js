@@ -59,12 +59,22 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // Check if Pro model is available (database connection)
-    if (!Pro || typeof Pro.findOne !== 'function') {
-      console.error('❌ Database not available for professional registration');
+    // Check if database connection is available
+    const mongoose = require('mongoose');
+    if (mongoose.connection.readyState !== 1) {
+      console.error('❌ Database not connected for professional registration');
       return res.status(503).json({ 
         error: 'Registration service temporarily unavailable',
         message: 'Database connection issue. Please try again later.'
+      });
+    }
+
+    // Check if Pro model is available
+    if (!Pro || typeof Pro.findOne !== 'function') {
+      console.error('❌ Pro model not available for professional registration');
+      return res.status(503).json({ 
+        error: 'Registration service temporarily unavailable',
+        message: 'Database model not available. Please try again later.'
       });
     }
 
@@ -142,12 +152,22 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Check if Pro model is available (database connection)
-    if (!Pro || typeof Pro.findOne !== 'function') {
-      console.error('❌ Database not available for professional login');
+    // Check if database connection is available
+    const mongoose = require('mongoose');
+    if (mongoose.connection.readyState !== 1) {
+      console.error('❌ Database not connected for professional login');
       return res.status(503).json({ 
         error: 'Login service temporarily unavailable',
         message: 'Database connection issue. Please try again later.'
+      });
+    }
+
+    // Check if Pro model is available
+    if (!Pro || typeof Pro.findOne !== 'function') {
+      console.error('❌ Pro model not available for professional login');
+      return res.status(503).json({ 
+        error: 'Login service temporarily unavailable',
+        message: 'Database model not available. Please try again later.'
       });
     }
 

@@ -11,6 +11,10 @@
   ],
   "routes": [
     {
+      "src": "/_vercel/(.*)",
+      "continue": true
+    },
+    {
       "src": "/api/(.*)",
       "dest": "https://fixloapp.onrender.com/api/$1"
     },
