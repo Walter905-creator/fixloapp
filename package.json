@@ -9,5 +9,11 @@
     "build": "npm run install-client && npm run build-client",
     "verify-deployment": "node verify-deployment.js",
     "force-deploy": "./force-vercel-deploy.sh"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "uuid": "^11.1.0"
   }
 }
