@@ -21,14 +21,14 @@ const ProReviews = ({ professional }) => {
   const fetchReviews = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/reviews/professional/${professional.id}`, {
+      const response = await axios.get(`/api/reviews/${professional.id}`, {
         params: { page, sortBy }
       });
 
       if (response.data.success) {
-        setReviews(response.data.reviews);
-        setStats(response.data.stats);
-        setPagination(response.data.pagination);
+        setReviews(response.data.data.reviews);
+        setStats(response.data.data.stats);
+        setPagination(response.data.data.pagination);
       }
     } catch (error) {
       setError('Failed to fetch reviews');
@@ -157,7 +157,7 @@ const ProReviews = ({ professional }) => {
                 <div>
                   <div className="flex items-center mb-2">
                     <span className="font-semibold text-gray-800 mr-3">
-                      {review.homeownerName}
+                      {review.customerName}
                     </span>
                     <div className="flex">
                       {renderStars(review.rating)}
@@ -174,7 +174,7 @@ const ProReviews = ({ professional }) => {
                 </div>
               </div>
 
-              <p className="text-gray-700 mb-4">{review.reviewText}</p>
+              <p className="text-gray-700 mb-4">{review.comment}</p>
 
               {review.professionalResponse && (
                 <div className="bg-gray-50 p-4 rounded-lg mt-4">

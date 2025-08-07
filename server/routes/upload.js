@@ -134,4 +134,97 @@ router.delete('/:publicId', async (req, res) => {
   }
 });
 
+// Work portfolio upload endpoint (supports multiple images)
+router.post('/work', upload.array('photos', 10), async (req, res) => {
+  try {
+    console.log('📤 Work portfolio upload request received');
+    
+    // Check if files were uploaded
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'No photos provided'
+      });
+    }
+
+    // Validate Cloudinary configuration
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      console.error('❌ Cloudinary configuration missing');
+      return res.status(500).json({
+        success: false,
+        error: 'Image upload service not configured'
+      });
+    }
+
+    console.log(`📁 Uploading ${req.files.length} work photos to Cloudinary`);
+
+    // Extract form data
+    const { title, description, serviceType, clientName, completionDate } = req.body;
+
+    // Upload all images to Cloudinary
+    const uploadPromises = req.files.map(file => {
+      return new Promise((resolve, reject) => {
+        cloudinary.uploader.upload_stream(
+          {
+            resource_type: 'image',
+            folder: 'fixlo/work-portfolio',
+            transformation: [
+              { width: 1200, height: 1200, crop: 'limit' },
+              { quality: 'auto' },
+              { fetch_format: 'auto' }
+            ]
+          },
+          (error, result) => {
+            if (error) {
+              console.error('❌ Cloudinary upload error:', error);
+              reject(error);
+            } else {
+              console.log('✅ Work photo uploaded:', result.public_id);
+              resolve({
+                url: result.secure_url,
+                publicId: result.public_id,
+                width: result.width,
+                height: result.height,
+                format: result.format,
+                bytes: result.bytes
+              });
+            }
+          }
+        ).end(file.buffer);
+      });
+    });
+
+    const uploadedImages = await Promise.all(uploadPromises);
+
+    // TODO: Save work portfolio data to database
+    // For now, just return success with uploaded image URLs
+    
+    console.log(`✅ Successfully uploaded ${uploadedImages.length} work portfolio images`);
+
+    res.json({
+      success: true,
+      message: 'Work portfolio uploaded successfully',
+      data: {
+        workEntry: {
+          title,
+          description,
+          serviceType,
+          clientName,
+          completionDate,
+          images: uploadedImages,
+          uploadedAt: new Date()
+        },
+        imageCount: uploadedImages.length
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Work upload endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Work portfolio upload failed'
+    });
+  }
+});
+
 module.exports = router;
