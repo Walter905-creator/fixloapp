@@ -43,7 +43,7 @@ const Navigation = () => {
               <Link to="/pro/signin" className="text-gray-700 font-semibold hover:text-blue-600">
                 Pro Sign In
               </Link>
-              <Link to="/signup" className="bg-orange-600 text-white font-bold px-4 py-2 rounded hover:bg-orange-700 transition">
+              <Link to="/signup" className="bg-white text-orange-600 font-bold px-4 py-2 rounded hover:bg-gray-100 transition">
                 Join Now
               </Link>
             </div>
@@ -108,7 +108,7 @@ const Navigation = () => {
                   </Link>
                   <Link
                     to="/signup"
-                    className="bg-orange-600 text-white font-bold px-4 py-2 rounded hover:bg-orange-700 transition text-center"
+                    className="bg-white text-orange-600 font-bold px-4 py-2 rounded hover:bg-gray-100 transition text-center"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Join Now
