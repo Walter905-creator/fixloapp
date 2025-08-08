@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/services/:service", "destination": "/" },
+    { "source": "/services/:service/:city", "destination": "/" }
+  ]
+}

@@ -58,6 +58,14 @@ export default async function handler(req, res) {
     });
   }
 
+  // Validate SMS consent
+  if (!smsConsent) {
+    return res.status(400).json({
+      success: false,
+      message: "SMS consent is required."
+    });
+  }
+
   // Validate age (18+)
   const birthDate = new Date(dob);
   const age = Math.floor((Date.now() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
