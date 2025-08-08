@@ -38,27 +38,8 @@ app.use('/api/pro-auth', proAuthRoutes);
 app.use('/api/upload', uploadPhotosRoutes);
 app.use('/api/reviews', reviewsRoutes);
 
-// Professional Signup Endpoint
-app.post("/api/pro-signup", (req, res) => {
-  console.log("🔧 Professional signup request:", req.body);
-  
-  const { name, email, phone, role } = req.body;
-  
-  if (!name || !email || !phone) {
-    return res.status(400).json({ 
-      success: false, 
-      message: "Name, email, and phone are required" 
-    });
-  }
-  
-  console.log(`📝 New professional signup: ${name} (${email}) - ${phone}`);
-  
-  res.json({ 
-    success: true, 
-    message: "Professional signup received successfully!",
-    data: { name, email, phone, role }
-  });
-});
+// NOTE: /api/pro-signup is handled by a dedicated serverless function (/api/pro-signup.js)
+// Do not add a handler here to avoid conflicts
 
 // Homeowner Lead Endpoint
 app.post("/api/homeowner-lead", (req, res) => {
