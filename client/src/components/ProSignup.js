@@ -59,7 +59,7 @@ const ProSignup = () => {
 
     // Validate SMS consent
     if (!formData.smsConsent) {
-      setError('You must agree to SMS terms.');
+      setError('SMS consent is required.');
       setLoading(false);
       return;
     }
@@ -306,6 +306,7 @@ const ProSignup = () => {
                   id="smsConsent"
                   name="smsConsent"
                   type="checkbox"
+                  required
                   checked={formData.smsConsent}
                   onChange={handleChange}
                   className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded"
@@ -313,7 +314,9 @@ const ProSignup = () => {
               </div>
               <div className="ml-3 text-sm">
                 <label htmlFor="smsConsent" className="text-gray-700">
-                  I agree to receive SMS updates about job leads, appointments, and service requests. Reply STOP to unsubscribe.
+                  I consent to receive SMS updates related to job leads and service updates. *
+                  <br />
+                  <span className="text-xs text-gray-500">Reply STOP to unsubscribe.</span>
                 </label>
               </div>
             </div>
