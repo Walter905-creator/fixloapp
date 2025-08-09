@@ -12,8 +12,9 @@ function AnalyticsWrapper() {
     const isLocalhost = hostname.includes('localhost') || hostname.includes('127.0.0.1');
     const isExplicitlyEnabled = process.env.REACT_APP_ENABLE_ANALYTICS === 'true';
     
-    // Determine if analytics should work
-    const shouldEnableAnalytics = (isProduction && (isVercelDomain || isFixloDomain)) || isExplicitlyEnabled;
+    // Determine if analytics should work - only enable on Vercel domains or when explicitly enabled
+    // This prevents 405 errors on non-Vercel deployments like www.fixloapp.com
+    const shouldEnableAnalytics = (isProduction && isVercelDomain) || isExplicitlyEnabled;
     
     // Log current environment for debugging
     console.log('[Fixlo Analytics] Environment check:', {
@@ -23,7 +24,10 @@ function AnalyticsWrapper() {
       isFixloDomain,
       isLocalhost,
       isExplicitlyEnabled,
-      shouldEnableAnalytics
+      shouldEnableAnalytics,
+      reason: shouldEnableAnalytics 
+        ? 'Analytics enabled' 
+        : 'Analytics disabled - only works on Vercel domains or when explicitly enabled'
     });
     
     // Completely block analytics requests to prevent 405 errors
@@ -76,22 +80,21 @@ function AnalyticsWrapper() {
     };
   }, []);
 
-  // Determine if analytics component should be rendered
+  // Determine if analytics component should be rendered - only for Vercel domains or when explicitly enabled
   const shouldRenderAnalytics = () => {
     if (typeof window === 'undefined') return false;
     
     const hostname = window.location.hostname;
     const isProduction = process.env.NODE_ENV === 'production';
     const isVercelDomain = hostname.includes('vercel.app');
-    const isFixloDomain = hostname === 'fixloapp.com' || hostname === 'www.fixloapp.com';
     const isExplicitlyEnabled = process.env.REACT_APP_ENABLE_ANALYTICS === 'true';
     
-    return (isProduction && (isVercelDomain || isFixloDomain)) || isExplicitlyEnabled;
+    return (isProduction && isVercelDomain) || isExplicitlyEnabled;
   };
 
   // Only try to load and render analytics if it should work
   if (!shouldRenderAnalytics()) {
-    console.log('[Fixlo Analytics] Analytics disabled for current environment');
+    console.log('[Fixlo Analytics] Analytics disabled - Vercel analytics only works on Vercel domains (.vercel.app) or when explicitly enabled via REACT_APP_ENABLE_ANALYTICS=true');
     return null;
   }
 
