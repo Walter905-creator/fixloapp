@@ -281,6 +281,7 @@ app.use("/api/reviews", require("./routes/reviews")); // Professional reviews
 app.use("/api", require("./routes/ipinfo")); // IP information proxy
 app.use("/api/ai", require("./routes/ai")); // AI assistant route
 app.use("/api/contact", require("./routes/contact")); // Contact form route
+app.use("/api/referrals", require("./routes/referrals")); // Referral rewards
 
 // ✅ Simple Subscribe Endpoint for PricingPage.jsx
 app.post("/api/subscribe", async (req, res) => {

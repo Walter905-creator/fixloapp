@@ -45,7 +45,7 @@ export default function ReferralSystem() {
         className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-lg transition-colors duration-200 flex items-center space-x-2"
       >
         <span>💰</span>
-        <span>Refer & Earn $50</span>
+        <span>Refer Friends & Get 1 Month Free</span>
       </button>
 
       {/* Referral Modal */}
@@ -53,9 +53,9 @@ export default function ReferralSystem() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 shadow-xl max-w-md w-full">
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold mb-2">💰 Refer Friends & Earn</h2>
+              <h2 className="text-2xl font-bold mb-2">💰 Refer Friends & Get 1 Month Free</h2>
               <p className="text-gray-600">
-                Get $50 for every friend who joins Fixlo as a professional!
+                Get 1 month of Fixlo Pro free when your friend joins as a professional!
               </p>
             </div>
 
@@ -130,7 +130,7 @@ export default function ReferralSystem() {
                   <li>• Share your referral code or link</li>
                   <li>• Friend signs up as a Fixlo professional</li>
                   <li>• They complete their first paid job</li>
-                  <li>• You both earn $50!</li>
+                  <li>• You both get 1 month of Fixlo Pro free!</li>
                 </ul>
               </div>
             </div>
