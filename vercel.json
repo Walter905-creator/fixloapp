@@ -23,7 +23,8 @@
     },
     {
       "src": "/api/pro-signup",
-      "dest": "/api/pro-signup.js"
+      "dest": "/api/pro-signup.js",
+      "methods": ["GET", "POST", "OPTIONS"]
     },
     {
       "src": "/api/(.*)",

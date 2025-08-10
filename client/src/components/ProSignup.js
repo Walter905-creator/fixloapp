@@ -83,12 +83,30 @@ const ProSignup = () => {
         ? 'http://localhost:3001/api/pro-signup'
         : '/api/pro-signup';
       
-      const response = await axios.post(apiUrl, formData, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        timeout: 30000 // 30 second timeout
-      });
+      let response;
+      try {
+        response = await axios.post(apiUrl, formData, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          timeout: 30000 // 30 second timeout
+        });
+      } catch (primaryError) {
+        console.warn('Primary API call failed:', primaryError);
+        
+        // If we get a 405 error, try the backend directly as fallback
+        if (primaryError.response?.status === 405 && window.location.hostname !== 'localhost') {
+          console.log('🔄 Trying backend directly as fallback...');
+          response = await axios.post('https://fixloapp.onrender.com/api/pro-signup', formData, {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            timeout: 30000 // 30 second timeout
+          });
+        } else {
+          throw primaryError;
+        }
+      }
       
       console.log('Signup response:', response.data);
       
@@ -105,7 +123,9 @@ const ProSignup = () => {
       
       let errorMessage = 'Registration failed. Please try again.';
       
-      if (error.response?.data?.message) {
+      if (error.response?.status === 405) {
+        errorMessage = 'Service temporarily unavailable. Our team has been notified. Please try again in a few minutes.';
+      } else if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.code === 'ECONNABORTED') {
         errorMessage = 'Request timed out. Please check your internet connection and try again.';
