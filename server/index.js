@@ -273,6 +273,7 @@ app.use('/api/admin', adminRateLimit, require('./routes/admin'));
 app.use('/api/auth', authRateLimit, require('./routes/auth'));
 app.use('/api/pros', generalRateLimit, require('./routes/proRoutes')); // Pro authentication and management - using general rate limit for registration
 app.use("/api/homeowner-lead", require("./routes/homeownerLead")); // Service request handler
+app.use("/api/service-request", require("./routes/serviceRequest")); // Alternative service request endpoint
 app.use("/api/notify", require("./routes/notify"));
 app.use("/api/stripe", require("./routes/stripe")); // Stripe subscription
 app.use("/api/subscribe", require("./routes/subscribe")); // Subscription form handler
