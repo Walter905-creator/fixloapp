@@ -194,7 +194,7 @@ function initializeApp() {
   }
 }
 
-// Enhanced cleanup for page unload events
+// Enhanced cleanup for page visibility changes (replaces deprecated unload events)
 function cleanup() {
   console.log('🧹 Cleaning up Fixlo app resources...');
   initializationComplete = false;
@@ -212,9 +212,25 @@ function cleanup() {
   }
 }
 
-// Add cleanup event listeners
-window.addEventListener('beforeunload', cleanup);
-window.addEventListener('unload', cleanup);
+// Modern alternative to deprecated unload events - use visibilitychange and beforeunload
+// Only use beforeunload for critical cleanup (data loss prevention)
+window.addEventListener('beforeunload', (event) => {
+  // Only prevent default if there's unsaved data
+  const hasUnsavedData = localStorage.getItem('fixlo_has_unsaved_data');
+  if (hasUnsavedData === 'true') {
+    // This will show browser's default confirmation dialog
+    event.preventDefault();
+    return '';
+  }
+});
+
+// Use visibilitychange for cleanup instead of deprecated unload event
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    // Page is becoming hidden - perform cleanup
+    cleanup();
+  }
+});
 
 // Enhanced error handling for uncaught errors
 window.addEventListener('error', (event) => {
