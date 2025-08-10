@@ -26,20 +26,48 @@ RewriteRule ^public/(.*)$ /$1 [R=301,L]
 RewriteRule ^client/public/(.*)$ /$1 [R=301,L]
 RewriteRule ^website/(.*)$ /$1 [R=301,L]
 
-# Redirect contact subdirectory to main contact page
-RewriteRule ^contact/$ /contact.html [R=301,L]
-RewriteRule ^contact/index\.html$ /contact.html [R=301,L]
+# Redirect .html extensions to clean URLs for SEO
+RewriteRule ^contact\.html$ /contact [R=301,L]
+RewriteRule ^privacy\.html$ /privacy [R=301,L] 
+RewriteRule ^terms\.html$ /terms [R=301,L]
+RewriteRule ^support\.html$ /support [R=301,L]
+RewriteRule ^signup\.html$ /signup [R=301,L]
+RewriteRule ^pro-signup\.html$ /pro-signup [R=301,L]
+RewriteRule ^how-it-works\.html$ /how-it-works [R=301,L]
+RewriteRule ^sms-compliance\.html$ /sms-compliance [R=301,L]
+RewriteRule ^contact-support\.html$ /contact-support [R=301,L]
+RewriteRule ^admin\.html$ /admin [R=301,L]
 
-# Redirect signup subdirectory to main signup page
-RewriteRule ^signup/$ /signup.html [R=301,L]
-RewriteRule ^signup/index\.html$ /signup.html [R=301,L]
+# Redirect contact subdirectory to clean contact URL
+RewriteRule ^contact/$ /contact [R=301,L]
+RewriteRule ^contact/index\.html$ /contact [R=301,L]
 
-# Redirect sms-optin subdirectory to main sms-compliance page
-RewriteRule ^sms-optin/$ /sms-compliance.html [R=301,L]
-RewriteRule ^sms-optin/index\.html$ /sms-compliance.html [R=301,L]
+# Redirect signup subdirectory to clean signup URL  
+RewriteRule ^signup/$ /signup [R=301,L]
+RewriteRule ^signup/index\.html$ /signup [R=301,L]
+
+# Redirect sms-optin subdirectory to clean sms-compliance URL
+RewriteRule ^sms-optin/$ /sms-compliance [R=301,L]
+RewriteRule ^sms-optin/index\.html$ /sms-compliance [R=301,L]
 
 # Redirect services subdirectory to maintain clean URLs
 RewriteRule ^services/index\.html$ /services/ [R=301,L]
+
+# Internal rewrites: serve .html files for clean URLs (no redirect)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^contact$ /contact.html [L]
+RewriteRule ^privacy$ /privacy.html [L]
+RewriteRule ^terms$ /terms.html [L] 
+RewriteRule ^support$ /support.html [L]
+RewriteRule ^signup$ /signup.html [L]
+RewriteRule ^pro-signup$ /pro-signup.html [L]
+RewriteRule ^how-it-works$ /how-it-works.html [L]
+RewriteRule ^sms-compliance$ /sms-compliance.html [L]
+RewriteRule ^contact-support$ /contact-support.html [L]
+RewriteRule ^admin$ /admin.html [L]
+RewriteRule ^login$ /login.html [L]
+RewriteRule ^dashboard$ /dashboard.html [L]
 
 # Prevent access to sensitive files
 <FilesMatch "\.(env|log|sql|sqlite|bak|backup|old)$">

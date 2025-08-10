@@ -21,9 +21,6 @@ const FixloLogo = () => (
     <text x="55" y="35" fontFamily="Arial, sans-serif" fontSize="24" fontWeight="bold" fill="#667eea">
       Fixlo
     </text>
-    <text x="55" y="48" fontFamily="Arial, sans-serif" fontSize="10" fill="#666">
-      Home Repair Professionals
-    </text>
   </svg>
 );
 
