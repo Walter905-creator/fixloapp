@@ -4,6 +4,82 @@ const Review = require('../models/Review');
 const Pro = require('../models/Pro');
 const mongoose = require('mongoose');
 
+// Minimal sanitizer for text (server-side)
+function sanitize(s = '') {
+  return s.replace(/[<>]/g, '');
+}
+
+// Recompute aggregates when a review moves to published
+async function recomputeAggregates(proId) {
+  const agg = await Review.aggregate([
+    { $match: { proId: require('mongoose').Types.ObjectId.createFromHexString(proId), status: 'published' } },
+    { $group: { _id: '$proId', count: { $sum: 1 }, avg: { $avg: '$rating' } } }
+  ]);
+  const stats = agg[0] || { count: 0, avg: 0 };
+  await Pro.findByIdAndUpdate(proId, {
+    $set: { avgRating: Math.round((stats.avg || 0) * 10) / 10, reviewCount: stats.count }
+  });
+}
+
+// List published reviews (public) - Enhanced version
+router.get('/profiles/:proId/reviews', async (req, res) => {
+  try {
+    const { proId } = req.params;
+    const page = Math.max(1, parseInt(req.query.page || '1', 10));
+    const pageSize = Math.max(1, Math.min(50, parseInt(req.query.pageSize || '10', 10)));
+
+    const [items, total] = await Promise.all([
+      Review.find({ proId, status: 'published' })
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * pageSize)
+        .limit(pageSize)
+        .select('rating text photos homeownerName homeownerCity createdAt')
+        .lean(),
+      Review.countDocuments({ proId, status: 'published' })
+    ]);
+
+    res.json({ ok: true, items, total, page, pageSize });
+  } catch (e) {
+    console.error('list reviews error', e);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Create a review (public write, basic anti-abuse) - Enhanced version
+router.post('/profiles/:proId/reviews', async (req, res) => {
+  try {
+    const { proId } = req.params;
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || '';
+    const { rating, text, homeownerName, homeownerCity, photos = [] } = req.body || {};
+
+    if (!rating || rating < 1 || rating > 5) return res.status(400).json({ error: 'Invalid rating' });
+    const safe = {
+      proId,
+      rating: Number(rating),
+      text: sanitize(text || ''),
+      homeownerName: sanitize(homeownerName || 'Homeowner'),
+      homeownerCity: sanitize(homeownerCity || ''),
+      photos: Array.isArray(photos) ? photos.slice(0, 8) : [],
+      ip
+    };
+
+    // naive rate-limit by IP per pro (5/day). Replace with Redis if needed.
+    const since = new Date(Date.now() - 24*60*60*1000);
+    const count = await Review.countDocuments({ proId, ip, createdAt: { $gte: since } });
+    if (count >= 5) return res.status(429).json({ error: 'Too many reviews from this IP today' });
+
+    const created = await Review.create(safe);
+
+    // If auto-published, recompute aggregates now.
+    if (created.status === 'published') await recomputeAggregates(proId);
+
+    res.status(201).json({ ok: true, id: created._id, status: created.status });
+  } catch (e) {
+    console.error('create review error', e);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Get reviews for a specific professional
 router.get('/:proId', async (req, res) => {
   try {
@@ -302,6 +378,31 @@ router.get('/:proId/stats', async (req, res) => {
       success: false,
       error: 'Failed to fetch review statistics'
     });
+  }
+});
+
+// Admin moderation routes (secure these with admin auth in your stack)
+router.post('/admin/reviews/:id/publish', async (req, res) => {
+  try {
+    const r = await Review.findByIdAndUpdate(req.params.id, { $set: { status: 'published' } }, { new: true });
+    if (!r) return res.status(404).json({ error: 'Not found' });
+    await recomputeAggregates(String(r.proId));
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('publish review error', e);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.post('/admin/reviews/:id/reject', async (req, res) => {
+  try {
+    const r = await Review.findByIdAndUpdate(req.params.id, { $set: { status: 'rejected' } }, { new: true });
+    if (!r) return res.status(404).json({ error: 'Not found' });
+    await recomputeAggregates(String(r.proId));
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('reject review error', e);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 

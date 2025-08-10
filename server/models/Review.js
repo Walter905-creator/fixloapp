@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-// Review Schema for professionals
+// Review Schema for professionals with improved structure
 const reviewSchema = new mongoose.Schema({
   proId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -8,26 +8,50 @@ const reviewSchema = new mongoose.Schema({
     required: true,
     index: true
   },
-  customerName: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  customerEmail: {
-    type: String,
-    required: true,
-    lowercase: true,
-    trim: true
-  },
   rating: {
     type: Number,
     required: true,
     min: 1,
     max: 5
   },
+  text: {
+    type: String,
+    maxlength: 4000
+  },
+  photos: { 
+    type: [String], 
+    default: [] 
+  }, // URLs to uploaded images
+  homeownerName: { 
+    type: String, 
+    maxlength: 120 
+  },
+  homeownerCity: { 
+    type: String, 
+    maxlength: 120 
+  },
+  status: { 
+    type: String, 
+    enum: ['pending', 'published', 'rejected'], 
+    default: process.env.REV_AUTOPUBLISH === 'true' ? 'published' : 'pending', 
+    index: true 
+  },
+  ip: { 
+    type: String 
+  },
+  
+  // Legacy fields for backward compatibility
+  customerName: {
+    type: String,
+    trim: true
+  },
+  customerEmail: {
+    type: String,
+    lowercase: true,
+    trim: true
+  },
   comment: {
     type: String,
-    required: true,
     trim: true,
     maxlength: 1000
   },
@@ -41,12 +65,7 @@ const reviewSchema = new mongoose.Schema({
   },
   reviewer: {
     type: String,
-    required: true,
     trim: true
-  },
-  createdAt: { 
-    type: Date, 
-    default: Date.now 
   }
 }, {
   timestamps: true

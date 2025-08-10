@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fixlo Profile Sharing Features - Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-4xl mx-auto space-y-8">
+        
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Fixlo Profile Sharing Features</h1>
+            <p class="text-gray-600">New features: Share profiles, earn boosts, and collect badges</p>
+        </div>
+
+        <!-- Dashboard Overview Section -->
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center justify-between mb-6">
+                <div class="space-y-1">
+                    <h2 class="text-2xl font-bold text-gray-800">Dashboard Overview</h2>
+                    <div class="flex items-center gap-2">
+                        <!-- Boost Pill -->
+                        <span class="inline-flex items-center text-xs px-2 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700">
+                            <span class="mr-1">🚀</span>
+                            <span>Boost active — 6d 14h left</span>
+                        </span>
+                        <!-- Badges -->
+                        <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="text-yellow-600">
+                                <path d="M12 2l3 7h7l-5.5 4.1L18 21l-6-4-6 4 1.5-7.9L2 9h7z"/>
+                            </svg>
+                            <span>Top Promoter</span>
+                        </span>
+                        <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="text-blue-600">
+                                <path d="M12 12a5 5 0 100-10 5 5 0 000 10zm-9 9v-2a7 7 0 0114 0v2H3z"/>
+                            </svg>
+                            <span>Community Builder</span>
+                        </span>
+                    </div>
+                </div>
+                <button class="px-4 py-2 rounded-xl bg-black text-white hover:opacity-90 transition-opacity">
+                    Share My Profile
+                </button>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h3 class="text-lg font-semibold text-blue-800 mb-2">Rating</h3>
+                    <div class="text-3xl font-bold text-blue-600">4.8/5</div>
+                    <p class="text-sm text-blue-600">Based on 23 reviews</p>
+                </div>
+                
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <h3 class="text-lg font-semibold text-green-800 mb-2">Services</h3>
+                    <div class="text-3xl font-bold text-green-600">3</div>
+                    <p class="text-sm text-green-600">Active services</p>
+                </div>
+                
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <h3 class="text-lg font-semibold text-purple-800 mb-2">Location</h3>
+                    <div class="text-lg font-bold text-purple-600">New York, NY</div>
+                </div>
+            </div>
+
+            <!-- Share Performance Section -->
+            <div class="border border-gray-200 rounded-2xl p-4 mb-6">
+                <div class="font-medium mb-2">Share Performance (Last 30 Days)</div>
+                <div class="text-sm text-gray-700 mb-2">
+                    Total clicks: <b>47</b>
+                </div>
+                <div class="text-xs text-gray-600 space-y-1">
+                    <div class="font-medium">By platform:</div>
+                    <div class="flex justify-between">
+                        <span class="capitalize">Facebook:</span>
+                        <span>18</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="capitalize">LinkedIn:</span>
+                        <span>12</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="capitalize">WhatsApp:</span>
+                        <span>10</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="capitalize">X:</span>
+                        <span>7</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Public Profile Preview -->
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Public Profile Preview</h2>
+            
+            <div class="flex items-start justify-between">
+                <div class="flex-1">
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">Mike's Plumbing Services</h1>
+                    
+                    <div class="text-lg text-gray-600 mb-3">Plumbing Professional</div>
+                    
+                    <div class="text-gray-500 mb-3">📍 Brooklyn, NY</div>
+                    
+                    <div class="flex items-center gap-2 mb-4">
+                        <!-- Stars -->
+                        <span class="inline-flex gap-0.5 text-amber-500">
+                            <svg width="20" height="20" viewBox="0 0 24 24" class="inline-block align-middle" fill="currentColor">
+                                <path d="M12 2l3 7h7l-5.5 4.1L18 21l-6-4-6 4 1.5-7.9L2 9h7z"/>
+                            </svg>
+                            <svg width="20" height="20" viewBox="0 0 24 24" class="inline-block align-middle" fill="currentColor">
+                                <path d="M12 2l3 7h7l-5.5 4.1L18 21l-6-4-6 4 1.5-7.9L2 9h7z"/>
+                            </svg>
+                            <svg width="20" height="20" viewBox="0 0 24 24" class="inline-block align-middle" fill="currentColor">
+                                <path d="M12 2l3 7h7l-5.5 4.1L18 21l-6-4-6 4 1.5-7.9L2 9h7z"/>
+                            </svg>
+                            <svg width="20" height="20" viewBox="0 0 24 24" class="inline-block align-middle" fill="currentColor">
+                                <path d="M12 2l3 7h7l-5.5 4.1L18 21l-6-4-6 4 1.5-7.9L2 9h7z"/>
+                            </svg>
+                            <svg width="20" height="20" viewBox="0 0 24 24" class="inline-block align-middle" fill="currentColor">
+                                <path d="M12 2l3 7h7l-5.5 4.1L18 21l-6-4-6 4 1.5-7.9L2 9h7z"/>
+                            </svg>
+                        </span>
+                        <span class="text-lg font-semibold">4.8</span>
+                        <span class="text-gray-500">(23 reviews)</span>
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                        <!-- Badges and Boost Pill for public profile -->
+                        <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="text-yellow-600">
+                                <path d="M12 2l3 7h7l-5.5 4.1L18 21l-6-4-6 4 1.5-7.9L2 9h7z"/>
+                            </svg>
+                            <span>Top Promoter</span>
+                        </span>
+                        <span class="inline-flex items-center text-xs px-2 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700">
+                            <span class="mr-1">🚀</span>
+                            <span>Boost active — 6d 14h left</span>
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col items-end gap-2">
+                    <button class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                        Leave a Review
+                    </button>
+                    <a href="#" class="text-sm text-blue-600 hover:text-blue-800 underline">
+                        I'm the pro
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feature Summary -->
+        <div class="bg-blue-50 rounded-lg p-6">
+            <h2 class="text-xl font-bold text-blue-900 mb-4">✨ New Features Implemented</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                    <h3 class="font-semibold text-blue-800 mb-2">🚀 7-Day Boost System</h3>
+                    <ul class="space-y-1 text-blue-700">
+                        <li>• Share profile to get 7-day visibility boost</li>
+                        <li>• Boosted pros rank higher in search</li>
+                        <li>• Multiple shares extend boost duration</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-blue-800 mb-2">🏆 Badge System</h3>
+                    <ul class="space-y-1 text-blue-700">
+                        <li>• "Top Promoter" - First share</li>
+                        <li>• "Community Builder" - 3+ shares in 30 days</li>
+                        <li>• Badges shown on public profiles</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-blue-800 mb-2">📊 Share Analytics</h3>
+                    <ul class="space-y-1 text-blue-700">
+                        <li>• Track clicks by platform</li>
+                        <li>• 30-day performance overview</li>
+                        <li>• Dashboard statistics</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-blue-800 mb-2">🔗 UTM Tracking</h3>
+                    <ul class="space-y-1 text-blue-700">
+                        <li>• Automatic UTM parameters</li>
+                        <li>• Platform-specific tracking</li>
+                        <li>• Attribution analytics</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>
