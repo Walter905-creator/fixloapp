@@ -4,13 +4,37 @@ import LoginModal from './LoginModal';
 import UploadWork from './UploadWork';
 import ProReviews from './ProReviews';
 import ProUpload from './ProUpload';
+import ShareProfileModal from './share/ShareProfileModal';
+import Badges from './profile/Badges';
+import BoostPill from './profile/BoostPill';
+import api from '../lib/api';
 
 const ProDashboard = () => {
   const [professional, setProfessional] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
+  const [showShare, setShowShare] = useState(false);
+  const [stats, setStats] = useState({ 
+    clicksLast30: 0, 
+    byMedium: {}, 
+    boostActiveUntil: null, 
+    badges: [] 
+  });
   const navigate = useNavigate();
+
+  const loadShareStats = async () => {
+    if (!professional?._id) return;
+    
+    try {
+      const { data } = await api.get(`/api/profiles/${professional._id}/share-stats`);
+      if (data?.ok) {
+        setStats(data);
+      }
+    } catch (error) {
+      console.error('Failed to load share stats:', error);
+    }
+  };
 
   useEffect(() => {
     // Check if user is logged in
@@ -19,7 +43,8 @@ const ProDashboard = () => {
     
     if (token && proData) {
       try {
-        setProfessional(JSON.parse(proData));
+        const parsedPro = JSON.parse(proData);
+        setProfessional(parsedPro);
       } catch (error) {
         // If data is corrupted, remove it
         localStorage.removeItem('proToken');
@@ -28,6 +53,13 @@ const ProDashboard = () => {
     }
     setLoading(false);
   }, []);
+
+  // Load share stats when professional data is available
+  useEffect(() => {
+    if (professional?._id) {
+      loadShareStats();
+    }
+  }, [professional]);
 
   const handleLogin = (proData) => {
     setProfessional(proData);
@@ -150,7 +182,21 @@ const ProDashboard = () => {
         <div className="bg-white rounded-lg shadow-sm">
           {activeTab === 'overview' && (
             <div className="p-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">Dashboard Overview</h2>
+              <div className="flex items-center justify-between mb-6">
+                <div className="space-y-1">
+                  <h2 className="text-2xl font-bold text-gray-800">Dashboard Overview</h2>
+                  <div className="flex items-center gap-2">
+                    <BoostPill boostActiveUntil={stats.boostActiveUntil} />
+                    <Badges badges={stats.badges} />
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowShare(true)} 
+                  className="px-4 py-2 rounded-xl bg-black text-white hover:opacity-90 transition-opacity"
+                >
+                  Share My Profile
+                </button>
+              </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className="bg-blue-50 p-4 rounded-lg">
@@ -177,6 +223,30 @@ const ProDashboard = () => {
                     {professional.location || 'Not set'}
                   </div>
                 </div>
+              </div>
+
+              {/* Share Performance Section */}
+              <div className="border border-gray-200 rounded-2xl p-4 mb-6">
+                <div className="font-medium mb-2">Share Performance (Last 30 Days)</div>
+                <div className="text-sm text-gray-700 mb-2">
+                  Total clicks: <b>{stats.clicksLast30}</b>
+                </div>
+                {Object.keys(stats.byMedium).length > 0 && (
+                  <div className="text-xs text-gray-600 space-y-1">
+                    <div className="font-medium">By platform:</div>
+                    {Object.entries(stats.byMedium).map(([platform, count]) => (
+                      <div key={platform} className="flex justify-between">
+                        <span className="capitalize">{platform}:</span>
+                        <span>{count}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {stats.clicksLast30 === 0 && (
+                  <div className="text-xs text-gray-500 italic">
+                    No shares yet. Click "Share My Profile" to start earning boosts!
+                  </div>
+                )}
               </div>
 
               <div className="border-t pt-6">
@@ -271,6 +341,19 @@ const ProDashboard = () => {
           )}
         </div>
       </div>
+
+      {/* Share Profile Modal */}
+      {showShare && (
+        <ShareProfileModal
+          isOpen={showShare}
+          onClose={() => { 
+            setShowShare(false); 
+            loadShareStats(); // Reload stats after sharing
+          }}
+          pro={professional}
+          api={api}
+        />
+      )}
     </div>
   );
 };
