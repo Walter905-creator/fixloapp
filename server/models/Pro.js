@@ -1,10 +1,35 @@
 const mongoose = require('mongoose');
 
+// Helper function for generating slugs
+const slugify = (s) => s.toString().toLowerCase().trim()
+  .replace(/[^\w\s-]/g, '')
+  .replace(/\s+/g, '-')
+  .replace(/-+/g, '-');
+
+// Badge Schema for gamification
+const BadgeSchema = new mongoose.Schema({
+  name: { type: String, enum: ['Top Promoter', 'Community Builder'], required: true },
+  earnedAt: { type: Date, default: Date.now }
+}, { _id: false });
+
 // Professional Schema with geolocation support
 const proSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
+    trim: true
+  },
+  // Additional name fields for better profile management
+  firstName: {
+    type: String,
+    trim: true
+  },
+  lastName: {
+    type: String,
+    trim: true
+  },
+  businessName: {
+    type: String,
     trim: true
   },
   email: {
@@ -43,6 +68,11 @@ const proSchema = new mongoose.Schema({
       'appliance_repair'
     ]
   },
+  // Primary service for easier reference
+  primaryService: {
+    type: String,
+    trim: true
+  },
   location: {
     type: {
       type: String,
@@ -57,6 +87,22 @@ const proSchema = new mongoose.Schema({
       type: String,
       required: true
     }
+  },
+  // Additional location fields
+  city: {
+    type: String,
+    trim: true
+  },
+  state: {
+    type: String,
+    trim: true
+  },
+  
+  // Public slug for profile sharing
+  slug: { 
+    type: String, 
+    unique: true, 
+    index: true 
   },
   dob: {
     type: Date,
@@ -102,9 +148,31 @@ const proSchema = new mongoose.Schema({
     min: 0,
     max: 5
   },
+  // Updated rating fields for better review aggregation
+  avgRating: { 
+    type: Number, 
+    default: 0, 
+    min: 0, 
+    max: 5 
+  },
+  reviewCount: { 
+    type: Number, 
+    default: 0, 
+    min: 0 
+  },
   completedJobs: {
     type: Number,
     default: 0
+  },
+  
+  // Gamification features
+  boostActiveUntil: { 
+    type: Date, 
+    default: null 
+  },
+  badges: { 
+    type: [BadgeSchema], 
+    default: [] 
   },
   
   // Verification status
@@ -176,6 +244,35 @@ proSchema.methods.updateRating = function(newRating) {
   this.rating = ((this.rating * this.completedJobs) + newRating) / (this.completedJobs + 1);
   this.completedJobs += 1;
 };
+
+// Badge helper method
+proSchema.methods.hasBadge = function (badgeName) {
+  return this.badges.some(b => b.name === badgeName);
+};
+
+// Ensure slug generation
+proSchema.pre('save', function(next) {
+  if (!this.slug) {
+    const base = this.businessName?.length
+      ? `${this.businessName}-${this.city || ''}-${this.state || ''}`
+      : `${this.firstName || this.name?.split(' ')[0] || ''}-${this.lastName || this.name?.split(' ')[1] || ''}-${this.primaryService || this.trade || 'pro'}-${this.city || ''}-${this.state || ''}`;
+    this.slug = slugify(base);
+  }
+  
+  // Auto-populate firstName/lastName from name if not set
+  if (this.name && (!this.firstName || !this.lastName)) {
+    const nameParts = this.name.trim().split(' ');
+    if (!this.firstName) this.firstName = nameParts[0] || '';
+    if (!this.lastName) this.lastName = nameParts.slice(1).join(' ') || '';
+  }
+  
+  // Auto-populate primaryService from trade if not set
+  if (this.trade && !this.primaryService) {
+    this.primaryService = this.trade;
+  }
+  
+  next();
+});
 
 // Virtual for backward compatibility
 proSchema.virtual('profileUrl').get(function() {

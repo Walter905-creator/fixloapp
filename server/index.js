@@ -284,6 +284,11 @@ app.use("/api/ai", require("./routes/ai")); // AI assistant route
 app.use("/api/contact", require("./routes/contact")); // Contact form route
 app.use("/api/referrals", require("./routes/referrals")); // Referral rewards
 
+// ✅ New routes for profile sharing feature
+app.use("/api", require("./routes/profiles")); // Profile slug lookup
+app.use("/api", require("./routes/share")); // Share events and boost logic
+app.use("/api", require("./routes/search")); // Enhanced search with boost scoring
+
 // ✅ Simple Subscribe Endpoint for PricingPage.jsx
 app.post("/api/subscribe", async (req, res) => {
   try {
