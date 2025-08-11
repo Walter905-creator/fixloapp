@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Badges from '../../components/profile/Badges';
 import BoostPill from '../../components/profile/BoostPill';
 import Stars from '../../components/reviews/Stars';
 import ReviewFormModal from '../../components/reviews/ReviewFormModal';
 import api from '../../lib/api';
 
-export default function PublicProfile() {
-  const { slug } = useParams();
+export default function PublicProfile({ slug }) {
   const navigate = useNavigate();
   const [pro, setPro] = useState(null);
   const [reviews, setReviews] = useState([]);
