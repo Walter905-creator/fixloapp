@@ -138,6 +138,9 @@ app.use(express.json());
 // ✅ Serve static files from server directory (for admin assets like logo)
 app.use(express.static(__dirname));
 
+// ✅ Serve static files from root directory (for frontend CSS/JS assets)
+app.use(express.static(path.join(__dirname, '..')));
+
 // ✅ EXPLICIT OPTIONS HANDLERS - Before any other routes to prevent redirects
 app.options('/api/pro-signup', (req, res) => {
   const requestOrigin = req.headers.origin;
