@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../lib/api';
 
 const UploadWork = ({ professional }) => {
   const [formData, setFormData] = useState({
@@ -52,7 +52,7 @@ const UploadWork = ({ professional }) => {
         uploadData.append('photos', file);
       });
 
-      const response = await axios.post('/api/upload/work', uploadData, {
+      const response = await api.post('/api/upload/work', uploadData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`

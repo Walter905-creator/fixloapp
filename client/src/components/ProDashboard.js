@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../lib/api';
 import PhotoGallery from './PhotoGallery';
 import ReviewList from './ReviewList';
 
@@ -23,7 +23,7 @@ const ProDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       const token = localStorage.getItem('proToken');
-      const response = await axios.get('/api/pros/dashboard', {
+      const response = await api.get('/api/pros/dashboard', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -52,7 +52,7 @@ const ProDashboard = () => {
       formData.append('profileImage', file);
 
       const token = localStorage.getItem('proToken');
-      const response = await axios.post('/api/pros/upload/profile', formData, {
+      const response = await api.post('/api/pros/upload/profile', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`

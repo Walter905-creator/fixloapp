@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../lib/api';
 
 export default function ProUpload() {
   const [file, setFile] = useState(null);
@@ -20,7 +20,7 @@ export default function ProUpload() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const res = await axios.post('/api/upload', formData, {
+      const res = await api.post('/api/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
