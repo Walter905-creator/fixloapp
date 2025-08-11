@@ -1,4 +1,18 @@
 {
+  "buildCommand": "./build-vercel.sh",
+  "outputDirectory": ".",
+  "installCommand": "npm install --no-fund --no-audit",
+  "framework": null,
+  "functions": {
+    "app/api/hello.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "env": {
+    "NODE_VERSION": "18",
+    "NPM_FLAGS": "--no-fund --no-audit",
+    "NODE_OPTIONS": "--max-old-space-size=4096"
+  },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/services/:service", "destination": "/" },
