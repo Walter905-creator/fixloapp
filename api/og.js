@@ -1,31 +1,39 @@
-/* eslint-disable */
-export const config = { runtime: 'edge' };
 import { ImageResponse } from '@vercel/og';
 
-const API = process.env.API_BASE_URL || 'https://fixloapp.onrender.com';
+export const config = { runtime: 'edge' };
+
+const API_BASE = process.env.REACT_APP_API_URL || 'https://fixloapp.onrender.com';
 
 const fetchPro = async (slug) => {
   try {
-    const res = await fetch(`${API}/api/profiles/slug/${encodeURIComponent(slug)}`, { next: { revalidate: 60 } });
+    const res = await fetch(`${API_BASE}/api/profiles/slug/${encodeURIComponent(slug)}`, {
+      next: { revalidate: 60 }
+    });
     if (!res.ok) return null;
     return await res.json();
-  } catch { return null; }
+  } catch (error) {
+    console.error('Failed to fetch pro:', error);
+    return null;
+  }
 };
 
 export default async function handler(req) {
   try {
     const { searchParams } = new URL(req.url);
     const slug = searchParams.get('slug') || '';
+    
     const pro = slug ? await fetchPro(slug) : null;
 
-    const name = pro?.businessName || [pro?.firstName, pro?.lastName].filter(Boolean).join(' ') || 'Fixlo Pro';
-    const service = pro?.primaryService ? `${pro.primaryService}` : '';
-    const location = [pro?.city, pro?.state].filter(Boolean).join(', ');
+    const name = pro?.businessName || 
+                [pro?.firstName, pro?.lastName].filter(Boolean).join(' ') || 
+                pro?.name || 
+                'Fixlo Professional';
+    
+    const service = pro?.primaryService || pro?.trade || '';
+    const location = [pro?.city, pro?.state].filter(Boolean).join(', ') || '';
     const rating = pro?.avgRating ? `${pro.avgRating.toFixed(1)} ★` : 'New on Fixlo';
     const badges = (pro?.badges || []).map(b => b.name);
-
-    // Load a font (optional). You can place a TTF in /public/fonts and fetch it here.
-    // const fontData = await fetch(new URL('/fonts/Inter-Regular.ttf', req.url)).then(r=>r.arrayBuffer());
+    const isBoosted = pro?.boostActiveUntil && new Date(pro.boostActiveUntil) > new Date();
 
     return new ImageResponse(
       (
@@ -55,9 +63,16 @@ export default async function handler(req) {
                 {service}{service && location ? ' • ' : ''}{location}
               </div>
               <div style={{ fontSize: 28, marginTop: 8 }}>{rating}</div>
+              {isBoosted && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                  <div style={{ fontSize: 22, padding: '6px 12px', borderRadius: 999, background: 'rgba(99, 102, 241, 0.2)', border: '1px solid rgb(99, 102, 241)', color: 'rgb(99, 102, 241)' }}>
+                    🚀 Boosted
+                  </div>
+                </div>
+              )}
               {!!badges.length && (
                 <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
-                  {badges.map(b => (
+                  {badges.slice(0, 3).map(b => (
                     <div key={b} style={{ fontSize: 22, padding: '6px 12px', borderRadius: 999, background: '#111827', border: '1px solid #1f2937' }}>
                       {b}
                     </div>
@@ -85,10 +100,37 @@ export default async function handler(req) {
       {
         width: 1200,
         height: 630,
-        // fonts: [{ name: 'Inter', data: fontData, weight: 400, style: 'normal' }]
       }
     );
-  } catch (e) {
-    return new Response('OG error', { status: 500 });
+  } catch (error) {
+    console.error('OG image generation error:', error);
+    
+    // Fallback OG image
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            width: '1200px',
+            height: '630px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: '#0B0B0C',
+            color: '#fff',
+          }}
+        >
+          <div style={{ width: 80, height: 80, borderRadius: 40, background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48, fontWeight: 800, marginBottom: 24 }}>
+            F
+          </div>
+          <div style={{ fontSize: 64, fontWeight: 800, marginBottom: 16 }}>Fixlo</div>
+          <div style={{ fontSize: 32, opacity: 0.8 }}>Professional Services Platform</div>
+        </div>
+      ),
+      {
+        width: 1200,
+        height: 630,
+      }
+    );
   }
 }
