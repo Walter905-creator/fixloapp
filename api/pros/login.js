@@ -27,11 +27,15 @@ export default async function handler(req, res) {
   
   // Only allow POST method for login
   if (req.method !== 'POST') {
-    console.log(`❌ Method ${req.method} not allowed for /api/pros/login`);
+    console.log(`❌ Method ${req.method} not allowed for /api/pros/login from origin: "${origin || 'null'}"`);
+    
+    // Set proper headers for error response
+    res.setHeader('Allow', 'POST, OPTIONS');
     res.status(405).json({ 
       success: false, 
       message: `Method ${req.method} not allowed. Use POST for login.`,
-      allowedMethods: ['POST', 'OPTIONS']
+      allowedMethods: ['POST', 'OPTIONS'],
+      hint: 'Make sure your frontend is sending a POST request to this endpoint.'
     });
     return;
   }
