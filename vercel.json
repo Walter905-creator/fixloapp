@@ -4,8 +4,11 @@
   "installCommand": "npm install --no-fund --no-audit",
   "framework": null,
   "functions": {
-    "app/api/hello.js": {
-      "runtime": "nodejs18.x"
+    "api/og.js": {
+      "runtime": "edge"
+    },
+    "api/meta.js": {
+      "runtime": "edge"
     }
   },
   "env": {
