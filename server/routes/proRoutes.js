@@ -211,6 +211,19 @@ router.post('/register', async (req, res) => {
   }
 });
 
+// GET handler for login endpoint - return 405 Method Not Allowed
+router.get('/login', (req, res) => {
+  console.log(`❌ GET method not allowed for /api/pros/login from origin: "${req.headers.origin || 'null'}"`);
+  
+  res.set('Allow', 'POST, OPTIONS');
+  res.status(405).json({
+    success: false,
+    error: 'Method GET not allowed. Use POST for login.',
+    allowedMethods: ['POST', 'OPTIONS'],
+    hint: 'Make sure your frontend is sending a POST request to this endpoint.'
+  });
+});
+
 // Login pro
 router.post('/login', async (req, res) => {
   try {
