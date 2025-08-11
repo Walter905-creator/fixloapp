@@ -216,6 +216,13 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({ 
+        error: 'Email and password are required' 
+      });
+    }
+
     // Check if required dependencies are available
     if (!bcrypt || !jwt) {
       console.error('❌ Missing required dependencies for professional login');
@@ -229,6 +236,36 @@ router.post('/login', async (req, res) => {
     const mongoose = require('mongoose');
     if (mongoose.connection.readyState !== 1) {
       console.error('❌ Database not connected for professional login');
+      
+      // For development mode without database, provide a mock response
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔧 Development mode: Using mock login response');
+        
+        // Generate mock JWT token if JWT_SECRET is available
+        if (process.env.JWT_SECRET) {
+          const mockToken = jwt.sign(
+            { proId: 'dev-mock-id', email: email },
+            process.env.JWT_SECRET,
+            { expiresIn: '24h' }
+          );
+          
+          return res.json({
+            message: 'Login successful (development mode)',
+            token: mockToken,
+            pro: {
+              id: 'dev-mock-id',
+              name: 'Dev Professional',
+              email: email,
+              trade: 'handyman',
+              location: { address: 'Development Mode' },
+              profileImage: null,
+              rating: 4.5,
+              completedJobs: 10
+            }
+          });
+        }
+      }
+      
       return res.status(503).json({ 
         error: 'Login service temporarily unavailable',
         message: 'Database connection issue. Please try again later.'
