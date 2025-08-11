@@ -7,8 +7,21 @@ This guide explains how to properly start the Fixlo application for development 
 The error `POST http://localhost:3001/api/service-request net::ERR_CONNECTION_REFUSED` occurs when:
 - The frontend is running but the backend server is not
 - The frontend tries to make API calls to `localhost:3001` but no server is listening
+- The frontend is built with the wrong API URL (production instead of development)
 
 ## Solution: Proper Development Startup
+
+### Build Scripts for Different Environments
+
+**For Development (connects to localhost:3001):**
+```bash
+npm run build-dev
+```
+
+**For Production (connects to https://fixloapp.onrender.com):**
+```bash
+npm run build
+```
 
 ### 1. Start the Backend Server (Required)
 

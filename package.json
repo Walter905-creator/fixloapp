@@ -8,11 +8,13 @@
   "scripts": {
     "install-client": "cd client && npm install --no-fund --no-audit",
     "build-client": "cd client && REACT_APP_API_URL=https://fixloapp.onrender.com REACT_APP_BUILD_TIMESTAMP=$(date +%s) REACT_APP_BUILD_ID=$(date +%Y%m%d-%H%M%S) npm run build",
+    "build-client-dev": "cd client && REACT_APP_BUILD_TIMESTAMP=$(date +%s) REACT_APP_BUILD_ID=$(date +%Y%m%d-%H%M%S) npm run build",
     "deploy-build": "cp -r client/build/* . && echo 'Build deployed to root directory'",
     "generate-sitemap": "node generate-sitemap.js",
     "clean-old-builds": "find static/js -name 'main.*.js' -not -path '*/node_modules/*' | head -n -3 | xargs rm -f; find static/js -name 'main.*.js.map' -not -path '*/node_modules/*' | head -n -3 | xargs rm -f; find static/js -name 'main.*.js.LICENSE.txt' -not -path '*/node_modules/*' | head -n -3 | xargs rm -f",
     "start-client": "cd client && npm start",
     "build": "npm run clean-old-builds && npm run install-client && npm run build-client && npm run deploy-build && npm run generate-sitemap",
+    "build-dev": "npm run clean-old-builds && npm run install-client && npm run build-client-dev && npm run deploy-build && npm run generate-sitemap",
     "verify-deployment": "node verify-deployment.js",
     "force-deploy": "./force-vercel-deploy.sh"
   },
