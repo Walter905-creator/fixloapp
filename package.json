@@ -2,8 +2,11 @@
   "name": "fixloapp",
   "version": "3.0.0",
   "private": true,
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
-    "install-client": "cd client && npm install",
+    "install-client": "cd client && npm install --no-fund --no-audit",
     "build-client": "cd client && REACT_APP_API_URL=https://fixloapp.onrender.com REACT_APP_BUILD_TIMESTAMP=$(date +%s) REACT_APP_BUILD_ID=$(date +%Y%m%d-%H%M%S) npm run build",
     "deploy-build": "cp -r client/build/* . && echo 'Build deployed to root directory'",
     "generate-sitemap": "node generate-sitemap.js",
