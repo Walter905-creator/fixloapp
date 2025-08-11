@@ -30,9 +30,6 @@ import NotFound from './components/NotFound';
 import URLRedirectHandler from './components/URLRedirectHandler';
 
 import PublicProfileWrapper from './pages/PublicProfileWrapper';
-=======
-import PublicProfileWrapper from './pages/profiles/PublicProfileWrapper';
- main
 
 // Cache busting - show build info in console
 const buildId = process.env.REACT_APP_BUILD_ID || 'dev';
