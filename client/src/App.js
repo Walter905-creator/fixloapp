@@ -28,6 +28,7 @@ import Footer from './components/Footer';
 import FixloLogo from './components/FixloLogo';
 import NotFound from './components/NotFound';
 import URLRedirectHandler from './components/URLRedirectHandler';
+import PublicProfileWrapper from './pages/profiles/PublicProfileWrapper';
 
 // Cache busting - show build info in console
 const buildId = process.env.REACT_APP_BUILD_ID || 'dev';
@@ -134,6 +135,16 @@ function App() {
               } />
 
               {/* Professional routes with SEO */}
+              <Route path="/pro/:slug" element={
+                <>
+                  <SEOHead 
+                    title="Professional Profile - Fixlo"
+                    description="View professional profile and reviews on Fixlo. Book trusted home service professionals in your area."
+                    url="https://www.fixloapp.com/pro/"
+                  />
+                  <PublicProfileWrapper />
+                </>
+              } />
               <Route path="/signup" element={
                 <>
                   <SEOHead 
