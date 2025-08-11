@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../lib/api';
 
 const ProSignin = () => {
   const [formData, setFormData] = useState({
@@ -22,7 +22,7 @@ const ProSignin = () => {
     setError('');
 
     try {
-      const response = await axios.post('/api/pros/login', formData);
+      const response = await api.post('/api/pros/login', formData);
       
       // Store token in localStorage
       localStorage.setItem('proToken', response.data.token);

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../lib/api';
 
 const PhotoGallery = ({ gallery, onUpdate }) => {
   const [uploading, setUploading] = useState(false);
@@ -19,7 +19,7 @@ const PhotoGallery = ({ gallery, onUpdate }) => {
       });
 
       const token = localStorage.getItem('proToken');
-      const response = await axios.post('/api/pros/upload/gallery', formData, {
+      const response = await api.post('/api/pros/upload/gallery', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`
