@@ -28,7 +28,11 @@ import Footer from './components/Footer';
 import FixloLogo from './components/FixloLogo';
 import NotFound from './components/NotFound';
 import URLRedirectHandler from './components/URLRedirectHandler';
+
+import PublicProfileWrapper from './pages/PublicProfileWrapper';
+=======
 import PublicProfileWrapper from './pages/profiles/PublicProfileWrapper';
+ main
 
 // Cache busting - show build info in console
 const buildId = process.env.REACT_APP_BUILD_ID || 'dev';
@@ -256,6 +260,13 @@ function App() {
                       />
                     </div>
                   </div>
+                </>
+              } />
+
+              {/* Public Profile Pages */}
+              <Route path="/pro/:slug" element={
+                <>
+                  <PublicProfileWrapper />
                 </>
               } />
               
