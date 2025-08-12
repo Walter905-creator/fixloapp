@@ -10,6 +10,12 @@ deployment-archive/
 android/
 ios/
 
+# Legacy documentation and scripts
+docs/legacy/
+scripts/legacy/
+config/legacy/
+test-files/
+
 # Static files that conflict with React build
 index-static-backup.html
 
@@ -21,6 +27,7 @@ admin*.html
 *.log
 *.tmp
 .cache
+.env
 .env.local
 .env.development.local
 .env.test.local
