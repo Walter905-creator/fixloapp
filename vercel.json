@@ -50,33 +50,7 @@
       ]
     }
   ],
-  "redirects": [
-    {
-      "source": "/admin",
-      "destination": "/admin.html",
-      "permanent": false
-    },
-    {
-      "source": "/how-it-works",
-      "destination": "/how-it-works.html",
-      "permanent": false
-    },
-    {
-      "source": "/pro-signup",
-      "destination": "/pro-signup.html",
-      "permanent": false
-    },
-    {
-      "source": "/signup",
-      "destination": "/signup.html",
-      "permanent": false
-    },
-    {
-      "source": "/contact",
-      "destination": "/contact.html",
-      "permanent": false
-    }
-  ],
+  "redirects": [],
   "trailingSlash": false,
   "cleanUrls": true,
   "rewrites": [
@@ -86,9 +60,11 @@
     { "source": "/manifest.webmanifest", "destination": "/manifest.webmanifest" },
     { "source": "/robots.txt", "destination": "/robots.txt" },
     { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
+    { "source": "/sitemap-index.xml", "destination": "/sitemap-index.xml" },
     { "source": "/favicon.ico", "destination": "/favicon.ico" },
-    { "source": "/services/:service", "destination": "/" },
-    { "source": "/services/:service/:city", "destination": "/" },
-    { "source": "/(.*)", "destination": "/" }
+    { "source": "/favicon.png", "destination": "/favicon.png" },
+    { "source": "/cover.png", "destination": "/cover.png" },
+    { "source": "/cover.jpg", "destination": "/cover.jpg" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
