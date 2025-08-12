@@ -3,7 +3,7 @@
 # Comprehensive 404 Fix Verification Script for Fixlo
 echo "🔍 Starting Fixlo 404 Fix Verification..."
 
-BASE_URL="http://localhost:3000"
+BASE_URL="http://localhost:3002"
 
 # Function to test URL and report status
 test_url() {
@@ -28,8 +28,8 @@ test_url "$BASE_URL/how-it-works.html" "How it works page"
 test_url "$BASE_URL/pro-signup.html" "Pro signup page"
 
 echo -e "\n🎨 Testing Static Assets..."
-test_url "$BASE_URL/static/css/main.d1d8e8be.css" "Main CSS file"
-test_url "$BASE_URL/static/js/main.b6e0d5f5.js" "Main JS file"
+test_url "$BASE_URL/static/css/main.6197e35a.css" "Main CSS file"
+test_url "$BASE_URL/static/js/main.a84bc293.js" "Main JS file"
 test_url "$BASE_URL/favicon.ico" "Favicon"
 test_url "$BASE_URL/manifest.webmanifest" "Web manifest"
 

@@ -2,9 +2,92 @@
   "buildCommand": "cd client && npm ci --no-fund --no-audit && npm run build",
   "outputDirectory": "client/build",
   "installCommand": "npm install --no-fund --no-audit",
+ 
   "framework": null,
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/" }
+
+  "ignoreCommand": "exit 0",
+  "functions": {
+    "api/og.js": {
+      "runtime": "edge"
+    },
+    "api/meta.js": {
+      "runtime": "edge"
+    },
+    "api/pro-signup.js": {
+      "runtime": "nodejs18.x"
+    },
+    "api/homeowner-lead.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "env": {
+    "NODE_VERSION": "20.x",
+    "NPM_FLAGS": "--no-fund --no-audit",
+    "NODE_OPTIONS": "--max-old-space-size=4096"
+  },
+  "headers": [
+    {
+      "source": "/static/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    }
+  ],
+  "redirects": [],
+  "trailingSlash": false,
+  "cleanUrls": true,
+  "errorPage": "/404.html",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/static/(.*)", "destination": "/static/$1" },
+    { "source": "/assets/(.*)", "destination": "/assets/$1" },
+    { "source": "/manifest.webmanifest", "destination": "/manifest.webmanifest" },
+    { "source": "/robots.txt", "destination": "/robots.txt" },
+    { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
+    { "source": "/sitemap-index.xml", "destination": "/sitemap-index.xml" },
+    { "source": "/favicon.ico", "destination": "/favicon.ico" },
+    { "source": "/favicon.png", "destination": "/favicon.png" },
+    { "source": "/cover.png", "destination": "/cover.png" },
+    { "source": "/cover.jpg", "destination": "/cover.jpg" },
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/contact", "destination": "/contact.html" },
+    { "source": "/privacy", "destination": "/privacy.html" },
+    { "source": "/terms", "destination": "/terms.html" },
+    { "source": "/support", "destination": "/support.html" },
+    { "source": "/login", "destination": "/login.html" },
+    { "source": "/signup", "destination": "/signup.html" },
+    { "source": "/pro-signup", "destination": "/pro-signup.html" },
+    { "source": "/how-it-works", "destination": "/how-it-works.html" },
+    { "source": "/dashboard", "destination": "/dashboard.html" },
+    { "source": "/payment-success", "destination": "/payment-success.html" },
+    { "source": "/payment-cancel", "destination": "/payment-cancel.html" },
+    { "source": "/sms-compliance", "destination": "/sms-compliance.html" },
+    { "source": "/services", "destination": "/services/index.html" },
+    { "source": "/services/plumbing", "destination": "/services/plumbing.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
+ main
   ]
 }
