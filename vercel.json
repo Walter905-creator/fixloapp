@@ -2,12 +2,7 @@
   "buildCommand": "cd client && npm ci --no-fund --no-audit && npm run build",
   "outputDirectory": "client/build",
   "installCommand": "npm install --no-fund --no-audit",
- 
   "framework": null,
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)", "destination": "/" }
-
   "ignoreCommand": "exit 0",
   "functions": {
     "api/og.js": {
@@ -61,7 +56,7 @@
   "cleanUrls": true,
   "errorPage": "/404.html",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/api/(.*)", "destination": "https://fixloapp.onrender.com/api/$1" },
     { "source": "/static/(.*)", "destination": "/static/$1" },
     { "source": "/assets/(.*)", "destination": "/assets/$1" },
     { "source": "/manifest.webmanifest", "destination": "/manifest.webmanifest" },
@@ -88,6 +83,5 @@
     { "source": "/services", "destination": "/services/index.html" },
     { "source": "/services/plumbing", "destination": "/services/plumbing.html" },
     { "source": "/(.*)", "destination": "/index.html" }
- main
   ]
 }
