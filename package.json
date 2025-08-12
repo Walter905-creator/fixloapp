@@ -13,6 +13,7 @@
     "generate-sitemap": "node generate-sitemap.js",
     "clean-old-builds": "find static/js -name 'main.*.js' -not -path '*/node_modules/*' | head -n -3 | xargs rm -f; find static/js -name 'main.*.js.map' -not -path '*/node_modules/*' | head -n -3 | xargs rm -f; find static/js -name 'main.*.js.LICENSE.txt' -not -path '*/node_modules/*' | head -n -3 | xargs rm -f",
     "start-client": "cd client && npm start",
+    "vercel-build": "npm run clean-old-builds && npm run install-client && npm run build-client && npm run deploy-build && npm run generate-sitemap",
     "build": "npm run clean-old-builds && npm run install-client && npm run build-client && npm run deploy-build && npm run generate-sitemap",
     "build-dev": "npm run clean-old-builds && npm run install-client && npm run build-client-dev && npm run deploy-build && npm run generate-sitemap",
     "verify-deployment": "node verify-deployment.js",

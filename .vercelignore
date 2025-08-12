@@ -1,0 +1,11 @@
+client/
+server/
+fixlo-app/
+node_modules/
+*.md
+*.sh
+test-*
+verify-*
+render-*
+*.patch
+agent-tasks/

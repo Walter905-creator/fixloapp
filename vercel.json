@@ -3,6 +3,7 @@
   "outputDirectory": ".",
   "installCommand": "npm install --no-fund --no-audit",
   "framework": null,
+  "ignoreCommand": "exit 0",
   "functions": {
     "api/og.js": {
       "runtime": "edge"
