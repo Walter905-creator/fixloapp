@@ -7,7 +7,11 @@ export default function UrgencyPopup() {
   const [state, setState] = useState('NC');
 
   useEffect(() => {
-    // Get user's location to personalize the message
+    // Disable intrusive urgency popup for better UX
+    // This was identified as unwanted "SMS campaign" style messaging
+    console.log('ℹ️ UrgencyPopup disabled for improved user experience');
+    
+    // Keep the location detection code but don't show the popup
     const getUserLocation = async () => {
       if (!geolocationService.isGeolocationSupported()) {
         console.log('ℹ️ Geolocation not supported for urgency popup personalization');
@@ -39,8 +43,9 @@ export default function UrgencyPopup() {
     };
 
     getUserLocation();
-    const timer = setTimeout(() => setShow(true), 5000); // show popup after 5 seconds
-    return () => clearTimeout(timer);
+    // Disabled popup timer for better UX
+    // const timer = setTimeout(() => setShow(true), 5000);
+    // return () => clearTimeout(timer);
   }, []);
 
   if (!show) return null;
