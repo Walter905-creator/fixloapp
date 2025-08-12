@@ -13,6 +13,8 @@ const sanitizeInput = require("./middleware/sanitization");
 const shield = require("./middleware/shield");
 const errorHandler = require("./middleware/errorHandler");
 const requestLogger = require("./middleware/logger");
+const performanceMonitor = require("./utils/performanceMonitor");
+const DatabaseOptimizer = require("./utils/databaseOptimizer");
 const path = require("path");
 
 // Import models and services
@@ -223,6 +225,14 @@ try {
   console.log('✅ Request logger middleware loaded');
 } catch (error) {
   console.error('❌ Request logger middleware failed:', error.message);
+}
+
+// ✅ Performance monitoring
+try {
+  app.use(performanceMonitor.middleware());
+  console.log('✅ Performance monitoring middleware loaded');
+} catch (error) {
+  console.error('❌ Performance monitoring middleware failed:', error.message);
 }
 
 // ✅ Path normalization check - Prevent trailing slash redirects
@@ -1088,6 +1098,26 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
+// ✅ Comprehensive performance monitoring endpoint
+app.get("/api/monitoring", async (req, res) => {
+  try {
+    const healthSummary = await performanceMonitor.getHealthSummary();
+    res.json({
+      status: 'operational',
+      message: 'Fixlo API monitoring data',
+      ...healthSummary
+    });
+  } catch (error) {
+    console.error('❌ Error generating monitoring data:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to generate monitoring data',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // ✅ Status API endpoint (alternative endpoint that might be called by external services)
 app.get("/status-api", (req, res) => {
   console.log(`🔍 Status API request from origin: ${req.headers.origin || 'unknown'}`);
@@ -1118,6 +1148,9 @@ if (process.env.MONGO_URI) {
     console.log("✅ MongoDB connected successfully");
     console.log(`📊 Database: ${mongoose.connection.name}`);
     console.log(`🔗 Connection state: ${mongoose.connection.readyState}`);
+    
+    // Initialize database optimization
+    DatabaseOptimizer.initialize();
   })
   .catch((err) => {
     console.error("❌ MongoDB connection failed:", err.message);
