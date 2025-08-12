@@ -9,6 +9,12 @@
     },
     "api/meta.js": {
       "runtime": "edge"
+    },
+    "api/pro-signup.js": {
+      "runtime": "nodejs18.x"
+    },
+    "api/homeowner-lead.js": {
+      "runtime": "nodejs18.x"
     }
   },
   "env": {
@@ -17,6 +23,7 @@
     "NODE_OPTIONS": "--max-old-space-size=4096"
   },
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/services/:service", "destination": "/" },
     { "source": "/services/:service/:city", "destination": "/" },
     { "source": "/(.*)", "destination": "/" }
