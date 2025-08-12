@@ -1,7 +1,13 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": ".",
+  "buildCommand": "cd client && npm ci --no-fund --no-audit && npm run build",
+  "outputDirectory": "client/build",
   "installCommand": "npm install --no-fund --no-audit",
+ 
+  "framework": null,
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/(.*)", "destination": "/" }
+
   "ignoreCommand": "exit 0",
   "functions": {
     "api/og.js": {
@@ -82,5 +88,6 @@
     { "source": "/services", "destination": "/services/index.html" },
     { "source": "/services/plumbing", "destination": "/services/plumbing.html" },
     { "source": "/(.*)", "destination": "/index.html" }
+ main
   ]
 }
