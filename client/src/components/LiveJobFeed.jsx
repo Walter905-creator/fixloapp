@@ -25,16 +25,15 @@ export default function LiveJobFeed() {
   }, []);
 
   return (
-    <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mt-6">
-      <h3 className="font-bold mb-2">🔴 Live Job Feed</h3>
-      <ul className="text-sm text-gray-700">
-        {feed.map((job, idx) => (
-          <li key={idx} className="animate-pulse">• {job}</li>
+    <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mt-6">
+      <h3 className="font-semibold mb-2 text-gray-700">💼 Recent Activity</h3>
+      <p className="text-sm text-gray-600 mb-2">Example of the types of services requested on our platform:</p>
+      <ul className="text-sm text-gray-600">
+        {feed.slice(0, 3).map((job, idx) => (
+          <li key={idx} className="opacity-75">• {job.replace(/– \d+ min ago|– just now/, '– Example')}</li>
         ))}
       </ul>
-      {feed.length === 0 && (
-        <p className="text-sm text-gray-500">Loading recent job requests...</p>
-      )}
+      <p className="text-xs text-gray-500 mt-2 italic">* Sample data for demonstration purposes</p>
     </div>
   );
 }
