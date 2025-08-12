@@ -53,6 +53,7 @@
   "redirects": [],
   "trailingSlash": false,
   "cleanUrls": true,
+  "errorPage": "/404.html",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/static/(.*)", "destination": "/static/$1" },
@@ -65,6 +66,21 @@
     { "source": "/favicon.png", "destination": "/favicon.png" },
     { "source": "/cover.png", "destination": "/cover.png" },
     { "source": "/cover.jpg", "destination": "/cover.jpg" },
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/contact", "destination": "/contact.html" },
+    { "source": "/privacy", "destination": "/privacy.html" },
+    { "source": "/terms", "destination": "/terms.html" },
+    { "source": "/support", "destination": "/support.html" },
+    { "source": "/login", "destination": "/login.html" },
+    { "source": "/signup", "destination": "/signup.html" },
+    { "source": "/pro-signup", "destination": "/pro-signup.html" },
+    { "source": "/how-it-works", "destination": "/how-it-works.html" },
+    { "source": "/dashboard", "destination": "/dashboard.html" },
+    { "source": "/payment-success", "destination": "/payment-success.html" },
+    { "source": "/payment-cancel", "destination": "/payment-cancel.html" },
+    { "source": "/sms-compliance", "destination": "/sms-compliance.html" },
+    { "source": "/services", "destination": "/services/index.html" },
+    { "source": "/services/plumbing", "destination": "/services/plumbing.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
