@@ -58,11 +58,11 @@ export default function UrgencyPopup() {
       maxWidth: '300px',
       boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
     }}>
-      🚨 Only 14 pro spots left in {city}!<br />
-      <strong>Join Fixlo now</strong> to claim your area.
+      🚨 Limited professional spots available in {city}!<br />
+      <strong>Join Fixlo's trusted network</strong> to serve your community.
       {city && (
         <div style={{ fontSize: '14px', color: '#ffcccc', marginTop: '8px' }}>
-          Homeowners in <strong>{city}</strong> need your service!
+          Connect with homeowners in <strong>{city}</strong> who need your expertise.
         </div>
       )}
       <button

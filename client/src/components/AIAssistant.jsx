@@ -27,6 +27,11 @@ const AIAssistant = () => {
       
       const response = await axios.post(`${apiUrl}/api/ai/ask`, {
         message: userMessage
+      }, {
+        timeout: 10000, // 10 second timeout
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
 
       // Add AI response to chat
@@ -38,9 +43,31 @@ const AIAssistant = () => {
     } catch (error) {
       console.error('AI Assistant error:', error);
       
-      // Add error message or fallback
-      const fallbackMessage = error.response?.data?.fallback || 
-        'I\'m having trouble responding right now. Please try again or contact our support team for assistance.';
+      // Enhanced error handling with specific fallback responses
+      let fallbackMessage = '';
+      
+      if (error.code === 'ERR_NETWORK' || error.message.includes('ERR_CONNECTION_REFUSED')) {
+        fallbackMessage = `**Network Connection Issue**
+
+🔧 I'm having trouble connecting to the AI service right now. Here's some general guidance:
+
+**Common Home Projects:**
+• **Plumbing**: Turn off water at main valve for emergencies, call professionals for major issues
+• **Electrical**: Always turn off power at breaker, hire licensed electricians for safety
+• **HVAC**: Change filters monthly, schedule annual maintenance
+• **Painting**: Use primer for best results, proper ventilation is important
+
+**When to Call Professionals:**
+• Any electrical or gas work
+• Major plumbing repairs
+• Structural modifications
+• Roofing work
+
+💡 For specific questions, contact our support team or browse our directory of verified professionals.`;
+      } else {
+        fallbackMessage = error.response?.data?.fallback || 
+          'I\'m having trouble responding right now. Please try again or contact our support team for assistance.';
+      }
       
       setMessages(prev => [...prev, { 
         type: 'ai', 
