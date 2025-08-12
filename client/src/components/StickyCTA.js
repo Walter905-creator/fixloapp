@@ -8,7 +8,7 @@ export default function StickyCTA() {
       textAlign: 'center', zIndex: 9998, fontSize: '16px',
       borderTop: '2px solid #fff'
     }}>
-      📩 Ready to get started? <a 
+      🏠 Ready to connect with customers in your area? <a 
         href="/signup" 
         style={{ 
           color: '#00ffcc', 
@@ -17,7 +17,7 @@ export default function StickyCTA() {
           marginLeft: '8px'
         }}
       >
-        Join Fixlo Today →
+        Join Fixlo's Professional Network →
       </a>
     </div>
   );

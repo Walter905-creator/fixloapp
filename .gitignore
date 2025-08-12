@@ -26,10 +26,10 @@ admin*.html
 .env.test.local
 .env.production.local
 
-# React build artifacts in root
+# React build artifacts in root - keep needed files, exclude large maps
 static/js/*.map
 static/js/*.LICENSE.txt
-asset-manifest.json
+# asset-manifest.json - keep for deployment
 
 # IDE files
 .vscode/

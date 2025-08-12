@@ -89,7 +89,7 @@ function App() {
                             href="/signup" 
                             className="inline-block bg-orange-500 text-white py-3 px-6 rounded-lg text-lg font-semibold shadow-lg hover:bg-orange-600 transition"
                           >
-                            🧰 Join Fixlo Now – Claim Your Area
+                            🏠 Join Fixlo's Professional Network
                           </a>
                         </div>
                         
