@@ -26,6 +26,29 @@ const Navigation = () => {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
+              {/* Services Dropdown */}
+              <div className="relative group">
+                <button className="text-gray-700 hover:text-blue-600 font-medium flex items-center">
+                  Services
+                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <div className="absolute top-full left-0 mt-2 w-64 bg-white shadow-lg rounded-lg border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="grid grid-cols-2 gap-2 p-4">
+                    <Link to="/services/plumbing" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded">🚰 Plumbing</Link>
+                    <Link to="/services/electrical" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded">💡 Electrical</Link>
+                    <Link to="/services/hvac" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded">❄️ HVAC</Link>
+                    <Link to="/services/carpentry" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded">🪚 Carpentry</Link>
+                    <Link to="/services/painting" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded">🎨 Painting</Link>
+                    <Link to="/services/roofing" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded">🏠 Roofing</Link>
+                    <Link to="/services/house-cleaning" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded">🧹 Cleaning</Link>
+                    <Link to="/services/junk-removal" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded">🗑️ Junk Removal</Link>
+                    <Link to="/services/landscaping" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded col-span-2">🌿 Landscaping</Link>
+                  </div>
+                </div>
+              </div>
+              
               <Link to="/how-it-works" className="text-gray-700 hover:text-blue-600 font-medium">
                 How It Works
               </Link>
@@ -34,9 +57,6 @@ const Navigation = () => {
               </Link>
               <Link to="/contact" className="text-gray-700 hover:text-blue-600 font-medium">
                 Contact
-              </Link>
-              <Link to="/terms" className="text-gray-700 hover:text-blue-600 font-medium">
-                Terms
               </Link>
               
               {/* Action Buttons */}
