@@ -1,36 +1,26 @@
-
 {
-  "buildCommand": "cd client && npm ci --no-fund --no-audit && npm run build",
-  "outputDirectory": "client/build",
-  "installCommand": "npm install --no-fund --no-audit",
-  "framework": null,
-  "ignoreCommand": "exit 0",
-  "functions": {
-    "api/og.js": { "runtime": "edge" },
-    "api/meta.js": { "runtime": "edge" },
-    "api/pro-signup.js": { "runtime": "nodejs20.x" },
-    "api/homeowner-lead.js": { "runtime": "nodejs20.x" }
+  "name": "fixloapp",
+  "version": "3.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=18.0.0 <22.0.0"
   },
-  "env": {
-    "NODE_VERSION": "20.x",
-    "NPM_FLAGS": "--no-fund --no-audit",
-    "NODE_OPTIONS": "--max-old-space-size=4096"
+  "scripts": {
+    "install-client": "cd client && npm ci --no-fund --no-audit",
+    "build-client": "cd client && REACT_APP_API_URL=https://fixloapp.onrender.com REACT_APP_BUILD_TIMESTAMP=$(date +%s) REACT_APP_BUILD_ID=$(date +%Y%m%d-%H%M%S) GENERATE_SOURCEMAP=false npm run build",
+    "build-client-dev": "cd client && REACT_APP_BUILD_TIMESTAMP=$(date +%s) REACT_APP_BUILD_ID=$(date +%Y%m%d-%H%M%S) GENERATE_SOURCEMAP=true npm run build",
+    "build": "npm run install-client && npm run build-client",
+    "start-client": "cd client && npm start",
+    "generate-sitemap": "node generate-sitemap.js",
+    "validate-deployment": "node scripts/validate-deployment.js",
+    "verify-deployment": "node verify-deployment.js",
+    "force-deploy": "./force-vercel-deploy.sh"
   },
-  "headers": [
-    {
-      "source": "/static/(.*)",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
-      ]
-    }
-  ],
-  "redirects": [],
-  "trailingSlash": false,
-  "cleanUrls": true,
-  "rewrites": [
-    { "source": "/api/og", "destination": "/api/og" },
-    { "source": "/api/meta", "destination": "/api/meta" },
-    { "source": "/api/(.*)", "destination": "https://fixloapp.onrender.com/api/$1" },
-    { "source": "/(.*)", "destination": "/" }
-  ]
+  "dependencies": {
+    "@vercel/og": "^0.6.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "uuid": "^11.1.0"
+  }
 }
