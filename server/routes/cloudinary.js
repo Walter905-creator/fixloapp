@@ -21,10 +21,14 @@ router.post('/sign', (req, res) => {
       });
     }
 
-    const { folder = 'pros', upload_preset, transformation } = req.body;
+    const { folder = 'pros', upload_preset } = req.body;
     
     // Generate timestamp
     const timestamp = Math.round(Date.now() / 1000);
+    
+    // Default optimized transformation (f_auto for format, q_auto for quality)
+    const defaultTransformation = 'f_auto,q_auto,w_800,h_600,c_limit';
+    const transformation = req.body.transformation || defaultTransformation;
     
     // Prepare parameters to sign
     const params = {
@@ -32,8 +36,8 @@ router.post('/sign', (req, res) => {
       folder,
       use_filename: true,
       unique_filename: true,
-      ...(upload_preset && { upload_preset }),
-      ...(transformation && { transformation })
+      transformation,
+      ...(upload_preset && { upload_preset })
     };
 
     // Generate signature
@@ -48,8 +52,8 @@ router.post('/sign', (req, res) => {
       folder,
       use_filename: true,
       unique_filename: true,
-      ...(upload_preset && { upload_preset }),
-      ...(transformation && { transformation })
+      transformation,
+      ...(upload_preset && { upload_preset })
     });
   } catch (error) {
     console.error('Cloudinary signing error:', error);

@@ -77,19 +77,32 @@ export default function ShareProfileModal({ isOpen, onClose, pro, api, origin = 
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+    <div 
+      className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="share-modal-title"
+      aria-describedby="share-modal-description"
+    >
       <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl p-6">
-        <div className="text-xl font-semibold mb-2">Share your Fixlo profile</div>
-        <p className="text-sm text-gray-600 mb-4">
+        <div id="share-modal-title" className="text-xl font-semibold mb-2">Share your Fixlo profile</div>
+        <p id="share-modal-description" className="text-sm text-gray-600 mb-4">
           Sharing unlocks a <b>7‑day visibility boost</b> and earns badges.
         </p>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3" role="group" aria-label="Share options">
           {MEDIUMS.map(m => (
             <button
               key={m.key}
               onClick={() => handleShare(m.key)}
-              className="rounded-xl border border-gray-200 px-4 py-3 text-left hover:shadow-md hover:border-blue-300 transition-all duration-200 bg-white hover:bg-blue-50"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleShare(m.key);
+                }
+              }}
+              className="rounded-xl border border-gray-200 px-4 py-3 text-left hover:shadow-md hover:border-blue-300 transition-all duration-200 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              aria-label={`Share profile on ${m.label}`}
             >
               <div className="font-medium text-gray-900">{m.label}</div>
               <div className="text-xs text-gray-500">Share & get boosted</div>
@@ -104,8 +117,15 @@ export default function ShareProfileModal({ isOpen, onClose, pro, api, origin = 
 
         <div className="mt-6 flex justify-end gap-2">
           <button 
-            onClick={onClose} 
-            className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+            onClick={onClose}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onClose();
+              }
+            }}
+            className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+            aria-label="Close share modal"
           >
             Close
           </button>
