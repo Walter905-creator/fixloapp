@@ -1,9 +1,22 @@
-fixlo-app/
+# Ignore node_modules in all folders
 node_modules/
+
+# Ignore markdown docs
 *.md
+
+# Ignore shell scripts
 *.sh
+
+# Ignore test, verify, render prefixed files
 test-*
 verify-*
 render-*
+
+# Ignore patch files
 *.patch
+
+# Ignore agent task files/folders
 agent-tasks/
+
+# Ignore old build artifacts from a different project structure
+fixlo-app/
