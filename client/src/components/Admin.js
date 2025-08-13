@@ -10,9 +10,9 @@ function Admin() {
   const [loading, setLoading] = useState(false);
   const [adminEmail, setAdminEmail] = useState('');
 
-  // API configuration - use environment variable or fallback to local development server
-  const API_BASE = process.env.REACT_APP_API_URL || 
-                  (process.env.NODE_ENV === 'development' ? 'http://localhost:3001' : 'https://fixloapp.onrender.com');
+  // API configuration - use relative paths in production to leverage Vercel proxy
+  const isLocalDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const API_BASE = isLocalDevelopment ? 'http://localhost:3001' : window.location.origin;
 
   useEffect(() => {
     if (authToken) {
