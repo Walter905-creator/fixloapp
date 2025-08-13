@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const HowItWorks = () => {
   return (
@@ -201,6 +202,53 @@ const HowItWorks = () => {
           </div>
         </div>
 
+        {/* Popular Services Section */}
+        <div className="mb-16 bg-white rounded-2xl p-8 shadow-lg">
+          <h2 className="text-3xl font-bold text-center text-gray-900 mb-8">Popular Services on Fixlo</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <Link to="/services/plumbing" className="block p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-md transition-all text-center">
+              <div className="text-2xl mb-2">🚰</div>
+              <div className="font-medium text-gray-900">Plumbing</div>
+              <div className="text-sm text-gray-600">Emergency repairs, installations</div>
+            </Link>
+            <Link to="/services/electrical" className="block p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-md transition-all text-center">
+              <div className="text-2xl mb-2">💡</div>
+              <div className="font-medium text-gray-900">Electrical</div>
+              <div className="text-sm text-gray-600">Licensed electricians</div>
+            </Link>
+            <Link to="/services/hvac" className="block p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-md transition-all text-center">
+              <div className="text-2xl mb-2">❄️</div>
+              <div className="font-medium text-gray-900">HVAC</div>
+              <div className="text-sm text-gray-600">AC, heating, ventilation</div>
+            </Link>
+            <Link to="/services/carpentry" className="block p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-md transition-all text-center">
+              <div className="text-2xl mb-2">🪚</div>
+              <div className="font-medium text-gray-900">Carpentry</div>
+              <div className="text-sm text-gray-600">Custom woodwork</div>
+            </Link>
+            <Link to="/services/painting" className="block p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-md transition-all text-center">
+              <div className="text-2xl mb-2">🎨</div>
+              <div className="font-medium text-gray-900">Painting</div>
+              <div className="text-sm text-gray-600">Interior & exterior</div>
+            </Link>
+            <Link to="/services/roofing" className="block p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-md transition-all text-center">
+              <div className="text-2xl mb-2">🏠</div>
+              <div className="font-medium text-gray-900">Roofing</div>
+              <div className="text-sm text-gray-600">Repairs & installations</div>
+            </Link>
+            <Link to="/services/house-cleaning" className="block p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-md transition-all text-center">
+              <div className="text-2xl mb-2">🧹</div>
+              <div className="font-medium text-gray-900">Cleaning</div>
+              <div className="text-sm text-gray-600">House & deep cleaning</div>
+            </Link>
+            <Link to="/services/landscaping" className="block p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-md transition-all text-center">
+              <div className="text-2xl mb-2">🌿</div>
+              <div className="font-medium text-gray-900">Landscaping</div>
+              <div className="text-sm text-gray-600">Garden & yard work</div>
+            </Link>
+          </div>
+        </div>
+
         {/* CTA Section */}
         <div className="bg-gradient-to-r from-blue-600 to-green-600 rounded-2xl p-12 text-center text-white">
           <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
@@ -208,12 +256,12 @@ const HowItWorks = () => {
             Join thousands of homeowners and professionals using Fixlo
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+            <Link to="/services/plumbing" className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors inline-block text-center">
               Request a Service
-            </button>
-            <button className="bg-transparent border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors">
+            </Link>
+            <Link to="/signup" className="bg-transparent border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors inline-block text-center">
               Join as Professional
-            </button>
+            </Link>
           </div>
         </div>
       </div>

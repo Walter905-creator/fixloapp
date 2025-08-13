@@ -78,6 +78,7 @@ export default function PublicProfile({ slug }) {
       <Helmet>
         <title>{displayName} - Professional on Fixlo</title>
         <meta name="description" content={`${displayName} is a verified ${service} professional in ${location}. Book trusted home services on Fixlo.`} />
+        <link rel="canonical" href={`https://www.fixloapp.com/pro/${slug}`} />
         <meta property="og:title" content={`${displayName} - Professional on Fixlo`} />
         <meta property="og:description" content={`${displayName} is a verified ${service} professional in ${location}. Book trusted home services on Fixlo.`} />
         <meta property="og:type" content="profile" />
