@@ -54,7 +54,6 @@
   "redirects": [],
   "trailingSlash": false,
   "cleanUrls": true,
-  "errorPage": "/404.html",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "https://fixloapp.onrender.com/api/$1" },
     { "source": "/static/(.*)", "destination": "/static/$1" },
