@@ -3,12 +3,15 @@ import { Helmet } from 'react-helmet-async';
 import Badges from '../components/profile/Badges';
 import BoostPill from '../components/profile/BoostPill';
 import ReviewsBlock from '../components/reviews/ReviewsBlock';
+import ShareProfileButton from '../components/share/ShareProfileButton';
+import { useFeatureFlags } from '../utils/featureFlags';
 import api from '../lib/api';
 
 export default function PublicProfile({ slug }) {
   const [pro, setPro] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const featureFlags = useFeatureFlags();
 
   useEffect(() => {
     async function loadProfile() {
@@ -106,8 +109,8 @@ export default function PublicProfile({ slug }) {
                 </div>
                 
                 <div className="flex flex-wrap items-center gap-3">
-                  <Badges badges={pro.badges || []} />
-                  <BoostPill boostActiveUntil={pro.boostActiveUntil} />
+                  <Badges badges={pro.badges || []} featureFlags={featureFlags} />
+                  {featureFlags.boostIndicator && <BoostPill boostActiveUntil={pro.boostActiveUntil} />}
                 </div>
 
                 {(pro.avgRating > 0 || pro.reviewCount > 0) && (
@@ -135,6 +138,19 @@ export default function PublicProfile({ slug }) {
               </div>
 
               <div className="flex flex-col gap-3">
+                {featureFlags.shareProfile && (
+                  <ShareProfileButton 
+                    pro={pro} 
+                    onShareSuccess={(data) => {
+                      // Update the boost status when share is successful
+                      setPro(prev => ({
+                        ...prev,
+                        boostActiveUntil: data.boostActiveUntil,
+                        badges: data.badges
+                      }));
+                    }}
+                  />
+                )}
                 <a 
                   href="/request" 
                   className="inline-flex items-center justify-center px-6 py-3 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition-colors"

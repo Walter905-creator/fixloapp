@@ -30,6 +30,8 @@ import NotFound from './components/NotFound';
 import URLRedirectHandler from './components/URLRedirectHandler';
 
 import PublicProfileWrapper from './pages/PublicProfileWrapper';
+import ReviewCapture from './pages/ReviewCapture';
+import PublicReview from './pages/PublicReview';
 
 // Cache busting - show build info in console
 const buildId = process.env.REACT_APP_BUILD_ID || 'dev';
@@ -266,6 +268,12 @@ function App() {
                   <PublicProfileWrapper />
                 </>
               } />
+
+              {/* Review Capture via Magic Link */}
+              <Route path="/review/:token" element={<ReviewCapture />} />
+
+              {/* Public Review Pages for SEO */}
+              <Route path="/review/public/:reviewId" element={<PublicReview />} />
               
               {/* Catch all route for 404 errors */}
               <Route path="*" element={<NotFound />} />
