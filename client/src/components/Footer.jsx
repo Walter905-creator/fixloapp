@@ -46,12 +46,15 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-semibold mb-4">Services</h3>
             <ul className="space-y-2 text-gray-300">
-              <li><a href="#" className="hover:text-white">Plumbing</a></li>
-              <li><a href="#" className="hover:text-white">Electrical</a></li>
-              <li><a href="#" className="hover:text-white">HVAC</a></li>
-              <li><a href="#" className="hover:text-white">Landscaping</a></li>
-              <li><a href="#" className="hover:text-white">Cleaning</a></li>
-              <li><a href="#" className="hover:text-white">Handyman</a></li>
+              <li><Link to="/services/plumbing" className="hover:text-white">Plumbing</Link></li>
+              <li><Link to="/services/electrical" className="hover:text-white">Electrical</Link></li>
+              <li><Link to="/services/hvac" className="hover:text-white">HVAC</Link></li>
+              <li><Link to="/services/carpentry" className="hover:text-white">Carpentry</Link></li>
+              <li><Link to="/services/painting" className="hover:text-white">Painting</Link></li>
+              <li><Link to="/services/roofing" className="hover:text-white">Roofing</Link></li>
+              <li><Link to="/services/house-cleaning" className="hover:text-white">House Cleaning</Link></li>
+              <li><Link to="/services/junk-removal" className="hover:text-white">Junk Removal</Link></li>
+              <li><Link to="/services/landscaping" className="hover:text-white">Landscaping</Link></li>
             </ul>
           </div>
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import ServiceRequestModal from './ServiceRequestModal';
+import Breadcrumb from './Breadcrumb';
 import geolocationService from '../utils/geolocationService';
 
 export default function DynamicLandingPage({ city, service }) {
@@ -99,6 +100,24 @@ export default function DynamicLandingPage({ city, service }) {
     ? `Professional ${currentService.title.toLowerCase()} services in ${capitalizedCity}. ${currentService.description} Licensed, insured professionals ready to help.`
     : `Professional ${currentService.title.toLowerCase()} services nationwide. ${currentService.description} Connect with licensed professionals today.`;
 
+  // Generate breadcrumb items
+  const breadcrumbItems = [
+    { label: 'Services', href: '/services/plumbing' }
+  ];
+  
+  if (service) {
+    breadcrumbItems.push({ 
+      label: currentService.title, 
+      href: city ? `/services/${service}` : null 
+    });
+  }
+  
+  if (city) {
+    breadcrumbItems.push({ 
+      label: capitalizedCity 
+    });
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Helmet>
@@ -134,6 +153,10 @@ export default function DynamicLandingPage({ city, service }) {
           })}
         </script>
       </Helmet>
+      
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb items={breadcrumbItems} />
+      
       {/* SEO-optimized Hero Section */}
       <section className="bg-gradient-to-br from-blue-900 to-blue-700 text-white py-20">
         <div className="container mx-auto px-4 text-center">
