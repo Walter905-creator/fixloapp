@@ -9,24 +9,20 @@ export default function UrgencyPopup() {
   useEffect(() => {
     // Disable intrusive urgency popup for better UX
     // This was identified as unwanted "SMS campaign" style messaging
-    console.log('ℹ️ UrgencyPopup disabled for improved user experience');
     
     // Keep the location detection code but don't show the popup
     const getUserLocation = async () => {
       if (!geolocationService.isGeolocationSupported()) {
-        console.log('ℹ️ Geolocation not supported for urgency popup personalization');
         return;
       }
 
       // Check if we should request location (not denied)
       const shouldRequest = await geolocationService.shouldRequestLocation();
       if (!shouldRequest) {
-        console.log('ℹ️ Geolocation permissions not available for urgency popup personalization');
         return;
       }
 
       try {
-        console.log('🗺️ Getting location for urgency popup personalization...');
         const result = await geolocationService.getCurrentLocationWithAddress();
         const locationName = result.addressDetails.city || 
                             result.addressDetails.town || 
@@ -34,11 +30,8 @@ export default function UrgencyPopup() {
                             result.addressDetails.county || 
                             'your area';
         setCity(locationName);
-        console.log(`✅ Urgency popup personalized for: ${locationName}`);
       } catch (error) {
-        // Handle geolocation errors more gracefully
-        console.log('ℹ️ Location detection failed for urgency popup (non-critical):', error.message);
-        // Keep default "your area" if location fails
+        // Handle geolocation errors gracefully - keep default "your area"
       }
     };
 

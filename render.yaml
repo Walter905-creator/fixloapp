@@ -20,9 +20,9 @@ services:
       - key: ADMIN_EMAIL
         value: admin@fixloapp.com
       - key: ADMIN_PASSWORD
-        value: FixloAdmin2024!
+        sync: false  # Set this securely in Render dashboard
       - key: JWT_SECRET
-        value: supersecretjwtkey
+        sync: false  # Set this securely in Render dashboard
       # Optional environment variables for enhanced functionality
       - key: STRIPE_SECRET_KEY
         sync: false

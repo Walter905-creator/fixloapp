@@ -17,7 +17,7 @@ import HomePage from './components/HomePage';
 import Admin from './components/Admin';
 import ProSignin from './components/ProSignin';
 import ProSignup from './components/ProSignup';
-import ProDashboard from './components/ProDashboard';
+import ProDashboard from './components/ProDashboard.jsx';
 import ContactUs from './components/ContactUs';
 import TermsOfService from './components/TermsOfService';
 import HowItWorks from './components/HowItWorks';
