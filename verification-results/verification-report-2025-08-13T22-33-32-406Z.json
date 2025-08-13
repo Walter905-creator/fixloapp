@@ -1,0 +1,162 @@
+{
+  "timestamp": "2025-08-13T22:33:32.407Z",
+  "productionUrl": "https://www.fixloapp.com",
+  "apiUrl": "https://fixloapp.onrender.com",
+  "checks": [
+    {
+      "name": "Deployment Live",
+      "passed": true,
+      "details": "Status: 200, Title: \"Fixlo – Book Trusted Home Services Near You\"",
+      "timestamp": "2025-08-13T22:33:32.904Z"
+    },
+    {
+      "name": "Build Artifact Match",
+      "passed": true,
+      "details": "Current bundle hash: 7a416ca8",
+      "timestamp": "2025-08-13T22:33:32.904Z"
+    },
+    {
+      "name": "Bundle Resource Loading",
+      "passed": true,
+      "details": "JS bundle status: 200",
+      "timestamp": "2025-08-13T22:33:33.357Z"
+    },
+    {
+      "name": "Share Button Component",
+      "passed": false,
+      "details": "Share Profile text not found",
+      "timestamp": "2025-08-13T22:33:33.358Z"
+    },
+    {
+      "name": "Share UTM Parameters",
+      "passed": false,
+      "details": "No UTM parameters detected",
+      "timestamp": "2025-08-13T22:33:33.358Z"
+    },
+    {
+      "name": "Badge Components",
+      "passed": false,
+      "details": "No badge code detected",
+      "timestamp": "2025-08-13T22:33:33.358Z"
+    },
+    {
+      "name": "Boost Feature Code",
+      "passed": false,
+      "details": "No boost code detected",
+      "timestamp": "2025-08-13T22:33:33.358Z"
+    },
+    {
+      "name": "Feature Flags System",
+      "passed": false,
+      "details": "No feature flag system found",
+      "timestamp": "2025-08-13T22:33:33.358Z"
+    },
+    {
+      "name": "Public Review Pages in Sitemap",
+      "passed": false,
+      "details": "No review pages in sitemap",
+      "timestamp": "2025-08-13T22:33:33.699Z"
+    },
+    {
+      "name": "Structured Data Setup",
+      "passed": false,
+      "details": "No structured data detected",
+      "timestamp": "2025-08-13T22:33:33.699Z"
+    },
+    {
+      "name": "Review API Endpoint",
+      "passed": true,
+      "details": "Review API returns: 404",
+      "timestamp": "2025-08-13T22:33:34.314Z"
+    },
+    {
+      "name": "Cloudinary Signed Endpoint",
+      "passed": false,
+      "details": "Network error: Request timeout",
+      "timestamp": "2025-08-13T22:33:44.569Z"
+    },
+    {
+      "name": "Basic SEO Meta Tags",
+      "passed": "https://www.fixloapp.com/",
+      "details": "Title: ✓, Description: ✓, Canonical: ✓",
+      "timestamp": "2025-08-13T22:33:44.569Z"
+    },
+    {
+      "name": "Open Graph Tags",
+      "passed": "https://www.fixloapp.com/cover.png",
+      "details": "OG Title: ✓, OG Description: ✓, OG Image: ✓",
+      "timestamp": "2025-08-13T22:33:44.570Z"
+    },
+    {
+      "name": "Twitter Card Tags",
+      "passed": "Fixlo – Trusted Home Services",
+      "details": "Twitter Card: ✓, Twitter Title: ✓",
+      "timestamp": "2025-08-13T22:33:44.570Z"
+    },
+    {
+      "name": "Structured Data (JSON-LD)",
+      "passed": false,
+      "details": "No JSON-LD structured data",
+      "timestamp": "2025-08-13T22:33:44.570Z"
+    },
+    {
+      "name": "Robots.txt Valid",
+      "passed": true,
+      "details": "robots.txt references sitemap",
+      "timestamp": "2025-08-13T22:33:45.055Z"
+    },
+    {
+      "name": "Sitemap.xml Valid",
+      "passed": true,
+      "details": "106 URLs found, Profiles: true, Reviews: false",
+      "timestamp": "2025-08-13T22:33:45.171Z"
+    },
+    {
+      "name": "OG Image Accessible",
+      "passed": true,
+      "details": "OG image (https://www.fixloapp.com/cover.png) returns 200",
+      "timestamp": "2025-08-13T22:33:45.718Z"
+    },
+    {
+      "name": "Social Card Testing URLs",
+      "passed": true,
+      "details": "Manual testing URLs provided above",
+      "timestamp": "2025-08-13T22:33:45.719Z"
+    },
+    {
+      "name": "HTML Lang Attribute",
+      "passed": true,
+      "details": "HTML lang attribute found",
+      "timestamp": "2025-08-13T22:33:45.719Z"
+    },
+    {
+      "name": "Viewport Meta Tag",
+      "passed": true,
+      "details": "Viewport meta tag found",
+      "timestamp": "2025-08-13T22:33:45.719Z"
+    },
+    {
+      "name": "ARIA Labels Present",
+      "passed": false,
+      "details": "No ARIA labels detected",
+      "timestamp": "2025-08-13T22:33:45.719Z"
+    },
+    {
+      "name": "Alt Attributes Present",
+      "passed": false,
+      "details": "No alt attributes detected",
+      "timestamp": "2025-08-13T22:33:45.719Z"
+    },
+    {
+      "name": "Accessibility Navigation",
+      "passed": false,
+      "details": "No skip navigation detected",
+      "timestamp": "2025-08-13T22:33:45.719Z"
+    }
+  ],
+  "bundleHash": "7a416ca8",
+  "commitSha": "f23a58f141e91f05dcfe08cae7ce56917c291948",
+  "passed": 13,
+  "failed": 12,
+  "total": 25
+}
