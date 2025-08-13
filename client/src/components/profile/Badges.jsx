@@ -13,8 +13,9 @@ const ICONS = {
   )
 };
 
-export default function Badges({ badges = [] }) {
-  if (!badges.length) return null;
+export default function Badges({ badges = [], featureFlags = { showBadges: true } }) {
+  // Check feature flag
+  if (!featureFlags.showBadges || !badges.length) return null;
   
   return (
     <div className="flex flex-wrap gap-2">

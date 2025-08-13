@@ -301,6 +301,8 @@ app.use("/api/referrals", require("./routes/referrals")); // Referral rewards
 app.use("/api", require("./routes/profiles")); // Profile slug lookup
 app.use("/api", require("./routes/share")); // Share events and boost logic
 app.use("/api", require("./routes/search")); // Enhanced search with boost scoring
+app.use("/api/cloudinary", require("./routes/cloudinary")); // Cloudinary signed uploads
+app.use("/api/reviews", require("./routes/reviewCapture")); // Review capture with magic links
 
 // ✅ Simple Subscribe Endpoint for PricingPage.jsx
 app.post("/api/subscribe", async (req, res) => {

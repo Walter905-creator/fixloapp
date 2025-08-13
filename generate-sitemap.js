@@ -1,6 +1,16 @@
 const fs = require('fs');
 const path = require('path');
 
+// Try to connect to database to get dynamic content for sitemap
+let mongoose, Pro, Review;
+try {
+  mongoose = require('mongoose');
+  Pro = require('./server/models/Pro');
+  Review = require('./server/models/Review');
+} catch (error) {
+  console.warn('⚠️ Database models not available for sitemap generation:', error.message);
+}
+
 // Define services available in the app
 const services = [
   'plumbing',
@@ -148,11 +158,106 @@ function generateSitemap() {
   console.log(`✅ Sitemap generated with ${services.length} services and ${priorityCities.length} cities`);
   console.log(`📍 Total URLs: ${1 + 6 + services.length + (services.length * priorityCities.length)}`);
   console.log(`📝 Sitemap saved to: ${sitemapPath}`);
+  
+  return sitemap;
+}
+
+// Enhanced sitemap generation with dynamic professional profiles and reviews
+async function generateEnhancedSitemap() {
+  try {
+    let staticSitemap = generateSitemap(); // Generate base sitemap first
+    
+    // If database is not available, use static sitemap
+    if (!mongoose || !Pro || !Review) {
+      console.log('📝 Using static sitemap (database not available)');
+      return staticSitemap;
+    }
+
+    // Check if database is connected
+    if (mongoose.connection.readyState !== 1) {
+      console.log('📝 Using static sitemap (database not connected)');
+      return staticSitemap;
+    }
+
+    console.log('🔍 Generating enhanced sitemap with database content...');
+    
+    // Remove closing tag to add dynamic content
+    staticSitemap = staticSitemap.replace('</urlset>', '');
+    
+    const currentDate = new Date().toISOString().split('T')[0];
+    const baseUrl = 'https://www.fixloapp.com';
+    let dynamicContent = '';
+    let urlCount = 0;
+
+    // Add professional profile pages
+    const pros = await Pro.find({ isActive: true, slug: { $exists: true, $ne: '' } })
+      .select('slug updatedAt')
+      .limit(1000) // Limit to prevent too large sitemap
+      .lean();
+
+    if (pros.length > 0) {
+      dynamicContent += `\n  <!-- Professional Profile Pages -->\n`;
+      pros.forEach(pro => {
+        const lastmod = pro.updatedAt ? pro.updatedAt.toISOString().split('T')[0] : currentDate;
+        dynamicContent += `  <url>
+    <loc>${baseUrl}/pro/${pro.slug}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  \n`;
+        urlCount++;
+      });
+    }
+
+    // Add published review pages for SEO
+    const reviews = await Review.find({ status: 'published' })
+      .select('_id createdAt')
+      .limit(500) // Limit to prevent too large sitemap
+      .lean();
+
+    if (reviews.length > 0) {
+      dynamicContent += `\n  <!-- Published Review Pages -->\n`;
+      reviews.forEach(review => {
+        const lastmod = review.createdAt ? review.createdAt.toISOString().split('T')[0] : currentDate;
+        dynamicContent += `  <url>
+    <loc>${baseUrl}/review/public/${review._id}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  \n`;
+        urlCount++;
+      });
+    }
+
+    // Close the sitemap
+    dynamicContent += `</urlset>`;
+    
+    const enhancedSitemap = staticSitemap + dynamicContent;
+    
+    // Write enhanced sitemap
+    const sitemapPath = path.join(__dirname, 'sitemap.xml');
+    fs.writeFileSync(sitemapPath, enhancedSitemap);
+    
+    console.log(`✅ Enhanced sitemap generated`);
+    console.log(`📍 Added ${pros.length} professional profiles`);
+    console.log(`📍 Added ${reviews.length} review pages`);
+    console.log(`📍 Total dynamic URLs added: ${urlCount}`);
+    console.log(`📝 Enhanced sitemap saved to: ${sitemapPath}`);
+    
+    return enhancedSitemap;
+    
+  } catch (error) {
+    console.error('❌ Error generating enhanced sitemap:', error.message);
+    console.log('📝 Falling back to static sitemap');
+    return generateSitemap();
+  }
 }
 
 // Generate sitemap if run directly
 if (require.main === module) {
-  generateSitemap();
+  generateEnhancedSitemap();
 }
 
-module.exports = { generateSitemap };
+module.exports = { generateSitemap, generateEnhancedSitemap };
