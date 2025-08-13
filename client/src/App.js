@@ -136,16 +136,7 @@ function App() {
               } />
 
               {/* Professional routes with SEO */}
-              <Route path="/pro/:slug" element={
-                <>
-                  <SEOHead 
-                    title="Professional Profile - Fixlo"
-                    description="View professional profile and reviews on Fixlo. Book trusted home service professionals in your area."
-                    url="https://www.fixloapp.com/pro/"
-                  />
-                  <PublicProfileWrapper />
-                </>
-              } />
+              <Route path="/pro/:slug" element={<PublicProfileWrapper />} />
               <Route path="/signup" element={
                 <>
                   <SEOHead 
@@ -178,11 +169,10 @@ function App() {
               } />
               <Route path="/pro/dashboard" element={
                 <>
-                  <SEOHead 
-                    title="Professional Dashboard - Fixlo"
-                    description="Manage your Fixlo professional account, view bookings, and connect with customers."
-                    url="https://www.fixloapp.com/pro/dashboard"
-                  />
+                  <Helmet>
+                    <meta name="robots" content="noindex, nofollow" />
+                    <title>Professional Dashboard - Fixlo</title>
+                  </Helmet>
                   <ProDashboard />
                 </>
               } />
@@ -260,13 +250,6 @@ function App() {
                 </>
               } />
 
-              {/* Public Profile Pages */}
-              <Route path="/pro/:slug" element={
-                <>
-                  <PublicProfileWrapper />
-                </>
-              } />
-              
               {/* Catch all route for 404 errors */}
               <Route path="*" element={<NotFound />} />
             </Routes>
