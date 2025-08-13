@@ -13,7 +13,7 @@ npm install
 
 # Step 3: Build with correct environment variable
 echo "🔨 Building React app with backend URL..."
-REACT_APP_API_URL=https://handyman-connect-backend.onrender.com npm run build
+REACT_APP_API_URL=https://fixloapp.onrender.com npm run build
 
 # Step 4: Go back to root and prepare public directory
 echo "📁 Preparing public directory..."
@@ -31,7 +31,7 @@ ls -la public/
 
 # Step 7: Check for correct backend URL in build
 echo "🔍 Verifying backend URL in build..."
-if grep -q "handyman-connect-backend.onrender.com" public/static/js/*.js; then
+if grep -q "fixloapp.onrender.com" public/static/js/*.js; then
     echo "✅ Correct backend URL found in build files"
 else
     echo "❌ Backend URL not found - check environment variables"

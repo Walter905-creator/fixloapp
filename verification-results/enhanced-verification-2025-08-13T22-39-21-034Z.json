@@ -1,0 +1,202 @@
+{
+  "timestamp": "2025-08-13T22:39:21.035Z",
+  "productionUrl": "https://www.fixloapp.com",
+  "apiUrl": "https://fixloapp.onrender.com",
+  "checks": [
+    {
+      "name": "Vercel Deployment Alias Check",
+      "passed": true,
+      "details": "Manual verification required in Vercel dashboard",
+      "manualTest": "Verify latest deployment is aliased to www.fixloapp.com in Vercel dashboard",
+      "timestamp": "2025-08-13T22:39:21.040Z"
+    },
+    {
+      "name": "Bundle Hash Detected",
+      "passed": true,
+      "details": "Current production bundle: main.7a416ca8.js",
+      "manualTest": "Hard refresh browser and verify bundle hash changes on new deployments",
+      "timestamp": "2025-08-13T22:39:21.279Z"
+    },
+    {
+      "name": "Bundle Accessibility",
+      "passed": true,
+      "details": "JS bundle returns: 200",
+      "manualTest": null,
+      "timestamp": "2025-08-13T22:39:21.554Z"
+    },
+    {
+      "name": "Cache Control Headers",
+      "passed": true,
+      "details": "Cache-Control: public, max-age=0, must-revalidate",
+      "manualTest": null,
+      "timestamp": "2025-08-13T22:39:21.555Z"
+    },
+    {
+      "name": "Pro Profile Route",
+      "passed": true,
+      "details": "Pro profile route returns: 200",
+      "manualTest": "Create a test pro profile and verify share buttons work",
+      "timestamp": "2025-08-13T22:39:21.981Z"
+    },
+    {
+      "name": "OG Image Generation",
+      "passed": true,
+      "details": "OG image endpoint returns: 200",
+      "manualTest": "Test sharing profile on Facebook/Twitter and verify OG image appears",
+      "timestamp": "2025-08-13T22:39:22.338Z"
+    },
+    {
+      "name": "Meta Tags Generation",
+      "passed": true,
+      "details": "Meta endpoint returns: 200",
+      "manualTest": null,
+      "timestamp": "2025-08-13T22:39:22.600Z"
+    },
+    {
+      "name": "Feature Flag System",
+      "passed": false,
+      "details": "No feature flag system found",
+      "manualTest": "Test toggle feature flags via environment variables and verify badge/share visibility",
+      "timestamp": "2025-08-13T22:39:22.720Z"
+    },
+    {
+      "name": "Badge Components",
+      "passed": false,
+      "details": "No badge code detected",
+      "manualTest": null,
+      "timestamp": "2025-08-13T22:39:22.720Z"
+    },
+    {
+      "name": "Review API Endpoint",
+      "passed": true,
+      "details": "Review API returns: 404",
+      "manualTest": null,
+      "timestamp": "2025-08-13T22:39:23.074Z"
+    },
+    {
+      "name": "Review Capture Route",
+      "passed": true,
+      "details": "Review capture route returns: 200",
+      "manualTest": null,
+      "timestamp": "2025-08-13T22:39:23.236Z"
+    },
+    {
+      "name": "Public Review Route",
+      "passed": true,
+      "details": "Public review route returns: 200",
+      "manualTest": "Create a test review and verify JSON-LD schema appears in page source",
+      "timestamp": "2025-08-13T22:39:23.810Z"
+    },
+    {
+      "name": "Cloudinary Signature Endpoint",
+      "passed": 1755124764,
+      "details": "Signature endpoint working",
+      "manualTest": null,
+      "timestamp": "2025-08-13T22:39:24.232Z"
+    },
+    {
+      "name": "Cloudinary Optimization Default",
+      "passed": true,
+      "details": "q_auto,f_auto optimization enabled",
+      "manualTest": "Upload test image and verify URL contains q_auto,f_auto",
+      "timestamp": "2025-08-13T22:39:24.232Z"
+    },
+    {
+      "name": "Basic SEO Meta Tags",
+      "passed": "https://www.fixloapp.com/",
+      "details": "Title: ✓, Description: ✓, Canonical: ✓",
+      "manualTest": null,
+      "timestamp": "2025-08-13T22:39:24.562Z"
+    },
+    {
+      "name": "Open Graph Implementation",
+      "passed": "https://www.fixloapp.com/cover.png",
+      "details": "OG Title: ✓, OG Image: ✓",
+      "manualTest": null,
+      "timestamp": "2025-08-13T22:39:24.563Z"
+    },
+    {
+      "name": "OG Image Accessibility",
+      "passed": true,
+      "details": "OG image returns: 200",
+      "manualTest": null,
+      "timestamp": "2025-08-13T22:39:24.719Z"
+    },
+    {
+      "name": "Social Card Testing Setup",
+      "passed": true,
+      "details": "Social card testing URLs generated",
+      "manualTest": "Test main site and pro profile URLs in Facebook Debugger and Twitter Card Validator",
+      "timestamp": "2025-08-13T22:39:24.720Z"
+    },
+    {
+      "name": "Robots.txt Implementation",
+      "passed": true,
+      "details": "Sitemap reference: ✓, Domain reference: ✓",
+      "manualTest": null,
+      "timestamp": "2025-08-13T22:39:24.872Z"
+    },
+    {
+      "name": "Sitemap.xml Implementation",
+      "passed": true,
+      "details": "106 URLs found, Pro profiles: ✓",
+      "manualTest": null,
+      "timestamp": "2025-08-13T22:39:25.152Z"
+    },
+    {
+      "name": "Search Console Integration",
+      "passed": true,
+      "details": "Manual verification required",
+      "manualTest": "Submit sitemap to Google Search Console and verify indexing status",
+      "timestamp": "2025-08-13T22:39:25.153Z"
+    },
+    {
+      "name": "Basic Accessibility Features",
+      "passed": true,
+      "details": "Lang: ✓, Viewport: ✓, ARIA: ✗, Alt: ✗",
+      "manualTest": null,
+      "timestamp": "2025-08-13T22:39:25.326Z"
+    },
+    {
+      "name": "Accessibility Testing Setup",
+      "passed": true,
+      "details": "Manual accessibility testing required",
+      "manualTest": "Complete keyboard navigation and screen reader testing",
+      "timestamp": "2025-08-13T22:39:25.326Z"
+    }
+  ],
+  "testUrls": [
+    {
+      "name": "Test Pro Profile",
+      "url": "https://www.fixloapp.com/pro/test-professional-sf",
+      "purpose": "Testing share functionality"
+    },
+    {
+      "name": "Facebook Sharing Debugger",
+      "url": "https://developers.facebook.com/tools/debug/sharing/?q=https%3A%2F%2Fwww.fixloapp.com",
+      "purpose": "Test OG tags"
+    },
+    {
+      "name": "Twitter Card Validator",
+      "url": "https://cards-dev.twitter.com/validator",
+      "purpose": "Test Twitter cards"
+    }
+  ],
+  "manualTests": [
+    "Verify latest deployment is aliased to www.fixloapp.com in Vercel dashboard",
+    "Hard refresh browser and verify bundle hash changes on new deployments",
+    "Create a test pro profile and verify share buttons work",
+    "Test sharing profile on Facebook/Twitter and verify OG image appears",
+    "Test toggle feature flags via environment variables and verify badge/share visibility",
+    "Create a test review and verify JSON-LD schema appears in page source",
+    "Upload test image and verify URL contains q_auto,f_auto",
+    "Test main site and pro profile URLs in Facebook Debugger and Twitter Card Validator",
+    "Submit sitemap to Google Search Console and verify indexing status",
+    "Complete keyboard navigation and screen reader testing"
+  ],
+  "passed": 21,
+  "failed": 2,
+  "total": 23,
+  "bundleHash": "7a416ca8",
+  "commitSha": "ea79523a58cca70e6b6041b7194313c52dd7758e"
+}
