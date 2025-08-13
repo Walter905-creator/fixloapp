@@ -1,18 +1,6 @@
-# Global code ownership
-* @Walter905-creator
+# Protect critical files
+vercel.json          @Walter905-creator
+client/package.json  @Walter905-creator
+client/src/**/*.jsx  @Walter905-creator
 
-# Critical deployment and configuration files
-/vercel.json                               @Walter905-creator
-/client/package.json                        @Walter905-creator
-/.vercelignore                              @Walter905-creator
-/client/public/manifest.webmanifest         @Walter905-creator
-/client/public/robots.txt                   @Walter905-creator
-/client/public/sitemap*.xml                 @Walter905-creator
-/client/public/cover.*                      @Walter905-creator
-/client/public/favicon.*                    @Walter905-creator
-/client/src/assets/**                       @Walter905-creator
-
-# Root assets that affect branding
-/cover.*                                    @Walter905-creator
-/favicon.*                                  @Walter905-creator
-/fixlo-logo.*                               @Walter905-creator
+# Optional: require review from code owners via branch protection

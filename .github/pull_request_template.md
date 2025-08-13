@@ -1,27 +1,16 @@
 ## Summary
-<!-- Brief description of changes made -->
+<!-- What & why -->
 
-## Changes Made
-<!-- List of specific changes -->
+## Safety
+- [ ] No changes to **Request a Service** popups/buttons or behavior
+- [ ] No changes to `vercel.json` routing / rewrites
+- [ ] No hardcoded `localhost` in production code
+- [ ] Admin/API calls use relative `/api/...`
 
-## Safe-to-Merge Checklist
-- [ ] **Do NOT change**: Request-a-Service popup/buttons (exact current behavior)
-- [ ] No edits to vercel.json, client/package.json ("homepage": "."), or .vercelignore
-- [ ] Deep links (/services/*, /pro/*) render content (not loader-only)
-- [ ] Vercel Preview build passed; link pasted here: ___________
-- [ ] Cloudinary:
-  - [ ] No API secret in client bundle
-  - [ ] Uploads succeed (no CORS errors)
-  - [ ] Images use f_auto,q_auto (paste one example URL)
+## Checks
+- [ ] Bundle hash seen in prod matches latest deploy
+- [ ] CORS ok (no Failed to fetch)
+- [ ] Lighthouse OK (optional link)
 
-## Testing
-- [ ] Manual testing completed
-- [ ] Existing tests pass
-- [ ] No new console errors
-- [ ] Social sharing previews work (Twitter/Facebook tested)
-
-## Screenshots
-<!-- Add screenshots of UI changes if applicable -->
-
-## Notes
-<!-- Any additional context or considerations -->
+## Screenshots / Proof
+<!-- URLs, DevTools, validator, etc. -->
