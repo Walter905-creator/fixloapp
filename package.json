@@ -1,30 +1,36 @@
+
 {
-  "name": "fixloapp",
-  "version": "3.0.0",
-  "private": true,
-  "engines": {
-    "node": ">=18.0.0 <22.0.0"
+  "buildCommand": "cd client && npm ci --no-fund --no-audit && npm run build",
+  "outputDirectory": "client/build",
+  "installCommand": "npm install --no-fund --no-audit",
+  "framework": null,
+  "ignoreCommand": "exit 0",
+  "functions": {
+    "api/og.js": { "runtime": "edge" },
+    "api/meta.js": { "runtime": "edge" },
+    "api/pro-signup.js": { "runtime": "nodejs20.x" },
+    "api/homeowner-lead.js": { "runtime": "nodejs20.x" }
   },
-  "scripts": {
-    "install-client": "cd client && npm install --no-fund --no-audit",
-    "build-client": "cd client && REACT_APP_API_URL=https://fixloapp.onrender.com REACT_APP_BUILD_TIMESTAMP=$(date +%s) REACT_APP_BUILD_ID=$(date +%Y%m%d-%H%M%S) GENERATE_SOURCEMAP=false npm run build",
-    "build-client-dev": "cd client && REACT_APP_BUILD_TIMESTAMP=$(date +%s) REACT_APP_BUILD_ID=$(date +%Y%m%d-%H%M%S) GENERATE_SOURCEMAP=true npm run build",
-    "deploy-build": "rm -rf static/js/* static/css/* && cp -r client/build/* . && node scripts/clean-old-builds.js && echo 'Build deployed to root directory'",
-    "generate-sitemap": "node generate-sitemap.js",
-    "clean-old-builds": "find static/js -name 'main.*.js' -not -path '*/node_modules/*' -printf '%T@ %p\\n' | sort -n | head -n -1 | cut -d' ' -f2- | xargs rm -f; find static/js -name 'main.*.js.map' -not -path '*/node_modules/*' -printf '%T@ %p\\n' | sort -n | head -n -1 | cut -d' ' -f2- | xargs rm -f; find static/js -name 'main.*.js.LICENSE.txt' -not -path '*/node_modules/*' -printf '%T@ %p\\n' | sort -n | head -n -1 | cut -d' ' -f2- | xargs rm -f",
-    "start-client": "cd client && npm start",
-    "build": "npm run install-client && npm run build-client && npm run deploy-build && npm run generate-sitemap && npm run validate-deployment",
-    "build-dev": "npm run install-client && npm run build-client-dev && npm run deploy-build && npm run generate-sitemap && npm run validate-deployment",
-    "validate-deployment": "node scripts/validate-deployment.js",
-    "clean-old-builds": "node scripts/clean-old-builds.js",
-    "verify-deployment": "node verify-deployment.js",
-    "force-deploy": "./force-vercel-deploy.sh"
+  "env": {
+    "NODE_VERSION": "20.x",
+    "NPM_FLAGS": "--no-fund --no-audit",
+    "NODE_OPTIONS": "--max-old-space-size=4096"
   },
-  "dependencies": {
-    "@vercel/og": "^0.6.3",
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.1",
-    "express": "^5.1.0",
-    "uuid": "^11.1.0"
-  }
+  "headers": [
+    {
+      "source": "/static/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ],
+  "redirects": [],
+  "trailingSlash": false,
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/api/og", "destination": "/api/og" },
+    { "source": "/api/meta", "destination": "/api/meta" },
+    { "source": "/api/(.*)", "destination": "https://fixloapp.onrender.com/api/$1" },
+    { "source": "/(.*)", "destination": "/" }
+  ]
 }
