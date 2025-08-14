@@ -10,7 +10,6 @@ function Admin() {
   const [loading, setLoading] = useState(false);
   const [adminEmail, setAdminEmail] = useState('');
 
- copilot/fix-10cc0247-13cd-47c6-b800-2c31cce9aacf
   // API configuration - use environment variable with safer production fallback
   const API_BASE = (process.env.REACT_APP_API_URL ?? '').trim() || '/';
 
