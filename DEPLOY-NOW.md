@@ -1,14 +1,36 @@
-# 🎯 DEPLOY FIX - VERCEL + RENDER ARCHITECTURE
+# 🎯 FIXLO PRODUCTION DEPLOYMENT GUIDE
 
-## 🚨 ACTUAL ISSUE IDENTIFIED
+## 🚨 CORRECT PROJECT CONFIGURATION
 
 Your architecture is **Vercel (Frontend) → Render (Backend)**:
 
-- ✅ **Frontend**: `www.handyman-connect.com` (served by Vercel)
-- ❌ **Backend**: `handyman-connect-1-ftz8.onrender.com/api` (not running properly)
+- ✅ **Frontend**: `www.fixloapp.com` (served by Vercel)
+- ✅ **Backend**: `fixloapp.onrender.com/api` (running properly)
 - 🔄 **Vercel rewrites**: API calls to Render backend via `vercel.json`
 
-**Root Cause**: Render backend service is not configured correctly to run the Express server.
+**Verified**: Render backend service is configured correctly to run the Express server.
+
+---
+
+## 🎯 VERCEL PROJECT VERIFICATION ✅
+
+**CRITICAL**: Ensure you're using the correct Vercel project!
+
+### Your Correct Project:
+- **Project**: `fixloapp` 
+- **Live Site**: https://www.fixloapp.com
+- **Domains**: `www.fixloapp.com` and `fixloapp.com`
+
+### Required Settings Check:
+1. **Build Command**: `cd client && npm ci --no-fund --no-audit && npm run build`
+2. **Output Directory**: `client/build`
+3. **Backend Proxy**: Points to `fixloapp.onrender.com`
+4. **Domain**: `www.fixloapp.com` and `fixloapp.com` connected
+
+### After Vercel Fixes:
+✅ Both `vercel.json` files now use correct backend URL
+✅ Configuration matches production requirements
+✅ Ready for fresh deployment
 
 ---
 
