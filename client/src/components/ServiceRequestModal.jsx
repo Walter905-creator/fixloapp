@@ -73,9 +73,8 @@ export default function ServiceRequestModal({ service, onClose }) {
     }
 
     try {
-      // Use environment variable for API URL, with better fallback handling
-      const API_BASE = process.env.REACT_APP_API_URL || 
-                      (process.env.NODE_ENV === 'development' ? 'http://localhost:3001' : 'https://fixloapp.onrender.com');
+      // Use environment variable for API URL, with safer production fallback
+      const API_BASE = (process.env.REACT_APP_API_URL ?? '').trim() || '/';
       
       console.log('Submitting service request to:', `${API_BASE}/api/service-request`);
       
