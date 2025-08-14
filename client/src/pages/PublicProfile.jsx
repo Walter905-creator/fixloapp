@@ -90,6 +90,38 @@ export default function PublicProfile({ slug }) {
         <meta name="twitter:title" content={`${displayName} - Professional on Fixlo`} />
         <meta name="twitter:description" content={`${displayName} is a verified ${service} professional in ${location}. Book trusted home services on Fixlo.`} />
         <meta name="twitter:image" content={`https://www.fixloapp.com/api/og?slug=${encodeURIComponent(slug)}`} />
+        
+        {/* Schema.org structured data for SEO */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "LocalBusiness",
+            "name": displayName,
+            "description": `${displayName} is a verified ${service} professional in ${location}. Book trusted home services on Fixlo.`,
+            "url": `https://www.fixloapp.com/pro/${slug}`,
+            "image": `https://www.fixloapp.com/api/og?slug=${encodeURIComponent(slug)}`,
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": pro.city,
+              "addressRegion": pro.state
+            },
+            "serviceType": service,
+            "areaServed": {
+              "@type": "City",
+              "name": pro.city
+            },
+            "aggregateRating": pro.avgRating > 0 ? {
+              "@type": "AggregateRating",
+              "ratingValue": pro.avgRating,
+              "reviewCount": pro.reviewCount
+            } : undefined,
+            "priceRange": "$$",
+            "founder": {
+              "@type": "Person",
+              "name": displayName
+            }
+          })}
+        </script>
       </Helmet>
 
       <div className="min-h-screen bg-gray-50">

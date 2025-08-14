@@ -10,15 +10,11 @@ function Admin() {
   const [loading, setLoading] = useState(false);
   const [adminEmail, setAdminEmail] = useState('');
 
-  // API configuration - use environment variable with safer production fallback
-  const API_BASE = (process.env.REACT_APP_API_URL ?? '').trim() || '/';
-
   // API configuration - ALWAYS use relative paths in production (Vercel proxies /api/* to backend)
   // Only use full URLs for local development when running via npm start
   const API_BASE = process.env.NODE_ENV === 'development' && process.env.REACT_APP_API_URL
                     ? process.env.REACT_APP_API_URL 
                     : '';
- main
 
   useEffect(() => {
     if (authToken) {

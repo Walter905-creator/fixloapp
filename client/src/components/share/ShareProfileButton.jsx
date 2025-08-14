@@ -17,25 +17,25 @@ export default function ShareProfileButton({ pro, onShareSuccess }) {
       name: 'Facebook',
       medium: 'facebook',
       icon: '📘',
-      url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(profileUrl)}&quote=${encodeURIComponent(shareText)}`
+      url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(profileUrl + `?utm_source=facebook&utm_medium=social_share&utm_campaign=pro_profile_share`)}&quote=${encodeURIComponent(shareText)}`
     },
     {
       name: 'Twitter/X',
       medium: 'x',
       icon: '🐦',
-      url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(profileUrl)}`
+      url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(profileUrl + `?utm_source=x&utm_medium=social_share&utm_campaign=pro_profile_share`)}`
     },
     {
       name: 'LinkedIn',
       medium: 'linkedin',
       icon: '💼',
-      url: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(profileUrl)}`
+      url: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(profileUrl + `?utm_source=linkedin&utm_medium=social_share&utm_campaign=pro_profile_share`)}`
     },
     {
       name: 'WhatsApp',
       medium: 'whatsapp',
       icon: '💬',
-      url: `https://wa.me/?text=${encodeURIComponent(`${shareText} ${profileUrl}`)}`
+      url: `https://wa.me/?text=${encodeURIComponent(`${shareText} ${profileUrl}?utm_source=whatsapp&utm_medium=social_share&utm_campaign=pro_profile_share`)}`
     }
   ];
 
