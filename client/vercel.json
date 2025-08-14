@@ -7,6 +7,13 @@
   "cleanUrls": true,
   "trailingSlash": false,
 
+  "functions": {
+    "../api/og.js": { "runtime": "edge" },
+    "../api/meta.js": { "runtime": "edge" },
+    "../api/pro-signup.js": { "runtime": "nodejs20.x" },
+    "../api/homeowner-lead.js": { "runtime": "nodejs20.x" }
+  },
+
   "headers": [
     {
       "source": "/static/(.*)",
