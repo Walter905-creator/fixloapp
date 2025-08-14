@@ -4,15 +4,23 @@
   "outputDirectory": "client/build",
   "installCommand": "npm install --no-fund --no-audit",
   "framework": null,
-  "ignoreCommand": "exit 0",
   "cleanUrls": true,
   "trailingSlash": false,
+
+ copilot/fix-3af98380-5387-4a5d-be02-a62668d6fb15
+  "functions": {
+    "api/og.js":            { "runtime": "edge" },
+    "api/meta.js":          { "runtime": "edge" },
+    "api/pro-signup.js":    { "runtime": "nodejs20.x" },
+    "api/homeowner-lead.js":{ "runtime": "nodejs20.x" }
 
   "env": {
     "NODE_VERSION": "20.x",
     "NPM_FLAGS": "--no-fund --no-audit",
     "NODE_OPTIONS": "--max-old-space-size=4096"
+ main
   },
+
   "headers": [
     {
       "source": "/static/(.*)",
@@ -21,10 +29,13 @@
       ]
     }
   ],
+
   "rewrites": [
-    { "source": "/api/og", "destination": "/api/og" },
+    { "source": "/api/og",   "destination": "/api/og" },
     { "source": "/api/meta", "destination": "/api/meta" },
+
     { "source": "/api/(.*)", "destination": "https://fixloapp.onrender.com/api/$1" },
-    { "source": "/(.*)", "destination": "/" }
+
+    { "source": "/(.*)",     "destination": "/" }
   ]
 }

@@ -1,5 +1,4 @@
 /* eslint-disable */
-export const config = { runtime: 'edge' };
 
 const API = process.env.API_BASE_URL || 'https://fixloapp.onrender.com';
 const ORIGIN = process.env.PUBLIC_ORIGIN || 'https://www.fixloapp.com';
