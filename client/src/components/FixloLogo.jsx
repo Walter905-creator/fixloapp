@@ -2,7 +2,7 @@
 import React from 'react';
 
 const FixloLogo = () => (
-  <svg width="200" height="60" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
+  <svg width="300" height="90" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" style={{ stopColor: '#667eea', stopOpacity: 1 }} />
@@ -24,7 +24,7 @@ const FixloLogo = () => (
     </g>
 
     {/* Text "Fixlo" */}
-    <text x="55" y="35" fontFamily="Arial, sans-serif" fontSize="24" fontWeight="bold" fill="#667eea">
+    <text x="55" y="35" fontFamily="Arial, sans-serif" fontSize="36" fontWeight="bold" fill="#667eea">
       Fixlo
     </text>
   </svg>
