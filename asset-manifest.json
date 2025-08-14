@@ -1,11 +1,19 @@
 {
   "files": {
     "main.css": "./static/css/main.4f824ea6.css",
-    "main.js": "./static/js/main.775c389d.js",
+ copilot/fix-0638011f-dc54-4f21-9c53-5a13e31225cc
+    "main.js": "./static/js/main.53df4690.js",
+
+    "main.js": "./static/js/main.4a8e3bf5.js",
+ main
     "index.html": "./index.html"
   },
   "entrypoints": [
     "static/css/main.4f824ea6.css",
-    "static/js/main.775c389d.js"
+ copilot/fix-0638011f-dc54-4f21-9c53-5a13e31225cc
+    "static/js/main.53df4690.js"
+
+    "static/js/main.4a8e3bf5.js"
+ main
   ]
 }
