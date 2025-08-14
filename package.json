@@ -16,6 +16,7 @@
     "verify-deployment": "node verify-deployment.js",
     "verify-production": "node scripts/simple-production-verification.js",
     "verify-production-enhanced": "node scripts/enhanced-production-verification.js",
+    "verify-production-indexing": "node scripts/production-indexing-verification-lightweight.js",
     "verify-summary": "node scripts/verification-summary.js",
     "force-deploy": "./force-vercel-deploy.sh"
   },
