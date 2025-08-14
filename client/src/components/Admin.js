@@ -10,9 +10,8 @@ function Admin() {
   const [loading, setLoading] = useState(false);
   const [adminEmail, setAdminEmail] = useState('');
 
-  // API configuration - use environment variable or fallback to local development server
-  const API_BASE = process.env.REACT_APP_API_URL || 
-                  (process.env.NODE_ENV === 'development' ? 'http://localhost:3001' : 'https://fixloapp.onrender.com');
+  // API configuration - use environment variable with safer production fallback
+  const API_BASE = (process.env.REACT_APP_API_URL ?? '').trim() || '/';
 
   useEffect(() => {
     if (authToken) {

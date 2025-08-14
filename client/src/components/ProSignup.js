@@ -78,10 +78,8 @@ const ProSignup = () => {
     try {
       console.log('Submitting professional signup:', formData);
       
-      // Use absolute URL for better reliability across environments
-      const apiUrl = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3001/api/pro-signup'
-        : '/api/pro-signup';
+      // Use relative URL for production safety (leverages Vercel rewrite)
+      const apiUrl = '/api/pro-signup';
       
       let response;
       try {
