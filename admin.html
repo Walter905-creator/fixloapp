@@ -389,9 +389,9 @@
     <script>
         // API Base URL configuration for both development and production
         // Development: Use localhost:3001 (backend server)
-        // Production: Use same origin (frontend and backend served through same domain)
+        // Production: Use relative paths (Vercel proxies /api/* to backend via rewrite)
         const isLocalDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const API_BASE = isLocalDevelopment ? 'http://localhost:3001' : window.location.origin;
+        const API_BASE = isLocalDevelopment ? 'http://localhost:3001' : '';
         let authToken = localStorage.getItem('adminToken');
 
         // Check if already logged in
