@@ -1,7 +1,5 @@
 import { ImageResponse } from '@vercel/og';
 
-export const config = { runtime: 'edge' };
-
 const API_BASE = process.env.REACT_APP_API_URL || 'https://fixloapp.onrender.com';
 
 const fetchPro = async (slug) => {
