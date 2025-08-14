@@ -252,7 +252,6 @@ function App() {
                 </>
               } />
 
- copilot/fix-07c59fa2-f02d-419b-afce-31fa282fff38
               {/* Public Profile Pages */}
               <Route path="/pro/:slug" element={
                 <>
