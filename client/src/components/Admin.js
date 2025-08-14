@@ -10,9 +10,9 @@ function Admin() {
   const [loading, setLoading] = useState(false);
   const [adminEmail, setAdminEmail] = useState('');
 
-  // API configuration - use relative paths for production (Vercel proxies /api/* to backend)
-  // Only use full URLs for local development when REACT_APP_API_URL is explicitly set
-  const API_BASE = process.env.REACT_APP_API_URL && process.env.NODE_ENV === 'development' 
+  // API configuration - ALWAYS use relative paths in production (Vercel proxies /api/* to backend)
+  // Only use full URLs for local development when running via npm start
+  const API_BASE = process.env.NODE_ENV === 'development' && process.env.REACT_APP_API_URL
                     ? process.env.REACT_APP_API_URL 
                     : '';
 
