@@ -1,0 +1,33 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run build",
+  "outputDirectory": "build",
+  "installCommand": "npm install --no-fund --no-audit",
+  "framework": null,
+  "cleanUrls": true,
+  "trailingSlash": false,
+
+  "functions": {
+    "../api/og.js": { "runtime": "edge" },
+    "../api/meta.js": { "runtime": "edge" },
+    "../api/pro-signup.js": { "runtime": "nodejs20.x" },
+    "../api/homeowner-lead.js": { "runtime": "nodejs20.x" }
+  },
+
+  "headers": [
+    {
+      "source": "/static/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ],
+
+  "rewrites": [
+    { "source": "/api/og",   "destination": "/api/og" },
+    { "source": "/api/meta", "destination": "/api/meta" },
+    { "source": "/api/(.*)", "destination": "https://fixloapp.onrender.com/api/$1" },
+    { "source": "/sms-optin", "destination": "/sms-optin/index.html" },
+    { "source": "/(.*)",     "destination": "/" }
+  ]
+}
