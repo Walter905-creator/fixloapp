@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Notifications - Fixlo</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="canonical" href="https://www.fixloapp.com/sms-compliance">
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .sms-optin-container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 50px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+        
+        .sms-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .sms-header h1 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 2.5rem;
+        }
+        
+        .sms-header p {
+            color: #7f8c8d;
+            font-size: 1.2rem;
+        }
+        
+        .sms-benefits {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+        }
+        
+        .sms-benefits h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+        
+        .benefit-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .benefit-list li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            color: #4a5568;
+        }
+        
+        .benefit-list li::before {
+            content: "📱";
+            font-size: 1.2rem;
+        }
+        
+        .sms-consent-form {
+            background: #e8f5e8;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+            border: 2px solid #28a745;
+        }
+        
+        .consent-checkbox {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .consent-checkbox input[type="checkbox"] {
+            transform: scale(1.3);
+            margin-top: 3px;
+        }
+        
+        .consent-text {
+            font-size: 1.1rem;
+            color: #2c3e50;
+            line-height: 1.5;
+        }
+        
+        .consent-text strong {
+            color: #1e7e34;
+        }
+        
+        .sms-terms {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 25px 0;
+            border-left: 4px solid #3498db;
+        }
+        
+        .sms-terms h4 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .sms-terms ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .sms-terms li {
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .sms-terms li::before {
+            content: "•";
+            color: #3498db;
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+        
+        .opt-in-button {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 18px 35px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin: 20px 0;
+        }
+        
+        .opt-in-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(40, 167, 69, 0.3);
+        }
+        
+        .opt-in-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .message-examples {
+            background: #fff3cd;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 25px 0;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .message-examples h4 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+        
+        .message-sample {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 3px solid #ffc107;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #495057;
+        }
+        
+        .redirect-info {
+            text-align: center;
+            margin-top: 30px;
+            color: #6c757d;
+        }
+        
+        @media (max-width: 768px) {
+            .sms-optin-container {
+                margin: 20px;
+                padding: 30px 20px;
+            }
+            
+            .sms-header h1 {
+                font-size: 2rem;
+            }
+            
+            .consent-checkbox {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="sms-optin-container">
+        <div class="sms-header">
+            <h1>📱 SMS Notifications</h1>
+            <p>Stay connected with instant job alerts and updates</p>
+        </div>
+        
+        <div class="sms-benefits">
+            <h3>Why enable SMS notifications?</h3>
+            <ul class="benefit-list">
+                <li>Instant job lead notifications</li>
+                <li>Customer contact details delivered immediately</li>
+                <li>Service appointment reminders</li>
+                <li>Account updates and important announcements</li>
+                <li>Real-time communication with homeowners</li>
+            </ul>
+        </div>
+        
+        <div class="message-examples">
+            <h4>📄 Example SMS Messages You'll Receive:</h4>
+            <div class="message-sample">
+                🔧 New Job Alert: John needs roofing services in Charlotte, NC. Contact: (555) 123-4567. LOGIN to Fixlo to claim this job: fixlo.com/login
+            </div>
+            <div class="message-sample">
+                ⚡ Fixlo Alert: You've been matched with a plumbing job nearby! REPLY "ACCEPT" to claim or LOGIN to view details: fixlo.com/dashboard
+            </div>
+            <div class="message-sample">
+                ⏰ Job Reminder: Unread job request expires in 1 hour. LOGIN NOW to secure this lead: fixlo.com/jobs - Reply STOP to opt out
+            </div>
+            <div class="message-sample">
+                ✅ Job Confirmation: You've been hired for electrical work! Customer will contact you soon. LOGIN to view contract: fixlo.com/login
+            </div>
+        </div>
+        
+        <form id="smsOptInForm" class="sms-consent-form">
+            <div class="consent-checkbox">
+                <input type="checkbox" id="smsConsentStandalone" name="smsConsentStandalone" required>
+                <label for="smsConsentStandalone" class="consent-text">
+                    <strong>I agree to receive SMS messages from Fixlo about leads, appointments, and service updates.</strong>
+                    This includes job notifications, customer contact details, and important account updates sent to my mobile number.
+                </label>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label for="phoneNumber" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">
+                    Phone Number *
+                </label>
+                <input type="tel" id="phoneNumber" name="phoneNumber" placeholder="(555) 123-4567" required 
+                       style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem;">
+            </div>
+            
+            <button type="submit" class="opt-in-button" id="optInSubmit" disabled>
+                ✅ Subscribe to SMS Notifications
+            </button>
+        </form>
+        
+        <div class="sms-terms">
+            <h4>📋 SMS Terms & Conditions:</h4>
+            <ul>
+                <li>Reply <strong>STOP</strong> to unsubscribe at any time</li>
+                <li>Reply <strong>HELP</strong> for assistance and available commands</li>
+                <li>Reply <strong>ACCEPT</strong> to claim job opportunities</li>
+                <li>Message and data rates may apply</li>
+                <li>Frequency: Up to 20 messages per month depending on job activity</li>
+                <li>All messages include clear instructions for next steps</li>
+                <li>You can manage SMS preferences in your account settings</li>
+                <li>We respect your privacy and will never share your number</li>
+                <li>Support available at pro4u.improvements@gmail.com</li>
+            </ul>
+            
+            <div style="margin-top: 20px; padding: 15px; background: #e8f4f8; border-radius: 8px;">
+                <h5 style="color: #2c3e50; margin-bottom: 10px;">💬 Available SMS Commands:</h5>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li><strong>ACCEPT</strong> - Claim a job opportunity</li>
+                    <li><strong>HELP</strong> - Get help and see all commands</li>
+                    <li><strong>STOP</strong> - Unsubscribe from all messages</li>
+                    <li><strong>START</strong> - Resubscribe to job alerts</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="redirect-info">
+            <p>This page demonstrates our SMS opt-in process for Twilio A2P 10DLC compliance.</p>
+            <p><a href="../#handyman-signup" style="color: #3498db; text-decoration: none;">← Back to Professional Signup</a></p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkbox = document.getElementById('smsConsentStandalone');
+            const phoneInput = document.getElementById('phoneNumber');
+            const submitButton = document.getElementById('optInSubmit');
+            const form = document.getElementById('smsOptInForm');
+            
+            // Enable/disable submit button based on checkbox and phone input
+            function updateSubmitButton() {
+                const isChecked = checkbox.checked;
+                const hasPhone = phoneInput.value.trim().length > 0;
+                submitButton.disabled = !(isChecked && hasPhone);
+            }
+            
+            checkbox.addEventListener('change', updateSubmitButton);
+            phoneInput.addEventListener('input', updateSubmitButton);
+            
+            // Handle form submission
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const phone = phoneInput.value.trim();
+                if (!phone) {
+                    alert('Please enter your phone number.');
+                    return;
+                }
+                
+                if (!checkbox.checked) {
+                    alert('Please check the consent box to receive SMS notifications.');
+                    return;
+                }
+                
+                // Simulate SMS opt-in confirmation
+                submitButton.textContent = 'Processing...';
+                submitButton.disabled = true;
+                
+                setTimeout(() => {
+                    alert('Thank you! You have successfully opted in to SMS notifications. You will receive a confirmation text shortly.');
+                    
+                    // Reset form
+                    form.reset();
+                    updateSubmitButton();
+                    submitButton.textContent = '✅ Subscribe to SMS Notifications';
+                    
+                    // Redirect to main site
+                    setTimeout(() => {
+                        window.location.href = '../#handyman-signup';
+                    }, 2000);
+                }, 1500);
+            });
+        });
+    </script>
+</body>
+</html>
