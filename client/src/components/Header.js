@@ -27,7 +27,7 @@ function Header() {
           <img 
             src={logo} 
             alt="Fixlo Logo" 
-            style={{ height: '40px', width: 'auto' }}
+            style={{ height: '60px', width: 'auto' }}
           />
           <span style={{
             fontSize: '1.8rem',

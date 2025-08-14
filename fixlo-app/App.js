@@ -90,8 +90,8 @@ const styles = StyleSheet.create({
     padding: 20
   },
   logo: {
-    width: 250,
-    height: 100,
+    width: 300,
+    height: 120,
     marginBottom: 30,
   },
   title: {
