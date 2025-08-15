@@ -12,6 +12,13 @@ const deploymentForceRefresh = 'v1.0.2-enhanced-' + Date.now();
 
 console.log(`🚀 Fixlo App initialization started - Build: ${buildId} - Timestamp: ${buildTimestamp} - Deploy: ${deploymentForceRefresh}`);
 
+// Mark React as loaded immediately when the script starts executing
+// This prevents the HTML timeout from triggering prematurely
+if (window.markReactLoaded) {
+  window.markReactLoaded();
+  console.log('✅ React script execution started, initial timeout cleared');
+}
+
 // Enhanced cache management
 const lastBuildId = localStorage.getItem('fixlo_build_id');
 if (lastBuildId && lastBuildId !== buildId) {
@@ -51,12 +58,6 @@ function initializeApp() {
     const root = ReactDOM.createRoot(rootElement);
     let loadingFallbackTimer;
     let initializationTimer;
-    
-    // Mark React as loaded immediately when root is created
-    // This prevents the HTML timeout from triggering
-    if (window.markReactLoaded) {
-      window.markReactLoaded();
-    }
 
     // Show loading fallback initially
     root.render(
