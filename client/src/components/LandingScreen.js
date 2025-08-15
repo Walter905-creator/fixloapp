@@ -1,5 +1,5 @@
 import React from 'react';
-import logo from '../assets/fixlo-logo.png';
+import { ReactComponent as FixloLogo } from '../assets/brand/fixlo-logo.svg';
 
 function LandingScreen() {
   return (
@@ -19,9 +19,9 @@ function LandingScreen() {
         margin: '0 auto',
         padding: '0 20px'
       }}>
-        <img 
-          src={logo} 
-          alt="Fixlo Logo" 
+        <FixloLogo 
+          aria-label="Fixlo" 
+          className="fixlo-logo"
           style={{
             maxWidth: '400px',
             height: 'auto',

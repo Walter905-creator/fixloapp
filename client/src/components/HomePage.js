@@ -4,6 +4,7 @@ import UrgencyPopup from './UrgencyPopup';
 import ExitIntentModal from './ExitIntentModal';
 import StickyCTA from './StickyCTA';
 import ServiceSelector from './ServiceSelector';
+import { ReactComponent as FixloLogo } from '../assets/brand/fixlo-logo.svg';
 
 function HomePage() {
   return (
@@ -13,7 +14,7 @@ function HomePage() {
       <StickyCTA />
       <div className="app">
         <header className="header">
-          <img src="/assets/fixlo-logo.png" alt="Fixlo Logo" className="logo" />
+          <FixloLogo aria-label="Fixlo" className="fixlo-logo" />
           <h1>Welcome to Fixlo 
             <span style={{
               marginLeft: '10px',
