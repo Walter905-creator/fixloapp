@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { ReactComponent as FixloLogo } from '../assets/brand/fixlo-logo.svg';
 
 const Footer = () => {
   return (
@@ -9,15 +10,7 @@ const Footer = () => {
           {/* Company Info */}
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center mb-4">
-              <img 
-                src="/assets/fixlo-logo.png" 
-                alt="Fixlo" 
-                className="h-8 w-auto mr-2"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                }}
-              />
-              <span className="text-2xl font-bold text-white">Fixlo</span>
+              <FixloLogo aria-label="Fixlo" className="fixlo-logo mr-2" />
             </div>
             <p className="text-gray-300 mb-4 max-w-md">
               Connecting homeowners with trusted professionals for all home improvement 

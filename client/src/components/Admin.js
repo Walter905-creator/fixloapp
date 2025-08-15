@@ -1,5 +1,6 @@
 // src/components/Admin.js
 import React, { useState, useEffect } from 'react';
+import { ReactComponent as FixloLogo } from '../assets/brand/fixlo-logo.svg';
 
 function Admin() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -271,7 +272,7 @@ function Admin() {
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <img src="/assets/fixlo-logo.png" alt="Fixlo" style={{ width: '40px', height: '40px' }} />
+              <FixloLogo aria-label="Fixlo" className="fixlo-logo" style={{ width: '40px', height: '40px' }} />
               <h1 style={{ color: '#2c3e50', fontSize: '1.5rem', margin: 0 }}>Admin Dashboard</h1>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
