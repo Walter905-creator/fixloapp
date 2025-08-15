@@ -1,11 +1,19 @@
 {
   "files": {
     "main.css": "./static/css/main.4f824ea6.css",
+ copilot/fix-dcfdb0b3-e923-4984-b164-2385cf4f2fe6
     "main.js": "./static/js/main.42789f88.js",
+
+    "main.js": "./static/js/main.16bd4cdf.js",
+ main
     "index.html": "./index.html"
   },
   "entrypoints": [
     "static/css/main.4f824ea6.css",
+ copilot/fix-dcfdb0b3-e923-4984-b164-2385cf4f2fe6
     "static/js/main.42789f88.js"
+
+    "static/js/main.16bd4cdf.js"
+ main
   ]
 }
