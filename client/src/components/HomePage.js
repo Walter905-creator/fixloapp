@@ -14,7 +14,11 @@ function HomePage() {
       <StickyCTA />
       <div className="app">
         <header className="header">
+ copilot/fix-a7d5aeac-2da4-468f-9787-62ac277d583a
+          <img src="/assets/brand/fixlo-logo-primary.png" alt="Fixlo Logo" className="logo" />
+
           <FixloLogo aria-label="Fixlo" className="fixlo-logo" />
+ main
           <h1>Welcome to Fixlo 
             <span style={{
               marginLeft: '10px',

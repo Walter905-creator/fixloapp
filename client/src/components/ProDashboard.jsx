@@ -86,9 +86,16 @@ const ProDashboard = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8 text-center">
+ copilot/fix-a7d5aeac-2da4-468f-9787-62ac277d583a
+          <img 
+            src="/assets/brand/fixlo-logo-primary.png" 
+            alt="Fixlo Logo" 
+            className="mx-auto mb-6 h-16 w-auto"
+
           <FixloLogo 
             aria-label="Fixlo"
             className="fixlo-logo mx-auto mb-6"
+ main
           />
           <h1 className="text-2xl font-bold text-gray-800 mb-4">
             Professional Dashboard
@@ -133,9 +140,16 @@ const ProDashboard = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
+ copilot/fix-a7d5aeac-2da4-468f-9787-62ac277d583a
+              <img 
+                src="/assets/brand/fixlo-logo-primary.png" 
+                alt="Fixlo Logo" 
+                className="h-8 w-auto mr-4"
+
               <FixloLogo 
                 aria-label="Fixlo"
                 className="fixlo-logo mr-4"
+ main
               />
               <h1 className="text-xl font-semibold text-gray-800">
                 Professional Dashboard

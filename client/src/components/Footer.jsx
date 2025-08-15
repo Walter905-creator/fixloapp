@@ -10,7 +10,19 @@ const Footer = () => {
           {/* Company Info */}
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center mb-4">
+ copilot/fix-a7d5aeac-2da4-468f-9787-62ac277d583a
+              <img 
+                src="/assets/brand/fixlo-logo-primary.png" 
+                alt="Fixlo" 
+                className="h-8 w-auto mr-2"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                }}
+              />
+              <span className="text-2xl font-bold text-white">Fixlo</span>
+
               <FixloLogo aria-label="Fixlo" className="fixlo-logo mr-2" />
+ main
             </div>
             <p className="text-gray-300 mb-4 max-w-md">
               Connecting homeowners with trusted professionals for all home improvement 
