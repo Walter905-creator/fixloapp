@@ -266,7 +266,6 @@ function App() {
               <Route path="/review/public/:reviewId" element={<PublicReview />} />
               
 
- main
               {/* Catch all route for 404 errors */}
               <Route path="*" element={<NotFound />} />
             </Routes>
