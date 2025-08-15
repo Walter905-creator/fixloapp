@@ -4,6 +4,13 @@ import { HelmetProvider } from 'react-helmet-async';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 
+// Safe SW kill-switch (no behavior change for your buttons)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations?.().then(list => {
+    list.forEach(reg => reg.unregister());
+  });
+}
+
 const root = createRoot(document.getElementById('root'));
 root.render(
   <HelmetProvider>
