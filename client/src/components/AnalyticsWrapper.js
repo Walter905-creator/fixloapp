@@ -1,8 +1,10 @@
 // src/components/AnalyticsWrapper.js
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
 // Enhanced analytics wrapper that prevents 405 errors completely
 function AnalyticsWrapper() {
+  const [AnalyticsComponent, setAnalyticsComponent] = useState(null);
+
   useEffect(() => {
     // Check environment and domain conditions
     const hostname = window.location.hostname;
@@ -73,6 +75,21 @@ function AnalyticsWrapper() {
       return originalXHROpen.call(this, method, url, ...args);
     };
 
+    // Only dynamically import analytics if it should be enabled
+    if (shouldEnableAnalytics) {
+      console.log('[Fixlo Analytics] Loading analytics module...');
+      import('@vercel/analytics/react')
+        .then(({ Analytics }) => {
+          console.log('[Fixlo Analytics] Analytics module loaded successfully');
+          setAnalyticsComponent(() => () => <Analytics debug={process.env.NODE_ENV === 'development'} />);
+        })
+        .catch((error) => {
+          console.warn('[Fixlo Analytics] Analytics module not available or failed to load:', error.message);
+        });
+    } else {
+      console.log('[Fixlo Analytics] Analytics disabled - Vercel analytics only works on Vercel domains (.vercel.app) or when explicitly enabled via REACT_APP_ENABLE_ANALYTICS=true');
+    }
+
     // Cleanup function
     return () => {
       window.fetch = originalFetch;
@@ -80,33 +97,8 @@ function AnalyticsWrapper() {
     };
   }, []);
 
-  // Determine if analytics component should be rendered - only for Vercel domains or when explicitly enabled
-  const shouldRenderAnalytics = () => {
-    if (typeof window === 'undefined') return false;
-    
-    const hostname = window.location.hostname;
-    const isProduction = process.env.NODE_ENV === 'production';
-    const isVercelDomain = hostname.includes('vercel.app');
-    const isExplicitlyEnabled = process.env.REACT_APP_ENABLE_ANALYTICS === 'true';
-    
-    return (isProduction && isVercelDomain) || isExplicitlyEnabled;
-  };
-
-  // Only try to load and render analytics if it should work
-  if (!shouldRenderAnalytics()) {
-    console.log('[Fixlo Analytics] Analytics disabled - Vercel analytics only works on Vercel domains (.vercel.app) or when explicitly enabled via REACT_APP_ENABLE_ANALYTICS=true');
-    return null;
-  }
-
-  // Dynamically import and render analytics only when appropriate
-  try {
-    // Only import when we actually need it
-    const { Analytics } = require('@vercel/analytics/react');
-    return <Analytics debug={process.env.NODE_ENV === 'development'} />;
-  } catch (error) {
-    console.warn('[Fixlo Analytics] Analytics module not available or failed to load:', error.message);
-    return null;
-  }
+  // Render the analytics component if it was loaded
+  return AnalyticsComponent ? <AnalyticsComponent /> : null;
 }
 
 export default AnalyticsWrapper;
