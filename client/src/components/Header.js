@@ -1,9 +1,7 @@
 import React from 'react';
- copilot/fix-a7d5aeac-2da4-468f-9787-62ac277d583a
 import logo from '../assets/brand/fixlo-logo-primary.png';
 
 import { ReactComponent as FixloLogo } from '../assets/brand/fixlo-logo.svg';
- main
 
 function Header() {
   return (
@@ -28,7 +26,6 @@ function Header() {
           alignItems: 'center',
           gap: '10px'
         }}>
- copilot/fix-a7d5aeac-2da4-468f-9787-62ac277d583a
           <img 
             src={logo} 
             alt="Fixlo Logo" 
@@ -43,7 +40,6 @@ function Header() {
           </span>
 
           <FixloLogo aria-label="Fixlo" className="fixlo-logo" />
- main
         </div>
         
         <nav>
