@@ -1,38 +1,4 @@
 User-agent: *
 Allow: /
 
-# Disallow admin and private areas
-Disallow: /admin/
-Disallow: /api/
-Disallow: /_client-disabled/
-Disallow: /_server-backup/
-Disallow: /deployment-archive/
-Disallow: /scripts/
-Disallow: /build/
-Disallow: /android/
-Disallow: /ios/
-
-# Disallow parameters that might create duplicate content
-Disallow: /*?utm_*
-Disallow: /*?ref=*
-Disallow: /*?source=*
-Disallow: /*?campaign=*
-
-# Allow important CSS, JS, and image files
-Allow: /assets/
-Allow: /style.css
-Allow: /*.css
-Allow: /*.js
-Allow: /*.png
-Allow: /*.jpg
-Allow: /*.jpeg
-Allow: /*.gif
-Allow: /*.svg
-Allow: /*.webp
-
-# Sitemap locations
-Sitemap: https://www.fixloapp.com/sitemap-index.xml
 Sitemap: https://www.fixloapp.com/sitemap.xml
-
-# Crawl delay to be respectful
-Crawl-delay: 1
