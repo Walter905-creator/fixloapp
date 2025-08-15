@@ -10,6 +10,7 @@
     "build-client": "cd client && REACT_APP_BUILD_TIMESTAMP=$(date +%s) REACT_APP_BUILD_ID=$(date +%Y%m%d-%H%M%S) GENERATE_SOURCEMAP=false npm run build",
     "build-client-dev": "cd client && REACT_APP_BUILD_TIMESTAMP=$(date +%s) REACT_APP_BUILD_ID=$(date +%Y%m%d-%H%M%S) GENERATE_SOURCEMAP=true npm run build",
     "build": "npm run install-client && npm run build-client",
+    "vercel-build": "npm run build",
     "start-client": "cd client && npm start",
     "generate-sitemap": "node generate-sitemap.js",
     "validate-deployment": "node scripts/validate-deployment.js",
