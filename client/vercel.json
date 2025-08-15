@@ -1,9 +1,12 @@
 {
-  "buildCommand": "npm ci --no-fund --no-audit && npm run build",
+  "buildCommand": "npm run build",
   "outputDirectory": "build",
+  "installCommand": "npm install --no-fund --no-audit",
   "framework": null,
   "ignoreCommand": "exit 0",
-
+  "functions": {
+    "api/cloudinary/sign.js": { "runtime": "nodejs20.x" }
+  },
   "headers": [
     {
       "source": "/static/(.*)",
@@ -12,13 +15,11 @@
       ]
     }
   ],
-
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://fixloapp.onrender.com/api/$1" }
-  ],
-
-  "redirects": [],
-
+  "trailingSlash": false,
   "cleanUrls": true,
-  "trailingSlash": false
+  "rewrites": [
+    { "source": "/api/cloudinary/sign", "destination": "/api/cloudinary/sign" },
+    { "source": "/api/(.*)", "destination": "https://fixloapp.onrender.com/api/$1" },
+    { "source": "/(.*)", "destination": "/" }
+  ]
 }

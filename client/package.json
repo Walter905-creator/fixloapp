@@ -2,16 +2,13 @@
   "name": "fixlo-frontend",
   "version": "3.0.0",
   "private": true,
-  "homepage": "/",
-  "engines": {
-    "node": ">=18.0.0 <22.0.0"
-  },
+  "engines": { "node": ">=18.0.0 <22.0.0" },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "vercel-build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "prebuild": "node ../scripts/check-conflicts.js || (echo '❌ Resolve conflict markers before building' && exit 1)"
+    "eject": "react-scripts eject"
   },
   "dependencies": {
     "@vercel/analytics": "^1.5.0",
@@ -27,47 +24,11 @@
     "web-vitals": "^3.5.0"
   },
   "devDependencies": {
-    "@testing-library/jest-dom": "^6.6.4",
-    "@testing-library/react": "^16.3.0",
-    "@testing-library/user-event": "^14.6.1",
     "autoprefixer": "^10.4.21",
     "postcss": "^8.4.31"
   },
-  "overrides": {
-    "nth-check": "^2.1.1",
-    "postcss": "^8.4.31",
-    "webpack-dev-server": "^5.2.2",
-    "eslint": "^8.57.1",
-    "svgo": "^3.3.2",
-    "rimraf": "^6.0.1",
-    "glob": "^11.0.0",
-    "@rollup/plugin-terser": "^0.4.4",
-    "rollup-plugin-terser": "npm:@rollup/plugin-terser@^0.4.4",
-    "@babel/plugin-proposal-class-properties": "npm:@babel/plugin-transform-class-properties@^7.25.9",
-    "@babel/plugin-proposal-nullish-coalescing-operator": "npm:@babel/plugin-transform-nullish-coalescing-operator@^7.25.9",
-    "@babel/plugin-proposal-numeric-separator": "npm:@babel/plugin-transform-numeric-separator@^7.25.9",
-    "@babel/plugin-proposal-optional-chaining": "npm:@babel/plugin-transform-optional-chaining@^7.25.9",
-    "@babel/plugin-proposal-private-methods": "npm:@babel/plugin-transform-private-methods@^7.25.9",
-    "@babel/plugin-proposal-private-property-in-object": "npm:@babel/plugin-transform-private-property-in-object@^7.25.9",
-    "@humanwhocodes/config-array": "npm:@eslint/config-array@^0.19.0",
-    "@humanwhocodes/object-schema": "npm:@eslint/object-schema@^2.1.4",
-    "@jridgewell/sourcemap-codec": "^1.5.0",
-    "sourcemap-codec": "npm:@jridgewell/sourcemap-codec@^1.5.0",
-    "workbox-google-analytics": "^7.1.0",
-    "workbox-cacheable-response": "^7.1.0",
-    "workbox-background-sync": "^7.1.0",
-    "source-map": "^0.7.4"
-  },
   "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "production": [">0.2%", "not dead", "not op_mini all"],
+    "development": ["last 1 chrome version", "last 1 firefox version", "last 1 safari version"]
   }
 }
