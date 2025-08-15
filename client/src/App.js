@@ -39,6 +39,58 @@ const buildTimestamp = process.env.REACT_APP_BUILD_TIMESTAMP || 'dev';
 const deploymentForceRefresh = 'v1.0.1-fix-' + Date.now();
 console.log(`🚀 Fixlo App loaded - Build: ${buildId} - Timestamp: ${buildTimestamp} - Deploy: ${deploymentForceRefresh}`);
 
+// EARLY ANALYTICS BLOCKING - Prevent any Vercel analytics requests before components load
+// This is critical to prevent 405 errors on non-Vercel domains
+(() => {
+  const hostname = window.location.hostname;
+  const isVercelDomain = hostname.includes('vercel.app');
+  const isExplicitlyEnabled = process.env.REACT_APP_ENABLE_ANALYTICS === 'true';
+  const shouldBlockAnalytics = !isVercelDomain && !isExplicitlyEnabled;
+  
+  if (shouldBlockAnalytics) {
+    console.log('[Fixlo Early Block] Setting up early analytics blocking for domain:', hostname);
+    
+    // Block fetch immediately
+    if (window.fetch) {
+      const originalFetch = window.fetch;
+      window.fetch = function(...args) {
+        const url = args[0];
+        if (typeof url === 'string' && (
+          url.includes('/_vercel/insights') || 
+          url.includes('/_vercel/speed-insights') ||
+          url.includes('/api/_vercel') ||
+          url.includes('vercel.live')
+        )) {
+          console.log('[Fixlo Early Block] Blocked early analytics request:', url);
+          return Promise.resolve(new Response('{"success": true}', { 
+            status: 200,
+            statusText: 'OK',
+            headers: { 'Content-Type': 'application/json' }
+          }));
+        }
+        return originalFetch.apply(this, args);
+      };
+    }
+    
+    // Block sendBeacon immediately 
+    if (navigator.sendBeacon) {
+      const originalSendBeacon = navigator.sendBeacon;
+      navigator.sendBeacon = function(url, data) {
+        if (typeof url === 'string' && (
+          url.includes('/_vercel/insights') || 
+          url.includes('/_vercel/speed-insights') ||
+          url.includes('/api/_vercel') ||
+          url.includes('vercel.live')
+        )) {
+          console.log('[Fixlo Early Block] Blocked early sendBeacon request:', url);
+          return true;
+        }
+        return originalSendBeacon.call(this, url, data);
+      };
+    }
+  }
+})();
+
 function App() {
   return (
     <HelmetProvider>
