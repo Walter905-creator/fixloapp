@@ -248,8 +248,15 @@
       let reactLoadTimeout;
       
       // Set timeout to show error state if React doesn't load
+      // Increased timeout to 15 seconds to give React more time to load and call markReactLoaded
       reactLoadTimeout = setTimeout(function() {
-        console.warn('⏰ React loading timeout reached');
+        // Double-check that React hasn't actually loaded before showing the timeout
+        if (document.body.classList.contains('react-loaded')) {
+          console.log('✅ React actually loaded successfully, timeout was delayed');
+          return;
+        }
+        
+        console.warn('⏰ React loading timeout reached - React failed to load within 15 seconds');
         const loader = document.getElementById('fixlo-initial-loader');
         if (loader) {
           loader.innerHTML = `
@@ -257,7 +264,7 @@
               <div style="font-size: 4rem; margin-bottom: 1rem;">⚠️</div>
               <h2 style="color: #fff; margin-bottom: 1rem;">Loading Issue Detected</h2>
               <p style="margin-bottom: 1.5rem; opacity: 0.9;">
-                Fixlo is taking longer than expected to load. This might be due to a slow connection.
+                Fixlo is taking longer than expected to load. This might be due to a slow connection or network issue.
               </p>
               <button 
                 onclick="window.location.reload()" 
@@ -277,11 +284,22 @@
             </div>
           `;
         }
-      }, 10000); // 10 second timeout for slow connections
+      }, 15000); // 15 second timeout - increased from 10 seconds to reduce false positives
       
       // Function to mark React as loaded
       window.markReactLoaded = function() {
-        clearTimeout(reactLoadTimeout);
+        // Clear the timeout first
+        if (reactLoadTimeout) {
+          clearTimeout(reactLoadTimeout);
+          reactLoadTimeout = null;
+        }
+        
+        // Prevent multiple calls
+        if (document.body.classList.contains('react-loaded')) {
+          console.log('✅ React already marked as loaded, ignoring duplicate call');
+          return;
+        }
+        
         document.body.classList.add('react-loaded');
         
         const loadTime = Date.now() - initStartTime;

@@ -14,9 +14,33 @@ console.log(`🚀 Fixlo App initialization started - Build: ${buildId} - Timesta
 
 // Mark React as loaded immediately when the script starts executing
 // This prevents the HTML timeout from triggering prematurely
+console.log('✅ React script execution started');
 if (window.markReactLoaded) {
-  window.markReactLoaded();
-  console.log('✅ React script execution started, initial timeout cleared');
+  try {
+    window.markReactLoaded();
+    console.log('✅ React script execution started, initial timeout cleared');
+  } catch (error) {
+    console.warn('⚠️ Failed to call markReactLoaded:', error);
+  }
+} else {
+  console.warn('⚠️ markReactLoaded function not available yet, will retry');
+  // If markReactLoaded is not available yet, try again in a short interval
+  const retryMarkLoaded = setInterval(() => {
+    if (window.markReactLoaded) {
+      try {
+        window.markReactLoaded();
+        console.log('✅ React script execution started, initial timeout cleared (retry)');
+        clearInterval(retryMarkLoaded);
+      } catch (error) {
+        console.warn('⚠️ Failed to call markReactLoaded on retry:', error);
+      }
+    }
+  }, 50); // Check every 50ms for up to 1 second
+  
+  // Stop retrying after 1 second
+  setTimeout(() => {
+    clearInterval(retryMarkLoaded);
+  }, 1000);
 }
 
 // Enhanced cache management
@@ -42,7 +66,7 @@ localStorage.setItem('fixlo_build_id', buildId);
 let initializationComplete = false;
 let retryCount = 0;
 const MAX_RETRIES = 3;
-const INITIALIZATION_TIMEOUT = 8000; // 8 seconds - gives enough time before HTML timeout
+const INITIALIZATION_TIMEOUT = 12000; // 12 seconds - allows time before HTML timeout at 15 seconds
 
 function initializeApp() {
   const startTime = Date.now();
