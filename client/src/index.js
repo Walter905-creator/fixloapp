@@ -35,7 +35,7 @@ localStorage.setItem('fixlo_build_id', buildId);
 let initializationComplete = false;
 let retryCount = 0;
 const MAX_RETRIES = 3;
-const INITIALIZATION_TIMEOUT = 5000; // 5 seconds
+const INITIALIZATION_TIMEOUT = 8000; // 8 seconds - gives enough time before HTML timeout
 
 function initializeApp() {
   const startTime = Date.now();
@@ -51,6 +51,12 @@ function initializeApp() {
     const root = ReactDOM.createRoot(rootElement);
     let loadingFallbackTimer;
     let initializationTimer;
+    
+    // Mark React as loaded immediately when root is created
+    // This prevents the HTML timeout from triggering
+    if (window.markReactLoaded) {
+      window.markReactLoaded();
+    }
 
     // Show loading fallback initially
     root.render(
