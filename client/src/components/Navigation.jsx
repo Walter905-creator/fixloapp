@@ -13,7 +13,7 @@ const Navigation = () => {
             <div className="flex items-center">
               <Link to="/" className="flex items-center">
                 <img 
-                  src="/assets/fixlo-logo.png" 
+                  src="/assets/brand/fixlo-logo-primary.png" 
                   alt="Fixlo" 
                   className="h-8 w-auto mr-2"
                   onError={(e) => {

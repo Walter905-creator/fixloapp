@@ -1,5 +1,5 @@
 import React from 'react';
-import logo from '../assets/fixlo-logo.png';
+import logo from '../assets/brand/fixlo-logo-primary.png';
 
 function Header() {
   return (
@@ -27,7 +27,7 @@ function Header() {
           <img 
             src={logo} 
             alt="Fixlo Logo" 
-            style={{ height: '60px', width: 'auto' }}
+            style={{ height: '32px', width: 'auto' }}
           />
           <span style={{
             fontSize: '1.8rem',

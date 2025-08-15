@@ -1,5 +1,5 @@
 import React from 'react';
-import logo from '../assets/fixlo-logo.png';
+import logo from '../assets/brand/fixlo-logo-primary.png';
 
 function LandingScreen() {
   return (

@@ -86,7 +86,7 @@ const ProDashboard = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8 text-center">
           <img 
-            src="/assets/fixlo-logo.png" 
+            src="/assets/brand/fixlo-logo-primary.png" 
             alt="Fixlo Logo" 
             className="mx-auto mb-6 h-16 w-auto"
           />
@@ -134,7 +134,7 @@ const ProDashboard = () => {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
               <img 
-                src="/assets/fixlo-logo.png" 
+                src="/assets/brand/fixlo-logo-primary.png" 
                 alt="Fixlo Logo" 
                 className="h-8 w-auto mr-4"
               />
