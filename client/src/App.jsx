@@ -7,10 +7,12 @@ import ReviewCapture from './pages/ReviewCapture';
 import ReviewPublic from './pages/ReviewPublic';
 import NotFound from './pages/NotFound';
 import Header from './components/Header';
+import AnalyticsWrapper from './components/AnalyticsWrapper';
 
 export default function App() {
   return (
     <>
+      <AnalyticsWrapper />
       <Header />
       <Routes>
         <Route path="/" element={<Home />} />
