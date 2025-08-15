@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ReactComponent as FixloLogo } from '../assets/brand/fixlo-logo.svg';
 
 const Navigation = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -12,6 +13,7 @@ const Navigation = () => {
             {/* Logo */}
             <div className="flex items-center">
               <Link to="/" className="flex items-center">
+ copilot/fix-a7d5aeac-2da4-468f-9787-62ac277d583a
                 <img 
                   src="/assets/brand/fixlo-logo-primary.png" 
                   alt="Fixlo" 
@@ -21,6 +23,9 @@ const Navigation = () => {
                   }}
                 />
                 <span className="text-2xl font-bold text-blue-600">Fixlo</span>
+
+                <FixloLogo aria-label="Fixlo" className="fixlo-logo mr-2" />
+ main
               </Link>
             </div>
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { ReactComponent as FixloLogo } from '../assets/brand/fixlo-logo.svg';
 
 const ProSignup = () => {
   const [formData, setFormData] = useState({
@@ -140,10 +141,16 @@ const ProSignup = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
+ copilot/fix-a7d5aeac-2da4-468f-9787-62ac277d583a
         <img
           className="mx-auto h-12 w-auto"
           src="/assets/brand/fixlo-logo-primary.png"
           alt="Fixlo"
+
+        <FixloLogo
+          aria-label="Fixlo"
+          className="fixlo-logo mx-auto"
+ main
         />
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
           Join as a Professional
