@@ -1,0 +1,18 @@
+import React from 'react';
+import SEO from '../utils/seo';
+import { Link } from 'react-router-dom';
+
+export default function Home() {
+  return (
+    <main style={{maxWidth:960,margin:'32px auto',padding:'0 16px'}}>
+      <SEO canonical="https://www.fixloapp.com/" />
+      <h1>Fixlo</h1>
+      <p>Book trusted home services near you. Plumbing, electrical, HVAC, and more.</p>
+
+      <div style={{marginTop:16,display:'flex',gap:12,flexWrap:'wrap'}}>
+        <Link to="/signup" className="btn">Sign up</Link>
+        {/* Your Request a Service popup/buttons live elsewhere; unchanged */}
+      </div>
+    </main>
+  );
+}
