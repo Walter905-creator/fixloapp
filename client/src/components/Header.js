@@ -1,5 +1,5 @@
 import React from 'react';
-import logo from '../assets/fixlo-logo.png';
+import { ReactComponent as FixloLogo } from '../assets/brand/fixlo-logo.svg';
 
 function Header() {
   return (
@@ -24,18 +24,7 @@ function Header() {
           alignItems: 'center',
           gap: '10px'
         }}>
-          <img 
-            src={logo} 
-            alt="Fixlo Logo" 
-            style={{ height: '60px', width: 'auto' }}
-          />
-          <span style={{
-            fontSize: '1.8rem',
-            fontWeight: '700',
-            color: '#667eea'
-          }}>
-            Fixlo
-          </span>
+          <FixloLogo aria-label="Fixlo" className="fixlo-logo" />
         </div>
         
         <nav>

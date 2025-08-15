@@ -1,3 +1,13 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Fixlo Logo Styling */
+.fixlo-logo {
+  height: 40px;      /* visually larger, professional scale */
+  width: auto;
+  display: block;
+}
+@media (max-width: 640px) {
+  .fixlo-logo { height: 34px; }
+}
