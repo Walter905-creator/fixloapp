@@ -12,9 +12,11 @@ const deploymentForceRefresh = 'v1.0.2-enhanced-' + Date.now();
 
 console.log(`🚀 Fixlo App initialization started - Build: ${buildId} - Timestamp: ${buildTimestamp} - Deploy: ${deploymentForceRefresh}`);
 
-// Mark React as loaded immediately when the script starts executing
+// CRITICAL: Mark React as loaded IMMEDIATELY when the script starts executing
 // This prevents the HTML timeout from triggering prematurely
 console.log('✅ React script execution started');
+
+// Call markReactLoaded immediately, without any delays or complex retry logic
 if (window.markReactLoaded) {
   try {
     window.markReactLoaded();
@@ -23,24 +25,9 @@ if (window.markReactLoaded) {
     console.warn('⚠️ Failed to call markReactLoaded:', error);
   }
 } else {
-  console.warn('⚠️ markReactLoaded function not available yet, will retry');
-  // If markReactLoaded is not available yet, try again in a short interval
-  const retryMarkLoaded = setInterval(() => {
-    if (window.markReactLoaded) {
-      try {
-        window.markReactLoaded();
-        console.log('✅ React script execution started, initial timeout cleared (retry)');
-        clearInterval(retryMarkLoaded);
-      } catch (error) {
-        console.warn('⚠️ Failed to call markReactLoaded on retry:', error);
-      }
-    }
-  }, 50); // Check every 50ms for up to 1 second
-  
-  // Stop retrying after 1 second
-  setTimeout(() => {
-    clearInterval(retryMarkLoaded);
-  }, 1000);
+  // If markReactLoaded is not available immediately, it will be called once it's available
+  // But we should not rely on retries with delays as this can cause the timeout
+  console.warn('⚠️ markReactLoaded function not available immediately');
 }
 
 // Enhanced cache management
@@ -155,11 +142,6 @@ function initializeApp() {
         console.log(`✅ Fixlo app successfully initialized in ${loadTime}ms`);
         console.log(`🎉 Fixlo initialized successfully on attempt ${retryCount + 1}`);
         
-        // Mark React as loaded for the initial loader
-        if (window.markReactLoaded) {
-          window.markReactLoaded();
-        }
-        
         // Clear any pending timers
         if (loadingFallbackTimer) clearTimeout(loadingFallbackTimer);
         if (initializationTimer) clearTimeout(initializationTimer);
@@ -182,11 +164,6 @@ function initializeApp() {
           );
           initializationComplete = true;
           console.log('✅ Fixlo app initialized via fallback mechanism');
-          
-          // Mark React as loaded for the initial loader
-          if (window.markReactLoaded) {
-            window.markReactLoaded();
-          }
         } catch (error) {
           console.error('❌ Fallback rendering failed:', error);
         }
@@ -212,11 +189,6 @@ function initializeApp() {
               <App />
             </ErrorBoundary>
           );
-          
-          // Mark React as loaded for the initial loader
-          if (window.markReactLoaded) {
-            window.markReactLoaded();
-          }
         }
       } catch (finalError) {
         console.error('❌ Final fallback failed:', finalError);
