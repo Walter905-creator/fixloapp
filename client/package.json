@@ -6,8 +6,8 @@
   "scripts": {
     "prebuild": "node scripts/write-version.js",
     "start": "react-scripts start",
-    "build": "react-scripts build",
-    "vercel-build": "react-scripts build",
+    "build": "REACT_APP_BUILD_ID=$(date -u +%Y-%m-%dT%H:%M:%S) react-scripts build",
+    "vercel-build": "REACT_APP_BUILD_ID=$(date -u +%Y-%m-%dT%H:%M:%S) react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
