@@ -7,8 +7,8 @@
   },
   "scripts": {
     "install-client": "cd client && npm ci --no-fund --no-audit",
-    "build-client": "cd client && REACT_APP_BUILD_TIMESTAMP=$(date +%s) REACT_APP_BUILD_ID=$(date +%Y%m%d-%H%M%S) GENERATE_SOURCEMAP=false npm run build && cd .. && ./scripts/prerender-canonicals.sh",
-    "build-client-dev": "cd client && REACT_APP_BUILD_TIMESTAMP=$(date +%s) REACT_APP_BUILD_ID=$(date +%Y%m%d-%H%M%S) GENERATE_SOURCEMAP=true npm run build && cd .. && ./scripts/prerender-canonicals.sh",
+    "build-client": "cd client && REACT_APP_BUILD_TIMESTAMP=$(date +%s) REACT_APP_BUILD_ID=$(date +%Y%m%d-%H%M%S) REACT_APP_COMMIT_SHA=$(git rev-parse HEAD 2>/dev/null || echo 'unknown') GENERATE_SOURCEMAP=false npm run build && cd .. && ./scripts/prerender-canonicals.sh",
+    "build-client-dev": "cd client && REACT_APP_BUILD_TIMESTAMP=$(date +%s) REACT_APP_BUILD_ID=$(date +%Y%m%d-%H%M%S) REACT_APP_COMMIT_SHA=$(git rev-parse HEAD 2>/dev/null || echo 'unknown') GENERATE_SOURCEMAP=true npm run build && cd .. && ./scripts/prerender-canonicals.sh",
     "build": "npm run install-client && npm run build-client",
     "vercel-build": "npm run build",
     "start-client": "cd client && npm start",
