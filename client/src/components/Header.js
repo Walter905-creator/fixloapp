@@ -1,7 +1,4 @@
 import React from 'react';
-import logo from '../assets/brand/fixlo-logo-primary.png';
-
-import { ReactComponent as FixloLogo } from '../assets/brand/fixlo-logo.svg';
 
 function Header() {
   return (
@@ -27,9 +24,11 @@ function Header() {
           gap: '10px'
         }}>
           <img 
-            src={logo} 
+            src="/brand/fixlo-logo-2025.svg" 
             alt="Fixlo Logo" 
             style={{ height: '32px', width: 'auto' }}
+            decoding="async"
+            loading="eager"
           />
           <span style={{
             fontSize: '1.8rem',
@@ -38,8 +37,6 @@ function Header() {
           }}>
             Fixlo
           </span>
-
-          <FixloLogo aria-label="Fixlo" className="fixlo-logo" />
         </div>
         
         <nav>

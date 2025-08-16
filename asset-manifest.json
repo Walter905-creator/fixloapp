@@ -1,11 +1,10 @@
 {
   "files": {
-    "main.js": "/static/js/main.e54a34d0.js",
-    "static/media/fixlo-logo-primary.png": "/static/media/fixlo-logo-primary.7b28eec07b3597a47876.png",
-    "index.html": "/index.html",
-    "static/media/fixlo-logo.svg": "/static/media/fixlo-logo.61cd6ed7789f3652116ca618e57985b3.svg"
+    "main.js": "/static/js/main.da0ac985.js",
+    "static/js/400.736ce0d8.chunk.js": "/static/js/400.736ce0d8.chunk.js",
+    "index.html": "/index.html"
   },
   "entrypoints": [
-    "static/js/main.e54a34d0.js"
+    "static/js/main.da0ac985.js"
   ]
 }
