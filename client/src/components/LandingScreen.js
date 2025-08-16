@@ -1,7 +1,5 @@
 import React from 'react';
-import logo from '../assets/brand/fixlo-logo-primary.png';
-
-import { ReactComponent as FixloLogo } from '../assets/brand/fixlo-logo.svg';
+import Logo from './branding/Logo';
 
 function LandingScreen() {
   return (
@@ -21,16 +19,7 @@ function LandingScreen() {
         margin: '0 auto',
         padding: '0 20px'
       }}>
-        <FixloLogo 
-          aria-label="Fixlo" 
-          className="fixlo-logo"
-          style={{
-            maxWidth: '400px',
-            height: 'auto',
-            marginBottom: '40px',
-            filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.3))'
-          }}
-        />
+        <Logo width={300} />
         
         <h1 style={{
           fontSize: '3.5rem',
