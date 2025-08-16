@@ -24,6 +24,8 @@
 
     <!-- Build stamp for production verification -->
     <meta name="fixlo-build-id" content="%REACT_APP_BUILD_ID%" />
+    <meta name="build-id" content="%REACT_APP_BUILD_ID%">
+    <script>console.log('FIXLO BUILD', { BUILD_ID: '%REACT_APP_BUILD_ID%' });</script>
 
     <!-- Simple loader (keeps your existing behavior minimal) -->
     <style>

@@ -1,4 +1,11 @@
 {
+  "buildCommand": "npm run build",
+  "outputDirectory": "build",
+  "installCommand": "npm install --no-fund --no-audit",
+  "framework": null,
+  "cleanUrls": true,
+  "trailingSlash": false,
+
   "headers": [
     {
       "source": "/static/(.*)",
@@ -7,8 +14,19 @@
       ]
     }
   ],
+
   "rewrites": [
+    { "source": "/api/og", "destination": "/api/og" },
+    { "source": "/api/meta", "destination": "/api/meta" },
     { "source": "/api/(.*)", "destination": "https://fixloapp.onrender.com/api/$1" },
-    { "source": "/(.*)", "destination": "/" }
+
+    { "source": "/static/(.*)", "destination": "/static/$1" },
+    { "source": "/assets/(.*)", "destination": "/assets/$1" },
+    { "source": "/favicon.ico", "destination": "/favicon.ico" },
+    { "source": "/manifest.webmanifest", "destination": "/manifest.webmanifest" },
+    { "source": "/robots.txt", "destination": "/robots.txt" },
+    { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
+
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
