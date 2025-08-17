@@ -7,8 +7,8 @@
   },
   "scripts": {
     "install-client": "cd client && npm ci --no-fund --no-audit",
-    "build-client": "cd client && node scripts/inject-build-meta.js && export REACT_APP_BUILD_TIMESTAMP=$(date +%s) && export GENERATE_SOURCEMAP=false && npm run build && cd .. && ./scripts/prerender-canonicals.sh && node scripts/verify-build-metadata.js",
-    "build-client-dev": "cd client && node scripts/inject-build-meta.js && export REACT_APP_BUILD_TIMESTAMP=$(date +%s) && export GENERATE_SOURCEMAP=true && npm run build && cd .. && ./scripts/prerender-canonicals.sh && node scripts/verify-build-metadata.js",
+    "build-client": "cd client && node scripts/generate-build-info.js && node scripts/inject-build-meta.js && export REACT_APP_BUILD_TIMESTAMP=$(date +%s) && export GENERATE_SOURCEMAP=false && npm run build && cd .. && ./scripts/prerender-canonicals.sh && node scripts/verify-build-metadata.js",
+    "build-client-dev": "cd client && node scripts/generate-build-info.js && node scripts/inject-build-meta.js && export REACT_APP_BUILD_TIMESTAMP=$(date +%s) && export GENERATE_SOURCEMAP=true && npm run build && cd .. && ./scripts/prerender-canonicals.sh && node scripts/verify-build-metadata.js",
     "deploy-build": "echo '🚚 Deploying build to root directory...' && cp -r client/build/* . && echo '✅ Build deployed to root directory'",
     "build": "npm run install-client && npm run build-client && npm run deploy-build",
     "vercel-build": "npm run build",
