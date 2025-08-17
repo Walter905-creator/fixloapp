@@ -7,8 +7,8 @@
   },
   "scripts": {
     "install-client": "cd client && npm ci --no-fund --no-audit",
-    "build-client": "cd client && REACT_APP_BUILD_TIMESTAMP=$(date +%s) REACT_APP_BUILD_ID=$(date +%Y%m%d-%H%M%S) REACT_APP_COMMIT_SHA=$(git rev-parse HEAD 2>/dev/null || echo 'unknown') GENERATE_SOURCEMAP=false npm run build && cd .. && ./scripts/prerender-canonicals.sh",
-    "build-client-dev": "cd client && REACT_APP_BUILD_TIMESTAMP=$(date +%s) REACT_APP_BUILD_ID=$(date +%Y%m%d-%H%M%S) REACT_APP_COMMIT_SHA=$(git rev-parse HEAD 2>/dev/null || echo 'unknown') GENERATE_SOURCEMAP=true npm run build && cd .. && ./scripts/prerender-canonicals.sh",
+    "build-client": "cd client && export REACT_APP_BUILD_TIMESTAMP=$(date +%s) && export REACT_APP_BUILD_ID=$(date +%Y%m%d-%H%M%S) && export REACT_APP_COMMIT_SHA=$(git rev-parse HEAD 2>/dev/null || echo 'unknown') && export GENERATE_SOURCEMAP=false && npm run build && cd .. && ./scripts/prerender-canonicals.sh && node scripts/verify-build-metadata.js",
+    "build-client-dev": "cd client && export REACT_APP_BUILD_TIMESTAMP=$(date +%s) && export REACT_APP_BUILD_ID=$(date +%Y%m%d-%H%M%S) && export REACT_APP_COMMIT_SHA=$(git rev-parse HEAD 2>/dev/null || echo 'unknown') && export GENERATE_SOURCEMAP=true && npm run build && cd .. && ./scripts/prerender-canonicals.sh && node scripts/verify-build-metadata.js",
     "deploy-build": "echo '🚚 Deploying build to root directory...' && cp -r client/build/* . && echo '✅ Build deployed to root directory'",
     "build": "npm run install-client && npm run build-client && npm run deploy-build",
     "vercel-build": "npm run build",
