@@ -16,8 +16,6 @@ ROUTES=(
   "/services/roofing"
   "/services/house-cleaning"
   "/services/landscaping"
-  "/signup"
-  "/pro/signup"
 )
 
 TITLES=(
@@ -33,8 +31,6 @@ TITLES=(
   "Roofing Services - Find Trusted Professionals | Fixlo"
   "House Cleaning Services - Find Trusted Professionals | Fixlo"
   "Landscaping Services - Find Trusted Professionals | Fixlo"
-  "Sign Up – Fixlo"
-  "Professional Sign Up - Join Fixlo"
 )
 
 BUILD_DIR="client/build"
