@@ -3,11 +3,13 @@
   "version": "3.0.0",
   "private": true,
   "homepage": "/",
-  "engines": { "node": ">=18.0.0 <22.0.0" },
+  "engines": {
+    "node": ">=18.0.0 <22.0.0"
+  },
   "scripts": {
     "prebuild": "node scripts/write-version.js",
     "start": "react-scripts start",
-    "build": "REACT_APP_BUILD_ID=$(date -u +%Y-%m-%dT%H:%M:%S) REACT_APP_COMMIT_SHA=$(git rev-parse HEAD 2>/dev/null || echo 'unknown') react-scripts build",
+    "build": "cross-env GENERATE_SOURCEMAP=false REACT_APP_COMMIT_SHA=$GITHUB_SHA react-scripts build",
     "vercel-build": "REACT_APP_BUILD_ID=$(date -u +%Y-%m-%dT%H:%M:%S) REACT_APP_COMMIT_SHA=${VERCEL_GIT_COMMIT_SHA:-$(git rev-parse HEAD 2>/dev/null || echo 'unknown')} react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -27,10 +29,19 @@
   },
   "devDependencies": {
     "autoprefixer": "^10.4.21",
+    "cross-env": "^10.0.0",
     "postcss": "^8.4.31"
   },
   "browserslist": {
-    "production": [">0.2%", "not dead", "not op_mini all"],
-    "development": ["last 1 chrome version", "last 1 firefox version", "last 1 safari version"]
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }
