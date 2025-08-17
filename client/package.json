@@ -2,6 +2,7 @@
   "name": "fixlo-frontend",
   "version": "3.0.0",
   "private": true,
+  "homepage": "/",
   "engines": { "node": ">=18.0.0 <22.0.0" },
   "scripts": {
     "prebuild": "node scripts/write-version.js",
