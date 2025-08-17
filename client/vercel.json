@@ -1,27 +1,13 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run vercel-build",
   "outputDirectory": "build",
   "framework": null,
+  "trailingSlash": false,
   "cleanUrls": true,
-
-  "headers": [
-    {
-      "source": "/static/(.*)",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
-      ]
-    },
-    {
-      "source": "/",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-store, must-revalidate" }
-      ]
-    }
-  ],
-
   "rewrites": [
+    { "source": "/api/og", "destination": "/api/og" },
+    { "source": "/api/meta", "destination": "/api/meta" },
     { "source": "/api/(.*)", "destination": "https://fixloapp.onrender.com/api/$1" },
-
     { "source": "/(.*)", "destination": "/" }
   ]
 }
