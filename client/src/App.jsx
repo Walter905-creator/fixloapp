@@ -1,5 +1,6 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import Home from './pages/Home';
 import Signup from './pages/Signup';
 import HowItWorks from './pages/HowItWorks';
@@ -13,10 +14,15 @@ import ReviewPublic from './pages/ReviewPublic';
 import NotFound from './pages/NotFound';
 import Header from './components/Header';
 import AnalyticsWrapper from './components/AnalyticsWrapper';
+import { BUILD_INFO } from './buildInfo';
 
 export default function App() {
   return (
     <>
+      <Helmet>
+        <meta name="fixlo-build-id" content={BUILD_INFO.BUILD_ID} />
+        <meta name="fixlo-commit-sha" content={BUILD_INFO.COMMIT_SHA} />
+      </Helmet>
       <AnalyticsWrapper />
       <Header />
       <Routes>

@@ -4,12 +4,13 @@ import { HelmetProvider } from 'react-helmet-async';
 import { BrowserRouter } from 'react-router-dom';
 import './index.css';
 import App from './App';
+import { BUILD_INFO } from './buildInfo';
 
-// Build stamp for production verification - supports FIXLO BUILD format
-const buildId = process.env.REACT_APP_BUILD_ID || process.env.FIXLO_BUILD_ID;
-const commitSha = process.env.REACT_APP_COMMIT_SHA || process.env.FIXLO_COMMIT_SHA;
-
-console.log("FIXLO BUILD", { BUILD_ID: buildId || new Date().toISOString(), COMMIT_SHA: commitSha || '' });
+if (typeof window !== 'undefined') {
+  // One clear, consistent log
+  // eslint-disable-next-line no-console
+  console.log('FIXLO BUILD', BUILD_INFO);
+}
 
 // Safe SW kill-switch (no behavior change for your buttons)
 if ('serviceWorker' in navigator) {
