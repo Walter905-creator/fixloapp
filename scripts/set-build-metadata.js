@@ -16,9 +16,32 @@ function parseBuildMetadata(buildString) {
     throw new Error('Invalid FIXLO BUILD format. Expected: FIXLO BUILD {BUILD_ID: \'...\', COMMIT_SHA: \'...\'}');
   }
   
+  let buildId = match[1];
+  let commitSha = match[2];
+  
+  // Detect and handle placeholder strings or 'unknown' values
+  // Similar to client/scripts/inject-build-meta.js logic
+  
+  // Handle BUILD_ID: reject placeholders and 'unknown', use current timestamp as fallback
+  if (buildId === 'unknown' || 
+      buildId.includes('${') || 
+      buildId.includes('%') ||
+      buildId.trim().length === 0) {
+    buildId = new Date().toISOString();
+    console.log('⚠️  BUILD_ID was invalid/placeholder, using fallback:', buildId);
+  }
+  
+  // Handle COMMIT_SHA: reject placeholders, but keep 'unknown' as valid fallback
+  if (commitSha.includes('${') || 
+      commitSha.includes('%') ||
+      commitSha.trim().length === 0) {
+    commitSha = 'unknown';
+    console.log('⚠️  COMMIT_SHA was placeholder/empty, using fallback: unknown');
+  }
+  
   return {
-    BUILD_ID: match[1],
-    COMMIT_SHA: match[2]
+    BUILD_ID: buildId,
+    COMMIT_SHA: commitSha
   };
 }
 
