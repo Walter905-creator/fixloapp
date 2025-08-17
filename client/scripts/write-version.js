@@ -23,10 +23,16 @@ if (!branch) {
   }
 }
 
+// Support for FIXLO BUILD format
+const buildId = process.env.REACT_APP_BUILD_ID || process.env.FIXLO_BUILD_ID || new Date().toISOString();
+const commitSha = process.env.REACT_APP_COMMIT_SHA || process.env.FIXLO_COMMIT_SHA || commit;
+
 const version = {
-  commit,
+  commit: commitSha,
   branch,
-  buildTime: new Date().toISOString()
+  buildTime: new Date().toISOString(),
+  buildId,
+  commitSha
 };
 
 const out = path.join(__dirname, '..', 'public', 'version.json');
