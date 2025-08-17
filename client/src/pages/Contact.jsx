@@ -1,11 +1,12 @@
 import React from 'react';
-import SEO from '../utils/seo';
+import Seo from '../components/Seo';
 
 export default function Contact() {
   return (
     <main style={{maxWidth:960,margin:'32px auto',padding:'0 16px'}}>
-      <SEO 
-        title="Contact Us - Fixlo"
+      <Seo 
+        path="/contact"
+        title="Contact Us | Fixlo"
         description="Contact Fixlo support team for assistance with home services, professional accounts, or technical help. Get in touch via email or phone."
       />
       <h1>Contact Us</h1>

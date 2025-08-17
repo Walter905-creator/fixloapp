@@ -9,7 +9,12 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+ copilot/fix-b46ca146-e3f3-4ccd-90c9-a8c02713a7f3
+    "generate-sitemap": "node scripts/generate-sitemap.js",
+    "vercel-build": "node scripts/inject-build-meta.js && npm run generate-sitemap && react-scripts build",
+
     "vercel-build": "node scripts/generate-build-info.js && react-scripts build",
+ main
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

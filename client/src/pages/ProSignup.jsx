@@ -1,11 +1,12 @@
 import React from 'react';
-import SEO from '../utils/seo';
+import Seo from '../components/Seo';
 
 export default function ProSignup() {
   return (
     <main style={{maxWidth:960,margin:'32px auto',padding:'0 16px'}}>
-      <SEO 
-        title="Professional Sign Up - Join Fixlo"
+      <Seo 
+        path="/pro/signup"
+        title="Professional Sign Up | Fixlo"
         description="Join Fixlo's network of verified home service professionals. Get connected with customers in your area and grow your business."
       />
       <h1>Join Fixlo as a Professional</h1>

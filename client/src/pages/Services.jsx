@@ -1,5 +1,5 @@
 import React from 'react';
-import SEO from '../utils/seo';
+import Seo from '../components/Seo';
 import { Link } from 'react-router-dom';
 
 export default function Services() {
@@ -16,9 +16,10 @@ export default function Services() {
 
   return (
     <main style={{maxWidth:960,margin:'32px auto',padding:'0 16px'}}>
-      <SEO 
-        title="Home Services - Professional Contractors | Fixlo"
-        description="Browse all home services available on Fixlo. Find professional contractors for plumbing and all your home service needs. More services coming soon."
+      <Seo 
+        path="/services"
+        title="Home Services | Fixlo"
+        description="Explore home service categories—plumbing, electrical, HVAC, cleaning and more."
       />
       <h1>Home Services</h1>
       <p>Find trusted professionals for all your home service needs.</p>

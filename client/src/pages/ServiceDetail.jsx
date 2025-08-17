@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import SEO from '../utils/seo';
+import Seo from '../components/Seo';
 
 export default function ServiceDetail() {
   const { service } = useParams();
@@ -20,8 +20,9 @@ export default function ServiceDetail() {
 
   return (
     <main style={{maxWidth:960,margin:'32px auto',padding:'0 16px'}}>
-      <SEO 
-        title={`${serviceName} Services - Find Trusted Professionals | Fixlo`}
+      <Seo 
+        path={`/services/${service}`}
+        title={`${serviceName} Services | Fixlo`}
         description={`Find verified ${serviceName.toLowerCase()} professionals in your area. Get quotes and book trusted contractors for your ${serviceName.toLowerCase()} needs.`}
       />
       <h1>{serviceName} Services</h1>

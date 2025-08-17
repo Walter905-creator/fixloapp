@@ -7,6 +7,7 @@ import HowItWorks from './pages/HowItWorks';
 import Contact from './pages/Contact';
 import Services from './pages/Services';
 import ServiceDetail from './pages/ServiceDetail';
+import ServiceCityPage from './pages/ServiceCityPage';
 import ProSignup from './pages/ProSignup';
 import ProProfile from './pages/ProProfile';
 import ReviewCapture from './pages/ReviewCapture';
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/services" element={<Services />} />
         <Route path="/services/:service" element={<ServiceDetail />} />
+        <Route path="/services/:service/:city" element={<ServiceCityPage />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/pro/signup" element={<ProSignup />} />
         <Route path="/pro/:slug" element={<ProProfile />} />

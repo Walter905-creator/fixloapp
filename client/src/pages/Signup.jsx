@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import SEO from '../utils/seo';
+import Seo from '../components/Seo';
 import api from '../utils/api';
 
 export default function Signup() {
@@ -62,7 +62,11 @@ export default function Signup() {
 
   return (
     <main style={{maxWidth:720,margin:'32px auto',padding:'0 16px'}}>
-      <SEO title="Sign Up – Fixlo" canonical="https://www.fixloapp.com/signup" />
+      <Seo 
+        path="/signup"
+        title="Sign Up | Fixlo"
+        description="Join Fixlo as a homeowner to book trusted home service professionals. Sign up for free and get connected with verified local pros."
+      />
       <h1>Professional Signup</h1>
       <form onSubmit={submit} style={{display:'grid',gap:12,marginTop:16}}>
         <label>Name<input value={name} onChange={e=>setName(e.target.value)} required/></label>
