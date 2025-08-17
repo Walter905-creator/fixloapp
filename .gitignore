@@ -2,6 +2,9 @@ node_modules
 client/node_modules/
 client/build/
 
+# Build-time generated files
+client/src/buildInfo.generated.js
+
 # Prevent deployment of duplicate content directories
 website/
 _client-disabled/
