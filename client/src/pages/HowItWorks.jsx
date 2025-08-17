@@ -1,11 +1,12 @@
 import React from 'react';
-import SEO from '../utils/seo';
+import Seo from '../components/Seo';
 
 export default function HowItWorks() {
   return (
     <main style={{maxWidth:960,margin:'32px auto',padding:'0 16px'}}>
-      <SEO 
-        title="How It Works - Fixlo"
+      <Seo 
+        path="/how-it-works"
+        title="How It Works | Fixlo"
         description="Learn how Fixlo works. Simple 3-step process to connect homeowners with verified professional contractors for all home service needs."
       />
       <h1>How It Works</h1>

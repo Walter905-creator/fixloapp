@@ -1,11 +1,11 @@
 import React from 'react';
-import SEO from '../utils/seo';
+import Seo from '../components/Seo';
 import { Link } from 'react-router-dom';
 
 export default function Home() {
   return (
     <main style={{maxWidth:960,margin:'32px auto',padding:'0 16px'}}>
-      <SEO canonical="https://www.fixloapp.com/" />
+      <Seo path="/" />
       <h1>Fixlo</h1>
       <p>Book trusted home services near you. Plumbing, electrical, HVAC, and more.</p>
 
