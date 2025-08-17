@@ -8,13 +8,23 @@ function isoUtc() {
 }
 
 // Prefer Vercel's commit SHA; fall back to unknown (don't leave it blank)
+// Also detect and reject placeholder strings like ${VERCEL_GIT_COMMIT_SHA}
+const rawCommitSha = process.env.VERCEL_GIT_COMMIT_SHA;
 const commitSha =
-  process.env.VERCEL_GIT_COMMIT_SHA &&
-  String(process.env.VERCEL_GIT_COMMIT_SHA).trim().length > 0
-    ? process.env.VERCEL_GIT_COMMIT_SHA.trim()
+  rawCommitSha &&
+  String(rawCommitSha).trim().length > 0 &&
+  !rawCommitSha.includes('${') &&  // Reject placeholder strings
+  !rawCommitSha.includes('%')      // Reject placeholder strings
+    ? rawCommitSha.trim()
     : 'unknown';
 
-const buildId = process.env.RELEASE_BUILD_ID || isoUtc();
+// Build ID with placeholder detection
+const rawBuildId = process.env.RELEASE_BUILD_ID;
+const buildId = rawBuildId &&
+  !rawBuildId.includes('${') &&  // Reject placeholder strings
+  !rawBuildId.includes('%')      // Reject placeholder strings
+    ? rawBuildId
+    : isoUtc();
 
 const lines = [
   `REACT_APP_BUILD_ID=${buildId}`,
