@@ -20,7 +20,7 @@ function verifyBuildMetadata() {
   
   const content = fs.readFileSync(indexPath, 'utf8');
   
-  // Check for unreplaced placeholders
+  // Check for unreplaced placeholders in HTML
   const unreplacedPlaceholders = content.match(/%REACT_APP_[^%]+%/g);
   
   if (unreplacedPlaceholders) {
@@ -33,35 +33,38 @@ function verifyBuildMetadata() {
     process.exit(1);
   }
   
-  // Check for proper BUILD_ID format
-  const buildIdMatch = content.match(/BUILD_ID:"([^"]+)"/);
-  if (!buildIdMatch) {
-    console.error('❌ BUILD_ID not found in the built HTML');
+  console.log('✅ No unreplaced placeholders found in HTML');
+  
+  // Check JavaScript bundles for build info
+  const buildDir = path.join(__dirname, '..', 'client', 'build', 'static', 'js');
+  
+  if (!fs.existsSync(buildDir)) {
+    console.error('❌ JavaScript build directory not found at:', buildDir);
     process.exit(1);
   }
   
-  const buildId = buildIdMatch[1];
-  console.log(`✅ BUILD_ID found: ${buildId}`);
+  const jsFiles = fs.readdirSync(buildDir).filter(file => file.endsWith('.js'));
+  let buildInfoFound = false;
   
-  // Check for COMMIT_SHA
-  const commitShaMatch = content.match(/COMMIT_SHA:"([^"]*)"/);
-  if (!commitShaMatch) {
-    console.error('❌ COMMIT_SHA not found in the built HTML');
+  for (const jsFile of jsFiles) {
+    const jsPath = path.join(buildDir, jsFile);
+    const jsContent = fs.readFileSync(jsPath, 'utf8');
+    
+    if (jsContent.includes('FIXLO BUILD')) {
+      buildInfoFound = true;
+      console.log(`✅ FIXLO BUILD found in JavaScript bundle: ${jsFile}`);
+      break;
+    }
+  }
+  
+  if (!buildInfoFound) {
+    console.error('❌ FIXLO BUILD not found in any JavaScript bundle');
     process.exit(1);
   }
   
-  const commitSha = commitShaMatch[1];
-  console.log(`✅ COMMIT_SHA found: ${commitSha || '(empty)'}`);
-  
-  // Check meta tags
-  const metaBuildIdMatch = content.match(/name="fixlo-build-id" content="([^"]+)"/);
-  if (!metaBuildIdMatch || metaBuildIdMatch[1] !== buildId) {
-    console.error('❌ Meta tag fixlo-build-id does not match BUILD_ID');
-    process.exit(1);
-  }
-  
-  console.log('✅ Meta tag fixlo-build-id matches BUILD_ID');
   console.log('🎉 Build metadata verification passed!');
+  console.log('   - No HTML placeholders found');
+  console.log('   - Build info properly moved to JavaScript runtime');
 }
 
 if (require.main === module) {
