@@ -7,6 +7,7 @@ ROUTES=(
   "/"
   "/how-it-works"
   "/contact"
+  "/signup"
   "/services"
   "/services/plumbing"
   "/services/electrical"
@@ -16,12 +17,14 @@ ROUTES=(
   "/services/roofing"
   "/services/house-cleaning"
   "/services/landscaping"
+  "/pro/signup"
 )
 
 TITLES=(
   "Fixlo – Book Trusted Home Services Near You"
   "How It Works - Fixlo"
   "Contact Us - Fixlo"
+  "Sign Up - Fixlo"
   "Home Services - Professional Contractors | Fixlo"
   "Plumbing Services - Find Trusted Professionals | Fixlo"
   "Electrical Services - Find Trusted Professionals | Fixlo"
@@ -31,6 +34,7 @@ TITLES=(
   "Roofing Services - Find Trusted Professionals | Fixlo"
   "House Cleaning Services - Find Trusted Professionals | Fixlo"
   "Landscaping Services - Find Trusted Professionals | Fixlo"
+  "Professional Sign Up - Join Fixlo Network"
 )
 
 BUILD_DIR="client/build"
@@ -78,8 +82,9 @@ for i in "${!ROUTES[@]}"; do
   # Update canonical URL
   sed -i "s|<link rel=\"canonical\" href=\"https://www.fixloapp.com/\"/>|<link rel=\"canonical\" href=\"$canonical_url\"/>|g" "$target_file"
   
-  # Update title
-  sed -i "s|<title>Fixlo – Book Trusted Home Services Near You</title>|<title>$title</title>|g" "$target_file"
+  # Update title (escape special characters)
+  escaped_title=$(printf '%s\n' "$title" | sed 's/[[\.*^$()+?{|]/\\&/g')
+  sed -i "s|<title>Fixlo – Book Trusted Home Services Near You</title>|<title>$escaped_title</title>|g" "$target_file"
   
   echo "✅ Generated: $target_file (canonical: $canonical_url)"
 done
