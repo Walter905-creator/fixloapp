@@ -16,6 +16,8 @@
   "rewrites": [
     { "source": "/api/(.*)", "destination": "https://fixloapp.onrender.com/api/$1" },
 
+    { "source": "/__health", "destination": "/__health.html" },
+
     { "source": "/static/(.*)", "destination": "/static/$1" },
     { "source": "/assets/(.*)", "destination": "/assets/$1" },
     { "source": "/favicon.ico", "destination": "/favicon.ico" },

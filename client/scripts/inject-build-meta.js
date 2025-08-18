@@ -2,6 +2,10 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
+// sanity: default 'unknown' if env missing
+const sha = process.env.VERCEL_GIT_COMMIT_SHA || "unknown";
+const id  = new Date().toISOString();
+
 // Get commit SHA from git if not available in environment
 let commitSha = process.env.VERCEL_GIT_COMMIT_SHA || process.env.GIT_COMMIT;
 if (!commitSha) {
