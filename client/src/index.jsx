@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import './index.css';
 import App from './App';
 import { BUILD_INFO } from './buildInfo';
+import ProdErrorBoundary from './components/ProdErrorBoundary';
 
 // Runtime error guards to catch any silent runtime errors early
 window.addEventListener('error', e => {
@@ -31,9 +32,11 @@ if ('serviceWorker' in navigator) {
 
 const root = createRoot(document.getElementById('root'));
 root.render(
-  <HelmetProvider>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  </HelmetProvider>
+  <ProdErrorBoundary>
+    <HelmetProvider>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </HelmetProvider>
+  </ProdErrorBoundary>
 );
