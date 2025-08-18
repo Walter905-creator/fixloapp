@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          
+      - name: Install root dependencies
+        run: npm ci --no-fund --no-audit
+        
+      - name: Install client dependencies
+        run: cd client && npm ci --no-fund --no-audit
+        
+      - name: Generate build info
+        run: cd client && node scripts/generate-build-info.js
+        
+      - name: Verify buildInfo.generated.js exists
+        run: |
+          if [ ! -f client/src/buildInfo.generated.js ]; then
+            echo "❌ buildInfo.generated.js missing!"
+            exit 1
+          fi
+          echo "✅ buildInfo.generated.js exists"
+          
+      - name: Build client
+        run: cd client && npm run build
+        
+      - name: Verify build completed successfully
+        run: |
+          if [ ! -d client/build ]; then
+            echo "❌ Client build directory missing!"
+            exit 1
+          fi
+          if [ ! -f client/build/index.html ]; then
+            echo "❌ Client build index.html missing!"
+            exit 1
+          fi
+          echo "✅ Build completed successfully"

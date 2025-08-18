@@ -12,6 +12,7 @@ import ProSignup from './pages/ProSignup';
 import ProProfile from './pages/ProProfile';
 import ReviewCapture from './pages/ReviewCapture';
 import ReviewPublic from './pages/ReviewPublic';
+import Meta from './pages/Meta';
 import NotFound from './pages/NotFound';
 import Header from './components/Header';
 import AnalyticsWrapper from './components/AnalyticsWrapper';
@@ -38,6 +39,7 @@ export default function App() {
         <Route path="/pro/:slug" element={<ProProfile />} />
         <Route path="/review/:token" element={<ReviewCapture />} />
         <Route path="/review/public/:reviewId" element={<ReviewPublic />} />
+        <Route path="/__meta" element={<Meta />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </>

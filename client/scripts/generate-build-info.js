@@ -29,7 +29,10 @@ const buildInfo = {
 const outPath = path.join(__dirname, '..', 'src', 'buildInfo.generated.js');
 const content =
   `// AUTO-GENERATED at build time. Do not edit.\n` +
-  `module.exports = { BUILD_INFO: ${JSON.stringify(buildInfo, null, 2)} };\n`;
+  `module.exports = {\n` +
+  `  BUILD_ID: ${JSON.stringify(buildInfo.BUILD_ID)},\n` +
+  `  COMMIT_SHA: ${JSON.stringify(buildInfo.COMMIT_SHA)}\n` +
+  `};\n`;
 
 fs.writeFileSync(outPath, content, 'utf8');
 console.log('[build-info] Wrote', outPath, 'with', buildInfo);
