@@ -9,6 +9,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "prebuild": "node ../scripts/prevent-root-index.js && node scripts/write-version.js",
     "vercel-build": "node scripts/inject-build-meta.js && node scripts/write-build-info.js && node scripts/generate-sitemap.js && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
