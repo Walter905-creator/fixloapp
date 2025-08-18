@@ -1,6 +1,7 @@
 // client/scripts/write-build-info.js
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
 const outFile = path.join(__dirname, '..', 'src', 'buildInfo.generated.js');
 
@@ -15,9 +16,18 @@ const fromEnv = (key, fb) => {
 const buildId =
   fromEnv('REACT_APP_BUILD_ID', new Date().toISOString());
 
-const commitFromReact = fromEnv('REACT_APP_COMMIT_SHA', '');
-const commitFromVercel = fromEnv('VERCEL_GIT_COMMIT_SHA', '');
-const commitSha = commitFromReact || commitFromVercel || 'unknown';
+// Try to get commit SHA from multiple sources
+let commitSha = fromEnv('REACT_APP_COMMIT_SHA', '');
+if (!commitSha || commitSha === 'unknown') {
+  commitSha = fromEnv('VERCEL_GIT_COMMIT_SHA', '');
+}
+if (!commitSha || commitSha === 'unknown') {
+  try {
+    commitSha = execSync('git rev-parse HEAD', { cwd: path.join(__dirname, '..', '..'), encoding: 'utf8' }).trim();
+  } catch (error) {
+    commitSha = 'unknown';
+  }
+}
 
 const content = `// AUTO-GENERATED AT BUILD TIME. DO NOT COMMIT.
 export const BUILD_ID = '${buildId}';

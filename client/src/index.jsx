@@ -6,6 +6,14 @@ import './index.css';
 import App from './App';
 import { BUILD_INFO } from './buildInfo';
 
+// Runtime error guards to catch any silent runtime errors early
+window.addEventListener('error', e => {
+  console.error('[Boot Error]', e?.error || e?.message || e);
+});
+window.addEventListener('unhandledrejection', e => {
+  console.error('[Unhandled Promise]', e?.reason || e);
+});
+
 if (typeof window !== 'undefined') {
   // One clear, consistent log - guard in production unless debug is enabled
   if (process.env.NODE_ENV !== 'production' || window.location.search.includes('debug')) {
