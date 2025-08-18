@@ -7,9 +7,11 @@ import App from './App';
 import { BUILD_INFO } from './buildInfo';
 
 if (typeof window !== 'undefined') {
-  // One clear, consistent log
-  // eslint-disable-next-line no-console
-  console.log('FIXLO BUILD', BUILD_INFO);
+  // One clear, consistent log - guard in production unless debug is enabled
+  if (process.env.NODE_ENV !== 'production' || window.location.search.includes('debug')) {
+    // eslint-disable-next-line no-console
+    console.log('FIXLO BUILD', BUILD_INFO);
+  }
 }
 
 // Safe SW kill-switch (no behavior change for your buttons)
