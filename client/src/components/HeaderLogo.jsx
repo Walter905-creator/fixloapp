@@ -1,5 +1,5 @@
-import logo from "../assets/brand/fixlo-logo-2025.png";
+import Logo from '../assets/brand/fixlo-logo-2025.svg';
 
 export default function HeaderLogo() {
-  return <img src={logo} alt="Fixlo" width={180} height="auto" />;
+  return <img src={Logo} alt="Fixlo" width={148} height={40} fetchpriority="high" />;
 }

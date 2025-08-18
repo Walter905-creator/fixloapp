@@ -25,6 +25,11 @@ const staticPages = [
   { loc: "/contact", changefreq: "monthly", priority: 0.7 },
   { loc: "/signup", changefreq: "monthly", priority: 0.8 },
   { loc: "/pro/signup", changefreq: "monthly", priority: 0.8 },
+  { loc: "/pro", changefreq: "weekly", priority: 0.8 },
+  { loc: "/pro/dashboard", changefreq: "weekly", priority: 0.7 },
+  { loc: "/reviews", changefreq: "weekly", priority: 0.7 },
+  { loc: "/terms", changefreq: "monthly", priority: 0.5 },
+  { loc: "/privacy", changefreq: "monthly", priority: 0.5 },
   // add public profile & public review landings only if they are crawlable and stable
 ];
 
@@ -57,6 +62,12 @@ function main() {
       urls.push(url(`/services/${s}/${c}`, 0.7, "monthly"));
     });
   });
+
+  // Add sample pro profile pages (when they become public and crawlable)
+  // Example: urls.push(url('/pro/profile/sample-contractor', 0.6, 'weekly'));
+  
+  // Add sample public review pages (when they become public and crawlable) 
+  // Example: urls.push(url('/reviews/plumbing/miami', 0.6, 'weekly'));
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset
