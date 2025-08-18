@@ -2,8 +2,9 @@
 // Prefer generated artefact; fallback to env just in case.
 let generated = { BUILD_ID: 'unknown', COMMIT_SHA: 'unknown' };
 try {
-  // eslint-disable-next-line global-require
-  generated = require('./buildInfo.generated.js').BUILD_INFO;
+  // Import the individual exports from the generated file
+  const { BUILD_ID, COMMIT_SHA } = require('./buildInfo.generated.js');
+  generated = { BUILD_ID, COMMIT_SHA };
 } catch (_) {
   // no-op
 }

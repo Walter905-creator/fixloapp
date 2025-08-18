@@ -3,19 +3,25 @@ const fs = require('fs');
 const path = require('path');
 
 const outFile = path.join(__dirname, '..', 'src', 'buildInfo.generated.js');
+
+const isPlaceholder = v =>
+  !v || typeof v !== 'string' ? true : v.includes('${');
+
+const fromEnv = (key, fb) => {
+  const v = process.env[key];
+  return isPlaceholder(v) ? fb : v;
+};
+
 const buildId =
-  process.env.REACT_APP_BUILD_ID ||
-  new Date().toISOString();
-const commitSha =
-  process.env.REACT_APP_COMMIT_SHA ||
-  process.env.VERCEL_GIT_COMMIT_SHA ||
-  'unknown';
+  fromEnv('REACT_APP_BUILD_ID', new Date().toISOString());
+
+const commitFromReact = fromEnv('REACT_APP_COMMIT_SHA', '');
+const commitFromVercel = fromEnv('VERCEL_GIT_COMMIT_SHA', '');
+const commitSha = commitFromReact || commitFromVercel || 'unknown';
 
 const content = `// AUTO-GENERATED AT BUILD TIME. DO NOT COMMIT.
-export const BUILD_INFO = {
-  BUILD_ID: '${buildId}',
-  COMMIT_SHA: '${commitSha}'
-};
+export const BUILD_ID = '${buildId}';
+export const COMMIT_SHA = '${commitSha}';
 `;
 
 fs.writeFileSync(outFile, content, 'utf8');
