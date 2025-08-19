@@ -39,8 +39,18 @@ admin*.html
 # React build artifacts in root - keep needed files, exclude large maps and old builds
 static/js/*.map
 static/js/*.LICENSE.txt
-# Keep only the latest asset-manifest.json for deployment
-# Exclude old JS files except the most recent one
+static/js/*.js
+static/css/*.css
+asset-manifest.json
+index.html
+index.html.backup
+health.txt
+# Build-generated HTML files
+contact/index.html
+how-it-works/index.html
+pro/signup/index.html
+services/*/index.html
+signup/index.html
 
 # IDE files
 .vscode/
