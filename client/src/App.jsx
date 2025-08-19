@@ -19,29 +19,40 @@ import AnalyticsWrapper from './components/AnalyticsWrapper';
 import { BUILD_INFO } from './buildInfo';
 
 export default function App() {
-  return (
-    <>
-      <Helmet>
-        <meta name="fixlo-build-id" content={BUILD_INFO.BUILD_ID} />
-        <meta name="fixlo-commit-sha" content={BUILD_INFO.COMMIT_SHA} />
-      </Helmet>
-      <AnalyticsWrapper />
-      <Header />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/how-it-works" element={<HowItWorks />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/services" element={<Services />} />
-        <Route path="/services/:service" element={<ServiceDetail />} />
-        <Route path="/services/:service/:city" element={<ServiceCityPage />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/pro/signup" element={<ProSignup />} />
-        <Route path="/pro/:slug" element={<ProProfile />} />
-        <Route path="/review/:token" element={<ReviewCapture />} />
-        <Route path="/review/public/:reviewId" element={<ReviewPublic />} />
-        <Route path="/__meta" element={<Meta />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </>
-  );
+  try {
+    return (
+      <>
+        <Helmet>
+          <meta name="fixlo-build-id" content={BUILD_INFO.BUILD_ID} />
+          <meta name="fixlo-commit-sha" content={BUILD_INFO.COMMIT_SHA} />
+        </Helmet>
+        <AnalyticsWrapper />
+        <Header />
+        <Routes>
+          {console.log('[Fixlo] Router is rendering')}
+          <Route path="/" element={<Home />} />
+          <Route path="/how-it-works" element={<HowItWorks />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/services" element={<Services />} />
+          <Route path="/services/:service" element={<ServiceDetail />} />
+          <Route path="/services/:service/:city" element={<ServiceCityPage />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/pro/signup" element={<ProSignup />} />
+          <Route path="/pro/:slug" element={<ProProfile />} />
+          <Route path="/review/:token" element={<ReviewCapture />} />
+          <Route path="/review/public/:reviewId" element={<ReviewPublic />} />
+          <Route path="/__meta" element={<Meta />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </>
+    );
+  } catch (e) {
+    console.error('[Fixlo] Fatal render error', e);
+    return (
+      <div style={{padding:16}}>
+        <h1>We're loading Fixlo…</h1>
+        <p>Please refresh in a moment.</p>
+      </div>
+    );
+  }
 }
