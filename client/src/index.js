@@ -13,3 +13,8 @@ root.render(
     </BrowserRouter>
   </HelmetProvider>
 );
+
+// after root.render(...)
+if (typeof window !== 'undefined' && typeof window.__fixloReactMounted === 'function') {
+  try { window.__fixloReactMounted(); } catch (e) {}
+}
