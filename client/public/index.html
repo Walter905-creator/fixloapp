@@ -5,40 +5,9 @@
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Fixlo</title>
-    <script>
-      // Safety: ensure the UI is visible even if React load flags don't run
-      (function () {
-        try {
-          document.documentElement.classList.remove('loading');
-          document.body && (document.body.style.opacity = '');
-          document.body && (document.body.style.visibility = '');
-          // If you gate visibility with a data-flag, flip it:
-          document.documentElement.setAttribute('data-app-visible', '1');
-        } catch (e) {}
-      })();
-    </script>
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run Fixlo.</noscript>
+    <noscript>Fixlo needs JavaScript enabled.</noscript>
     <div id="root"></div>
-
-    <script>
-      // Heartbeat to prove the HTML is painted
-      (function () {
-        console.log('[Fixlo] HTML shell mounted at', new Date().toISOString());
-        // brief visual heartbeat (will disappear when React mounts)
-        var el = document.createElement('div');
-        el.textContent = 'Loading Fixlo…';
-        el.style.cssText = 'position:fixed;left:12px;bottom:12px;padding:6px 10px;border-radius:8px;font:12px/1.3 system-ui;background:rgba(0,0,0,.06);z-index:9999';
-        el.id = 'fixlo-heartbeat';
-        document.body.appendChild(el);
-        // remove when React is ready:
-        window.__fixloReactMounted = function() {
-          var n = document.getElementById('fixlo-heartbeat');
-          n && n.remove();
-        }
-      })();
-    </script>
-    <!-- CRA will inject your JS right after this -->
   </body>
 </html>
