@@ -1,27 +1,17 @@
+// client/scripts/inject-build-meta.js
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 
-// sanity: default 'unknown' if env missing
-const sha = process.env.VERCEL_GIT_COMMIT_SHA || "unknown";
-const id  = new Date().toISOString();
+const outPath = path.join(__dirname, '..', '.env.production.local');
 
-// Get commit SHA from git if not available in environment
-let commitSha = process.env.VERCEL_GIT_COMMIT_SHA || process.env.GIT_COMMIT;
-if (!commitSha) {
-  try {
-    commitSha = execSync('git rev-parse HEAD', { cwd: path.join(__dirname, '..', '..'), encoding: 'utf8' }).trim();
-  } catch (error) {
-    commitSha = 'unknown';
-  }
-}
+const buildId = new Date().toISOString();
+const commitSha = process.env.VERCEL_GIT_COMMIT_SHA || 'unknown';
 
-const out = [
-  `REACT_APP_BUILD_ID=${process.env.RELEASE_BUILD_ID || new Date().toISOString()}`,
+const contents = [
+  `REACT_APP_BUILD_ID=${buildId}`,
   `REACT_APP_COMMIT_SHA=${commitSha}`
-].join('\n');
+].join('\n') + '\n';
 
-const target = path.join(__dirname, '..', '.env.production.local');
-fs.writeFileSync(target, out);
-console.log('[inject-build-meta] wrote', target);
-console.log('[inject-build-meta] values:\n' + out);
+fs.writeFileSync(outPath, contents, 'utf8');
+console.log('[inject-build-meta] wrote', outPath);
+console.log('[inject-build-meta] values:', { REACT_APP_BUILD_ID: buildId, REACT_APP_COMMIT_SHA: commitSha });
