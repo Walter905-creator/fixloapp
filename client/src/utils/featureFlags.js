@@ -6,7 +6,10 @@ const defaultFlags = {
   shareProfile: true,
   boostIndicator: true,
   reviewCapture: true,
-  cloudinaryUpload: true
+  cloudinaryUpload: true,
+  badges: true,
+  sevenDayBoost: true,
+  cloudinaryEnabled: true
 };
 
 // Get feature flags from environment or API
@@ -34,6 +37,18 @@ function getFeatureFlags() {
   
   if (process.env.REACT_APP_FEATURE_CLOUDINARY_UPLOAD !== undefined) {
     flags.cloudinaryUpload = process.env.REACT_APP_FEATURE_CLOUDINARY_UPLOAD === 'true';
+  }
+  
+  if (process.env.REACT_APP_FEATURE_BADGES !== undefined) {
+    flags.badges = process.env.REACT_APP_FEATURE_BADGES === 'true';
+  }
+  
+  if (process.env.REACT_APP_FEATURE_7DAY_BOOST !== undefined) {
+    flags.sevenDayBoost = process.env.REACT_APP_FEATURE_7DAY_BOOST === 'true';
+  }
+  
+  if (process.env.REACT_APP_CLOUDINARY_ENABLED !== undefined) {
+    flags.cloudinaryEnabled = process.env.REACT_APP_CLOUDINARY_ENABLED === 'true';
   }
   
   return flags;

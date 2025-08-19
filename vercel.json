@@ -1,0 +1,70 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "./",
+  "installCommand": "npm install",
+  "framework": null,
+  
+  "headers": [
+    {
+      "source": "/static/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ],
+
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://fixloapp.onrender.com/api/$1"
+    },
+    {
+      "source": "/sms-optin",
+      "destination": "/sms-optin/index.html"
+    },
+    {
+      "source": "/sms-optin/",
+      "destination": "/sms-optin/index.html"
+    },
+    {
+      "source": "/static/(.*)",
+      "destination": "/static/$1"
+    },
+    {
+      "source": "/assets/(.*)",
+      "destination": "/assets/$1"
+    },
+    {
+      "source": "/favicon.ico",
+      "destination": "/favicon.ico"
+    },
+    {
+      "source": "/favicon.png",
+      "destination": "/favicon.png"
+    },
+    {
+      "source": "/manifest.webmanifest",
+      "destination": "/manifest.webmanifest"
+    },
+    {
+      "source": "/robots.txt",
+      "destination": "/robots.txt"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/sitemap.xml"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+
+  "env": {
+    "REACT_APP_FEATURE_SHARE_PROFILE": "true",
+    "REACT_APP_FEATURE_BADGES": "true",
+    "REACT_APP_FEATURE_7DAY_BOOST": "true",
+    "REACT_APP_CLOUDINARY_ENABLED": "true"
+  }
+}
