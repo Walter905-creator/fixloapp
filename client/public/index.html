@@ -5,6 +5,29 @@
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Fixlo</title>
+    <!-- Optional: very brief anti-FOUC guard -->
+    <style id="fixlo-preload-style">
+      html, body { min-height:100%; }
+      /* keep it *scoped* to #root only */
+      #root { opacity: 0; transition: opacity .15s ease-in; }
+    </style>
+    <script>
+      // Safe reveal function used by the app and as fallback here
+      (function(){
+        window.__fixloReveal = function(){
+          try {
+            var root = document.getElementById('root');
+            if (root) root.style.opacity = '1';
+            var s = document.getElementById('fixlo-preload-style');
+            if (s) s.parentNode.removeChild(s);
+            document.documentElement.style.visibility = 'visible';
+            document.body.style.visibility = 'visible';
+          } catch(e){ /* no-op */ }
+        };
+        // Worst-case: reveal after 300ms even if React never calls it
+        setTimeout(window.__fixloReveal, 300);
+      })();
+    </script>
   </head>
   <body>
     <noscript>Fixlo needs JavaScript enabled.</noscript>
