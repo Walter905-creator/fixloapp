@@ -27,6 +27,28 @@ root.render(
   </HelmetProvider>
 );
 
+// After root.render(...)
+(function forceUnhide() {
+  try {
+    const html = document.documentElement;
+    const body = document.body;
+    const root = document.getElementById('root');
+    ['loading','app-loading','app-hidden','preload','invisible','is-hidden']
+      .forEach((c) => { html.classList.remove(c); body.classList.remove(c); });
+    [html, body].forEach(el => {
+      el.style.opacity = '1';
+      el.style.visibility = 'visible';
+      el.removeAttribute('hidden');
+    });
+    if (root) {
+      root.style.display = 'block';
+      root.removeAttribute('hidden');
+    }
+  } catch(e) {
+    // no-op
+  }
+})();
+
 // after the app renders, ensure reveal again
 setTimeout(() => {
   if (typeof window !== 'undefined' && typeof window.__fixloReveal === 'function') {

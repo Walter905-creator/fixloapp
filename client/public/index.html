@@ -11,6 +11,42 @@
       /* keep it *scoped* to #root only */
       #root { opacity: 0; transition: opacity .15s ease-in; }
     </style>
+    <!-- FORCE‑UNHIDE ON FIRST PAINT (safe: no app logic touched) -->
+    <script>
+      (function () {
+        var html = document.documentElement;
+        var body = document.body;
+        var root = document.getElementById('root');
+
+        // Remove typical "loading/hidden" classes or attributes
+        ['loading','app-loading','app-hidden','preload','invisible','is-hidden']
+          .forEach(function (c) { html.classList.remove(c); body.classList.remove(c); });
+
+        html.removeAttribute('data-loading');
+        body.removeAttribute('data-loading');
+        body.removeAttribute('hidden');
+        if (root) { root.removeAttribute('hidden'); root.style.display = 'block'; }
+
+        // Hard unhide — protects against stuck CSS
+        html.style.opacity = '1';
+        body.style.opacity = '1';
+        html.style.visibility = 'visible';
+        body.style.visibility = 'visible';
+
+        // Kill any transition that might keep it transparent
+        html.style.transition = 'none';
+        body.style.transition = 'none';
+
+        // Safety: if something re‑hides it later, unhide again shortly after
+        setTimeout(function () {
+          html.style.opacity = '1';
+          body.style.opacity = '1';
+          html.style.visibility = 'visible';
+          body.style.visibility = 'visible';
+          if (root && getComputedStyle(root).display === 'none') root.style.display = 'block';
+        }, 250);
+      })();
+    </script>
     <script>
       // Safe reveal function used by the app and as fallback here
       (function(){
