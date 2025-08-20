@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import Badges from '../components/profile/Badges';
 import BoostPill from '../components/profile/BoostPill';
@@ -185,20 +186,20 @@ export default function PublicProfile({ slug }) {
                     }}
                   />
                 )}
-                <a 
-                  href="/request" 
+                <Link
+                  to="/contact" 
                   className="inline-flex items-center justify-center px-6 py-3 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
                   aria-label={`Request a quote from ${displayName}`}
                 >
                   Request a Quote
-                </a>
-                <a 
-                  href="/contact" 
+                </Link>
+                <Link
+                  to="/contact" 
                   className="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                   aria-label={`Contact ${displayName}`}
                 >
                   Contact
-                </a>
+                </Link>
               </div>
             </div>
           </header>
@@ -228,13 +229,13 @@ export default function PublicProfile({ slug }) {
             <p className="text-lg text-blue-100 mb-6">
               Get a free quote for your {service} project today.
             </p>
-            <a 
-              href="/request" 
+            <Link
+              to="/contact" 
               className="inline-flex items-center justify-center px-8 py-4 bg-white text-blue-600 font-semibold rounded-xl hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-600"
               aria-label={`Get your free quote from ${displayName}`}
             >
               Get Your Free Quote
-            </a>
+            </Link>
           </section>
         </div>
       </div>

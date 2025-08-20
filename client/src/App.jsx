@@ -9,6 +9,7 @@ import Services from './pages/Services';
 import ServiceDetail from './pages/ServiceDetail';
 import ServiceCityPage from './pages/ServiceCityPage';
 import ProSignup from './pages/ProSignup';
+import ProSignin from './pages/ProSignin';
 import ProProfile from './pages/ProProfile';
 import ReviewCapture from './pages/ReviewCapture';
 import ReviewPublic from './pages/ReviewPublic';
@@ -38,6 +39,7 @@ export default function App() {
           <Route path="/services/:service/:city" element={<ServiceCityPage />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/pro/signup" element={<ProSignup />} />
+          <Route path="/pro/signin" element={<ProSignin />} />
           <Route path="/pro/:slug" element={<ProProfile />} />
           <Route path="/review/:token" element={<ReviewCapture />} />
           <Route path="/review/public/:reviewId" element={<ReviewPublic />} />
