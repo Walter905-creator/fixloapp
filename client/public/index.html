@@ -44,18 +44,18 @@
         // Force unhide immediately
         document.documentElement.style.opacity = '1';
         document.documentElement.style.visibility = 'visible';
-        const root = document.getElementById('root');
-        if (root) { 
-          root.style.opacity = '1'; 
-          root.style.visibility = 'visible';
-          root.style.display = 'block';
+        const fixloRoot = document.getElementById('root');
+        if (fixloRoot) { 
+          fixloRoot.style.opacity = '1'; 
+          fixloRoot.style.visibility = 'visible';
+          fixloRoot.style.display = 'block';
         }
         
         // Remove common hiding classes
         ['loading','app-loading','app-hidden','preload','invisible','is-hidden']
-          .forEach(c => {
-            document.documentElement.classList.remove(c);
-            document.body.classList.remove(c);
+          .forEach(function(className) {
+            document.documentElement.classList.remove(className);
+            document.body.classList.remove(className);
           });
 
         // Safety: if something re‑hides it later, unhide again shortly after
@@ -98,18 +98,18 @@
       // Force unhide immediately
       document.documentElement.style.opacity = '1';
       document.documentElement.style.visibility = 'visible';
-      const root = document.getElementById('root');
-      if (root) { 
-        root.style.opacity = '1'; 
-        root.style.visibility = 'visible';
-        root.style.display = 'block';
+      const bodyRoot = document.getElementById('root');
+      if (bodyRoot) { 
+        bodyRoot.style.opacity = '1'; 
+        bodyRoot.style.visibility = 'visible';
+        bodyRoot.style.display = 'block';
       }
       
       // Remove common hiding classes
       ['loading','app-loading','app-hidden','preload','invisible','is-hidden']
-        .forEach(c => {
-          document.documentElement.classList.remove(c);
-          document.body.classList.remove(c);
+        .forEach(function(className) {
+          document.documentElement.classList.remove(className);
+          document.body.classList.remove(className);
         });
     </script>
   </body>
