@@ -1,0 +1,1 @@
+import React from 'react';export default function ServiceCard({title,desc}){return(<div style={{border:'1px solid #e5e7eb',borderRadius:'1rem',padding:'1.25rem'}}><h3 style={{fontWeight:600,fontSize:'1.125rem'}}>{title}</h3><p style={{color:'#475569',marginTop:'0.5rem'}}>{desc}</p></div>);}
