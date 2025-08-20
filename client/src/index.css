@@ -45,3 +45,9 @@ html, body { visibility: visible; }
 @media (max-width: 640px) {
   .fixlo-logo { height: 34px; }
 }
+
+/* Force visibility for the app shell */
+html, body, #root { opacity: 1 !important; visibility: visible !important; }
+
+/* If you had a preloader, don't hide the whole app container */
+.preloader { /* style your spinner only, not #root */ }

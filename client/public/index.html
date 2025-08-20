@@ -4,148 +4,49 @@
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
     <title>Fixlo</title>
-    <!-- Optional: very brief anti-FOUC guard -->
-    <style id="fixlo-preload-style">
-      html, body { min-height:100%; }
-      /* keep it *scoped* to #root only */
-      #root { opacity: 0; transition: opacity .15s ease-in; }
+
+    <!-- Build marker to defeat stale caches -->
+    <meta name="fixlo-build-id" content="%REACT_APP_BUILD_ID%" />
+    <meta name="fixlo-commit-sha" content="%REACT_APP_COMMIT_SHA%" />
+
+    <!-- NEVER hide the app by default -->
+    <style>
+      html, body, #root { height: 100%; }
+      html, body { opacity: 1 !important; visibility: visible !important; }
+      #root { opacity: 1 !important; visibility: visible !important; }
     </style>
-    <style id="force-visible">
-      html, body, #root { opacity: 1 !important; visibility: visible !important; }
-      #preload, .preload, .screen-hidden, [data-preload], .preload-guard { display: none !important; }
-    </style>
-    <!-- FORCE‑UNHIDE ON FIRST PAINT (safe: no app logic touched) -->
-    <script>
-      (function () {
-        var html = document.documentElement;
-        var body = document.body;
-        var root = document.getElementById('root');
-
-        // Remove typical "loading/hidden" classes or attributes - with null safety
-        const elementsToCheck = [html, body].filter(Boolean);
-        if (elementsToCheck.length > 0) {
-          ['loading','app-loading','app-hidden','preload','invisible','is-hidden']
-            .forEach(function (c) { 
-              elementsToCheck.forEach(function(element) {
-                if (element && element.classList) {
-                  element.classList.remove(c);
-                }
-              });
-            });
-        }
-
-        if (html) {
-          html.removeAttribute('data-loading');
-        }
-        if (body) {
-          body.removeAttribute('data-loading');
-          body.removeAttribute('hidden');
-        }
-        if (root) { root.removeAttribute('hidden'); root.style.display = 'block'; }
-
-        // Hard unhide — protects against stuck CSS
-        if (html) {
-          html.style.opacity = '1';
-          html.style.visibility = 'visible';
-          html.style.transition = 'none';
-        }
-        if (body) {
-          body.style.opacity = '1';
-          body.style.visibility = 'visible';
-          body.style.transition = 'none';
-        }
-
-        // Force unhide immediately - with null safety checks
-        if (document.documentElement) {
-          document.documentElement.style.opacity = '1';
-          document.documentElement.style.visibility = 'visible';
-        }
-        
-        const fixloRoot = document.getElementById('root');
-        if (fixloRoot) { 
-          fixloRoot.style.opacity = '1'; 
-          fixloRoot.style.visibility = 'visible';
-          fixloRoot.style.display = 'block';
-        }
-        
-        // Remove common hiding classes - with null safety
-        const elementsToUnhide = [document.documentElement, document.body].filter(Boolean);
-        const classesToRemove = ['loading','app-loading','app-hidden','preload','invisible','is-hidden'];
-        
-        elementsToUnhide.forEach(function(element) {
-          if (element && element.classList) {
-            classesToRemove.forEach(function(className) {
-              element.classList.remove(className);
-            });
-          }
-        });
-
-        // Safety: if something re‑hides it later, unhide again shortly after
-        setTimeout(function () {
-          if (html) {
-            html.style.opacity = '1';
-            html.style.visibility = 'visible';
-          }
-          if (body) {
-            body.style.opacity = '1';
-            body.style.visibility = 'visible';
-          }
-          if (root && getComputedStyle(root).display === 'none') root.style.display = 'block';
-        }, 250);
-      })();
-    </script>
-    <script>
-      // Safe reveal function used by the app and as fallback here
-      (function(){
-        window.__fixloReveal = function(){
-          try {
-            var root = document.getElementById('root');
-            if (root) root.style.opacity = '1';
-            var s = document.getElementById('fixlo-preload-style');
-            if (s) s.parentNode.removeChild(s);
-            document.documentElement.style.visibility = 'visible';
-            document.body.style.visibility = 'visible';
-          } catch(e){ /* no-op */ }
-        };
-        // Worst-case: reveal after 300ms even if React never calls it
-        setTimeout(window.__fixloReveal, 300);
-      })();
-    </script>
   </head>
   <body>
-    <noscript>Fixlo needs JavaScript enabled.</noscript>
-    <div id="boot-ok" style="padding:12px;background:#fff;color:#111;font:14px/1.4 system-ui;border-bottom:1px solid #eee">
-      Fixlo LIVE build OK — if you see this but no UI below, CSS is hiding the app.
-    </div>
-    
+    <noscript>Enable JavaScript to use Fixlo.</noscript>
     <div id="root"></div>
 
+    <!-- Null-safe unlock (won't throw) -->
     <script>
-      // Force unhide immediately - with null safety checks
-      if (document.documentElement) {
-        document.documentElement.style.opacity = '1';
-        document.documentElement.style.visibility = 'visible';
-      }
-      
-      const fixloRoot = document.getElementById('root');
-      if (fixloRoot) { 
-        fixloRoot.style.opacity = '1'; 
-        fixloRoot.style.visibility = 'visible';
-        fixloRoot.style.display = 'block';
-      }
-      
-      // Remove common hiding classes - with null safety
-      const elementsToUnhide = [document.documentElement, document.body].filter(Boolean);
-      const classesToRemove = ['loading','app-loading','app-hidden','preload','invisible','is-hidden'];
-      
-      elementsToUnhide.forEach(function(element) {
-        if (element && element.classList) {
-          classesToRemove.forEach(function(className) {
-            element.classList.remove(className);
-          });
+      (function () {
+        function unhide() {
+          try {
+            var root = document.getElementById('root');
+            if (root) {
+              root.style.opacity = '1';
+              root.style.visibility = 'visible';
+              root.classList && root.classList.remove('hidden','opacity-0','invisible');
+            }
+            var body = document.body;
+            if (body && body.classList) {
+              body.classList.remove('fixlo-hidden','opacity-0','invisible');
+            }
+          } catch (e) {
+            console.warn('[Fixlo] unhide guard error (ignored)', e);
+          }
         }
-      });
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', unhide);
+        } else {
+          unhide();
+        }
+      })();
     </script>
   </body>
 </html>
