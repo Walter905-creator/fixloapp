@@ -77,30 +77,13 @@ For a comprehensive list of all implemented features, see **[FEATURES.md](./FEAT
 
 ### Client Setup
 
-1. Navigate to the client directory:
-   ```bash
-   cd client
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Create a `.env` file based on `.env.example`:
-   ```bash
-   cp .env.example .env
-   ```
-
-4. Set your API URL:
-   ```
-   REACT_APP_API_URL=http://localhost:10000
-   ```
-
-5. Start the development server:
-   ```bash
-   npm start
-   ```
+```bash
+cd client
+npm install
+# Create or edit .env (CRA uses REACT_APP_*):
+echo "REACT_APP_API_URL=http://localhost:3001" > .env
+npm start
+```
 
 ## API Endpoints
 
