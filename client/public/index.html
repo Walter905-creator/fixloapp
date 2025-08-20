@@ -22,28 +22,46 @@
         var body = document.body;
         var root = document.getElementById('root');
 
-        // Remove typical "loading/hidden" classes or attributes
-        ['loading','app-loading','app-hidden','preload','invisible','is-hidden']
-          .forEach(function (c) { html.classList.remove(c); body.classList.remove(c); });
+        // Remove typical "loading/hidden" classes or attributes - with null safety
+        const elementsToCheck = [html, body].filter(Boolean);
+        if (elementsToCheck.length > 0) {
+          ['loading','app-loading','app-hidden','preload','invisible','is-hidden']
+            .forEach(function (c) { 
+              elementsToCheck.forEach(function(element) {
+                if (element && element.classList) {
+                  element.classList.remove(c);
+                }
+              });
+            });
+        }
 
-        html.removeAttribute('data-loading');
-        body.removeAttribute('data-loading');
-        body.removeAttribute('hidden');
+        if (html) {
+          html.removeAttribute('data-loading');
+        }
+        if (body) {
+          body.removeAttribute('data-loading');
+          body.removeAttribute('hidden');
+        }
         if (root) { root.removeAttribute('hidden'); root.style.display = 'block'; }
 
         // Hard unhide — protects against stuck CSS
-        html.style.opacity = '1';
-        body.style.opacity = '1';
-        html.style.visibility = 'visible';
-        body.style.visibility = 'visible';
+        if (html) {
+          html.style.opacity = '1';
+          html.style.visibility = 'visible';
+          html.style.transition = 'none';
+        }
+        if (body) {
+          body.style.opacity = '1';
+          body.style.visibility = 'visible';
+          body.style.transition = 'none';
+        }
 
-        // Kill any transition that might keep it transparent
-        html.style.transition = 'none';
-        body.style.transition = 'none';
-
-        // Force unhide immediately
-        document.documentElement.style.opacity = '1';
-        document.documentElement.style.visibility = 'visible';
+        // Force unhide immediately - with null safety checks
+        if (document.documentElement) {
+          document.documentElement.style.opacity = '1';
+          document.documentElement.style.visibility = 'visible';
+        }
+        
         const fixloRoot = document.getElementById('root');
         if (fixloRoot) { 
           fixloRoot.style.opacity = '1'; 
@@ -51,19 +69,28 @@
           fixloRoot.style.display = 'block';
         }
         
-        // Remove common hiding classes
-        ['loading','app-loading','app-hidden','preload','invisible','is-hidden']
-          .forEach(function(className) {
-            document.documentElement.classList.remove(className);
-            document.body.classList.remove(className);
-          });
+        // Remove common hiding classes - with null safety
+        const elementsToUnhide = [document.documentElement, document.body].filter(Boolean);
+        const classesToRemove = ['loading','app-loading','app-hidden','preload','invisible','is-hidden'];
+        
+        elementsToUnhide.forEach(function(element) {
+          if (element && element.classList) {
+            classesToRemove.forEach(function(className) {
+              element.classList.remove(className);
+            });
+          }
+        });
 
         // Safety: if something re‑hides it later, unhide again shortly after
         setTimeout(function () {
-          html.style.opacity = '1';
-          body.style.opacity = '1';
-          html.style.visibility = 'visible';
-          body.style.visibility = 'visible';
+          if (html) {
+            html.style.opacity = '1';
+            html.style.visibility = 'visible';
+          }
+          if (body) {
+            body.style.opacity = '1';
+            body.style.visibility = 'visible';
+          }
           if (root && getComputedStyle(root).display === 'none') root.style.display = 'block';
         }, 250);
       })();
@@ -95,22 +122,30 @@
     <div id="root"></div>
 
     <script>
-      // Force unhide immediately
-      document.documentElement.style.opacity = '1';
-      document.documentElement.style.visibility = 'visible';
-      const bodyRoot = document.getElementById('root');
-      if (bodyRoot) { 
-        bodyRoot.style.opacity = '1'; 
-        bodyRoot.style.visibility = 'visible';
-        bodyRoot.style.display = 'block';
+      // Force unhide immediately - with null safety checks
+      if (document.documentElement) {
+        document.documentElement.style.opacity = '1';
+        document.documentElement.style.visibility = 'visible';
       }
       
-      // Remove common hiding classes
-      ['loading','app-loading','app-hidden','preload','invisible','is-hidden']
-        .forEach(function(className) {
-          document.documentElement.classList.remove(className);
-          document.body.classList.remove(className);
-        });
+      const fixloRoot = document.getElementById('root');
+      if (fixloRoot) { 
+        fixloRoot.style.opacity = '1'; 
+        fixloRoot.style.visibility = 'visible';
+        fixloRoot.style.display = 'block';
+      }
+      
+      // Remove common hiding classes - with null safety
+      const elementsToUnhide = [document.documentElement, document.body].filter(Boolean);
+      const classesToRemove = ['loading','app-loading','app-hidden','preload','invisible','is-hidden'];
+      
+      elementsToUnhide.forEach(function(element) {
+        if (element && element.classList) {
+          classesToRemove.forEach(function(className) {
+            element.classList.remove(className);
+          });
+        }
+      });
     </script>
   </body>
 </html>
