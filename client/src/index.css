@@ -51,3 +51,12 @@ html, body, #root { opacity: 1 !important; visibility: visible !important; }
 
 /* If you had a preloader, don't hide the whole app container */
 .preloader { /* style your spinner only, not #root */ }
+
+/* --- Fixlo visibility seatbelt: never hide the app shell --- */
+:root, html, body, #root {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+#root {
+  display: block !important;
+}
