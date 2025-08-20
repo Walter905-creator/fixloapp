@@ -11,6 +11,10 @@
       /* keep it *scoped* to #root only */
       #root { opacity: 0; transition: opacity .15s ease-in; }
     </style>
+    <style id="force-visible">
+      html, body, #root { opacity: 1 !important; visibility: visible !important; }
+      #preload, .preload, .screen-hidden, [data-preload], .preload-guard { display: none !important; }
+    </style>
     <!-- FORCE‑UNHIDE ON FIRST PAINT (safe: no app logic touched) -->
     <script>
       (function () {
@@ -36,6 +40,23 @@
         // Kill any transition that might keep it transparent
         html.style.transition = 'none';
         body.style.transition = 'none';
+
+        // Force unhide immediately
+        document.documentElement.style.opacity = '1';
+        document.documentElement.style.visibility = 'visible';
+        const root = document.getElementById('root');
+        if (root) { 
+          root.style.opacity = '1'; 
+          root.style.visibility = 'visible';
+          root.style.display = 'block';
+        }
+        
+        // Remove common hiding classes
+        ['loading','app-loading','app-hidden','preload','invisible','is-hidden']
+          .forEach(c => {
+            document.documentElement.classList.remove(c);
+            document.body.classList.remove(c);
+          });
 
         // Safety: if something re‑hides it later, unhide again shortly after
         setTimeout(function () {
@@ -67,6 +88,29 @@
   </head>
   <body>
     <noscript>Fixlo needs JavaScript enabled.</noscript>
+    <div id="boot-ok" style="padding:12px;background:#fff;color:#111;font:14px/1.4 system-ui;border-bottom:1px solid #eee">
+      Fixlo LIVE build OK — if you see this but no UI below, CSS is hiding the app.
+    </div>
+    
     <div id="root"></div>
+
+    <script>
+      // Force unhide immediately
+      document.documentElement.style.opacity = '1';
+      document.documentElement.style.visibility = 'visible';
+      const root = document.getElementById('root');
+      if (root) { 
+        root.style.opacity = '1'; 
+        root.style.visibility = 'visible';
+        root.style.display = 'block';
+      }
+      
+      // Remove common hiding classes
+      ['loading','app-loading','app-hidden','preload','invisible','is-hidden']
+        .forEach(c => {
+          document.documentElement.classList.remove(c);
+          document.body.classList.remove(c);
+        });
+    </script>
   </body>
 </html>

@@ -1,1 +1,50 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"/><link rel="icon" href="/favicon.ico"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Fixlo</title><style id="fixlo-preload-style">body,html{min-height:100%}#root{opacity:0;transition:opacity .15s ease-in}</style><script>!function(){var i=document.documentElement,t=document.body,e=document.getElementById("root");["loading","app-loading","app-hidden","preload","invisible","is-hidden"].forEach(function(e){i.classList.remove(e),t.classList.remove(e)}),i.removeAttribute("data-loading"),t.removeAttribute("data-loading"),t.removeAttribute("hidden"),e&&(e.removeAttribute("hidden"),e.style.display="block"),i.style.opacity="1",t.style.opacity="1",i.style.visibility="visible",t.style.visibility="visible",i.style.transition="none",t.style.transition="none",setTimeout(function(){i.style.opacity="1",t.style.opacity="1",i.style.visibility="visible",t.style.visibility="visible",e&&"none"===getComputedStyle(e).display&&(e.style.display="block")},250)}()</script><script>window.__fixloReveal=function(){try{var e=document.getElementById("root");e&&(e.style.opacity="1");var t=document.getElementById("fixlo-preload-style");t&&t.parentNode.removeChild(t),document.documentElement.style.visibility="visible",document.body.style.visibility="visible"}catch(e){}},setTimeout(window.__fixloReveal,300)</script><script defer="defer" src="/static/js/main.96b2f710.js"></script><link href="/static/css/main.7aede494.css" rel="stylesheet"></head><body><noscript>Fixlo needs JavaScript enabled.</noscript><div id="root"></div></body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><link rel="icon" href="/favicon.ico"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Fixlo</title><style id="fixlo-preload-style">body,html{min-height:100%}#root{opacity:0;transition:opacity .15s ease-in}</style><style id="force-visible">#root,body,html{opacity:1!important;visibility:visible!important}#preload,.preload,.preload-guard,.screen-hidden,[data-preload]{display:none!important}</style><script>(function () {
+        var html = document.documentElement;
+        var body = document.body;
+        var root = document.getElementById('root');
+
+        // Remove typical "loading/hidden" classes or attributes
+        ['loading','app-loading','app-hidden','preload','invisible','is-hidden']
+          .forEach(function (c) { html.classList.remove(c); body.classList.remove(c); });
+
+        html.removeAttribute('data-loading');
+        body.removeAttribute('data-loading');
+        body.removeAttribute('hidden');
+        if (root) { root.removeAttribute('hidden'); root.style.display = 'block'; }
+
+        // Hard unhide — protects against stuck CSS
+        html.style.opacity = '1';
+        body.style.opacity = '1';
+        html.style.visibility = 'visible';
+        body.style.visibility = 'visible';
+
+        // Kill any transition that might keep it transparent
+        html.style.transition = 'none';
+        body.style.transition = 'none';
+
+        // Force unhide immediately
+        document.documentElement.style.opacity = '1';
+        document.documentElement.style.visibility = 'visible';
+        const root = document.getElementById('root');
+        if (root) { 
+          root.style.opacity = '1'; 
+          root.style.visibility = 'visible';
+          root.style.display = 'block';
+        }
+        
+        // Remove common hiding classes
+        ['loading','app-loading','app-hidden','preload','invisible','is-hidden']
+          .forEach(c => {
+            document.documentElement.classList.remove(c);
+            document.body.classList.remove(c);
+          });
+
+        // Safety: if something re‑hides it later, unhide again shortly after
+        setTimeout(function () {
+          html.style.opacity = '1';
+          body.style.opacity = '1';
+          html.style.visibility = 'visible';
+          body.style.visibility = 'visible';
+          if (root && getComputedStyle(root).display === 'none') root.style.display = 'block';
+        }, 250);
+      })();</script><script>window.__fixloReveal=function(){try{var e=document.getElementById("root");e&&(e.style.opacity="1");var t=document.getElementById("fixlo-preload-style");t&&t.parentNode.removeChild(t),document.documentElement.style.visibility="visible",document.body.style.visibility="visible"}catch(e){}},setTimeout(window.__fixloReveal,300)</script><script defer="defer" src="/static/js/main.226b4411.js"></script><link href="/static/css/main.49ce611b.css" rel="stylesheet"></head><body><noscript>Fixlo needs JavaScript enabled.</noscript><div id="boot-ok" style="padding:12px;background:#fff;color:#111;font:14px/1.4 system-ui;border-bottom:1px solid #eee">Fixlo LIVE build OK — if you see this but no UI below, CSS is hiding the app.</div><div id="root"></div><script>document.documentElement.style.opacity="1",document.documentElement.style.visibility="visible";const root=document.getElementById("root");root&&(root.style.opacity="1",root.style.visibility="visible",root.style.display="block"),["loading","app-loading","app-hidden","preload","invisible","is-hidden"].forEach(e=>{document.documentElement.classList.remove(e),document.body.classList.remove(e)})</script></body></html>

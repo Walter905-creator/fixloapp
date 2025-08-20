@@ -5,6 +5,11 @@ import { BrowserRouter } from 'react-router-dom';
 import './index.css';
 import App from './App';
 
+// Unregister any service workers that might cache old content
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations?.().then(rs => rs.forEach(r => r.unregister()));
+}
+
 // top of file (before ReactDOM render)
 if (typeof window !== 'undefined' && typeof window.__fixloReveal === 'function') {
   window.__fixloReveal();
