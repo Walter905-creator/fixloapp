@@ -4,15 +4,15 @@ import { HelmetProvider } from 'react-helmet-async';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './index.css';
-import { forceUnhide } from './utils/forceUnhide';
+import { forceUnhideSoon } from './utils/forceUnhide';
 
 const rootEl = document.getElementById('root');
 if (!rootEl) {
   console.error('[Fixlo] #root not found — index.html must have <div id="root"></div>');
 }
-const root = createRoot(rootEl);
 
-forceUnhide(); // ensure nothing hides the shell
+forceUnhideSoon();
+const root = createRoot(rootEl);
 
 console.log('Fixlo LIVE build OK', {
   BUILD_ID: process.env.REACT_APP_BUILD_ID,

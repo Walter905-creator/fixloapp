@@ -4,49 +4,26 @@
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
     <title>Fixlo</title>
 
-    <!-- Build marker to defeat stale caches -->
-    <meta name="fixlo-build-id" content="%REACT_APP_BUILD_ID%" />
-    <meta name="fixlo-commit-sha" content="%REACT_APP_COMMIT_SHA%" />
+    <!-- Never cache the HTML shell -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
 
-    <!-- NEVER hide the app by default -->
+    <!-- Minimal placeholder only; no hiding classes here -->
     <style>
-      html, body, #root { height: 100%; }
-      html, body { opacity: 1 !important; visibility: visible !important; }
-      #root { opacity: 1 !important; visibility: visible !important; }
+      html, body, #root { min-height: 100%; }
+      /* DO NOT hide the app shell */
     </style>
   </head>
   <body>
-    <noscript>Enable JavaScript to use Fixlo.</noscript>
-    <div id="root"></div>
-
-    <!-- Null-safe unlock (won't throw) -->
-    <script>
-      (function () {
-        function unhide() {
-          try {
-            var root = document.getElementById('root');
-            if (root) {
-              root.style.opacity = '1';
-              root.style.visibility = 'visible';
-              root.classList && root.classList.remove('hidden','opacity-0','invisible');
-            }
-            var body = document.body;
-            if (body && body.classList) {
-              body.classList.remove('fixlo-hidden','opacity-0','invisible');
-            }
-          } catch (e) {
-            console.warn('[Fixlo] unhide guard error (ignored)', e);
-          }
-        }
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', unhide);
-        } else {
-          unhide();
-        }
-      })();
-    </script>
+    <noscript>Fixlo needs JavaScript to run.</noscript>
+    <div id="root">
+      <!-- Lightweight placeholder (non-blocking) -->
+      <div style="font-family: system-ui, sans-serif; padding: 16px;">
+        <div>Fixlo — loading features…</div>
+      </div>
+    </div>
   </body>
 </html>
