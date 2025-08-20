@@ -1,0 +1,40 @@
+{
+  "name": "fixlo-frontend",
+  "version": "3.0.0",
+  "private": true,
+  "homepage": "/",
+  "engines": {
+    "node": ">=18.0.0 <22.0.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "node scripts/inject-build-meta.js && react-scripts build",
+    "vercel-build": "node scripts/inject-build-meta.js && react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.30.1",
+    "react-helmet-async": "^2.0.5",
+    "web-vitals": "^3.5.0",
+    "axios": "^1.6.8"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.4.31"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
