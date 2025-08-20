@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Ensure visible defaults */
+html, body { visibility: visible; }
+#root { opacity: 1; }
+
 /* Fixlo Logo Styling */
 .fixlo-logo {
   height: 40px;      /* visually larger, professional scale */
