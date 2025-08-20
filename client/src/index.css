@@ -2,40 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Force visibility - overrides any hiding CSS */
-html, body, #root {
-  opacity: 1 !important;
-  visibility: visible !important;
-}
-
-#root {
-  display: block !important;
-  min-height: 100vh;
-}
-
-/* Neutralize common hiding patterns */
-html.app-hidden, body.app-hidden,
-html.loading, body.loading,
-html.preload, body.preload,
-html.invisible, body.invisible,
-[data-preload], .preload-guard {
-  opacity: 1 !important;
-  visibility: visible !important;
-}
-
-/* Remove splash layers */
-#fixlo-splash,
-[data-splash],
-.splash,
-.preload {
-  display: none !important;
-  opacity: 0 !important;
-}
-
-/* Ensure visible defaults */
-html, body { visibility: visible; }
-#root { opacity: 1; }
-
 /* Fixlo Logo Styling */
 .fixlo-logo {
   height: 40px;      /* visually larger, professional scale */
@@ -46,17 +12,9 @@ html, body { visibility: visible; }
   .fixlo-logo { height: 34px; }
 }
 
-/* Force visibility for the app shell */
-html, body, #root { opacity: 1 !important; visibility: visible !important; }
-
-/* If you had a preloader, don't hide the whole app container */
-.preloader { /* style your spinner only, not #root */ }
-
-/* --- Fixlo visibility seatbelt: never hide the app shell --- */
+/* --- Fixlo seatbelt: never hide the app shell --- */
 :root, html, body, #root {
   opacity: 1 !important;
   visibility: visible !important;
 }
-#root {
-  display: block !important;
-}
+#root { display: block !important; }

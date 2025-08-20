@@ -1,3 +1,9 @@
+import { startAntiHideLoop } from './utils/antiHide';
+
+if (process.env.REACT_APP_FORCE_UNHIDE === '1') {
+  try { startAntiHideLoop(); } catch {}
+}
+
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { HelmetProvider } from 'react-helmet-async';
