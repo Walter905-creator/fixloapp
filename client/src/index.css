@@ -2,6 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
+html, body, #root {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+#root {
+  display: block !important;
+  min-height: 100vh;
+}
+
+/* Neutralize common "hide while loading" patterns */
+html.app-hidden, body.app-hidden,
+html.loading, body.loading,
+html.preload, body.preload,
+html.invisible, body.invisible {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* If there's a splash layer covering the app, make sure it's removed by default */
+#fixlo-splash,
+[data-splash],
+[data-preload],
+.splash,
+.preload {
+  display: none !important;
+  opacity: 0 !important;
+}
+
 /* Ensure visible defaults */
 html, body { visibility: visible; }
 #root { opacity: 1; }
