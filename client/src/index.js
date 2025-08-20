@@ -1,1 +1,29 @@
-import React from 'react';import { createRoot } from 'react-dom/client';import { BrowserRouter } from 'react-router-dom';import './index.css';import App from './App';try{document.body.style.opacity='1';document.body.style.visibility='visible';}catch(e){}console.log('Fixlo LIVE build OK',{BUILD_ID:process.env.REACT_APP_BUILD_ID,COMMIT_SHA:process.env.REACT_APP_COMMIT_SHA});const root=createRoot(document.getElementById('root'));root.render(<React.StrictMode><BrowserRouter><App/></BrowserRouter></React.StrictMode>);
+import React from "react";
+import { createRoot } from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import App from "./App";
+
+// Force-unhide in case any CSS/JS guard survived
+const unhide = () => {
+  const el = document.getElementById("root");
+  if (el) {
+    el.style.opacity = "1";
+    el.style.visibility = "visible";
+    el.removeAttribute("aria-hidden");
+    el.classList.remove("hidden");
+  }
+};
+unhide();
+setTimeout(unhide, 0);
+setTimeout(unhide, 500);
+setTimeout(unhide, 2000);
+
+const rootEl = document.getElementById("root");
+const root = createRoot(rootEl);
+root.render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>
+);
