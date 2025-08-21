@@ -9,6 +9,7 @@ import Footer from "./components/Footer";
 // Import all pages
 import Home from "./pages/Home";
 import Signup from "./pages/Signup";
+import ServiceRequest from "./pages/ServiceRequest";
 import ProSignup from "./pages/ProSignup";
 import ProSignin from "./pages/ProSignin";
 import ProLogin from "./pages/ProLogin";
@@ -58,6 +59,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/request-service" element={<ServiceRequest />} />
           <Route path="/services" element={<Services />} />
           <Route path="/services/:service" element={<ServiceDetail />} />
           <Route path="/services/:service/:city" element={<div className="p-8"><h2>Service by City Page</h2></div>} />
