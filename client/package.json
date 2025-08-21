@@ -7,10 +7,9 @@
     "node": ">=18.0.0 <22.0.0"
   },
   "scripts": {
-    "inject-meta": "node scripts/inject-build-meta.js",
-    "vercel-build": "npm run inject-meta && react-scripts build",
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "cross-env GENERATE_SOURCEMAP=false react-scripts build",
+    "vercel-build": "node scripts/inject-build-meta.js && react-scripts build",
     "test": "cross-env CI=false react-scripts test --watchAll=false",
     "eject": "react-scripts eject"
   },

@@ -1,13 +1,14 @@
 import React from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
-import Home from './pages/Home';
-import Signup from './pages/Signup';
-import ProSignup from './pages/ProSignup';
-import ProGallery from './pages/ProGallery';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import HomeSimple from './pages/HomeSimple';
+import SignupSimple from './pages/SignupSimple';
+import ProSignupSimple from './pages/ProSignupSimple';
+import ProGallerySimple from './pages/ProGallerySimple';
 
 export default function App(){
   return (
-    <div className="min-h-screen flex flex-col">
+    <BrowserRouter>
+      <div className="min-h-screen flex flex-col">
       <header className="border-b">
         <div className="max-w-6xl mx-auto flex items-center justify-between p-4">
           <Link to="/" className="flex items-center gap-3">
@@ -27,10 +28,10 @@ export default function App(){
 
       <main className="flex-1">
         <Routes>
-          <Route path="/" element={<Home/>}/>
-          <Route path="/signup" element={<Signup/>}/>
-          <Route path="/pro/signup" element={<ProSignup/>}/>
-          <Route path="/pro/gallery" element={<ProGallery/>}/>
+          <Route path="/" element={<HomeSimple/>}/>
+          <Route path="/signup" element={<SignupSimple/>}/>
+          <Route path="/pro/signup" element={<ProSignupSimple/>}/>
+          <Route path="/pro/gallery" element={<ProGallerySimple/>}/>
           <Route path="*" element={
             <div className="max-w-4xl mx-auto p-10">
               <h1 className="text-3xl font-bold mb-2">404</h1>
@@ -69,5 +70,6 @@ export default function App(){
         </div>
       </footer>
     </div>
+    </BrowserRouter>
   );
 }
