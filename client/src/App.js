@@ -13,6 +13,7 @@ import ProSignup from "./pages/ProSignup";
 import ProSignin from "./pages/ProSignin";
 import ProGalleryPage from "./pages/ProGallery";
 import Services from "./pages/Services";
+import ServiceDetail from "./pages/ServiceDetail";
 import HowItWorks from "./pages/HowItWorks";
 import Contact from "./pages/Contact";
 import AIAssistant from "./pages/AIAssistant";
@@ -54,7 +55,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/services" element={<Services />} />
-          <Route path="/services/:service" element={<div className="p-8"><h2>Service Detail Page</h2></div>} />
+          <Route path="/services/:service" element={<ServiceDetail />} />
           <Route path="/services/:service/:city" element={<div className="p-8"><h2>Service by City Page</h2></div>} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/contact" element={<Contact />} />
