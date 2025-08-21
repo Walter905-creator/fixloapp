@@ -1,136 +1,33 @@
 import React from "react";
-import { Routes, Route, Link, NavLink } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 
-// Page components you already have
+// Import new components
+import NavBar from "./components/NavBar";
+import Footer from "./components/Footer";
+
+// Import all pages
 import Home from "./pages/Home";
 import Signup from "./pages/Signup";
 import ProSignup from "./pages/ProSignup";
-import ProGallery from "./components/ProGallery";
+import ProSignin from "./pages/ProSignin";
+import ProGalleryPage from "./pages/ProGallery";
+import Services from "./pages/Services";
+import HowItWorks from "./pages/HowItWorks";
+import Contact from "./pages/Contact";
+import AIAssistant from "./pages/AIAssistant";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
+import Support from "./pages/Support";
 
 // ---------- Layout (Header/Footer) ----------
 function Layout({ children }) {
   return (
     <div className="min-h-screen flex flex-col">
-      <SiteHeader />
+      <NavBar />
       <main className="flex-1">{children}</main>
-      <SiteFooter />
+      <Footer />
     </div>
-  );
-}
-
-function SiteHeader() {
-  return (
-    <header className="border-b border-slate-200 bg-white">
-      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2" aria-label="Fixlo — Home">
-          <span
-            aria-hidden="true"
-            className="inline-block rounded-lg px-2 py-1 text-white"
-            style={{
-              background:
-                "linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%)",
-            }}
-          >
-            FIXLO
-          </span>
-          <span className="sr-only">Fixlo</span>
-        </Link>
-
-        <nav className="flex items-center gap-4 text-sm">
-          <NavLink
-            to="/"
-            className={({ isActive }) =>
-              `px-2 py-1 rounded ${isActive ? "font-semibold" : "text-slate-600"}`
-            }
-            end
-          >
-            Home
-          </NavLink>
-          <NavLink
-            to="/signup"
-            className={({ isActive }) =>
-              `px-2 py-1 rounded ${isActive ? "font-semibold" : "text-slate-600"}`
-            }
-          >
-            Homeowner Signup
-          </NavLink>
-          <NavLink
-            to="/pro/signup"
-            className={({ isActive }) =>
-              `px-2 py-1 rounded ${isActive ? "font-semibold" : "text-slate-600"}`
-            }
-          >
-            Pro Sign Up
-          </NavLink>
-          <NavLink
-            to="/pro/gallery"
-            className={({ isActive }) =>
-              `px-2 py-1 rounded ${isActive ? "font-semibold" : "text-slate-600"}`
-            }
-          >
-            Pro Gallery
-          </NavLink>
-
-          <Link
-            to="/signup"
-            className="ml-2 rounded-xl px-3 py-1.5 bg-black text-white hover:opacity-90"
-          >
-            Join Now
-          </Link>
-        </nav>
-      </div>
-    </header>
-  );
-}
-
-function SiteFooter() {
-  return (
-    <footer className="border-t border-slate-200 bg-white">
-      <div className="max-w-6xl mx-auto px-4 py-8 text-sm text-slate-600 grid gap-4 md:grid-cols-3">
-        <div>
-          <div className="font-semibold mb-2">Fixlo</div>
-          <p>Connecting homeowners with trusted pros.</p>
-        </div>
-        <div>
-          <div className="font-semibold mb-2">Company</div>
-          <ul className="space-y-1">
-            <li>
-              <Link className="hover:underline" to="/contact">
-                Contact
-              </Link>
-            </li>
-            <li>
-              <a className="hover:underline" href="/terms.html">
-                Terms of Service
-              </a>
-            </li>
-            <li>
-              <a className="hover:underline" href="/privacy.html">
-                Privacy Policy
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div>
-          <div className="font-semibold mb-2">Platform</div>
-          <ul className="space-y-1">
-            <li>
-              <Link className="hover:underline" to="/pro/signup">
-                Become a Pro
-              </Link>
-            </li>
-            <li>
-              <Link className="hover:underline" to="/pro/gallery">
-                Pro Gallery
-              </Link>
-            </li>
-          </ul>
-        </div>
-      </div>
-      <div className="text-center text-xs text-slate-500 py-4 border-t border-slate-100">
-        © {new Date().getFullYear()} Fixlo. All rights reserved.
-      </div>
-    </footer>
   );
 }
 
@@ -140,9 +37,9 @@ function NotFound() {
     <div className="max-w-3xl mx-auto px-4 py-20">
       <h1 className="text-3xl font-bold mb-2">404</h1>
       <p className="mb-6 text-slate-600">Page not found.</p>
-      <Link to="/" className="rounded-xl px-4 py-2 bg-black text-white hover:opacity-90">
+      <a href="/" className="rounded-xl px-4 py-2 bg-black text-white hover:opacity-90">
         Go Home
-      </Link>
+      </a>
     </div>
   );
 }
@@ -151,14 +48,27 @@ function NotFound() {
 export default function App() {
   console.log("[Fixlo] Router is rendering");
   return (
-    <Layout>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/pro/signup" element={<ProSignup />} />
-        <Route path="/pro/gallery" element={<ProGallery />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </Layout>
+    <HelmetProvider>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/services" element={<Services />} />
+          <Route path="/services/:service" element={<div className="p-8"><h2>Service Detail Page</h2></div>} />
+          <Route path="/services/:service/:city" element={<div className="p-8"><h2>Service by City Page</h2></div>} />
+          <Route path="/how-it-works" element={<HowItWorks />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/ai-assistant" element={<AIAssistant />} />
+          <Route path="/pro/signup" element={<ProSignup />} />
+          <Route path="/pro/signin" element={<ProSignin />} />
+          <Route path="/pro/gallery" element={<ProGalleryPage />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/support" element={<Support />} />
+          <Route path="/admin" element={<div className="p-8"><h2>Admin Panel</h2></div>} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Layout>
+    </HelmetProvider>
   );
 }
