@@ -494,7 +494,12 @@ async function start() {
     });
   } catch (err) {
     console.error("❌ DB connection failed:", err.message);
-    process.exit(1);
+    console.warn("⚠️ Starting server without database connection");
+    
+    // Start server even without database
+    server.listen(PORT, () => {
+      console.log(`🚀 Fixlo API listening on port ${PORT} (DB-less mode)`);
+    });
   }
 }
 
