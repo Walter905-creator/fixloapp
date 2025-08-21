@@ -1,39 +1,53 @@
 const express = require("express");
 const router = express.Router();
-const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const { sign } = require('../utils/jwt');
 const Pro = require("../models/Pro");
 const mongoose = require("mongoose");
+
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH; // store hash, not raw
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD; // fallback for backward compatibility
 
 // ✅ Admin login
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
-  const adminEmail = process.env.ADMIN_EMAIL;
-  const adminPassword = process.env.ADMIN_PASSWORD;
-
+  
   if (!email || !password) {
     return res.status(400).json({ error: "Email and password are required" });
   }
 
-  if (!adminEmail || !adminPassword) {
-    return res.status(500).json({ error: "Admin credentials not configured" });
-  }
-
-  if (email !== adminEmail || password !== adminPassword) {
+  if (email !== ADMIN_EMAIL) {
     return res.status(401).json({ error: "Invalid credentials" });
   }
 
-  const token = jwt.sign(
-    { email: adminEmail, role: "admin" },
-    process.env.JWT_SECRET,
-    { expiresIn: "24h" }
-  );
+  // Check hashed password first, fallback to plain password for backward compatibility
+  let isValidPassword = false;
+  
+  if (ADMIN_PASSWORD_HASH) {
+    try {
+      isValidPassword = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
+    } catch (error) {
+      console.error("Password hash comparison error:", error);
+    }
+  }
+  
+  // Fallback to plain password if hash not available or comparison failed
+  if (!isValidPassword && ADMIN_PASSWORD && password === ADMIN_PASSWORD) {
+    isValidPassword = true;
+  }
 
+  if (!isValidPassword) {
+    return res.status(401).json({ error: "Invalid credentials" });
+  }
+
+  const token = sign({ role: 'admin', email: ADMIN_EMAIL });
+  
   res.json({
     success: true,
     token,
     admin: {
-      email: adminEmail,
+      email: ADMIN_EMAIL,
       role: "admin"
     }
   });

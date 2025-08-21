@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import ExitIntentModal from "../components/ExitIntentModal";
+import ReviewsFeed from "../components/ReviewsFeed";
 import useExitIntent from "../hooks/useExitIntent";
 import "../styles/home.css";
 
@@ -226,6 +227,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Reviews Feed */}
+      <ReviewsFeed/>
 
       {/* Exit Intent Modal */}
       <ExitIntentModal 

@@ -4,6 +4,10 @@ import Home from './pages/Home';
 import Signup from './pages/Signup';
 import ProSignup from './pages/ProSignup';
 import ProGallery from './pages/ProGallery';
+import AdminLogin from './pages/AdminLogin';
+import Admin from './pages/Admin';
+import ProLogin from './pages/ProLogin';
+import ProDashboard from './pages/ProDashboard';
 
 export default function App(){
   return (
@@ -30,7 +34,11 @@ export default function App(){
           <Route path="/" element={<Home/>}/>
           <Route path="/signup" element={<Signup/>}/>
           <Route path="/pro/signup" element={<ProSignup/>}/>
+          <Route path="/pro/login" element={<ProLogin/>}/>
+          <Route path="/pro/dashboard" element={<ProDashboard/>}/>
           <Route path="/pro/gallery" element={<ProGallery/>}/>
+          <Route path="/admin/login" element={<AdminLogin/>}/>
+          <Route path="/admin" element={<Admin/>}/>
           <Route path="*" element={
             <div className="max-w-4xl mx-auto p-10">
               <h1 className="text-3xl font-bold mb-2">404</h1>
