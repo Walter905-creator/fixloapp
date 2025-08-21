@@ -1,6 +1,10 @@
 import React from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
 import Home from './pages/Home';
+import HowItWorks from './pages/HowItWorks';
+import Contact from './pages/Contact';
+import Services from './pages/Services';
+import ServiceDetail from './pages/ServiceDetail';
 import Signup from './pages/Signup';
 import ProSignup from './pages/ProSignup';
 import ProGallery from './pages/ProGallery';
@@ -32,6 +36,10 @@ export default function App(){
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Home/>}/>
+          <Route path="/how-it-works" element={<HowItWorks/>}/>
+          <Route path="/contact" element={<Contact/>}/>
+          <Route path="/services" element={<Services/>}/>
+          <Route path="/services/:service" element={<ServiceDetail/>}/>
           <Route path="/signup" element={<Signup/>}/>
           <Route path="/pro/signup" element={<ProSignup/>}/>
           <Route path="/pro/login" element={<ProLogin/>}/>
