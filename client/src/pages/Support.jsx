@@ -122,6 +122,7 @@ export default function Support() {
                     type="text"
                     id="name"
                     name="name"
+                    autoComplete="name"
                     required
                     value={formData.name}
                     onChange={handleInputChange}
@@ -136,6 +137,7 @@ export default function Support() {
                     type="email"
                     id="email"
                     name="email"
+                    autoComplete="email"
                     required
                     value={formData.email}
                     onChange={handleInputChange}

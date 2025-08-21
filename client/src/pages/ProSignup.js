@@ -103,12 +103,12 @@ export default function ProSignup() {
         <form onSubmit={handleSubmit} style={{ maxWidth: 640 }}>
           {/* your inputs */}
           <div className="grid gap-3">
-            <input name="name" value={form.name} onChange={onChange} placeholder="Full name" className="input" style={{border:'1px solid #e5e7eb',borderRadius:'1rem',padding:'0.75rem'}} />
-            <input name="email" type="email" value={form.email} onChange={onChange} placeholder="Email" className="input" style={{border:'1px solid #e5e7eb',borderRadius:'1rem',padding:'0.75rem'}} />
-            <input name="phone" value={form.phone} onChange={onChange} placeholder="Phone" className="input" style={{border:'1px solid #e5e7eb',borderRadius:'1rem',padding:'0.75rem'}} />
+            <input name="name" autoComplete="name" value={form.name} onChange={onChange} placeholder="Full name" className="input" style={{border:'1px solid #e5e7eb',borderRadius:'1rem',padding:'0.75rem'}} />
+            <input name="email" type="email" autoComplete="email" value={form.email} onChange={onChange} placeholder="Email" className="input" style={{border:'1px solid #e5e7eb',borderRadius:'1rem',padding:'0.75rem'}} />
+            <input name="phone" autoComplete="tel" value={form.phone} onChange={onChange} placeholder="Phone" className="input" style={{border:'1px solid #e5e7eb',borderRadius:'1rem',padding:'0.75rem'}} />
             <input name="trade" value={form.trade} onChange={onChange} placeholder="Trade (e.g., Plumbing)" className="input" style={{border:'1px solid #e5e7eb',borderRadius:'1rem',padding:'0.75rem'}} />
-            <input name="location" value={form.location} onChange={onChange} placeholder="City, State" className="input" style={{border:'1px solid #e5e7eb',borderRadius:'1rem',padding:'0.75rem'}} />
-            <input name="dob" type="date" value={form.dob} onChange={onChange} className="input" style={{border:'1px solid #e5e7eb',borderRadius:'1rem',padding:'0.75rem'}} />
+            <input name="location" autoComplete="address-line1" value={form.location} onChange={onChange} placeholder="City, State" className="input" style={{border:'1px solid #e5e7eb',borderRadius:'1rem',padding:'0.75rem'}} />
+            <input name="dob" type="date" autoComplete="bday" value={form.dob} onChange={onChange} className="input" style={{border:'1px solid #e5e7eb',borderRadius:'1rem',padding:'0.75rem'}} />
           </div>
 
           {/* Required SMS consent (unchecked by default) */}
