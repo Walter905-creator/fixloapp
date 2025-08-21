@@ -58,3 +58,4 @@ signup/index.html
 *.swp
 *.swo
 build/
+*.css.map
