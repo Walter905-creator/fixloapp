@@ -80,6 +80,28 @@ router.post('/profiles/:proId/reviews', async (req, res) => {
   }
 });
 
+// Latest reviews feed endpoint - MUST come before /:proId route
+router.get('/latest', async (req, res) => {
+  try {
+    // Check database connection
+    if (mongoose.connection.readyState !== 1) {
+      console.log('Database not connected, returning empty reviews feed');
+      return res.json({ items: [] });
+    }
+
+    const items = await Review.find({ status: 'published' })
+      .sort({ createdAt: -1 })
+      .limit(24)
+      .select('proId rating text photos createdAt homeownerName')
+      .lean();
+    res.json({ items });
+  } catch (error) {
+    console.error('Latest reviews error:', error);
+    // Return empty array instead of error to prevent frontend breakage
+    res.json({ items: [] });
+  }
+});
+
 // Get reviews for a specific professional
 router.get('/:proId', async (req, res) => {
   try {
@@ -402,21 +424,6 @@ router.post('/admin/reviews/:id/reject', async (req, res) => {
     res.json({ ok: true });
   } catch (e) {
     console.error('reject review error', e);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// Latest reviews feed endpoint
-router.get('/latest', async (req, res) => {
-  try {
-    const items = await Review.find({ status: 'published' })
-      .sort({ createdAt: -1 })
-      .limit(24)
-      .select('proId rating text photos createdAt homeownerName')
-      .lean();
-    res.json({ items });
-  } catch (error) {
-    console.error('Latest reviews error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
