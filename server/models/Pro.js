@@ -205,6 +205,18 @@ const proSchema = new mongoose.Schema({
     default: false
   },
 
+  // Job notification preferences
+  wantsNotifications: { 
+    type: Boolean, 
+    default: true 
+  },
+
+  // Service radius in miles (optional per-pro radius)
+  serviceRadiusMiles: { 
+    type: Number, 
+    default: 30 
+  },
+
   // Professional portfolio
   profileImage: {
     type: String, // Cloudinary URL
