@@ -1,12 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import ExitIntentModal from "../components/ExitIntentModal";
-import useExitIntent from "../hooks/useExitIntent";
-import "../styles/home.css";
 
 export default function Home() {
-  const { showExitIntent, closeModal } = useExitIntent();
-
   // Service data for the grid
   const services = [
     {
@@ -217,12 +212,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* Exit Intent Modal */}
-      <ExitIntentModal 
-        isOpen={showExitIntent}
-        onClose={closeModal}
-      />
     </div>
   );
 }
