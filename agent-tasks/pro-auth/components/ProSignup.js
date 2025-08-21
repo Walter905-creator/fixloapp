@@ -113,6 +113,7 @@ const ProSignup = () => {
                   id="name"
                   name="name"
                   type="text"
+                  autoComplete="name"
                   required
                   value={formData.name}
                   onChange={handleChange}
@@ -148,6 +149,7 @@ const ProSignup = () => {
                   id="phone"
                   name="phone"
                   type="tel"
+                  autoComplete="tel"
                   required
                   value={formData.phone}
                   onChange={handleChange}
@@ -188,6 +190,7 @@ const ProSignup = () => {
                   id="location"
                   name="location"
                   type="text"
+                  autoComplete="address-line1"
                   required
                   placeholder="e.g., New York, NY"
                   value={formData.location}
@@ -206,6 +209,7 @@ const ProSignup = () => {
                   id="dob"
                   name="dob"
                   type="date"
+                  autoComplete="bday"
                   required
                   value={formData.dob}
                   onChange={handleChange}

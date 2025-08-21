@@ -129,6 +129,7 @@ export default function ServiceRequest() {
                 type="text"
                 id="name"
                 name="name"
+                autoComplete="name"
                 value={formData.name}
                 onChange={handleChange}
                 required
@@ -145,6 +146,7 @@ export default function ServiceRequest() {
                 type="email"
                 id="email"
                 name="email"
+                autoComplete="email"
                 value={formData.email}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -160,6 +162,7 @@ export default function ServiceRequest() {
                 type="tel"
                 id="phone"
                 name="phone"
+                autoComplete="tel"
                 value={formData.phone}
                 onChange={handleChange}
                 required
@@ -197,6 +200,7 @@ export default function ServiceRequest() {
                 type="text"
                 id="address"
                 name="address"
+                autoComplete="street-address"
                 value={formData.address}
                 onChange={handleChange}
                 required
