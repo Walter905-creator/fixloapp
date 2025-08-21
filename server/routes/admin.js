@@ -2,30 +2,15 @@ const express = require("express");
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 const Pro = require("../models/Pro");
-const adminAuth = require("../middleware/adminAuth");
+const requireAuth = require("../middleware/requireAuth");
 const fs = require('fs');
 const path = require('path');
 
-router.post('/login', (req, res) => {
-  console.log('🔐 Admin login attempt:', req.body);
-  const { email, password } = req.body;
-  const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
-  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-  const JWT_SECRET = process.env.JWT_SECRET;
-
-  console.log('🔍 Environment check:');
-  console.log('ADMIN_EMAIL:', ADMIN_EMAIL);
-  console.log('ADMIN_PASSWORD:', ADMIN_PASSWORD ? 'set' : 'not set');
-  console.log('JWT_SECRET:', JWT_SECRET ? 'set' : 'not set');
-
-  if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-    console.log('✅ Login successful');
-    const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: '2h' });
-    return res.json({ token });
-  }
-
-  console.log('❌ Login failed - invalid credentials');
-  return res.status(401).json({ message: 'Unauthorized' });
+// Protect all admin routes with JWT
+router.use(requireAuth);
+router.use((req, res, next) => {
+  if (req.user?.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+  next();
 });
 
 // ✅ Test endpoint for debugging - kept public for troubleshooting
@@ -60,7 +45,7 @@ router.get("/test", async (req, res) => {
 });
 
 // ✅ Get all Pros
-router.get("/pros", adminAuth, async (req, res) => {
+router.get("/pros", async (req, res) => {
   try {
     // Check if database is connected
     const mongoose = require('mongoose');
@@ -128,7 +113,7 @@ router.get("/pros", adminAuth, async (req, res) => {
 });
 
 // ✅ Add a new Pro
-router.post("/pros", adminAuth, async (req, res) => {
+router.post("/pros", async (req, res) => {
   const { name, email, phone, trade, location } = req.body;
   try {
     const newPro = new Pro({ 
@@ -149,7 +134,7 @@ router.post("/pros", adminAuth, async (req, res) => {
 });
 
 // ✅ Toggle active status for a Pro
-router.put("/pros/:id/toggle", adminAuth, async (req, res) => {
+router.put("/pros/:id/toggle", async (req, res) => {
   try {
     // Check if database is connected
     const mongoose = require('mongoose');
@@ -174,7 +159,7 @@ router.put("/pros/:id/toggle", adminAuth, async (req, res) => {
 });
 
 // ✅ Delete a Pro
-router.delete("/pros/:id", adminAuth, async (req, res) => {
+router.delete("/pros/:id", async (req, res) => {
   try {
     // Check if database is connected
     const mongoose = require('mongoose');
@@ -195,7 +180,7 @@ router.delete("/pros/:id", adminAuth, async (req, res) => {
 });
 
 // ✅ Get dashboard stats
-router.get("/stats", adminAuth, async (req, res) => {
+router.get("/stats", async (req, res) => {
   try {
     // Check if database is connected
     const mongoose = require('mongoose');
