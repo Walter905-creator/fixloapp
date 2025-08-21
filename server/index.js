@@ -239,6 +239,7 @@ app.use("/api/cloudinary", require("./routes/cloudinary")); // POST /api/cloudin
 
 app.use("/api/admin", adminRateLimit, require("./routes/admin"));
 app.use("/api/auth", authRateLimit, require("./routes/auth"));
+app.use("/api/pro-auth", authRateLimit, require("./routes/proAuth"));
 
 app.use("/api/pros", generalRateLimit, require("./routes/proRoutes")); // auth & mgmt
 app.use("/api/homeowner-lead", require("./routes/homeownerLead"));

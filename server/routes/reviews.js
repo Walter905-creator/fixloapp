@@ -406,4 +406,19 @@ router.post('/admin/reviews/:id/reject', async (req, res) => {
   }
 });
 
+// Latest reviews feed endpoint
+router.get('/latest', async (req, res) => {
+  try {
+    const items = await Review.find({ status: 'published' })
+      .sort({ createdAt: -1 })
+      .limit(24)
+      .select('proId rating text photos createdAt homeownerName')
+      .lean();
+    res.json({ items });
+  } catch (error) {
+    console.error('Latest reviews error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;
