@@ -2,49 +2,65 @@ const express = require('express');
 const router = express.Router();
 const { v2: cloudinary } = require('cloudinary');
 
-// Configure Cloudinary
+// --- Configuration (env required) ---
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
+  api_key:    process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 // POST /api/cloudinary/sign
-// Generate signature for secure Cloudinary uploads
+// Returns a signature + params for secure direct-to-Cloudinary uploads
 router.post('/sign', (req, res) => {
   try {
-    // Check if Cloudinary is configured
-    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
-      return res.status(503).json({ 
+    // Ensure config present
+    if (
+      !process.env.CLOUDINARY_CLOUD_NAME ||
+      !process.env.CLOUDINARY_API_KEY ||
+      !process.env.CLOUDINARY_API_SECRET
+    ) {
+      return res.status(503).json({
         error: 'Cloudinary not configured',
-        message: 'Upload service is not available'
+        message: 'Upload service is not available',
       });
     }
 
-    const { folder = 'pros', upload_preset } = req.body;
-    
-    // Generate timestamp
-    const timestamp = Math.round(Date.now() / 1000);
-    
-    // Default optimized transformation (f_auto for format, q_auto for quality)
+    // Optional inputs from client
+    const {
+      folder = 'pros',             // e.g., keep all Pro images under /pros
+      upload_preset,               // if you use unsigned presets, pass it through
+      transformation,              // allow override, but default to optimized below
+      public_id,                   // optional stable id
+      context,                     // optional key=value|key=value pairs
+      tags,                        // optional comma-separated tags
+    } = req.body || {};
+
+    // Safe, fast default optimization
     const defaultTransformation = 'f_auto,q_auto,w_800,h_600,c_limit';
-    const transformation = req.body.transformation || defaultTransformation;
-    
-    // Prepare parameters to sign
-    const params = {
+
+    const timestamp = Math.floor(Date.now() / 1000);
+
+    // Params that MUST be identical on the client upload call
+    const paramsToSign = {
       timestamp,
       folder,
       use_filename: true,
       unique_filename: true,
-      transformation,
-      ...(upload_preset && { upload_preset })
+      transformation: transformation || defaultTransformation,
+      ...(upload_preset ? { upload_preset } : {}),
+      ...(public_id ? { public_id } : {}),
+      ...(context ? { context } : {}),
+      ...(tags ? { tags } : {}),
     };
 
-    // Generate signature
-    const signature = cloudinary.utils.api_sign_request(params, process.env.CLOUDINARY_API_SECRET);
+    // Create signature
+    const signature = cloudinary.utils.api_sign_request(
+      paramsToSign,
+      process.env.CLOUDINARY_API_SECRET
+    );
 
-    // Return signature and required parameters
-    res.json({
+    // Respond with signature and required params
+    return res.json({
       signature,
       timestamp,
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -52,14 +68,17 @@ router.post('/sign', (req, res) => {
       folder,
       use_filename: true,
       unique_filename: true,
-      transformation,
-      ...(upload_preset && { upload_preset })
+      transformation: paramsToSign.transformation,
+      ...(upload_preset ? { upload_preset } : {}),
+      ...(public_id ? { public_id } : {}),
+      ...(context ? { context } : {}),
+      ...(tags ? { tags } : {}),
     });
-  } catch (error) {
-    console.error('Cloudinary signing error:', error);
-    res.status(500).json({ 
+  } catch (err) {
+    console.error('Cloudinary signing error:', err);
+    return res.status(500).json({
       error: 'Failed to generate upload signature',
-      message: error.message 
+      message: err?.message || 'Unknown error',
     });
   }
 });
