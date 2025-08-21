@@ -181,6 +181,12 @@ const proSchema = new mongoose.Schema({
     default: false
   },
   verificationDate: Date,
+  verificationStatus: {
+    type: String,
+    enum: ['unverified', 'pending', 'verified', 'rejected', 'skipped'],
+    default: 'unverified'
+  },
+  verificationNotes: { type: String, default: '' },
   
   // Background check (Checkr integration)
   backgroundCheckStatus: {

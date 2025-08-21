@@ -48,8 +48,25 @@ export default function ProSignup() {
     try {
       setSubmitting(true);
 
-      // (Optional) save the pro in your DB first:
-      // await fetch("/api/pro-signup", { ...form })
+      // First, save the pro in the DB
+      const proSignupResp = await fetch("/api/pro-signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      
+      if (!proSignupResp.ok) {
+        const errorData = await proSignupResp.json();
+        throw new Error(errorData?.message || "Pro signup failed");
+      }
+
+      const proData = await proSignupResp.json();
+      const { verificationStatus } = proData;
+      
+      // Store verification status locally if needed
+      if (verificationStatus) {
+        localStorage.setItem('fixlo_pro_verification', verificationStatus);
+      }
 
       // Then immediately create Stripe Checkout and redirect
       const resp = await fetch("/api/subscribe/checkout", {

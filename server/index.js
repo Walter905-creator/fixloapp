@@ -317,6 +317,7 @@ app.post("/api/subscribe", async (req, res) => {
 // ----------------------- Pro Signup (with age check & dupe guard) -----------------------
 app.post("/api/pro-signup", async (req, res) => {
   try {
+    const { ENABLE_BG_CHECKS } = require('./config/flags');
     const { name, email, phone, trade, location, dob, role, termsConsent, smsConsent } =
       req.body || {};
 
@@ -361,6 +362,17 @@ app.post("/api/pro-signup", async (req, res) => {
       });
     }
 
+    // Background check decision based on feature flag
+    let verificationStatus = 'pending';
+    let verificationNotes = '';
+
+    if (!ENABLE_BG_CHECKS) {
+      verificationStatus = 'skipped';
+      verificationNotes = 'Background checks temporarily disabled by config.';
+    } else {
+      // existing Checkr invitation / flow would go here when implemented
+    }
+
     // Allow same email registering for a different trade, but require explicit consent flags
     const pro = await Pro.create({
       name: name.trim(),
@@ -370,6 +382,8 @@ app.post("/api/pro-signup", async (req, res) => {
       location: String(location).trim(),
       role: role || "pro",
       wantsNotifications: true,
+      verificationStatus,
+      verificationNotes,
       smsConsent: {
         given: Boolean(smsConsent?.given),
         dateGiven: smsConsent?.dateGiven || new Date(),
@@ -389,7 +403,7 @@ app.post("/api/pro-signup", async (req, res) => {
       updatedAt: new Date(),
     });
 
-    return res.status(201).json({ success: true, proId: pro._id });
+    return res.status(201).json({ success: true, proId: pro._id, verificationStatus });
   } catch (err) {
     console.error("❌ Pro signup error:", err.message);
     return res
@@ -442,6 +456,15 @@ app.post("/webhook/stripe", async (req, res) => {
     console.error("❌ Stripe webhook error:", err.message);
     res.status(400).send(`Webhook Error: ${err.message}`);
   }
+});
+
+// ----------------------- Checkr Webhook (no-op when background checks disabled) -----------------------
+app.post('/webhook/checkr', (req, res) => {
+  const { ENABLE_BG_CHECKS } = require('./config/flags');
+  if (!ENABLE_BG_CHECKS) return res.status(204).end(); // ignore quietly
+  // ... existing webhook logic would go here when background checks are enabled
+  console.log("📋 Checkr webhook received but background checks are disabled");
+  res.status(204).end();
 });
 
 // ----------------------- Global Error Handler -----------------------
