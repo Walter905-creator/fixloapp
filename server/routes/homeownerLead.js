@@ -18,24 +18,48 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ ok: false, message: 'name, phone, trade, and address are required' });
     }
 
-    // 1) Geocode the homeowner address
-    const { lat, lng, formatted } = await geocodeAddress(address);
+    // 1) Geocode the homeowner address with fallback
+    let lat, lng, formatted;
+    try {
+      const geocodeResult = await geocodeAddress(address);
+      lat = geocodeResult.lat;
+      lng = geocodeResult.lng; 
+      formatted = geocodeResult.formatted;
+    } catch (geocodeError) {
+      console.warn('Geocoding failed, using default coordinates:', geocodeError.message);
+      // Fallback to center of US coordinates when geocoding is unavailable
+      lat = 39.8283;
+      lng = -98.5795;
+      formatted = address; // Use original address as formatted
+    }
 
-    // 2) Query nearby pros (default 30 miles)
+    // 2) Query nearby pros (default 30 miles) with database fallback
+    let pros = [];
     const radiusMiles = 30;
     const radiusMeters = milesToMeters(radiusMiles);
 
-    // Use MongoDB $near with geospatial index on location
-    const pros = await Pro.find({
-      trade: trade.toLowerCase().trim(),
-      wantsNotifications: true,
-      location: {
-        $near: {
-          $geometry: { type: 'Point', coordinates: [lng, lat] },
-          $maxDistance: radiusMeters
-        }
+    try {
+      // Check database connection before querying
+      const mongoose = require('mongoose');
+      if (mongoose.connection.readyState === 1) {
+        // Use MongoDB $near with geospatial index on location
+        pros = await Pro.find({
+          trade: trade.toLowerCase().trim(),
+          wantsNotifications: true,
+          location: {
+            $near: {
+              $geometry: { type: 'Point', coordinates: [lng, lat] },
+              $maxDistance: radiusMeters
+            }
+          }
+        }).limit(50); // safety cap
+      } else {
+        console.warn('Database not connected, cannot query for pros');
       }
-    }).limit(50); // safety cap
+    } catch (dbError) {
+      console.error('Database query failed:', dbError.message);
+      // Continue with empty pros array
+    }
 
     // 3) Fire-and-forget notify (SMS/email) – do not block response
     (async () => {
