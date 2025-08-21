@@ -1,51 +1,73 @@
-import React from "react";
-import { Routes, Route, Link } from "react-router-dom";
+import React from 'react';
+import { Routes, Route, Link } from 'react-router-dom';
+import Home from './pages/Home';
+import Signup from './pages/Signup';
+import ProSignup from './pages/ProSignup';
+import ProGallery from './pages/ProGallery';
 
-const Home = () => (
-  <main style={{ padding: "24px" }}>
-    <h1>Fixlo</h1>
-    <p>Book trusted home services near you. Plumbing, electrical, HVAC, and more.</p>
-    <Link to="/signup">Sign up</Link>
-  </main>
-);
-
-const HowItWorks = () => <div style={{ padding: 24 }}><h2>How it works</h2></div>;
-const Contact = () => <div style={{ padding: 24 }}><h2>Contact</h2></div>;
-const Services = () => <div style={{ padding: 24 }}><h2>Services</h2></div>;
-const Service = () => <div style={{ padding: 24 }}><h2>Service</h2></div>;
-const Signup = () => <div style={{ padding: 24 }}><h2>Signup</h2></div>;
-const ProSignup = () => <div style={{ padding: 24 }}><h2>Pro Signup</h2></div>;
-const ProProfile = () => <div style={{ padding: 24 }}><h2>Pro Profile</h2></div>;
-const ReviewCapture = () => <div style={{ padding: 24 }}><h2>Review</h2></div>;
-const ReviewPublic = () => <div style={{ padding: 24 }}><h2>Public Review</h2></div>;
-const NotFound = () => <div style={{ padding: 24 }}><h2>Not Found</h2></div>;
-
-export default function App() {
+export default function App(){
   return (
-    <>
-      {/* Keep your existing header/nav if you have one; this is just a placeholder */}
-      <nav style={{ padding: "12px 24px", borderBottom: "1px solid #eee" }}>
-        <Link to="/">Home</Link>{" • "}
-        <Link to="/how-it-works">How it works</Link>{" • "}
-        <Link to="/contact">Contact</Link>{" • "}
-        <Link to="/services">Services</Link>{" • "}
-        <Link to="/signup">Sign up</Link>{" • "}
-        <Link to="/pro/signup">Pro signup</Link>
-      </nav>
+    <div className="min-h-screen flex flex-col">
+      <header className="border-b">
+        <div className="max-w-6xl mx-auto flex items-center justify-between p-4">
+          <Link to="/" className="flex items-center gap-3">
+            {/* Make sure this path exists in public/ */}
+            <img src="/assets/brand/fixlo-logo.svg" alt="Fixlo" className="h-8" />
+            <span className="sr-only">Fixlo</span>
+          </Link>
+          <nav className="flex items-center gap-6 text-sm">
+            <Link to="/services" className="hover:underline">Services</Link>
+            <Link to="/how-it-works" className="hover:underline">How It Works</Link>
+            <Link to="/ai-assistant" className="hover:underline">AI Assistant</Link>
+            <Link to="/contact" className="hover:underline">Contact</Link>
+            <Link to="/pro/signup" className="px-3 py-1 rounded bg-black text-white">Join Now</Link>
+          </nav>
+        </div>
+      </header>
 
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/how-it-works" element={<HowItWorks />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/services" element={<Services />} />
-        <Route path="/services/:service" element={<Service />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/pro/signup" element={<ProSignup />} />
-        <Route path="/pro/:slug" element={<ProProfile />} />
-        <Route path="/review/:token" element={<ReviewCapture />} />
-        <Route path="/review/public/:reviewId" element={<ReviewPublic />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </>
+      <main className="flex-1">
+        <Routes>
+          <Route path="/" element={<Home/>}/>
+          <Route path="/signup" element={<Signup/>}/>
+          <Route path="/pro/signup" element={<ProSignup/>}/>
+          <Route path="/pro/gallery" element={<ProGallery/>}/>
+          <Route path="*" element={
+            <div className="max-w-4xl mx-auto p-10">
+              <h1 className="text-3xl font-bold mb-2">404</h1>
+              <p className="text-slate-600 mb-6">Page not found.</p>
+              <Link to="/" className="text-blue-600 underline">Go Home</Link>
+            </div>
+          }/>
+        </Routes>
+      </main>
+
+      <footer className="border-t text-sm text-slate-600">
+        <div className="max-w-6xl mx-auto p-6 grid gap-3 md:grid-cols-4">
+          <div>
+            <div className="font-semibold mb-2">Fixlo</div>
+            <p>Connecting homeowners with trusted professionals.</p>
+          </div>
+          <div>
+            <div className="font-semibold mb-2">Services</div>
+            <ul className="space-y-1">
+              <li><Link to="/services/plumbing" className="hover:underline">Plumbing</Link></li>
+              <li><Link to="/services/electrical" className="hover:underline">Electrical</Link></li>
+              <li><Link to="/services/hvac" className="hover:underline">HVAC</Link></li>
+            </ul>
+          </div>
+          <div>
+            <div className="font-semibold mb-2">Company</div>
+            <ul className="space-y-1">
+              <li><Link to="/how-it-works" className="hover:underline">How It Works</Link></li>
+              <li><Link to="/contact" className="hover:underline">Contact</Link></li>
+              <li><Link to="/terms" className="hover:underline">Terms</Link></li>
+              <li><Link to="/privacy" className="hover:underline">Privacy</Link></li>
+              <li><a href="/admin" className="hover:underline">Admin</a></li>
+            </ul>
+          </div>
+          <div className="text-slate-500">&copy; {new Date().getFullYear()} Fixlo. All rights reserved.</div>
+        </div>
+      </footer>
+    </div>
   );
 }
