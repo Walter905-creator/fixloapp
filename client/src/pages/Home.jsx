@@ -115,10 +115,10 @@ export default function Home() {
               Select a Service
             </button>
             <Link
-              to="/signup"
+              to="/request-service"
               className="px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg border-2 border-blue-600 hover:bg-blue-50 transition-colors"
             >
-              Sign up
+              Request Service
             </Link>
           </div>
         </div>
