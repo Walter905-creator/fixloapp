@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import ExitIntentModal from "../components/ExitIntentModal";
 import useExitIntent from "../hooks/useExitIntent";
 import "../styles/home.css";
@@ -87,6 +88,14 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
+      <Helmet>
+        <title>Fixlo – Book Trusted Home Services Near You</title>
+        <meta 
+          name="description" 
+          content="Connect with verified home service professionals. Book plumbing, electrical, HVAC, carpentry, and more. Trusted local experts for all your home maintenance needs." 
+        />
+        <link rel="canonical" href="https://www.fixloapp.com/" />
+      </Helmet>
       {/* Hero Section */}
       <section className="hero-section bg-gradient-to-br from-blue-50 to-indigo-100 py-20">
         <div className="max-w-6xl mx-auto px-4 text-center">
