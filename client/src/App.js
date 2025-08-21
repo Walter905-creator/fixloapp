@@ -11,6 +11,10 @@ import Home from "./pages/Home";
 import Signup from "./pages/Signup";
 import ProSignup from "./pages/ProSignup";
 import ProSignin from "./pages/ProSignin";
+import ProLogin from "./pages/ProLogin";
+import ProDashboard from "./pages/ProDashboard";
+import AdminLogin from "./pages/AdminLogin";
+import Admin from "./pages/Admin";
 import ProGalleryPage from "./pages/ProGallery";
 import Services from "./pages/Services";
 import ServiceDetail from "./pages/ServiceDetail";
@@ -62,11 +66,14 @@ export default function App() {
           <Route path="/ai-assistant" element={<AIAssistant />} />
           <Route path="/pro/signup" element={<ProSignup />} />
           <Route path="/pro/signin" element={<ProSignin />} />
+          <Route path="/pro/login" element={<ProLogin />} />
+          <Route path="/pro/dashboard" element={<ProDashboard />} />
           <Route path="/pro/gallery" element={<ProGalleryPage />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin" element={<Admin />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/support" element={<Support />} />
-          <Route path="/admin" element={<div className="p-8"><h2>Admin Panel</h2></div>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Layout>

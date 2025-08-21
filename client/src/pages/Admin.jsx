@@ -21,10 +21,34 @@ export default function Admin(){
   if(!token) return null;
 
   return (
-    <div className="container" style={{padding:'2rem 0'}}>
-      <h1 className="text-2xl font-bold mb-4">Admin</h1>
-      {err && <div className="text-red-600">{err}</div>}
-      {data ? <pre className="bg-slate-50 p-3 rounded">{JSON.stringify(data,null,2)}</pre> : 'Loading...'}
+    <div className="max-w-6xl mx-auto py-8 px-4">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        <button 
+          onClick={() => {
+            localStorage.removeItem('fixlo_admin_token');
+            window.location.href='/admin/login';
+          }}
+          className="px-4 py-2 text-red-600 border border-red-600 rounded-lg hover:bg-red-50"
+        >
+          Logout
+        </button>
+      </div>
+      
+      {err && <div className="text-red-600 mb-4 p-4 bg-red-50 rounded-lg">{err}</div>}
+      
+      {data ? (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">Professional Data</h2>
+          <pre className="bg-gray-50 p-4 rounded-lg overflow-auto text-sm">
+            {JSON.stringify(data, null, 2)}
+          </pre>
+        </div>
+      ) : (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-gray-500">Loading...</div>
+        </div>
+      )}
     </div>
   );
 }

@@ -16,17 +16,38 @@ export default function ReviewsFeed(){
   if(!items.length) return null;
 
   return (
-    <section className="container" style={{padding:'2rem 0'}}>
-      <h2 className="text-xl font-bold mb-3">Recent reviews</h2>
-      <div style={{columns:'300px', columnGap:'1rem'}}>
-        {items.map((r,i)=>(
-          <div key={i} style={{breakInside:'avoid', marginBottom:'1rem', background:'#fff', borderRadius:'12px', padding:'12px', boxShadow:'0 1px 3px rgba(0,0,0,0.08)'}}>
-            {r.photos?.[0]?.url && <img src={r.photos[0].url} alt={r.photos[0].alt||'review photo'} style={{width:'100%', borderRadius:'8px', marginBottom:'8px'}}/>}
-            <div className="text-sm text-slate-600 mb-1">⭐ {r.rating}/5</div>
-            <div className="text-sm">{r.text}</div>
-            {r.homeownerName && <div className="text-xs text-slate-500 mt-2">— {r.homeownerName}</div>}
-          </div>
-        ))}
+    <section className="py-16 bg-gray-50">
+      <div className="max-w-6xl mx-auto px-4">
+        <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">Recent Reviews</h2>
+        <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-6">
+          {items.map((r,i)=>(
+            <div key={i} className="break-inside-avoid mb-6 bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
+              {r.photos?.[0]?.url && (
+                <img 
+                  src={r.photos[0].url} 
+                  alt={r.photos[0].alt||'review photo'} 
+                  className="w-full rounded-lg mb-4 aspect-video object-cover"
+                />
+              )}
+              <div className="flex items-center mb-2">
+                <div className="flex text-yellow-400">
+                  {[...Array(5)].map((_, idx) => (
+                    <span key={idx} className={idx < r.rating ? 'text-yellow-400' : 'text-gray-300'}>
+                      ★
+                    </span>
+                  ))}
+                </div>
+                <span className="ml-2 text-sm text-gray-600">{r.rating}/5</span>
+              </div>
+              <p className="text-gray-700 text-sm mb-3 leading-relaxed">{r.text}</p>
+              {r.homeownerName && (
+                <div className="text-xs text-gray-500 font-medium">
+                  — {r.homeownerName}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );
