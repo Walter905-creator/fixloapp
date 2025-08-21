@@ -247,6 +247,7 @@ app.use("/api/notify", require("./routes/notify"));
 
 app.use("/api/stripe", require("./routes/stripe")); // subscription helpers
 app.use("/api/subscribe", require("./routes/subscribe")); // legacy subscribe
+app.use("/api", require("./routes/subscribe")); // exposes POST /api/subscribe/checkout
 
 app.use("/api/upload", require("./routes/upload")); // direct uploads (legacy)
 app.use("/api/reviews", require("./routes/reviews")); // reviews API (public)
