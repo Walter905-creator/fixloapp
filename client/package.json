@@ -14,6 +14,7 @@
     "test": "cross-env CI=false react-scripts test --watchAll=false",
     "eject": "react-scripts eject"
   },
+  "proxy": "http://localhost:3001",
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
