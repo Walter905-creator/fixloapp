@@ -98,25 +98,25 @@ export default function Home() {
         <link rel="canonical" href="https://www.fixloapp.com/" />
       </Helmet>
       {/* Hero Section */}
-      <section className="hero-section bg-gradient-to-br from-blue-50 to-indigo-100 py-20">
-        <div className="max-w-6xl mx-auto px-4 text-center">
-          <h1 className="text-5xl font-bold text-gray-900 mb-6">
+      <section className="hero container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="max-w-6xl mx-auto text-center">
+          <h1 className="mb-3 sm:mb-4 text-5xl font-bold text-gray-900">
             Welcome to Fixlo
           </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+          <p className="max-w-prose text-slate-600 mb-4 sm:mb-6 text-xl text-gray-600 mx-auto">
             Your one-stop hub for connecting with trusted home service professionals. 
             From plumbing to electrical, we've got you covered.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="cta-row flex flex-wrap gap-2 sm:gap-3 justify-center">
             <button
               onClick={scrollToServices}
-              className="px-8 py-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center rounded-md bg-indigo-600 text-white px-3 py-2 text-xs sm:text-sm font-semibold hover:bg-blue-700 transition-colors"
             >
               Select a Service
             </button>
             <Link
               to="/request-service"
-              className="px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg border-2 border-blue-600 hover:bg-blue-50 transition-colors"
+              className="inline-flex items-center rounded-md bg-white text-blue-600 border-2 border-blue-600 px-3 py-2 text-xs sm:text-sm font-semibold hover:bg-blue-50 transition-colors"
             >
               Request Service
             </Link>
@@ -125,12 +125,12 @@ export default function Home() {
       </section>
 
       {/* Select a Service Grid */}
-      <section id="select-a-service" className="py-20 bg-white">
-        <div className="max-w-6xl mx-auto px-4">
+      <section id="select-a-service" className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 bg-white">
+        <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
             Select a Service
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
             {services.map((service) => (
               <Link
                 key={service.id}

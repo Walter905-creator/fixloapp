@@ -10,3 +10,45 @@
 
 /* OPTIONAL: remove any legacy preload guards */
 html.app-hidden, body.app-hidden { opacity: 1 !important; visibility: visible !important; }
+
+/* --- Mobile type scale (uses clamp) --- */
+/* Keeps headings readable on phones without blowing up. */
+:root {
+  --fz-base: clamp(14px, 3.5vw, 16px);
+  --fz-h1: clamp(22px, 6.5vw, 32px);
+  --fz-h2: clamp(18px, 5.5vw, 28px);
+  --fz-h3: clamp(16px, 4.8vw, 22px);
+}
+/* Apply base font-size */
+html { font-size: var(--fz-base); }
+
+/* Map common elements (doesn't touch your components' structure) */
+h1 { font-size: var(--fz-h1); line-height: 1.2; }
+h2 { font-size: var(--fz-h2); line-height: 1.25; }
+h3 { font-size: var(--fz-h3); line-height: 1.3; }
+
+/* --- Images & logo never overflow --- */
+img, svg { max-width: 100%; height: auto; }
+
+/* Header/logo helpers */
+.fixlo-logo { max-height: 40px; width: auto; }
+@media (min-width: 640px) {
+  .fixlo-logo { max-height: 48px; }
+}
+
+/* --- Guard against accidental hidden UI --- */
+#root, [data-app-root] {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* --- Tighten paddings on small screens only --- */
+@media (max-width: 480px) {
+  .container,
+  .page-section {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  .hero { padding-top: 1.25rem !important; padding-bottom: 1.25rem !important; }
+  .cta-row { gap: .5rem !important; }
+}
