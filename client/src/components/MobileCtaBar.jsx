@@ -1,11 +1,23 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 export default function MobileCtaBar() {
   const { pathname } = useLocation();
   const hideOnThese = ["/pro/signup", "/signup"]; // don't show when already on a form
+  const [isMobile, setIsMobile] = useState(false);
 
-  if (window.innerWidth >= 768 || hideOnThese.includes(pathname)) return null;
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  if (!isMobile || hideOnThese.includes(pathname)) return null;
 
   return (
     <div
