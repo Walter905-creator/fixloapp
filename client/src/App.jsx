@@ -16,20 +16,32 @@ import ProDashboard from './pages/ProDashboard';
 export default function App(){
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b">
-        <div className="max-w-6xl mx-auto flex items-center justify-between p-4">
-          <Link to="/" className="flex items-center gap-3">
-            {/* Make sure this path exists in public/ */}
-            <img src="/assets/brand/fixlo-logo.svg" alt="Fixlo" className="h-8" />
-            <span className="sr-only">Fixlo</span>
-          </Link>
-          <nav className="flex items-center gap-6 text-sm">
-            <Link to="/services" className="hover:underline">Services</Link>
-            <Link to="/how-it-works" className="hover:underline">How It Works</Link>
-            <Link to="/ai-assistant" className="hover:underline">AI Assistant</Link>
-            <Link to="/contact" className="hover:underline">Contact</Link>
-            <Link to="/pro/signup" className="px-3 py-1 rounded bg-black text-white">Join Now</Link>
-          </nav>
+      <header className="w-full">
+        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="flex items-center justify-between">
+            <Link to="/" className="inline-flex items-center gap-2">
+              <img src="/assets/brand/fixlo-logo.svg" alt="Fixlo" className="fixlo-logo" />
+              {/* Optional wordmark text on larger screens only */}
+              <span className="hidden sm:inline text-slate-800 text-sm">Fixlo</span>
+            </Link>
+
+            {/* Right-side actions */}
+            <nav className="flex items-center gap-2 sm:gap-3">
+              <Link to="/services" className="text-xs sm:text-sm text-slate-700">Services</Link>
+              <Link to="/how-it-works" className="text-xs sm:text-sm text-slate-700">How It Works</Link>
+              <Link to="/ai-assistant" className="text-xs sm:text-sm text-slate-700">AI Assistant</Link>
+              <Link to="/contact" className="text-xs sm:text-sm text-slate-700">Contact</Link>
+              <Link to="/pro/signup" className="hidden sm:inline-flex text-xs sm:text-sm text-slate-700">Pro signup</Link>
+
+              {/* Primary CTA shrinks gracefully on phones */}
+              <Link
+                to="/pro/signup"
+                className="inline-flex items-center justify-center rounded-lg px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-medium bg-indigo-600 text-white"
+              >
+                Join Now
+              </Link>
+            </nav>
+          </div>
         </div>
       </header>
 
