@@ -3,8 +3,9 @@ import { Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 
 // Import new components
-import NavBar from "./components/NavBar";
+import Header from "./components/Header";
 import Footer from "./components/Footer";
+import MobileCtaBar from "./components/MobileCtaBar";
 
 // Import all pages
 import Home from "./pages/Home";
@@ -30,9 +31,10 @@ import Support from "./pages/Support";
 function Layout({ children }) {
   return (
     <div className="min-h-screen flex flex-col">
-      <NavBar />
+      <Header />
       <main className="flex-1">{children}</main>
       <Footer />
+      <MobileCtaBar />
     </div>
   );
 }
