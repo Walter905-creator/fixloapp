@@ -28,7 +28,7 @@ export default function Footer() {
                   "linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%)",
               }}
             >
-              FIXLO
+              Fixlo
             </span>
             <span className="sr-only">Fixlo</span>
           </Link>
