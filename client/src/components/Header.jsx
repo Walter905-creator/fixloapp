@@ -21,7 +21,7 @@ export default function Header() {
               className="h-8 w-auto"
             />
             <span className="font-semibold text-slate-900 hidden sm:inline">
-              FIXLO
+              Fixlo
             </span>
           </Link>
 
