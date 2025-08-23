@@ -100,9 +100,13 @@ export default function Home() {
       {/* Hero Section */}
       <section className="hero container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="max-w-6xl mx-auto text-center">
-          <h1 className="mb-3 sm:mb-4 text-5xl font-bold text-gray-900">
-            Welcome to Fixlo
-          </h1>
+          <div className="mb-3 sm:mb-4 flex justify-center">
+            <img
+              src="/assets/brand/fixlo-logo.svg"
+              alt="Fixlo"
+              className="h-16 sm:h-20 md:h-24 w-auto"
+            />
+          </div>
           <p className="max-w-prose text-slate-600 mb-4 sm:mb-6 text-xl text-gray-600 mx-auto">
             Your one-stop hub for connecting with trusted home service professionals. 
             From plumbing to electrical, we've got you covered.
