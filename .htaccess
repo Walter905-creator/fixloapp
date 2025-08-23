@@ -53,22 +53,28 @@ RewriteRule ^sms-optin/index\.html$ /sms-compliance [R=301,L]
 # Redirect services subdirectory to maintain clean URLs
 RewriteRule ^services/index\.html$ /services/ [R=301,L]
 
-# Internal rewrites: serve .html files for clean URLs (no redirect)
+# Internal rewrites: serve pre-rendered SPA routes and .html files for clean URLs (no redirect)
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^contact$ /contact.html [L]
+# Pre-rendered SPA routes - serve from generated directories
+RewriteRule ^signup/?$ /signup/index.html [L]
+RewriteRule ^how-it-works/?$ /how-it-works/index.html [L]
+RewriteRule ^contact/?$ /contact/index.html [L]
+RewriteRule ^services/?$ /services/index.html [L]
+RewriteRule ^services/([^/]+)/?$ /services/$1/index.html [L]
+RewriteRule ^pro/signup/?$ /pro/signup/index.html [L]
+# Static HTML files
 RewriteRule ^privacy$ /privacy.html [L]
 RewriteRule ^terms$ /terms.html [L] 
 RewriteRule ^support$ /support.html [L]
-# Route /signup to main React app instead of static HTML
-RewriteRule ^signup$ /index.html [L]
 RewriteRule ^pro-signup$ /pro-signup.html [L]
-RewriteRule ^how-it-works$ /how-it-works.html [L]
 RewriteRule ^sms-compliance$ /sms-compliance.html [L]
 RewriteRule ^contact-support$ /contact-support.html [L]
 RewriteRule ^admin$ /admin.html [L]
 RewriteRule ^login$ /login.html [L]
 RewriteRule ^dashboard$ /dashboard.html [L]
+# Fallback: serve main SPA for any other routes
+RewriteRule ^.*$ /index.html [L]
 
 # Prevent access to sensitive files
 <FilesMatch "\.(env|log|sql|sqlite|bak|backup|old)$">
