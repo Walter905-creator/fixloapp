@@ -21,7 +21,7 @@ export default function Header() {
               alt="Fixlo"
               width={128}
               height={36}
-              className="header-logo h-7 md:h-8 w-auto block"
+              className="site-logo header-logo h-7 md:h-8 w-auto block"
               fetchPriority="high"
             />
             <span className="font-semibold text-slate-900 hidden sm:inline">
@@ -30,7 +30,7 @@ export default function Header() {
           </Link>
 
           {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-6">
+          <div className="cta-row hidden md:flex items-center gap-6">
             <NavLink to="/services" className="text-slate-700 hover:text-slate-900">
               Services
             </NavLink>
