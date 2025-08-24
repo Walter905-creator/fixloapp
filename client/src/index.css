@@ -67,3 +67,14 @@ img, svg { max-width: 100%; height: auto; }
   .hero { padding-top: 1.25rem !important; padding-bottom: 1.25rem !important; }
   .cta-row { gap: .5rem !important; }
 }
+
+/* Fixlo brand sizing */
+.header-logo { height: 28px; width: auto; }
+@media (min-width: 768px) { .header-logo { height: 32px; } }
+
+/* Prevent accidental stretching or blurring */
+img[src*="fixlo-logo-2025"],
+img[src*="fixlo-mark-2025"] {
+  object-fit: contain;
+  image-rendering: auto;
+}
