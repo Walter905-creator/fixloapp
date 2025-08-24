@@ -20,7 +20,7 @@ export default function App(){
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <Link to="/" className="inline-flex items-center gap-2">
-              <img src="/assets/brand/fixlo-logo.svg" alt="Fixlo" className="fixlo-logo" />
+              <img src="/brand/fixlo-logo-2025.svg" alt="Fixlo" className="fixlo-logo" />
               {/* Optional wordmark text on larger screens only */}
               <span className="hidden sm:inline text-slate-800 text-sm">Fixlo</span>
             </Link>
