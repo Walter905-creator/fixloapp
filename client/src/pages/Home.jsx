@@ -102,7 +102,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto text-center">
           <div className="mb-3 sm:mb-4 flex justify-center">
             <img
-              src="/assets/brand/fixlo-logo.svg"
+              src="/brand/fixlo-logo-2025.svg"
               alt="Fixlo"
               className="h-16 sm:h-20 md:h-24 w-auto"
             />
