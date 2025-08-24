@@ -16,9 +16,11 @@ export default function Header() {
           {/* Left: Brand */}
           <Link to="/" className="flex items-center gap-2 shrink-0">
             <img
-              src="/assets/brand/fixlo-logo.svg"
+              src="/assets/brand/fixlo-logo-2025.svg?v=2025-08-20"
+              onError={(e) => { e.currentTarget.src = "/assets/brand/fixlo-logo-2025.png?v=2025-08-20"; }}
               alt="Fixlo"
-              className="h-8 w-auto"
+              className="header-logo h-7 md:h-8 w-auto block"
+              fetchPriority="high"
             />
             <span className="font-semibold text-slate-900 hidden sm:inline">
               Fixlo
