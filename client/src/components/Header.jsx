@@ -3,6 +3,7 @@ import { Link, NavLink } from "react-router-dom";
 
 export default function Header() {
   const [open, setOpen] = useState(false);
+  const BUILD_STAMP = process.env.REACT_APP_BUILD_ID || Date.now();
 
   return (
     <header
@@ -16,8 +17,8 @@ export default function Header() {
           {/* Left: Brand */}
           <Link to="/" className="flex items-center gap-2 shrink-0">
             <img
-              src="/assets/brand/fixlo-logo-2025.svg?v=2025-08-20"
-              onError={(e) => { e.currentTarget.src = "/assets/brand/fixlo-logo-2025.png?v=2025-08-20"; }}
+              src={`/assets/brand/fixlo-logo-2025-v3.svg?b=${BUILD_STAMP}`}
+              onError={(e) => { e.currentTarget.src = `/assets/brand/fixlo-logo-2025-v3.png?b=${BUILD_STAMP}`; }}
               alt="Fixlo"
               className="header-logo h-7 md:h-8 w-auto block"
               fetchPriority="high"
