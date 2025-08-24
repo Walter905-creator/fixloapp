@@ -74,7 +74,9 @@ img, svg { max-width: 100%; height: auto; }
 
 /* Prevent accidental stretching or blurring */
 img[src*="fixlo-logo-2025"],
-img[src*="fixlo-mark-2025"] {
+img[src*="fixlo-mark-2025"],
+img[src*="fixlo-logo-2025-v3"],
+img[src*="fixlo-mark-2025-v3"] {
   object-fit: contain;
   image-rendering: auto;
 }
