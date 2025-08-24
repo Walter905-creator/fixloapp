@@ -3,7 +3,10 @@
   "short_name": "Fixlo",
   "start_url": "/",
   "display": "standalone",
+  "theme_color": "#833ab4",
   "background_color": "#ffffff",
-  "theme_color": "#ffffff",
-  "icons": []
+  "icons": [
+    { "src": "/assets/brand/fixlo-mark-2025.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/assets/brand/fixlo-mark-2025.png", "sizes": "512x512", "type": "image/png" }
+  ]
 }
