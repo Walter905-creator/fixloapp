@@ -119,6 +119,14 @@ function generateSitemap() {
     <priority>0.3</priority>
   </url>
 
+  <!-- Main services page -->
+  <url>
+    <loc>${baseUrl}/services</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
   <!-- Main service category pages (high-level) -->\n`;
 
   // Add service category pages
@@ -156,7 +164,7 @@ function generateSitemap() {
   fs.writeFileSync(sitemapPath, sitemap);
   
   console.log(`✅ Sitemap generated with ${services.length} services and ${priorityCities.length} cities`);
-  console.log(`📍 Total URLs: ${1 + 6 + services.length + (services.length * priorityCities.length)}`);
+  console.log(`📍 Total URLs: ${1 + 6 + 1 + services.length + (services.length * priorityCities.length)}`); // +1 for services page
   console.log(`📝 Sitemap saved to: ${sitemapPath}`);
   
   return sitemap;
