@@ -17,7 +17,7 @@ export default function Header() {
           {/* Left: Brand */}
           <Link to="/" className="flex items-center gap-2 shrink-0">
             <img
-              src="/brand/fixlo-logo-2025.svg"
+              src="/assets/fixlo-logo.svg"
               alt="Fixlo"
               width={128}
               height={36}
