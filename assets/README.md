@@ -5,7 +5,7 @@ This directory contains the official Fixlo logo assets for use across web and mo
 ## Files Created:
 
 ### SVG Assets (Vector)
-- `fixlo-logo.svg` - Full horizontal logo with text (200x60)
+- `fixlo-logo-2025.svg` - Full horizontal logo with text (approved 2025 version)
 - `fixlo-icon.svg` - Icon only version (120x120)
 
 ### PNG Assets (Raster) 
@@ -18,7 +18,7 @@ This directory contains the official Fixlo logo assets for use across web and mo
 ### Web Implementation
 ```html
 <!-- In header -->
-<img src="/assets/fixlo-logo.svg" alt="Fixlo" style="height: 50px;">
+<img src="/assets/brand/fixlo-logo-2025.svg" alt="Fixlo" style="height: 50px;">
 
 <!-- Icon only -->
 <img src="/assets/fixlo-icon.svg" alt="Fixlo" style="width: 40px; height: 40px;">
