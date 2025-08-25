@@ -16,7 +16,6 @@
 
     { "source": "/static/(.*)", "destination": "/static/$1" },
     { "source": "/assets/(.*)", "destination": "/assets/$1" },
-    { "source": "/brand/(.*)",  "destination": "/brand/$1" },
 
     { "source": "/favicon.ico", "destination": "/favicon.ico" },
     { "source": "/manifest.webmanifest", "destination": "/manifest.webmanifest" },
