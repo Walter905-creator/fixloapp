@@ -8,6 +8,7 @@ import "../styles/home.css";
 
 export default function Home() {
   const { showExitIntent, closeModal } = useExitIntent();
+  const BUILD_STAMP = process.env.REACT_APP_BUILD_ID || Date.now();
 
   // Service data for the grid
   const services = [
@@ -102,7 +103,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto text-center">
           <div className="mb-3 sm:mb-4 flex justify-center">
             <img
-              src="/brand/fixlo-logo-2025.svg"
+              src={`/assets/brand/fixlo-logo-2025.svg?v=${BUILD_STAMP}`}
               alt="Fixlo"
               className="h-16 sm:h-20 md:h-24 w-auto"
             />
