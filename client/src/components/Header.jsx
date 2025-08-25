@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
+import { BUILD_STAMP } from '../utils/buildInfo';
 
 export default function Header() {
   const [open, setOpen] = useState(false);
-  const BUILD_STAMP = process.env.REACT_APP_BUILD_ID || Date.now();
 
   return (
     <header

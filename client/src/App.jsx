@@ -12,9 +12,9 @@ import AdminLogin from './pages/AdminLogin';
 import Admin from './pages/Admin';
 import ProLogin from './pages/ProLogin';
 import ProDashboard from './pages/ProDashboard';
+import { BUILD_STAMP } from './utils/buildInfo';
 
 export default function App(){
-  const BUILD_STAMP = process.env.REACT_APP_BUILD_ID || Date.now();
   
   return (
     <div className="min-h-screen flex flex-col">

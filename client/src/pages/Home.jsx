@@ -4,11 +4,11 @@ import { Helmet } from "react-helmet-async";
 import ExitIntentModal from "../components/ExitIntentModal";
 import ReviewsFeed from "../components/ReviewsFeed";
 import useExitIntent from "../hooks/useExitIntent";
+import { BUILD_STAMP } from '../utils/buildInfo';
 import "../styles/home.css";
 
 export default function Home() {
   const { showExitIntent, closeModal } = useExitIntent();
-  const BUILD_STAMP = process.env.REACT_APP_BUILD_ID || Date.now();
 
   // Service data for the grid
   const services = [
