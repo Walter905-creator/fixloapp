@@ -1,1 +1,0 @@
-import React from 'react';export default function Footer(){return(<footer style={{marginTop:'auto',borderTop:'1px solid #e5e7eb'}}><div className="container" style={{padding:'2rem 0',color:'#64748b',fontSize:'0.9rem'}}>© {new Date().getFullYear()} Fixlo. All rights reserved.</div></footer>);}
