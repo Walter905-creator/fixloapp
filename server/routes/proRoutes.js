@@ -511,10 +511,21 @@ router.post('/checkout', async (req, res) => {
       });
     }
 
-    const { email, priceId } = req.body || {};
+    const { 
+      email, 
+      priceId,
+      firstName,
+      lastName,
+      phone,
+      trade,
+      city,
+      role
+    } = req.body || {};
+    
+    // Extract email from the request
     if (!email) {
       return res.status(400).json({ 
-        error: 'Email is required' 
+        error: 'Email is required for checkout session' 
       });
     }
 
@@ -534,6 +545,20 @@ router.post('/checkout', async (req, res) => {
 
     const clientUrl = process.env.CLIENT_URL || 'https://www.fixloapp.com';
 
+    // Include professional info in metadata for tracking
+    const metadata = { 
+      source: 'pro-checkout', 
+      email, 
+      timestamp: new Date().toISOString()
+    };
+    
+    if (firstName && lastName) {
+      metadata.name = `${firstName} ${lastName}`;
+    }
+    if (phone) metadata.phone = phone;
+    if (trade) metadata.trade = trade;
+    if (city) metadata.city = city;
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -541,11 +566,7 @@ router.post('/checkout', async (req, res) => {
       customer_email: email,
       success_url: `${clientUrl}/payment-success.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${clientUrl}/payment-cancel.html`,
-      metadata: { 
-        source: 'pro-checkout', 
-        email, 
-        timestamp: new Date().toISOString() 
-      },
+      metadata
     });
 
     console.log(`✅ Pro checkout session created: ${session.id}`);

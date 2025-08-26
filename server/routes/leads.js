@@ -17,20 +17,34 @@ router.post('/', async (req, res) => {
   try {
     console.log('📝 Lead submission received');
     
-    const { name, email, phone, trade, address, description } = req.body || {};
+    const { 
+      name, fullName, 
+      email, 
+      phone, 
+      trade, service, 
+      address, city,
+      description,
+      source,
+      photoUrl
+    } = req.body || {};
+    
+    // Handle field mapping from different client implementations
+    const leadName = name || fullName;
+    const leadTrade = trade || service;
+    const leadAddress = address || city;
     
     // Validate required fields
-    if (!name || !phone || !trade || !address) {
+    if (!leadName || !phone || !leadTrade || !leadAddress) {
       return res.status(400).json({ 
         success: false,
-        message: 'Name, phone, trade, and address are required' 
+        message: 'Name, phone, trade/service, and address are required' 
       });
     }
 
     // 1) Geocode the homeowner address with fallback
     let lat, lng, formatted;
     try {
-      const geocodeResult = await geocodeAddress(address);
+      const geocodeResult = await geocodeAddress(leadAddress);
       lat = geocodeResult.lat;
       lng = geocodeResult.lng; 
       formatted = geocodeResult.formatted;
@@ -40,7 +54,7 @@ router.post('/', async (req, res) => {
       // Fallback to center of US coordinates when geocoding is unavailable
       lat = 39.8283;
       lng = -98.5795;
-      formatted = address; // Use original address as formatted
+      formatted = leadAddress; // Use original address as formatted
     }
 
     // 2) Save lead to database
@@ -49,14 +63,14 @@ router.post('/', async (req, res) => {
       const mongoose = require('mongoose');
       if (mongoose.connection.readyState === 1) {
         // Normalize trade for consistency
-        const normalizedTrade = trade.charAt(0).toUpperCase() + trade.slice(1).toLowerCase();
+        const normalizedTrade = leadTrade.charAt(0).toUpperCase() + leadTrade.slice(1).toLowerCase();
         
         savedLead = await JobRequest.create({
-          name: name.trim(),
+          name: leadName.trim(),
           email: email ? email.toLowerCase() : '',
           phone: phone.trim(),
           trade: normalizedTrade,
-          address: address.trim(),
+          address: leadAddress.trim(),
           description: description ? description.trim() : '',
           status: 'pending'
         });
@@ -80,7 +94,7 @@ router.post('/', async (req, res) => {
       if (mongoose.connection.readyState === 1) {
         // Use MongoDB $near with geospatial index on location
         pros = await Pro.find({
-          trade: trade.toLowerCase().trim(),
+          trade: leadTrade.toLowerCase().trim(),
           wantsNotifications: true,
           isActive: true,
           location: {
@@ -91,7 +105,7 @@ router.post('/', async (req, res) => {
           }
         }).limit(50); // safety cap
         
-        console.log(`✅ Found ${pros.length} nearby pros for ${trade}`);
+        console.log(`✅ Found ${pros.length} nearby pros for ${leadTrade}`);
       } else {
         console.warn('⚠️ Database not connected, cannot query for pros');
       }
@@ -103,7 +117,7 @@ router.post('/', async (req, res) => {
     // 4) Fire-and-forget notify (SMS/email) – do not block response
     (async () => {
       if (twilioClient && pros.length && process.env.TWILIO_PHONE) {
-        const msg = `FIXLO: New ${trade} request near ${formatted}. ${name} (${phone}). "${description || 'No description provided'}"`;
+        const msg = `FIXLO: New ${leadTrade} request near ${formatted}. ${leadName} (${phone}). "${description || 'No description provided'}"`;
         
         for (const pro of pros) {
           try {
@@ -138,7 +152,7 @@ router.post('/', async (req, res) => {
         leadId: savedLead ? savedLead._id : null,
         matchedPros: pros.length,
         address: formatted,
-        trade: trade,
+        trade: leadTrade,
         notificationsSent: twilioClient && pros.length > 0
       }
     });
