@@ -489,4 +489,79 @@ router.get('/reviews/:proId', async (req, res) => {
   }
 });
 
+// Stripe Checkout session for professional subscription (alias for /api/subscribe/checkout)
+router.post('/checkout', async (req, res) => {
+  try {
+    console.log('🔔 Pros checkout session requested');
+    
+    // Initialize Stripe if available
+    let stripe = null;
+    try {
+      if (process.env.STRIPE_SECRET_KEY) {
+        stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+      }
+    } catch (e) {
+      console.error('Stripe initialization error:', e.message);
+    }
+
+    if (!stripe) {
+      return res.status(503).json({ 
+        error: 'Payment system not configured',
+        message: 'Stripe is not available' 
+      });
+    }
+
+    const { email, priceId } = req.body || {};
+    if (!email) {
+      return res.status(400).json({ 
+        error: 'Email is required' 
+      });
+    }
+
+    // Prefer explicit priceId from request; fall back to env
+    const PRICE_ID =
+      priceId ||
+      process.env.STRIPE_FIRST_MONTH_PRICE_ID ||
+      process.env.STRIPE_MONTHLY_PRICE_ID ||
+      process.env.STRIPE_PRICE_ID;
+
+    if (!PRICE_ID) {
+      return res.status(500).json({ 
+        error: 'Payment configuration error',
+        message: 'No Stripe price ID configured' 
+      });
+    }
+
+    const clientUrl = process.env.CLIENT_URL || 'https://www.fixloapp.com';
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      line_items: [{ price: PRICE_ID, quantity: 1 }],
+      customer_email: email,
+      success_url: `${clientUrl}/payment-success.html?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${clientUrl}/payment-cancel.html`,
+      metadata: { 
+        source: 'pro-checkout', 
+        email, 
+        timestamp: new Date().toISOString() 
+      },
+    });
+
+    console.log(`✅ Pro checkout session created: ${session.id}`);
+    return res.json({ 
+      success: true,
+      url: session.url, 
+      sessionId: session.id 
+    });
+
+  } catch (err) {
+    console.error('❌ Pro checkout error:', err.message);
+    return res.status(500).json({ 
+      error: 'Checkout creation failed',
+      message: err.message 
+    });
+  }
+});
+
 module.exports = router;

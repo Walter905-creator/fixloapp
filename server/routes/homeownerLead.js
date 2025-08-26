@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Pro = require('../models/Pro');
+const JobRequest = require('../models/JobRequest');
 const { geocodeAddress } = require('../utils/geocode');
 
 // Optional: Twilio SMS
@@ -37,6 +38,31 @@ router.post('/', async (req, res) => {
     let pros = [];
     const radiusMiles = 30;
     const radiusMeters = milesToMeters(radiusMiles);
+
+    // Save lead to database before notifying pros
+    let savedLead = null;
+    try {
+      const mongoose = require('mongoose');
+      if (mongoose.connection.readyState === 1) {
+        // Normalize trade for consistency with JobRequest schema
+        const normalizedTrade = trade.charAt(0).toUpperCase() + trade.slice(1).toLowerCase();
+        
+        savedLead = await JobRequest.create({
+          name: name.trim(),
+          email: email ? email.toLowerCase() : '',
+          phone: phone.trim(),
+          trade: normalizedTrade,
+          address: address.trim(),
+          description: description ? description.trim() : '',
+          status: 'pending'
+        });
+        
+        console.log('✅ Homeowner lead saved to database:', savedLead._id);
+      }
+    } catch (dbError) {
+      console.error('❌ Failed to save homeowner lead:', dbError.message);
+      // Continue without failing the request
+    }
 
     try {
       // Check database connection before querying
@@ -77,14 +103,15 @@ router.post('/', async (req, res) => {
           }
         }
       }
-      // TODO: also insert the lead in your DB if you keep a leads collection
+      // Lead is now saved to database using JobRequest model
     })().catch(console.error);
 
     // 4) Return immediately so UI can show confirmation
     return res.json({
       ok: true,
       message: 'Request received. Nearby pros have been notified.',
-      matchedPros: pros.length
+      matchedPros: pros.length,
+      leadId: savedLead ? savedLead._id : null
     });
   } catch (err) {
     console.error('homeownerLead error:', err.message);

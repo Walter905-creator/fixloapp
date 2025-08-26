@@ -243,6 +243,7 @@ app.use("/api/pro-auth", authRateLimit, require("./routes/proAuth"));
 
 app.use("/api/pros", generalRateLimit, require("./routes/proRoutes")); // auth & mgmt
 app.use("/api/homeowner-lead", require("./routes/homeownerLead"));
+app.use("/api/leads", require("./routes/leads")); // Lead management with database storage
 app.use("/api/service-request", require("./routes/serviceRequest"));
 app.use("/api/notify", require("./routes/notify"));
 
