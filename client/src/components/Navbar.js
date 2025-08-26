@@ -11,12 +11,12 @@ export default function Navbar({ onRequestService, onJoinPro }) {
         </Link>
         <nav style={{display:"flex", gap:16, alignItems:"center"}}>
           <a href="#services" style={navLink}>Services</a>
-          <a href="#how" style={navLink}>How It Works</a>
+          <Link to="/how-it-works" style={navLink}>How It Works</Link>
           <Link to="/assistant" style={navLink}>AI Assistant</Link>
           <Link to="/contact" style={navLink}>Contact</Link>
           <Link to="/pro/signin" style={navLink}>Pro Sign In</Link>
           <button onClick={onJoinPro} style={primaryBtn}>Join Now</button>
-        </nav>
+        <Link to="/admin" style={navLink}>Admin Dashboard</Link><Link to="/pro/dashboard" style={navLink}>Pro Dashboard</Link></nav>
       </div>
     </header>
   );
