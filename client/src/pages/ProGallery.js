@@ -1,1 +1,0 @@
-import React from 'react';import Navbar from '../components/Navbar';import ProGallery from '../components/ProGallery';import Footer from '../components/Footer';export default function ProGalleryPage(){return(<><Navbar/><ProGallery/><Footer/></>);}
