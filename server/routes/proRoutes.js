@@ -489,4 +489,116 @@ router.get('/reviews/:proId', async (req, res) => {
   }
 });
 
+// Add missing routes that frontend expects (fallback endpoints)
+// Forward to main server's pro-signup logic
+
+// Helper function to forward to main pro-signup endpoint
+async function forwardToProSignup(req, res) {
+  try {
+    // Since we're in the same server process, we can call the signup logic directly
+    // Import the required dependencies
+    const mongoose = require('mongoose');
+    
+    const { name, email, phone, trade, location, dob, role, termsConsent, smsConsent } =
+      req.body || {};
+
+    if (!name || !email || !phone || !trade || !location || !dob) {
+      return res.status(400).json({
+        success: false,
+        message: "Name, email, phone, trade, location, and date of birth are required",
+      });
+    }
+
+    const birthDate = new Date(dob);
+    const age = Math.floor(
+      (Date.now() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+    );
+    if (age < 18) {
+      return res.status(400).json({
+        success: false,
+        message: "You must be 18 or older to join Fixlo as a professional",
+      });
+    }
+
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message: "Professional signup is temporarily unavailable. Please try again later.",
+      });
+    }
+
+    const tradeNormalized = String(trade).trim().toLowerCase();
+
+    // Check for duplicates by email+trade
+    const existingSameTrade = await Pro.findOne({
+      email: email.toLowerCase(),
+      trade: tradeNormalized,
+    });
+    if (existingSameTrade) {
+      return res.status(409).json({
+        success: false,
+        message: `You are already registered for ${trade}.`,
+      });
+    }
+
+    // Background check decision based on feature flag
+    let verificationStatus = 'pending';
+    let verificationNotes = '';
+
+    try {
+      const { ENABLE_BG_CHECKS } = require('../config/flags');
+      if (!ENABLE_BG_CHECKS) {
+        verificationStatus = 'skipped';
+        verificationNotes = 'Background checks temporarily disabled by config.';
+      }
+    } catch (e) {
+      // If flags config is not available, use default
+      console.warn('⚠️ Feature flags not available, using defaults');
+    }
+
+    // Create the professional
+    const pro = await Pro.create({
+      name: name.trim(),
+      email: email.toLowerCase(),
+      phone: phone.trim(),
+      trade: tradeNormalized,
+      location: String(location).trim(),
+      role: role || "pro",
+      wantsNotifications: true,
+      verificationStatus,
+      verificationNotes,
+      smsConsent: {
+        given: Boolean(smsConsent?.given),
+        dateGiven: smsConsent?.dateGiven || new Date(),
+        ipAddress: smsConsent?.ipAddress || "",
+        userAgent: smsConsent?.userAgent || "",
+        consentText:
+          smsConsent?.consentText ||
+          "I expressly consent to receive automated SMS text messages from Fixlo. Reply STOP to unsubscribe, HELP for help.",
+      },
+      termsConsent: {
+        given: Boolean(termsConsent?.given),
+        dateGiven: termsConsent?.dateGiven || new Date(),
+        ipAddress: termsConsent?.ipAddress || "",
+        userAgent: termsConsent?.userAgent || "",
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    return res.status(201).json({ success: true, proId: pro._id, verificationStatus });
+  } catch (err) {
+    console.error("❌ Pro signup error:", err.message);
+    return res
+      .status(500)
+      .json({ success: false, message: err.message || "Server error" });
+  }
+}
+
+// Missing route 1: /api/pros/signup
+router.post('/signup', forwardToProSignup);
+
+// Missing route 2: /api/pros (POST to base route) 
+router.post('/', forwardToProSignup);
+
 module.exports = router;

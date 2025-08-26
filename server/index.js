@@ -412,6 +412,105 @@ app.post("/api/pro-signup", async (req, res) => {
   }
 });
 
+// ----------------------- Missing fallback route: /api/signup/pro -----------------------
+// Frontend expects this as fallback #3, forward to existing pro-signup logic
+app.post("/api/signup/pro", async (req, res) => {
+  try {
+    const { ENABLE_BG_CHECKS } = require('./config/flags');
+    const { name, email, phone, trade, location, dob, role, termsConsent, smsConsent } =
+      req.body || {};
+
+    if (!name || !email || !phone || !trade || !location || !dob) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Name, email, phone, trade, location, and date of birth are required",
+      });
+    }
+
+    const birthDate = new Date(dob);
+    const age = Math.floor(
+      (Date.now() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+    );
+    if (age < 18) {
+      return res.status(400).json({
+        success: false,
+        message: "You must be 18 or older to join Fixlo as a professional",
+      });
+    }
+
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message:
+          "Professional signup is temporarily unavailable. Please try again later.",
+      });
+    }
+
+    const tradeNormalized = String(trade).trim().toLowerCase();
+
+    // disallow duplicates by email+trade
+    const existingSameTrade = await Pro.findOne({
+      email: email.toLowerCase(),
+      trade: tradeNormalized,
+    });
+    if (existingSameTrade) {
+      return res.status(409).json({
+        success: false,
+        message: `You are already registered for ${trade}.`,
+      });
+    }
+
+    // Background check decision based on feature flag
+    let verificationStatus = 'pending';
+    let verificationNotes = '';
+
+    if (!ENABLE_BG_CHECKS) {
+      verificationStatus = 'skipped';
+      verificationNotes = 'Background checks temporarily disabled by config.';
+    } else {
+      // existing Checkr invitation / flow would go here when implemented
+    }
+
+    // Allow same email registering for a different trade, but require explicit consent flags
+    const pro = await Pro.create({
+      name: name.trim(),
+      email: email.toLowerCase(),
+      phone: phone.trim(),
+      trade: tradeNormalized,
+      location: String(location).trim(),
+      role: role || "pro",
+      wantsNotifications: true,
+      verificationStatus,
+      verificationNotes,
+      smsConsent: {
+        given: Boolean(smsConsent?.given),
+        dateGiven: smsConsent?.dateGiven || new Date(),
+        ipAddress: smsConsent?.ipAddress || "",
+        userAgent: smsConsent?.userAgent || "",
+        consentText:
+          smsConsent?.consentText ||
+          "I expressly consent to receive automated SMS text messages from Fixlo. Reply STOP to unsubscribe, HELP for help.",
+      },
+      termsConsent: {
+        given: Boolean(termsConsent?.given),
+        dateGiven: termsConsent?.dateGiven || new Date(),
+        ipAddress: termsConsent?.ipAddress || "",
+        userAgent: termsConsent?.userAgent || "",
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    return res.status(201).json({ success: true, proId: pro._id, verificationStatus });
+  } catch (err) {
+    console.error("❌ Pro signup error:", err.message);
+    return res
+      .status(500)
+      .json({ success: false, message: err.message || "Server error" });
+  }
+});
+
 // ----------------------- Health & Meta -----------------------
 app.get("/api/health", async (req, res) => {
   const db =
