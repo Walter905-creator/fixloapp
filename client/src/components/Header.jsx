@@ -6,13 +6,13 @@ import { BUILD_STAMP } from "../utils/buildInfo";
 export default function Header() {
 
   return (
-    <header className="w-full border-b border-slate-200">
+    <header className="fixlo-header w-full border-b border-slate-200">
       <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-3">
           <img
+            className="fixlo-header__logo h-8 w-auto md:h-9"
             src={`/assets/brand/fixlo-logo-2025.svg?v=${BUILD_STAMP}`}
             alt="Fixlo"
-            className="h-8 w-auto md:h-9"
             style={{ display: "block" }}
           />
           <span className="sr-only">Fixlo</span>

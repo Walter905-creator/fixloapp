@@ -1,0 +1,59 @@
+/* Mobile-only visual nips. Keep desktop identical. */
+
+@media (max-width: 640px) {
+  /* 1) Make sure the header stays compact and the logo scales */
+  .fixlo-header {
+    min-height: 56px;
+    padding: 0 12px;
+  }
+  .fixlo-header__logo {
+    height: 28px;          /* was bigger; shrink slightly */
+    width: auto;
+    object-fit: contain;   /* preserve aspect, no crop */
+  }
+
+  /* 2) Keep primary CTA(s) within the first viewport */
+  .fixlo-hero {
+    padding-top: clamp(16px, 6vh, 36px);
+    padding-bottom: clamp(16px, 5vh, 28px);
+  }
+  .fixlo-hero__title {
+    font-size: clamp(20px, 5.6vw, 28px);
+    line-height: 1.2;
+    margin-bottom: 8px;
+  }
+  .fixlo-hero__subtitle {
+    font-size: clamp(13px, 3.8vw, 16px);
+    margin-bottom: 14px;
+  }
+  .fixlo-hero__cta-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 6px;
+    margin-bottom: 0; /* don't push below the fold */
+  }
+  .fixlo-hero__cta {
+    padding: 10px 14px;
+    font-size: 14px;
+    border-radius: 10px;
+  }
+
+  /* 3) Prevent anything from overflowing horizontally */
+  .container, .page, .app-shell {
+    overflow-x: hidden;
+  }
+
+  /* 4) Respect safe areas on iOS notch devices */
+  body {
+    padding-top: env(safe-area-inset-top, 0);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+}
+
+/* Never hide the app root (belt-and-suspenders); no opacity hacks. */
+#root, [data-app-root] {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
