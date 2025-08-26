@@ -1,0 +1,1 @@
+import React from 'react';import Navbar from '../components/Navbar';import SignupForm from '../components/SignupForm';import Footer from '../components/Footer';export default function Signup(){return(<><Navbar/><main className="container" style={{padding:'3rem 0'}}><h1 className="text-3xl font-bold mb-6">Sign up</h1><SignupForm/></main><Footer/></>);}
