@@ -1,11 +1,20 @@
 // client/src/pages/Home.jsx
 import React from "react";
 import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { BUILD_STAMP } from "../utils/buildInfo";
 
 export default function Home() {
   return (
     <main id="home" className="flex-1">
+      <Helmet>
+        <title>Fixlo – Book Trusted Home Services Near You</title>
+        <meta 
+          name="description" 
+          content="Book trusted home services near you. Professional plumbing, electrical, HVAC, carpentry, and more. Verified contractors, transparent pricing." 
+        />
+        <link rel="canonical" href="https://www.fixloapp.com/" />
+      </Helmet>
       {/* Hero */}
       <section className="py-10 md:py-14">
         <div className="mx-auto max-w-6xl px-4">

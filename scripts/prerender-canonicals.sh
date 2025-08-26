@@ -50,6 +50,10 @@ fi
 # Create backup
 cp "$TEMPLATE_FILE" "$BUILD_DIR/index.html.backup"
 
+# Handle root route (homepage) - add canonical
+sed -i "s|</head>|  <link rel=\"canonical\" href=\"https://www.fixloapp.com/\"/>\n&|" "$TEMPLATE_FILE"
+sed -i "s|<title>Fixlo</title>|<title>Fixlo – Book Trusted Home Services Near You</title>|g" "$TEMPLATE_FILE"
+
 # Generate route-specific HTML files
 for i in "${!ROUTES[@]}"; do
   route="${ROUTES[i]}"
@@ -77,14 +81,14 @@ for i in "${!ROUTES[@]}"; do
   fi
   
   # Copy template and update canonical and title
-  cp "$TEMPLATE_FILE" "$target_file"
+  cp "$BUILD_DIR/index.html.backup" "$target_file"
   
-  # Update canonical URL
-  sed -i "s|<link rel=\"canonical\" href=\"https://www.fixloapp.com/\"/>|<link rel=\"canonical\" href=\"$canonical_url\"/>|g" "$target_file"
-  
-  # Update title (escape special characters)
+  # Update title first (escape special characters)
   escaped_title=$(printf '%s\n' "$title" | sed 's/[[\.*^$()+?{|]/\\&/g')
-  sed -i "s|<title>Fixlo – Book Trusted Home Services Near You</title>|<title>$escaped_title</title>|g" "$target_file"
+  sed -i "s|<title>Fixlo</title>|<title>$escaped_title</title>|g" "$target_file"
+  
+  # Insert canonical URL into the head section (before closing </head> tag)
+  sed -i "s|</head>|<link rel=\"canonical\" href=\"$canonical_url\"/>\n&|" "$target_file"
   
   echo "✅ Generated: $target_file (canonical: $canonical_url)"
 done
