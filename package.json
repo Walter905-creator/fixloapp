@@ -7,7 +7,7 @@
   },
   "scripts": {
     "clean-old-builds": "rm -rf client/build build public && echo '🧹 Cleaned old builds'",
-    "install-client": "cd client && npm ci --no-fund --no-audit",
+    "install-client": "cd client && npm install --no-fund --no-audit",
     "build-client": "cd client && node scripts/generate-build-info.js && node scripts/inject-build-meta.js && REACT_APP_BUILD_TIMESTAMP=$(date +%s) GENERATE_SOURCEMAP=false npm run build && cd .. && ./scripts/prerender-canonicals.sh && node scripts/verify-build-metadata.js",
     "build-client-dev": "cd client && node scripts/generate-build-info.js && node scripts/inject-build-meta.js && export REACT_APP_BUILD_TIMESTAMP=$(date +%s) && export GENERATE_SOURCEMAP=true && npm run build && cd .. && ./scripts/prerender-canonicals.sh && node scripts/verify-build-metadata.js",
     "deploy-build": "echo '🚚 Deploying build to root directory...' && cp -r client/build/* . && echo '✅ Build deployed to root directory'",
