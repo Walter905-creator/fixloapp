@@ -1,328 +1,147 @@
-const express = require('express');
-let bcrypt, jwt, Pro, Review, upload, auth;
+// routes/pros.js
+const express = require("express");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose");
+const Stripe = require("stripe");
 
-// Safely load dependencies
-try {
-  bcrypt = require('bcryptjs');
-} catch (error) {
-  console.warn('⚠️ bcryptjs not available:', error.message);
-}
+const Pro = require("../models/Pro");
+const Review = require("../models/Review");
+const auth = require("../middleware/auth");
 
-try {
-  jwt = require('jsonwebtoken');
-} catch (error) {
-  console.warn('⚠️ jsonwebtoken not available:', error.message);
-}
-
-try {
-  Pro = require('../models/Pro');
-} catch (error) {
-  console.warn('⚠️ Pro model not available:', error.message);
-}
-
-try {
-  Review = require('../models/Review');
-} catch (error) {
-  console.warn('⚠️ Review model not available:', error.message);
-}
-
-try {
-  const cloudinaryUtils = require('../utils/cloudinary');
-  upload = cloudinaryUtils.upload;
-} catch (error) {
-  console.warn('⚠️ Cloudinary upload not available:', error.message);
-}
-
-try {
-  auth = require('../middleware/auth');
-} catch (error) {
-  console.warn('⚠️ Auth middleware not available:', error.message);
-}
+// If your Cloudinary utils export a configured Multer uploader:
+const { upload } = require("../utils/cloudinary");
 
 const router = express.Router();
 
-// Test endpoint to verify router is working
-router.get('/test', (req, res) => {
-  res.json({ 
-    message: 'Professional routes are working!',
+/* ---------------------------------- Utils --------------------------------- */
+
+function requireEnv(name) {
+  const v = process.env[name];
+  if (!v) throw new Error(`${name} is not set`);
+  return v;
+}
+
+/* --------------------------------- /test ---------------------------------- */
+
+router.get("/test", (req, res) => {
+  res.json({
+    message: "Professional routes are working!",
     timestamp: new Date().toISOString(),
-    available: {
-      bcrypt: !!bcrypt,
-      jwt: !!jwt,
-      Pro: !!Pro,
-      Review: !!Review,
-      upload: !!upload,
-      auth: !!auth
-    }
   });
 });
 
-// OPTIONS handlers for professional endpoints
-router.options("/register", (req, res) => {
-  const requestOrigin = req.headers.origin;
-  console.log(`🎯 OPTIONS /api/pros/register from origin: "${requestOrigin || 'null'}"`);
-  
-  res.header('Access-Control-Allow-Origin', requestOrigin || '*');
-  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Max-Age', '86400');
+/* ------------------------------- Preflight CORS ---------------------------- */
+/* If you already have global CORS, you can remove these. They’re harmless. */
+router.options(["/register", "/login", "/dashboard"], (req, res) => {
+  const origin = req.headers.origin || "*";
+  res.header("Access-Control-Allow-Origin", origin);
+  res.header("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, X-Requested-With, Accept, Origin"
+  );
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Max-Age", "86400");
   res.sendStatus(204);
 });
 
-router.options("/login", (req, res) => {
-  const requestOrigin = req.headers.origin;
-  console.log(`🎯 OPTIONS /api/pros/login from origin: "${requestOrigin || 'null'}"`);
-  
-  res.header('Access-Control-Allow-Origin', requestOrigin || '*');
-  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Max-Age', '86400');
-  res.sendStatus(204);
-});
+/* ------------------------------ Register (POST) ---------------------------- */
 
-router.options("/dashboard", (req, res) => {
-  const requestOrigin = req.headers.origin;
-  console.log(`🎯 OPTIONS /api/pros/dashboard from origin: "${requestOrigin || 'null'}"`);
-  
-  res.header('Access-Control-Allow-Origin', requestOrigin || '*');
-  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Max-Age', '86400');
-  res.sendStatus(204);
-});
-
-// Register new pro
-router.post('/register', async (req, res) => {
+router.post("/register", async (req, res) => {
   try {
     const { name, email, password, phone, trade, location, dob } = req.body;
 
-    // Validate required fields
     if (!name || !email || !password || !phone || !trade || !location || !dob) {
-      return res.status(400).json({ 
-        error: 'All fields are required: name, email, password, phone, trade, location, dob'
+      return res.status(400).json({
+        error:
+          "All fields are required: name, email, password, phone, trade, location, dob",
       });
     }
 
-    // Check if required dependencies are available
-    if (!bcrypt) {
-      console.error('❌ bcrypt not available for professional registration');
-      return res.status(503).json({ 
-        error: 'Registration service configuration error',
-        message: 'Password encryption not available. Please contact support.'
-      });
-    }
-
-    if (!jwt) {
-      console.error('❌ jsonwebtoken not available for professional registration');
-      return res.status(503).json({ 
-        error: 'Registration service configuration error', 
-        message: 'Authentication system not available. Please contact support.'
-      });
-    }
-
-    // Check JWT_SECRET is configured
-    if (!process.env.JWT_SECRET) {
-      console.error('❌ JWT_SECRET not configured');
-      return res.status(503).json({ 
-        error: 'Authentication system not configured',
-        message: 'Please contact support.'
-      });
-    }
-
-    // Check if database connection is available
-    const mongoose = require('mongoose');
     if (mongoose.connection.readyState !== 1) {
-      console.error('❌ Database not connected for professional registration');
-      return res.status(503).json({ 
-        error: 'Registration service temporarily unavailable',
-        message: 'Database connection issue. Please try again later.'
+      return res.status(503).json({
+        error: "Registration temporarily unavailable. Please try again later.",
       });
     }
 
-    // Check if Pro model is available
-    if (!Pro || typeof Pro.findOne !== 'function') {
-      console.error('❌ Pro model not available for professional registration');
-      return res.status(503).json({ 
-        error: 'Registration service temporarily unavailable',
-        message: 'Database model not available. Please try again later.'
-      });
+    const existing = await Pro.findOne({ $or: [{ email }, { phone }] });
+    if (existing) {
+      return res
+        .status(400)
+        .json({ error: "Professional with this email or phone already exists" });
     }
 
-    // Check if pro already exists
-    const existingPro = await Pro.findOne({ $or: [{ email }, { phone }] });
-    if (existingPro) {
-      return res.status(400).json({ 
-        error: 'Professional with this email or phone already exists' 
-      });
-    }
-
-    // Hash password
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashed = await bcrypt.hash(password, salt);
 
-    // Create new pro
-    const newPro = new Pro({
+    const newPro = await Pro.create({
       name,
-      email,
-      password: hashedPassword,
+      email: email.toLowerCase(),
+      password: hashed,
       phone,
       trade,
       location: {
         address: location,
-        coordinates: [-74.006, 40.7128] // Default to NYC, should be geocoded
+        coordinates: [-74.006, 40.7128], // TODO: replace with real geocode if available
       },
-      dob: new Date(dob)
+      dob: new Date(dob),
+      paymentStatus: "pending",
+      smsConsent: false,
     });
-
-    await newPro.save();
-
-    // Generate JWT token
-    if (!process.env.JWT_SECRET) {
-      console.error('❌ JWT_SECRET not configured');
-      return res.status(500).json({ 
-        error: 'Authentication system not configured',
-        message: 'Please contact support'
-      });
-    }
 
     const token = jwt.sign(
       { proId: newPro._id, email: newPro.email },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      requireEnv("JWT_SECRET"),
+      { expiresIn: "24h" }
     );
 
-    res.status(201).json({
-      message: 'Professional registered successfully',
+    return res.status(201).json({
+      message: "Professional registered successfully",
       token,
       pro: {
         id: newPro._id,
         name: newPro.name,
         email: newPro.email,
         trade: newPro.trade,
-        location: newPro.location
-      }
+        location: newPro.location,
+      },
     });
-  } catch (error) {
-    console.error('Pro registration error:', error);
-    res.status(500).json({ error: 'Server error during registration' });
+  } catch (err) {
+    console.error("Pro register error:", err);
+    return res.status(500).json({ error: "Server error during registration" });
   }
 });
 
-// GET handler for login endpoint - return 405 Method Not Allowed
-router.get('/login', (req, res) => {
-  console.log(`❌ GET method not allowed for /api/pros/login from origin: "${req.headers.origin || 'null'}"`);
-  
-  res.set('Allow', 'POST, OPTIONS');
-  res.status(405).json({
-    success: false,
-    error: 'Method GET not allowed. Use POST for login.',
-    allowedMethods: ['POST', 'OPTIONS'],
-    hint: 'Make sure your frontend is sending a POST request to this endpoint.'
-  });
-});
+/* ------------------------------ Login (POST) ------------------------------- */
 
-// Login pro
-router.post('/login', async (req, res) => {
+router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
-
-    // Validate input
+    const { email, password } = req.body || {};
     if (!email || !password) {
-      return res.status(400).json({ 
-        error: 'Email and password are required' 
-      });
+      return res.status(400).json({ error: "Email and password are required" });
     }
 
-    // Check if required dependencies are available
-    if (!bcrypt || !jwt) {
-      console.error('❌ Missing required dependencies for professional login');
-      return res.status(503).json({ 
-        error: 'Login service temporarily unavailable',
-        message: 'Please try again later or contact support'
-      });
-    }
-
-    // Check if database connection is available
-    const mongoose = require('mongoose');
     if (mongoose.connection.readyState !== 1) {
-      console.error('❌ Database not connected for professional login');
-      
-      // For development mode without database, provide a mock response
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔧 Development mode: Using mock login response');
-        
-        // Generate mock JWT token if JWT_SECRET is available
-        if (process.env.JWT_SECRET) {
-          const mockToken = jwt.sign(
-            { proId: 'dev-mock-id', email: email },
-            process.env.JWT_SECRET,
-            { expiresIn: '24h' }
-          );
-          
-          return res.json({
-            message: 'Login successful (development mode)',
-            token: mockToken,
-            pro: {
-              id: 'dev-mock-id',
-              name: 'Dev Professional',
-              email: email,
-              trade: 'handyman',
-              location: { address: 'Development Mode' },
-              profileImage: null,
-              rating: 4.5,
-              completedJobs: 10
-            }
-          });
-        }
-      }
-      
-      return res.status(503).json({ 
-        error: 'Login service temporarily unavailable',
-        message: 'Database connection issue. Please try again later.'
+      return res.status(503).json({
+        error: "Login temporarily unavailable. Please try again later.",
       });
     }
 
-    // Check if Pro model is available
-    if (!Pro || typeof Pro.findOne !== 'function') {
-      console.error('❌ Pro model not available for professional login');
-      return res.status(503).json({ 
-        error: 'Login service temporarily unavailable',
-        message: 'Database model not available. Please try again later.'
-      });
-    }
+    const pro = await Pro.findOne({ email: email.toLowerCase() });
+    if (!pro) return res.status(401).json({ error: "Invalid email or password" });
 
-    // Find pro by email
-    const pro = await Pro.findOne({ email });
-    if (!pro) {
-      return res.status(401).json({ error: 'Invalid email or password' });
-    }
-
-    // Check password
-    const isMatch = await bcrypt.compare(password, pro.password);
-    if (!isMatch) {
-      return res.status(401).json({ error: 'Invalid email or password' });
-    }
-
-    // Generate JWT token
-    if (!process.env.JWT_SECRET) {
-      console.error('❌ JWT_SECRET not configured');
-      return res.status(500).json({ 
-        error: 'Authentication system not configured',
-        message: 'Please contact support'
-      });
-    }
+    const ok = await bcrypt.compare(password, pro.password);
+    if (!ok) return res.status(401).json({ error: "Invalid email or password" });
 
     const token = jwt.sign(
       { proId: pro._id, email: pro.email },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      requireEnv("JWT_SECRET"),
+      { expiresIn: "24h" }
     );
 
-    res.json({
-      message: 'Login successful',
+    return res.json({
+      message: "Login successful",
       token,
       pro: {
         id: pro._id,
@@ -332,27 +151,26 @@ router.post('/login', async (req, res) => {
         location: pro.location,
         profileImage: pro.profileImage,
         rating: pro.rating,
-        completedJobs: pro.completedJobs
-      }
+        completedJobs: pro.completedJobs,
+        paymentStatus: pro.paymentStatus,
+      },
     });
-  } catch (error) {
-    console.error('Pro login error:', error);
-    res.status(500).json({ error: 'Server error during login' });
+  } catch (err) {
+    console.error("Pro login error:", err);
+    return res.status(500).json({ error: "Server error during login" });
   }
 });
 
-// Get pro dashboard info
-router.get('/dashboard', auth, async (req, res) => {
+/* ---------------------------- Dashboard (GET) ------------------------------ */
+
+router.get("/dashboard", auth, async (req, res) => {
   try {
     const pro = await Pro.findById(req.proId)
-      .populate('reviews')
-      .select('-password');
+      .populate("reviews")
+      .select("-password");
+    if (!pro) return res.status(404).json({ error: "Professional not found" });
 
-    if (!pro) {
-      return res.status(404).json({ error: 'Professional not found' });
-    }
-
-    res.json({
+    return res.json({
       pro: {
         id: pro._id,
         name: pro.name,
@@ -366,170 +184,127 @@ router.get('/dashboard', auth, async (req, res) => {
         completedJobs: pro.completedJobs,
         reviews: pro.reviews,
         isActive: pro.isActive,
-        paymentStatus: pro.paymentStatus
-      }
+        paymentStatus: pro.paymentStatus,
+      },
     });
-  } catch (error) {
-    console.error('Dashboard fetch error:', error);
-    res.status(500).json({ error: 'Server error fetching dashboard' });
+  } catch (err) {
+    console.error("Dashboard error:", err);
+    return res.status(500).json({ error: "Server error fetching dashboard" });
   }
 });
 
-// Upload profile image
-router.post('/upload/profile', auth, upload.single('profileImage'), async (req, res) => {
+/* ----------------------------- Uploads (POST) ------------------------------ */
+/* Expects your ../utils/cloudinary to provide a Multer-based `upload`.       */
+/* profile: field name 'profileImage'; gallery: field name 'galleryImages'    */
+
+router.post("/upload/profile", auth, upload.single("profileImage"), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No image file provided' });
-    }
-
+    if (!req.file) return res.status(400).json({ error: "No image file provided" });
     const pro = await Pro.findById(req.proId);
-    if (!pro) {
-      return res.status(404).json({ error: 'Professional not found' });
-    }
+    if (!pro) return res.status(404).json({ error: "Professional not found" });
 
+    // Assuming upload middleware already stored Cloudinary URL at file.path
     pro.profileImage = req.file.path;
     await pro.save();
 
-    res.json({
-      message: 'Profile image uploaded successfully',
-      profileImage: pro.profileImage
+    return res.json({
+      message: "Profile image uploaded successfully",
+      profileImage: pro.profileImage,
     });
-  } catch (error) {
-    console.error('Profile image upload error:', error);
-    res.status(500).json({ error: 'Server error uploading image' });
+  } catch (err) {
+    console.error("Profile upload error:", err);
+    return res.status(500).json({ error: "Server error uploading image" });
   }
 });
 
-// Upload gallery images
-router.post('/upload/gallery', auth, upload.array('galleryImages', 10), async (req, res) => {
+router.post("/upload/gallery", auth, upload.array("galleryImages", 10), async (req, res) => {
   try {
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ error: 'No image files provided' });
-    }
-
+    if (!req.files?.length) return res.status(400).json({ error: "No image files provided" });
     const pro = await Pro.findById(req.proId);
-    if (!pro) {
-      return res.status(404).json({ error: 'Professional not found' });
-    }
+    if (!pro) return res.status(404).json({ error: "Professional not found" });
 
-    const newImages = req.files.map(file => file.path);
-    pro.gallery.push(...newImages);
+    const newUrls = req.files.map((f) => f.path);
+    pro.gallery = [...(pro.gallery || []), ...newUrls];
     await pro.save();
 
-    res.json({
-      message: 'Gallery images uploaded successfully',
-      gallery: pro.gallery
+    return res.json({
+      message: "Gallery images uploaded successfully",
+      gallery: pro.gallery,
     });
-  } catch (error) {
-    console.error('Gallery upload error:', error);
-    res.status(500).json({ error: 'Server error uploading images' });
+  } catch (err) {
+    console.error("Gallery upload error:", err);
+    return res.status(500).json({ error: "Server error uploading images" });
   }
 });
 
-// Add a review for the pro
-router.post('/reviews', async (req, res) => {
+/* ------------------------------ Reviews (CRUD) ----------------------------- */
+
+router.post("/reviews", async (req, res) => {
   try {
-    const { proId, rating, comment, reviewer } = req.body;
-
-    // Validate rating
-    if (rating < 1 || rating > 5) {
-      return res.status(400).json({ error: 'Rating must be between 1 and 5' });
+    const { proId, rating, comment, reviewer } = req.body || {};
+    if (!proId || !(rating >= 1 && rating <= 5)) {
+      return res.status(400).json({ error: "proId and rating (1-5) are required" });
     }
 
-    // Check if pro exists
     const pro = await Pro.findById(proId);
-    if (!pro) {
-      return res.status(404).json({ error: 'Professional not found' });
-    }
+    if (!pro) return res.status(404).json({ error: "Professional not found" });
 
-    // Create new review
-    const newReview = new Review({
-      pro: proId,
-      rating,
-      comment,
-      reviewer
-    });
+    const review = await Review.create({ pro: proId, rating, comment, reviewer });
 
-    await newReview.save();
-
-    // Add review to pro's reviews array
-    pro.reviews.push(newReview._id);
-    
-    // Update pro's rating
-    const allReviews = await Review.find({ pro: proId });
-    const avgRating = allReviews.reduce((sum, review) => sum + review.rating, 0) / allReviews.length;
-    pro.rating = Math.round(avgRating * 10) / 10; // Round to 1 decimal place
-    
+    const all = await Review.find({ pro: proId });
+    const avg = all.reduce((sum, r) => sum + r.rating, 0) / all.length;
+    pro.rating = Math.round(avg * 10) / 10;
+    pro.reviews = pro.reviews || [];
+    pro.reviews.push(review._id);
     await pro.save();
 
-    res.status(201).json({
-      message: 'Review added successfully',
-      review: newReview,
-      newRating: pro.rating
+    return res.status(201).json({
+      message: "Review added successfully",
+      review,
+      newRating: pro.rating,
     });
-  } catch (error) {
-    console.error('Add review error:', error);
-    res.status(500).json({ error: 'Server error adding review' });
+  } catch (err) {
+    console.error("Add review error:", err);
+    return res.status(500).json({ error: "Server error adding review" });
   }
 });
 
-// Get reviews for a pro
-router.get('/reviews/:proId', async (req, res) => {
+router.get("/reviews/:proId", async (req, res) => {
   try {
     const { proId } = req.params;
-    
-    const reviews = await Review.find({ pro: proId })
-      .sort({ createdAt: -1 })
-      .limit(20);
-
-    res.json({ reviews });
-  } catch (error) {
-    console.error('Get reviews error:', error);
-    res.status(500).json({ error: 'Server error fetching reviews' });
+    const reviews = await Review.find({ pro: proId }).sort({ createdAt: -1 }).limit(20);
+    return res.json({ reviews });
+  } catch (err) {
+    console.error("Get reviews error:", err);
+    return res.status(500).json({ error: "Server error fetching reviews" });
   }
 });
 
-// Stripe Checkout session for professional subscription (alias for /api/subscribe/checkout)
-router.post('/checkout', async (req, res) => {
+/* -------------------------- Stripe Checkout (POST) ------------------------- */
+/* Frontend calls POST /api/pros/checkout with pro details; we create a       */
+/* subscription Checkout Session and return { url }.                          */
+
+router.post("/checkout", async (req, res) => {
   try {
-    console.log('🔔 Pros checkout session requested');
-    
-    // Initialize Stripe if available
-    let stripe = null;
-    try {
-      if (process.env.STRIPE_SECRET_KEY) {
-        stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-      }
-    } catch (e) {
-      console.error('Stripe initialization error:', e.message);
-    }
+    const stripe = new Stripe(requireEnv("STRIPE_SECRET_KEY"));
 
-    if (!stripe) {
-      return res.status(503).json({ 
-        error: 'Payment system not configured',
-        message: 'Stripe is not available' 
-      });
-    }
-
-    const { 
-      email, 
-      priceId,
+    const {
+      email,
+      priceId, // optional override
       firstName,
       lastName,
       phone,
       trade,
       city,
-      role
+      role,
+      smsConsent,
+      profilePhotoUrl,
     } = req.body || {};
-    
-    // Extract email from the request
+
     if (!email) {
-      return res.status(400).json({ 
-        error: 'Email is required for checkout session' 
-      });
+      return res.status(400).json({ error: "Email is required for checkout session" });
     }
 
-    // Prefer explicit priceId from request; fall back to env
     const PRICE_ID =
       priceId ||
       process.env.STRIPE_FIRST_MONTH_PRICE_ID ||
@@ -537,52 +312,123 @@ router.post('/checkout', async (req, res) => {
       process.env.STRIPE_PRICE_ID;
 
     if (!PRICE_ID) {
-      return res.status(500).json({ 
-        error: 'Payment configuration error',
-        message: 'No Stripe price ID configured' 
+      return res.status(500).json({ error: "No Stripe price ID configured" });
+    }
+
+    const clientUrl = process.env.CLIENT_URL || "https://www.fixloapp.com";
+
+    // Upsert pro with pending payment
+    const pro = await Pro.findOneAndUpdate(
+      { email: email.toLowerCase() },
+      {
+        name: [firstName, lastName].filter(Boolean).join(" ") || undefined,
+        email: email.toLowerCase(),
+        phone,
+        trade,
+        city,
+        role: role || "pro",
+        profilePhotoUrl,
+        smsConsent: !!smsConsent,
+        paymentStatus: "pending",
+      },
+      { upsert: true, new: true }
+    );
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      payment_method_types: ["card"],
+      line_items: [{ price: PRICE_ID, quantity: 1 }],
+      customer_email: email,
+      success_url: `${clientUrl}/pro/dashboard?checkout=success`,
+      cancel_url: `${clientUrl}/?checkout=cancel`,
+      metadata: {
+        proId: String(pro._id),
+        phone: phone || "",
+        trade: trade || "",
+        city: city || "",
+        smsConsent: String(!!smsConsent),
+        source: "pro-checkout",
+      },
+    });
+
+    return res.json({ success: true, url: session.url, sessionId: session.id });
+  } catch (err) {
+    console.error("Pro checkout error:", err);
+    return res.status(500).json({ error: "Checkout creation failed" });
+  }
+});
+
+/* ---------------------------- Signup (fallbacks) --------------------------- */
+/* These endpoints align with your client’s fallbacks:                        */
+/* POST /api/pros/signup  and  POST /api/pros                                 */
+
+async function forwardToProSignup(req, res) {
+  try {
+    const {
+      name,
+      email,
+      phone,
+      trade,
+      location, // string address
+      dob,
+      role,
+      termsConsent,
+      smsConsent,
+      city, // optional if not using 'location'
+    } = req.body || {};
+
+    if (!name || !email || !phone || !trade) {
+      return res.status(400).json({
+        success: false,
+        message: "name, email, phone, and trade are required",
       });
     }
 
-    const clientUrl = process.env.CLIENT_URL || 'https://www.fixloapp.com';
-
-    // Include professional info in metadata for tracking
-    const metadata = { 
-      source: 'pro-checkout', 
-      email, 
-      timestamp: new Date().toISOString()
-    };
-    
-    if (firstName && lastName) {
-      metadata.name = `${firstName} ${lastName}`;
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message:
+          "Professional signup is temporarily unavailable. Please try again later.",
+      });
     }
-    if (phone) metadata.phone = phone;
-    if (trade) metadata.trade = trade;
-    if (city) metadata.city = city;
 
-    const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      payment_method_types: ['card'],
-      line_items: [{ price: PRICE_ID, quantity: 1 }],
-      customer_email: email,
-      success_url: `${clientUrl}/payment-success.html?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${clientUrl}/payment-cancel.html`,
-      metadata
+    const normalizedEmail = String(email).toLowerCase();
+    const tradeNormalized = String(trade).trim().toLowerCase();
+
+    const exists = await Pro.findOne({ email: normalizedEmail, trade: tradeNormalized });
+    if (exists) {
+      return res.status(409).json({
+        success: false,
+        message: `You are already registered for ${trade}.`,
+      });
+    }
+
+    const pro = await Pro.create({
+      name: String(name).trim(),
+      email: normalizedEmail,
+      phone: String(phone).trim(),
+      trade: tradeNormalized,
+      city: city || undefined,
+      location: location
+        ? { address: String(location).trim() }
+        : undefined,
+      role: role || "pro",
+      wantsNotifications: true,
+      smsConsent: !!(smsConsent?.given ?? smsConsent),
+      termsConsent: !!(termsConsent?.given ?? termsConsent),
+      paymentStatus: "pending",
     });
 
-    console.log(`✅ Pro checkout session created: ${session.id}`);
-    return res.json({ 
-      success: true,
-      url: session.url, 
-      sessionId: session.id 
-    });
-
+    return res
+      .status(201)
+      .json({ success: true, proId: pro._id, verificationStatus: pro.verificationStatus || "pending" });
   } catch (err) {
-    console.error('❌ Pro checkout error:', err.message);
-    return res.status(500).json({ 
-      error: 'Checkout creation failed',
-      message: err.message 
-    });
+    console.error("Pro signup error:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
   }
-});
+}
+
+router.post("/signup", forwardToProSignup);
+router.post("/", forwardToProSignup);
 
 module.exports = router;
