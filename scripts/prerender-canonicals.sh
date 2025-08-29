@@ -47,19 +47,28 @@ if [ ! -f "$TEMPLATE_FILE" ]; then
   exit 1
 fi
 
-# Create backup
-cp "$TEMPLATE_FILE" "$BUILD_DIR/index.html.backup"
+# Create backup if it doesn't exist (or recreate from original)
+if [ ! -f "$BUILD_DIR/index.html.original" ]; then
+  cp "$TEMPLATE_FILE" "$BUILD_DIR/index.html.original"
+fi
 
-# Handle root route (homepage) - add canonical
-sed -i "s|</head>|  <link rel=\"canonical\" href=\"https://www.fixloapp.com/\"/>\n&|" "$TEMPLATE_FILE"
+# Update homepage canonical in the main template
+cp "$BUILD_DIR/index.html.original" "$TEMPLATE_FILE"
 sed -i "s|<title>Fixlo</title>|<title>Fixlo – Book Trusted Home Services Near You</title>|g" "$TEMPLATE_FILE"
+
+# Ensure homepage has correct canonical
+if grep -q 'rel="canonical"' "$TEMPLATE_FILE"; then
+  sed -i "s|<link rel=\"canonical\" href=\"[^\"]*\"/>|<link rel=\"canonical\" href=\"https://www.fixloapp.com/\"/>|g" "$TEMPLATE_FILE"
+else
+  sed -i "s|</head>|  <link rel=\"canonical\" href=\"https://www.fixloapp.com/\"/>\n&|" "$TEMPLATE_FILE"
+fi
 
 # Generate route-specific HTML files
 for i in "${!ROUTES[@]}"; do
   route="${ROUTES[i]}"
   title="${TITLES[i]}"
   
-  # Skip root route (already correct)
+  # Skip root route (already handled above)
   if [ "$route" = "/" ]; then
     continue
   fi
@@ -80,15 +89,20 @@ for i in "${!ROUTES[@]}"; do
     target_file="$BUILD_DIR$route"
   fi
   
-  # Copy template and update canonical and title
-  cp "$BUILD_DIR/index.html.backup" "$target_file"
+  # Copy original template and update
+  cp "$BUILD_DIR/index.html.original" "$target_file"
   
   # Update title first (escape special characters)
   escaped_title=$(printf '%s\n' "$title" | sed 's/[[\.*^$()+?{|]/\\&/g')
   sed -i "s|<title>Fixlo</title>|<title>$escaped_title</title>|g" "$target_file"
   
-  # Insert canonical URL into the head section (before closing </head> tag)
-  sed -i "s|</head>|<link rel=\"canonical\" href=\"$canonical_url\"/>\n&|" "$target_file"
+  # Replace existing canonical URL with the correct one
+  if grep -q 'rel="canonical"' "$target_file"; then
+    sed -i "s|<link rel=\"canonical\" href=\"[^\"]*\"/>|<link rel=\"canonical\" href=\"$canonical_url\"/>|g" "$target_file"
+  else
+    # Insert new canonical before </head> if none exists
+    sed -i "s|</head>|  <link rel=\"canonical\" href=\"$canonical_url\"/>\n&|" "$target_file"
+  fi
   
   echo "✅ Generated: $target_file (canonical: $canonical_url)"
 done
