@@ -7,6 +7,7 @@ import Modal from "../components/Modal";
 import ServiceRequestForm from "../components/ServiceRequestForm";
 import ProSignupForm from "../components/ProSignupForm";
 import ExitIntentModal from "../components/ExitIntentModal";
+import HelmetSEO from "../seo/HelmetSEO";
 
 const services = [
   { emoji: "🔧", title: "Plumbing", desc: "Fix leaks, install fixtures, and drain cleaning" },
@@ -41,6 +42,7 @@ export default function Home() {
 
   return (
     <>
+      <HelmetSEO title="Fixlo – Book Trusted Home Services Near You" />
       <Navbar onRequestService={() => openService()} onJoinPro={() => setShowProForm(true)} />
       <main>
         <Hero onRequestService={() => openService()} />

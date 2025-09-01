@@ -1,6 +1,7 @@
 import React from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import HelmetSEO from "../seo/HelmetSEO";
 
 export default function HowItWorks() {
   const steps = [
@@ -12,6 +13,11 @@ export default function HowItWorks() {
 
   return (
     <>
+      <HelmetSEO 
+        title="How Fixlo Works – Fast, Safe Home Service Booking | Fixlo"
+        description="Learn how Fixlo connects you with vetted local professionals in 4 simple steps. From request to completion, get fast quotes and quality service."
+        canonicalPathname="/how-it-works"
+      />
       <Navbar />
       <main style={{maxWidth: 1000, margin: "0 auto", padding: "24px 16px"}}>
         <h1 style={{fontSize: 32, margin: "4px 0"}}>How Fixlo Works</h1>
