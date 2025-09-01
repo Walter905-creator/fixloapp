@@ -1,4 +1,9 @@
 User-agent: *
 Allow: /
 
+# Disallow private/admin if you have them:
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /pro/dashboard
+
 Sitemap: https://www.fixloapp.com/sitemap.xml
