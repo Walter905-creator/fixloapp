@@ -63,7 +63,7 @@ export default function Contact() {
             <h2 style={{ fontSize: 24, marginBottom: 16 }}>Get in Touch</h2>
             <div style={{ marginBottom: 16 }}>
               <h3 style={{ fontSize: 18, marginBottom: 8 }}>📧 Email</h3>
-              <p style={{ color: "#475569" }}>support@fixloapp.com</p>
+              <p style={{ color: "#475569" }}>pro4u.improvements@gmail.com</p>
             </div>
             <div style={{ marginBottom: 16 }}>
               <h3 style={{ fontSize: 18, marginBottom: 8 }}>📞 Phone</h3>
