@@ -56,7 +56,14 @@ const primaryBtn = { padding: "8px 12px", borderRadius: 10, background: "#0f172a
 const menuBtn = { padding:"8px 10px", borderRadius:10, background:"#0f172a", color:"#fff", border:0, cursor:"pointer" };
 
 const drawer = {
-  display:"none"
+  position: "absolute",
+  top: "100%",
+  left: 0,
+  right: 0,
+  background: "#ffffff",
+  border: "1px solid #e5e7eb",
+  borderTop: "none",
+  zIndex: 40
 };
 
 const item = { display:"block", padding:"12px 16px", borderBottom:"1px solid #eee", textDecoration:"none", color:"#0f172a" };
