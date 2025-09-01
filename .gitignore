@@ -36,13 +36,14 @@ admin*.html
 .env.test.local
 .env.production.local
 
-# React build artifacts in root - keep needed files, exclude large maps and old builds
+# React build artifacts in root - keep essential files for deployment
 static/js/*.map
 static/js/*.LICENSE.txt
-static/js/*.js
-static/css/*.css
-asset-manifest.json
-index.html
+# Note: Allow main JS and CSS files for deployment but exclude maps and license files
+static/css/*.map
+# Keep index.html and asset-manifest.json for deployment
+# index.html - REMOVED from ignore (needed for deployment)
+# asset-manifest.json - REMOVED from ignore (needed for deployment)
 index.html.backup
 health.txt
 # Build-generated HTML files
