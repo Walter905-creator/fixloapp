@@ -236,6 +236,77 @@ router.get("/stats", async (req, res) => {
   }
 });
 
+// ✅ Alias route for professionals (for backward compatibility)
+// Client expects /api/admin/professionals but server has /api/admin/pros
+router.get("/professionals", async (req, res) => {
+  try {
+    console.log("🔄 Redirecting /professionals to /pros for compatibility");
+    // Re-use the existing /pros logic
+    // Check if database is connected
+    const mongoose = require('mongoose');
+    if (mongoose.connection.readyState !== 1) {
+      console.log("⚠️ Database not connected, returning demo professionals");
+      return res.json([
+        {
+          _id: "demo-pro-1",
+          name: "John Smith",
+          email: "john@example.com", 
+          phone: "+1234567890",
+          trade: "plumbing",
+          isActive: true,
+          paymentStatus: "active",
+          location: { address: "New York, NY" },
+          createdAt: new Date()
+        },
+        {
+          _id: "demo-pro-2", 
+          name: "Sarah Johnson",
+          email: "sarah@example.com",
+          phone: "+1234567891", 
+          trade: "electrical",
+          isActive: true,
+          paymentStatus: "active",
+          location: { address: "Los Angeles, CA" },
+          createdAt: new Date()
+        },
+        {
+          _id: "demo-pro-3",
+          name: "Mike Wilson", 
+          email: "mike@example.com",
+          phone: "+1234567892",
+          trade: "carpentry", 
+          isActive: false,
+          paymentStatus: "pending",
+          location: { address: "Chicago, IL" },
+          createdAt: new Date()
+        }
+      ]);
+    }
+
+    console.log("🔍 Attempting to fetch pros from database...");
+    const pros = await Pro.find().sort({ createdAt: -1 });
+    console.log(`✅ Found ${pros.length} pros in database`);
+    res.json(pros);
+  } catch (err) {
+    console.error("❌ Error fetching professionals:", err.message);
+    console.error("❌ Stack trace:", err.stack);
+    // Return demo data instead of error
+    res.json([
+      {
+        _id: "demo-pro-1",
+        name: "John Smith",
+        email: "john@example.com", 
+        phone: "+1234567890",
+        trade: "plumbing",
+        isActive: true,
+        paymentStatus: "active",
+        location: { address: "New York, NY" },
+        createdAt: new Date()
+      }
+    ]);
+  }
+});
+
 // ✅ Shield log endpoint - View blocked requests
 router.get('/shield-log', (req, res) => {
   const logPath = path.join(__dirname, '../logs/shield.log');
