@@ -5,9 +5,15 @@ import HowItWorks from "./pages/HowItWorks";
 import Terms from "./pages/Terms";
 import AdminDashboard from "./pages/AdminDashboard";
 import ProDashboard from "./pages/ProDashboard";
+
+import ServiceCityPage from "./routes/ServiceCityPage";
+import ServiceStatePage from "./routes/ServiceStatePage";
+import ServicePage from "./routes/ServicePage";
+
 import AIAssistant from "./pages/AIAssistant";
 import Contact from "./pages/Contact";
 import ProSignIn from "./pages/ProSignIn";
+ main
 
 export default function App() {
   return (
@@ -20,6 +26,9 @@ export default function App() {
       <Route path="/terms" element={<Terms />} />
       <Route path="/admin" element={<AdminDashboard />} />
       <Route path="/pro/dashboard" element={<ProDashboard />} />
+      <Route path="/services/:service/:city" element={<ServiceCityPage />} />
+      <Route path="/services/:service/:state" element={<ServiceStatePage />} />
+      <Route path="/services/:service" element={<ServicePage />} />
       <Route path="*" element={<Home />} />
     </Routes>
   );

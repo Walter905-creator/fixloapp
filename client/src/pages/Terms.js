@@ -1,10 +1,16 @@
 import React from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import HelmetSEO from "../seo/HelmetSEO";
 
 export default function Terms() {
   return (
     <>
+      <HelmetSEO 
+        title="Terms of Service – Fixlo"
+        description="Read Fixlo's terms of service. Learn about our platform policies, user responsibilities, and service guidelines."
+        canonicalPathname="/terms"
+      />
       <Navbar />
       <main style={{maxWidth: 1000, margin: "0 auto", padding: "24px 16px"}}>
         <h1 style={{fontSize: 32, margin: "4px 0"}}>Terms of Service</h1>
