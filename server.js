@@ -338,7 +338,7 @@ async function notifyProfessionals(serviceRequest, professionals) {
 // Admin authentication
 const ADMIN_CREDENTIALS = {
     email: process.env.ADMIN_EMAIL || 'admin@fixloapp.com',
-    password: process.env.ADMIN_PASSWORD || 'FixloAdmin2024!'
+    password: process.env.ADMIN_PASSWORD || 'ChangeThisInProduction123!'
 };
 
 // Simple JWT-like token generation (use proper JWT in production)

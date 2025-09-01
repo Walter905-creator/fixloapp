@@ -246,7 +246,6 @@ app.use("/api/pros", generalRateLimit, require("./routes/proRoutes")); // auth &
 app.use("/api/pro", generalRateLimit, require("./routes/proJobs")); // professional jobs
 
 app.use("/api/pro/jobs", generalRateLimit, require("./routes/proJobs")); // professional job management
- main
 app.use("/api/homeowner-lead", require("./routes/homeownerLead"));
 app.use("/api/leads", require("./routes/leads")); // Lead management with database storage
 app.use("/api/service-request", require("./routes/serviceRequest"));

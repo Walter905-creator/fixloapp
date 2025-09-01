@@ -5,9 +5,9 @@ const { sign } = require('../utils/jwt');
 const Pro = require("../models/Pro");
 const mongoose = require("mongoose");
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@fixloapp.com';
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH; // store hash, not raw
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD; // fallback for backward compatibility
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'ChangeThisInProduction123!'; // fallback for backward compatibility
 
 // ✅ Admin login
 router.post("/login", async (req, res) => {
