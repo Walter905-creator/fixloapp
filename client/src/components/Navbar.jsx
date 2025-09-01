@@ -1,12 +1,32 @@
 import React from 'react';
 import { Link, NavLink } from 'react-router-dom';
-const items=[
-  {to:'/',label:'Home'},{to:'/services',label:'Services'},{to:'/how-it-works',label:'How It Works'},
-  {to:'/assistant',label:'AI Assistant'},{to:'/contact',label:'Contact'},{to:'/pricing',label:'Pricing'},
-  {to:'/pro/sign-in',label:'Pro Sign In'},{to:'/admin',label:'Admin'},{to:'/pro/dashboard',label:'Pro Dashboard'},{to:'/join',label:'Join Now'}
+
+const items = [
+  { to: '/services', label: 'Services' },
+  { to: '/how-it-works', label: 'How It Works' },
+  { to: '/assistant', label: 'AI Assistant' },
+  { to: '/contact', label: 'Contact' },
+  { to: '/pro/sign-in', label: 'Pro Sign In' },
+  { to: '/admin', label: 'Admin' },
+  { to: '/pro/dashboard', label: 'Pro Dashboard' },
+  { to: '/join', label: 'Join Now' }
 ];
+
 export default function Navbar(){
-  return(<nav className="nav"><div className="brand"><Link to="/">Fixlo</Link></div><div style={{display:'flex',flexWrap:'wrap'}}>
-    {items.map(i=>(<NavLink key={i.to} to={i.to} style={({isActive})=>({margin:'0 10px',fontWeight:isActive?800:600})}>{i.label}</NavLink>))}
-  </div></nav>);
+  return (
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/80 backdrop-blur">
+      <div className="container-xl flex items-center justify-between py-3">
+        <Link to="/" className="flex items-center gap-2">
+          <img src="/logo.svg" alt="Fixlo 2025 Logo" className="h-8 w-auto" />
+        </Link>
+        <nav className="hidden md:flex items-center gap-4">
+          {items.map(i => (
+            <NavLink key={i.to} to={i.to} className={({isActive})=>
+              `px-3 py-1 rounded-lg text-sm font-semibold hover:bg-white/5 ${isActive?'text-sky-300':'text-slate-200'}`
+            }>{i.label}</NavLink>
+          ))}
+        </nav>
+      </div>
+    </header>
+  );
 }

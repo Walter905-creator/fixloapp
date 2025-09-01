@@ -7,13 +7,11 @@ const ROOT = path.resolve(__dirname, '..');
 const PUBLIC_DIR = path.join(ROOT, 'public');
 const SRC_DIR = path.join(ROOT, 'src');
 const BASE_URL = process.env.PUBLIC_URL || 'https://www.fixloapp.com';
-const services = JSON.parse(fs.readFileSync(path.join(SRC_DIR, 'data', 'services.json'), 'utf-8'));
-const states = JSON.parse(fs.readFileSync(path.join(SRC_DIR, 'data', 'states.json'), 'utf-8'));
-const cities = JSON.parse(fs.readFileSync(path.join(SRC_DIR, 'data', 'cities.json'), 'utf-8'));
+const services = ['plumbing','electrical','carpentry','painting','hvac','roofing','landscaping','house-cleaning','junk-removal'];
+const cities = ['miami-fl','new-york-ny','los-angeles-ca','chicago-il','houston-tx','phoenix-az'];
 const today = new Date().toISOString().split('T')[0];
-const urls = new Set([ '/', '/pricing', '/services' ]);
+const urls = new Set([ '/', '/pricing', '/services', '/terms' ]);
 services.forEach(svc => urls.add(`/services/${svc}`));
-services.forEach(svc => states.forEach(st => urls.add(`/services/${svc}/${st}`)));
 services.forEach(svc => cities.forEach(cty => urls.add(`/services/${svc}/${cty}`)));
 function urlNode(loc, priority='0.80', changefreq='weekly'){return `
   <url>

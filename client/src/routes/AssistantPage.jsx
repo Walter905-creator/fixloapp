@@ -3,18 +3,18 @@ import HelmetSEO from '../seo/HelmetSEO';
 export default function AssistantPage(){
   const [q, setQ] = useState('');
   const [messages, setMessages] = useState([{role:'assistant', content:'Hi! Ask me about services, pricing, or scheduling.'}]);
-  const send = async (e)=>{ e.preventDefault(); if(!q.trim()) return; setMessages(m=>[...m,{role:'user',content:q},{role:'assistant',content:'(Demo) Thanks! A team member will follow up by SMS.'}]); setQ(''); };
+  const send = (e)=>{ e.preventDefault(); if(!q.trim()) return; setMessages(m=>[...m,{role:'user',content:q},{role:'assistant',content:'(Demo) Thanks! A team member will follow up by SMS.'}]); setQ(''); };
   return (<>
     <HelmetSEO title="AI Assistant | Fixlo" canonicalPathname="/assistant" />
-    <div className="container">
-      <h1>Assistant</h1>
-      <div className="card">
-        <div style={{minHeight:180}}>
-          {messages.map((m,i)=>(<div key={i} style={{margin:'8px 0'}}><strong>{m.role==='user'?'You':'Fixlo'}</strong><br/><span className="small">{m.content}</span></div>))}
+    <div className="container-xl py-8">
+      <h1 className="text-2xl font-extrabold">Assistant</h1>
+      <div className="card p-5">
+        <div className="min-h-40 space-y-3">
+          {messages.map((m,i)=>(<div key={i}><strong>{m.role==='user'?'You':'Fixlo'}</strong><div className="text-sm text-slate-300">{m.content}</div></div>))}
         </div>
-        <form onSubmit={send} style={{display:'flex', gap:8, marginTop:12}}>
-          <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Ask anything..." />
-          <button className="btn" type="submit">Send</button>
+        <form onSubmit={send} className="mt-4 flex gap-2">
+          <input className="flex-1 rounded-xl border border-white/10 bg-slate-900 px-3 py-2" value={q} onChange={e=>setQ(e.target.value)} placeholder="Ask anything..." />
+          <button className="btn btn-primary" type="submit">Send</button>
         </form>
       </div>
     </div>
