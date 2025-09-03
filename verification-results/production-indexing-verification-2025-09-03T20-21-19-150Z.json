@@ -1,0 +1,356 @@
+{
+  "timestamp": "2025-09-03T20:21:16.806Z",
+  "checks": [
+    {
+      "name": "Canonical implementation (/)",
+      "passed": true,
+      "details": "Correct canonical: https://www.fixloapp.com/",
+      "severity": "normal",
+      "timestamp": "2025-09-03T20:21:17.609Z"
+    },
+    {
+      "name": "Robots meta (/)",
+      "passed": true,
+      "details": "Robots meta: index, follow",
+      "severity": "normal",
+      "timestamp": "2025-09-03T20:21:17.609Z"
+    },
+    {
+      "name": "X-Robots-Tag header (/)",
+      "passed": true,
+      "details": "No problematic X-Robots-Tag headers",
+      "severity": "normal",
+      "timestamp": "2025-09-03T20:21:17.609Z"
+    },
+    {
+      "name": "Canonical URL correctness (/how-it-works)",
+      "passed": false,
+      "details": "Expected: https://www.fixloapp.com/how-it-works, Found: https://www.fixloapp.com/",
+      "severity": "critical",
+      "timestamp": "2025-09-03T20:21:17.678Z"
+    },
+    {
+      "name": "Robots meta (/how-it-works)",
+      "passed": true,
+      "details": "Robots meta: index, follow",
+      "severity": "normal",
+      "timestamp": "2025-09-03T20:21:17.679Z"
+    },
+    {
+      "name": "X-Robots-Tag header (/how-it-works)",
+      "passed": true,
+      "details": "No problematic X-Robots-Tag headers",
+      "severity": "normal",
+      "timestamp": "2025-09-03T20:21:17.679Z"
+    },
+    {
+      "name": "Canonical URL correctness (/contact)",
+      "passed": false,
+      "details": "Expected: https://www.fixloapp.com/contact, Found: https://www.fixloapp.com/",
+      "severity": "critical",
+      "timestamp": "2025-09-03T20:21:17.742Z"
+    },
+    {
+      "name": "Robots meta (/contact)",
+      "passed": true,
+      "details": "Robots meta: index, follow",
+      "severity": "normal",
+      "timestamp": "2025-09-03T20:21:17.742Z"
+    },
+    {
+      "name": "X-Robots-Tag header (/contact)",
+      "passed": true,
+      "details": "No problematic X-Robots-Tag headers",
+      "severity": "normal",
+      "timestamp": "2025-09-03T20:21:17.742Z"
+    },
+    {
+      "name": "Canonical URL correctness (/signup)",
+      "passed": false,
+      "details": "Expected: https://www.fixloapp.com/signup, Found: https://www.fixloapp.com/",
+      "severity": "critical",
+      "timestamp": "2025-09-03T20:21:17.800Z"
+    },
+    {
+      "name": "Robots meta (/signup)",
+      "passed": true,
+      "details": "Robots meta: index, follow",
+      "severity": "normal",
+      "timestamp": "2025-09-03T20:21:17.800Z"
+    },
+    {
+      "name": "X-Robots-Tag header (/signup)",
+      "passed": true,
+      "details": "No problematic X-Robots-Tag headers",
+      "severity": "normal",
+      "timestamp": "2025-09-03T20:21:17.800Z"
+    },
+    {
+      "name": "Canonical URL correctness (/pro/signup)",
+      "passed": false,
+      "details": "Expected: https://www.fixloapp.com/pro/signup, Found: https://www.fixloapp.com/",
+      "severity": "critical",
+      "timestamp": "2025-09-03T20:21:17.854Z"
+    },
+    {
+      "name": "Robots meta (/pro/signup)",
+      "passed": true,
+      "details": "Robots meta: index, follow",
+      "severity": "normal",
+      "timestamp": "2025-09-03T20:21:17.854Z"
+    },
+    {
+      "name": "X-Robots-Tag header (/pro/signup)",
+      "passed": true,
+      "details": "No problematic X-Robots-Tag headers",
+      "severity": "normal",
+      "timestamp": "2025-09-03T20:21:17.854Z"
+    },
+    {
+      "name": "Canonical URL correctness (/services/)",
+      "passed": false,
+      "details": "Expected: https://www.fixloapp.com/services, Found: https://www.fixloapp.com/",
+      "severity": "critical",
+      "timestamp": "2025-09-03T20:21:17.922Z"
+    },
+    {
+      "name": "Robots meta (/services/)",
+      "passed": true,
+      "details": "Robots meta: index, follow",
+      "severity": "normal",
+      "timestamp": "2025-09-03T20:21:17.922Z"
+    },
+    {
+      "name": "X-Robots-Tag header (/services/)",
+      "passed": true,
+      "details": "No problematic X-Robots-Tag headers",
+      "severity": "normal",
+      "timestamp": "2025-09-03T20:21:17.922Z"
+    },
+    {
+      "name": "Canonical URL correctness (/services/plumbing)",
+      "passed": false,
+      "details": "Expected: https://www.fixloapp.com/services/plumbing, Found: https://www.fixloapp.com/",
+      "severity": "critical",
+      "timestamp": "2025-09-03T20:21:17.991Z"
+    },
+    {
+      "name": "Robots meta (/services/plumbing)",
+      "passed": true,
+      "details": "Robots meta: index, follow",
+      "severity": "normal",
+      "timestamp": "2025-09-03T20:21:17.991Z"
+    },
+    {
+      "name": "X-Robots-Tag header (/services/plumbing)",
+      "passed": true,
+      "details": "No problematic X-Robots-Tag headers",
+      "severity": "normal",
+      "timestamp": "2025-09-03T20:21:17.991Z"
+    },
+    {
+      "name": "Non-www to www redirect",
+      "passed": true,
+      "details": "https://fixloapp.com → https://www.fixloapp.com/ (308)",
+      "severity": "normal",
+      "timestamp": "2025-09-03T20:21:18.442Z"
+    },
+    {
+      "name": "Parameter handling (/?utm_source=google&utm_medium=cpc)",
+      "passed": true,
+      "details": "Clean canonical: https://www.fixloapp.com/",
+      "severity": "normal",
+      "timestamp": "2025-09-03T20:21:18.502Z"
+    },
+    {
+      "name": "Parameter handling (/?ref=social&campaign=test)",
+      "passed": true,
+      "details": "Clean canonical: https://www.fixloapp.com/",
+      "severity": "normal",
+      "timestamp": "2025-09-03T20:21:18.560Z"
+    },
+    {
+      "name": "Parameter handling (/how-it-works?utm_campaign=brand)",
+      "passed": true,
+      "details": "Clean canonical: https://www.fixloapp.com/",
+      "severity": "normal",
+      "timestamp": "2025-09-03T20:21:18.677Z"
+    },
+    {
+      "name": "Parameter handling (/?fbclid=test123)",
+      "passed": true,
+      "details": "Clean canonical: https://www.fixloapp.com/",
+      "severity": "normal",
+      "timestamp": "2025-09-03T20:21:18.741Z"
+    },
+    {
+      "name": "Robots.txt sitemap reference",
+      "passed": true,
+      "details": "Contains sitemap reference",
+      "severity": "normal",
+      "timestamp": "2025-09-03T20:21:18.801Z"
+    },
+    {
+      "name": "Robots.txt domain reference",
+      "passed": true,
+      "details": "Contains correct domain",
+      "severity": "normal",
+      "timestamp": "2025-09-03T20:21:18.801Z"
+    },
+    {
+      "name": "Robots.txt public access",
+      "passed": true,
+      "details": "Public routes are allowed",
+      "severity": "normal",
+      "timestamp": "2025-09-03T20:21:18.801Z"
+    },
+    {
+      "name": "Sitemap XML structure",
+      "passed": false,
+      "details": "Invalid XML structure",
+      "severity": "critical",
+      "timestamp": "2025-09-03T20:21:18.890Z"
+    },
+    {
+      "name": "SSR implementation (/services/plumbing)",
+      "passed": false,
+      "details": "Route returns generic SPA shell - may impact indexing",
+      "severity": "critical",
+      "timestamp": "2025-09-03T20:21:18.960Z"
+    },
+    {
+      "name": "SSR implementation (/pro/test-professional-sf)",
+      "passed": false,
+      "details": "Route returns generic SPA shell - may impact indexing",
+      "severity": "critical",
+      "timestamp": "2025-09-03T20:21:19.018Z"
+    },
+    {
+      "name": "Static page title (/services/index.html)",
+      "passed": false,
+      "details": "Generic or missing title",
+      "severity": "warning",
+      "timestamp": "2025-09-03T20:21:19.074Z"
+    },
+    {
+      "name": "Static page canonical (/services/index.html)",
+      "passed": false,
+      "details": "Incorrect canonical: https://www.fixloapp.com/",
+      "severity": "warning",
+      "timestamp": "2025-09-03T20:21:19.074Z"
+    },
+    {
+      "name": "Static page title (/services/)",
+      "passed": false,
+      "details": "Generic or missing title",
+      "severity": "warning",
+      "timestamp": "2025-09-03T20:21:19.149Z"
+    },
+    {
+      "name": "Static page canonical (/services/)",
+      "passed": false,
+      "details": "Incorrect canonical: https://www.fixloapp.com/",
+      "severity": "warning",
+      "timestamp": "2025-09-03T20:21:19.149Z"
+    }
+  ],
+  "summary": {
+    "total": 36,
+    "passed": 23,
+    "failed": 13
+  },
+  "issues": [
+    {
+      "type": "CRITICAL",
+      "name": "Canonical URL correctness (/how-it-works)",
+      "details": "Expected: https://www.fixloapp.com/how-it-works, Found: https://www.fixloapp.com/",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "CRITICAL",
+      "name": "Canonical URL correctness (/contact)",
+      "details": "Expected: https://www.fixloapp.com/contact, Found: https://www.fixloapp.com/",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "CRITICAL",
+      "name": "Canonical URL correctness (/signup)",
+      "details": "Expected: https://www.fixloapp.com/signup, Found: https://www.fixloapp.com/",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "CRITICAL",
+      "name": "Canonical URL correctness (/pro/signup)",
+      "details": "Expected: https://www.fixloapp.com/pro/signup, Found: https://www.fixloapp.com/",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "CRITICAL",
+      "name": "Canonical URL correctness (/services/)",
+      "details": "Expected: https://www.fixloapp.com/services, Found: https://www.fixloapp.com/",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "CRITICAL",
+      "name": "Canonical URL correctness (/services/plumbing)",
+      "details": "Expected: https://www.fixloapp.com/services/plumbing, Found: https://www.fixloapp.com/",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "CRITICAL",
+      "name": "Sitemap XML structure",
+      "details": "Invalid XML structure",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "CRITICAL",
+      "name": "SSR implementation (/services/plumbing)",
+      "details": "Route returns generic SPA shell - may impact indexing",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "CRITICAL",
+      "name": "SSR implementation (/pro/test-professional-sf)",
+      "details": "Route returns generic SPA shell - may impact indexing",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Static page title (/services/index.html)",
+      "details": "Generic or missing title",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Static page canonical (/services/index.html)",
+      "details": "Incorrect canonical: https://www.fixloapp.com/",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Static page title (/services/)",
+      "details": "Generic or missing title",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Static page canonical (/services/)",
+      "details": "Incorrect canonical: https://www.fixloapp.com/",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "HIGH",
+      "area": "Canonical URLs",
+      "recommendation": "Implement dynamic canonical URL generation in your React app routing to ensure each route serves its own canonical URL instead of the homepage canonical.",
+      "implementation": "Update your SEOHead component or routing logic to dynamically set canonical URLs based on the current route."
+    },
+    {
+      "priority": "MEDIUM",
+      "area": "Server-Side Rendering",
+      "recommendation": "Consider implementing SSR or static generation for key routes (/services/*, /pro/*) to improve indexability.",
+      "implementation": "Use Next.js, implement middleware-based prerendering, or create static HTML pages for critical routes."
+    }
+  ]
+}
