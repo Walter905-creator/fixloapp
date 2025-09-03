@@ -37,7 +37,7 @@ TITLES=(
   "Professional Sign Up - Join Fixlo Network"
 )
 
-BUILD_DIR="client/build"
+BUILD_DIR="."
 TEMPLATE_FILE="$BUILD_DIR/index.html"
 
 echo "🔧 Pre-rendering canonical URLs for SEO..."
@@ -58,7 +58,7 @@ sed -i "s|<title>Fixlo</title>|<title>Fixlo – Book Trusted Home Services Near 
 
 # Ensure homepage has correct canonical
 if grep -q 'rel="canonical"' "$TEMPLATE_FILE"; then
-  sed -i "s|<link rel=\"canonical\" href=\"[^\"]*\"/>|<link rel=\"canonical\" href=\"https://www.fixloapp.com/\"/>|g" "$TEMPLATE_FILE"
+  sed -i "s|<link rel=\"canonical\" href=\"[^\"]*\"[^>]*>|<link rel=\"canonical\" href=\"https://www.fixloapp.com/\"/>|g" "$TEMPLATE_FILE"
 else
   sed -i "s|</head>|  <link rel=\"canonical\" href=\"https://www.fixloapp.com/\"/>\n&|" "$TEMPLATE_FILE"
 fi
@@ -98,7 +98,7 @@ for i in "${!ROUTES[@]}"; do
   
   # Replace existing canonical URL with the correct one
   if grep -q 'rel="canonical"' "$target_file"; then
-    sed -i "s|<link rel=\"canonical\" href=\"[^\"]*\"/>|<link rel=\"canonical\" href=\"$canonical_url\"/>|g" "$target_file"
+    sed -i "s|<link rel=\"canonical\" href=\"[^\"]*\"[^>]*>|<link rel=\"canonical\" href=\"$canonical_url\"/>|g" "$target_file"
   else
     # Insert new canonical before </head> if none exists
     sed -i "s|</head>|  <link rel=\"canonical\" href=\"$canonical_url\"/>\n&|" "$target_file"
