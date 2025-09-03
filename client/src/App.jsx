@@ -13,6 +13,8 @@ import ProDashboardPage from './routes/ProDashboardPage.jsx';
 import JoinPage from './routes/JoinPage.jsx';
 import ServicePage from './routes/ServicePage.jsx';
 import TermsPage from './routes/TermsPage.jsx';
+import SignupPage from './routes/SignupPage.jsx';
+import ProSignupPage from './routes/ProSignupPage.jsx';
 export default function App(){
   return (<>
     <Navbar/>
@@ -25,6 +27,8 @@ export default function App(){
       <Route path="/assistant" element={<AssistantPage/>}/>
       <Route path="/contact" element={<ContactPage/>}/>
       <Route path="/pricing" element={<PricingPage/>}/>
+      <Route path="/signup" element={<SignupPage/>}/>
+      <Route path="/pro/signup" element={<ProSignupPage/>}/>
       <Route path="/pro/sign-in" element={<ProSignInPage/>}/>
       <Route path="/admin" element={<AdminPage/>}/>
       <Route path="/pro/dashboard" element={<ProDashboardPage/>}/>
