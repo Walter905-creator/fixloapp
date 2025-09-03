@@ -21,6 +21,7 @@
     "verify-production": "node scripts/simple-production-verification.js",
     "verify-production-enhanced": "node scripts/enhanced-production-verification.js",
     "verify-production-indexing": "node scripts/production-indexing-verification-lightweight.js",
+    "verify-local-canonicals": "node scripts/verify-local-canonicals.js",
     "verify-summary": "node scripts/verification-summary.js",
     "force-deploy": "./force-vercel-deploy.sh",
     "set-build-metadata": "node scripts/set-build-metadata.js"

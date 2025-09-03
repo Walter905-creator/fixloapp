@@ -54,7 +54,7 @@ fi
 
 # Update homepage canonical in the main template
 cp "$BUILD_DIR/index.html.original" "$TEMPLATE_FILE"
-sed -i "s|<title>Fixlo</title>|<title>Fixlo – Book Trusted Home Services Near You</title>|g" "$TEMPLATE_FILE"
+sed -i "s|<title>[^<]*</title>|<title>Fixlo – Book Trusted Home Services Near You</title>|g" "$TEMPLATE_FILE"
 
 # Ensure homepage has correct canonical
 if grep -q 'rel="canonical"' "$TEMPLATE_FILE"; then
@@ -94,7 +94,7 @@ for i in "${!ROUTES[@]}"; do
   
   # Update title first (escape special characters)
   escaped_title=$(printf '%s\n' "$title" | sed 's/[[\.*^$()+?{|]/\\&/g')
-  sed -i "s|<title>Fixlo</title>|<title>$escaped_title</title>|g" "$target_file"
+  sed -i "s|<title>[^<]*</title>|<title>$escaped_title</title>|g" "$target_file"
   
   # Replace existing canonical URL with the correct one
   if grep -q 'rel="canonical"' "$target_file"; then
