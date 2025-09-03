@@ -1,1 +1,22 @@
-<!doctype html><html lang="en"><head><link rel="manifest" href="/manifest.webmanifest"/><link rel="apple-touch-icon" href="/icon-192.png"/><link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png"/><link rel="apple-touch-icon" href="/fixlo-2025-logo.png"/><meta property="og:url" content="https://www.fixloapp.com/"/><meta property="og:image" content="/icon-1024.png"/><meta property="og:description" content="Book top‑rated local pros in minutes. Plumbing, electrical, cleaning, junk removal & more."/><meta property="og:title" content="Fixlo – Trusted Home Services"/><link rel="canonical" href="https://www.fixloapp.com/"/><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="theme-color" content="#ffffff"/><title>Fixlo</title><meta name="description" content="Book trusted home services near you. Plumbing, electrical, HVAC, and more."/><link rel="icon" href="/favicon.png"/><link rel="manifest" href="/manifest.webmanifest"/><meta property="og:title" content="Fixlo — Home Services"/><meta property="og:description" content="Connect with vetted pros for home repairs and improvements."/><meta property="og:type" content="website"/><meta property="og:url" content="https://www.fixloapp.com"/><meta property="og:image" content="/logo.png"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Fixlo — Home Services"/><meta name="twitter:description" content="Connect with vetted pros for home repairs and improvements."/><meta name="twitter:image" content="/logo.png"/><meta name="fixlo-build-id" content="2025-09-01T03:28:33.804Z"/><meta name="fixlo-commit-sha" content="c4350ec5fb30081a40afcede15ae088bd5edf512"/><style>#root,body,html{height:100%}body{opacity:1!important;visibility:visible!important;background:#fff}.hidden,[data-hidden=true]{display:none!important}</style><script defer="defer" src="/static/js/main.564d8b1d.js"></script><link href="/static/css/main.a61e79a2.css" rel="stylesheet"></head><body><noscript>You need to enable JavaScript to run this app.</noscript><div id="root"></div></body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fixlo – Book Trusted Home Services Near You</title>
+    <meta name="description" content="Fixlo connects homeowners with trusted pros for plumbing, electrical, junk removal & more. Fast, easy, nationwide.">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://www.fixloapp.com/">
+    <meta property="og:title" content="Fixlo – Trusted Home Services">
+    <meta property="og:description" content="Book top-rated local pros in a few clicks.">
+    <meta property="og:url" content="https://www.fixloapp.com/">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="/cover.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <script type="module" crossorigin src="/assets/index-B0_upsdC.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-B_vXUBqJ.css">
+  </head>
+  <body class="bg-slate-950 text-slate-100">
+    <div id="root"></div>
+  </body>
+</html>
