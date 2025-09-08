@@ -1,5 +1,11 @@
 
 import React, { useState } from 'react';
+import svcRoofing from '../assets/service-roofing.jpg';
+import svcCleaning from '../assets/service-cleaning.jpg';
+import svcElectrical from '../assets/service-electrical.jpg';
+import svcPlumbing from '../assets/service-plumbing.jpg';
+import howItWorks from '../assets/how-it-works.jpg';
+import heroPro from '../assets/hero-pro.jpg';
 import HelmetSEO from '../seo/HelmetSEO';
 import { Link } from 'react-router-dom';
 
@@ -37,7 +43,7 @@ export default function HomePage(){
               </div>
             </div>
             <div>
-              <img src="/images/hero-pro.jpg" alt="Fixlo professional at work" className="rounded-3xl shadow-2xl border border-white/10 w-full h-auto object-cover" />
+              <img src={heroPro} alt="Fixlo professional at work" className="rounded-3xl shadow-2xl border border-white/10 w-full h-auto object-cover" />
             </div>
           </div>
         </section>
@@ -46,10 +52,10 @@ export default function HomePage(){
         <section className="py-6 md:py-8">
           <div className="grid md:grid-cols-2 gap-5">
             {[
-              {to:'/services/plumbing', title:'Plumbing', desc:'Faucets, pipes, drains, and more', img:'/images/service-plumbing.jpg'},
-              {to:'/services/electrical', title:'Electrical', desc:'Lighting, wiring, outlets, and more', img:'/images/service-electrical.jpg'},
-              {to:'/services/cleaning', title:'Cleaning', desc:'Housekeeping, carpets, windows', img:'/images/service-cleaning.jpg'},
-              {to:'/services/roofing', title:'Roofing', desc:'Repairs, replacements, inspections', img:'/images/service-roofing.jpg'},
+              {to:'/services/plumbing', title:'Plumbing', desc:'Faucets, pipes, drains, and more', img:svcPlumbing},
+              {to:'/services/electrical', title:'Electrical', desc:'Lighting, wiring, outlets, and more', img:svcElectrical},
+              {to:'/services/cleaning', title:'Cleaning', desc:'Housekeeping, carpets, windows', img:svcCleaning},
+              {to:'/services/roofing', title:'Roofing', desc:'Repairs, replacements, inspections', img:svcRoofing},
             ].map((s) => (
               <Link key={s.to} to={s.to} className="group card overflow-hidden">
                 <div className="grid grid-cols-5 gap-0">
@@ -92,7 +98,7 @@ export default function HomePage(){
               </div>
             </div>
             <div>
-              <img src="/images/how-it-works.jpg" alt="How Fixlo works" className="rounded-3xl shadow-2xl border border-white/10 w-full h-auto object-cover" />
+              <img src={howItWorks} alt="How Fixlo works" className="rounded-3xl shadow-2xl border border-white/10 w-full h-auto object-cover" />
             </div>
           </div>
         </section>
