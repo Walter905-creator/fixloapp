@@ -1,0 +1,290 @@
+{
+  "timestamp": "2025-09-08T00:24:42.238Z",
+  "checks": [
+    {
+      "name": "Canonical implementation (/)",
+      "passed": true,
+      "details": "Correct canonical: https://www.fixloapp.com/",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:42.256Z"
+    },
+    {
+      "name": "Robots meta (/)",
+      "passed": true,
+      "details": "Robots meta: index, follow",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:42.257Z"
+    },
+    {
+      "name": "X-Robots-Tag header (/)",
+      "passed": true,
+      "details": "No problematic X-Robots-Tag headers",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:42.257Z"
+    },
+    {
+      "name": "Route /how-it-works accessibility",
+      "passed": false,
+      "details": "Route returned 301",
+      "severity": "warning",
+      "timestamp": "2025-09-08T00:24:42.259Z"
+    },
+    {
+      "name": "Route /contact accessibility",
+      "passed": false,
+      "details": "Route returned 301",
+      "severity": "warning",
+      "timestamp": "2025-09-08T00:24:42.261Z"
+    },
+    {
+      "name": "Route /signup accessibility",
+      "passed": false,
+      "details": "Route returned 301",
+      "severity": "warning",
+      "timestamp": "2025-09-08T00:24:42.263Z"
+    },
+    {
+      "name": "Route /pro/signup accessibility",
+      "passed": false,
+      "details": "Route returned 301",
+      "severity": "warning",
+      "timestamp": "2025-09-08T00:24:42.264Z"
+    },
+    {
+      "name": "Canonical implementation (/services/)",
+      "passed": true,
+      "details": "Correct canonical: https://www.fixloapp.com/services",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:42.266Z"
+    },
+    {
+      "name": "Robots meta (/services/)",
+      "passed": true,
+      "details": "Robots meta: index, follow",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:42.266Z"
+    },
+    {
+      "name": "X-Robots-Tag header (/services/)",
+      "passed": true,
+      "details": "No problematic X-Robots-Tag headers",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:42.266Z"
+    },
+    {
+      "name": "Route /services/plumbing accessibility",
+      "passed": false,
+      "details": "Route returned 301",
+      "severity": "warning",
+      "timestamp": "2025-09-08T00:24:42.268Z"
+    },
+    {
+      "name": "Non-www to www redirect",
+      "passed": true,
+      "details": "https://fixloapp.com → https://www.fixloapp.com/ (308)",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:42.327Z"
+    },
+    {
+      "name": "Parameter handling (/?utm_source=google&utm_medium=cpc)",
+      "passed": true,
+      "details": "Clean canonical: https://www.fixloapp.com/",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:42.330Z"
+    },
+    {
+      "name": "Parameter handling (/?ref=social&campaign=test)",
+      "passed": true,
+      "details": "Clean canonical: https://www.fixloapp.com/",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:42.332Z"
+    },
+    {
+      "name": "Parameter test accessibility (/how-it-works?utm_campaign=brand)",
+      "passed": false,
+      "details": "Returned 301",
+      "severity": "warning",
+      "timestamp": "2025-09-08T00:24:42.334Z"
+    },
+    {
+      "name": "Parameter handling (/?fbclid=test123)",
+      "passed": true,
+      "details": "Clean canonical: https://www.fixloapp.com/",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:42.336Z"
+    },
+    {
+      "name": "Robots.txt sitemap reference",
+      "passed": true,
+      "details": "Contains sitemap reference",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:42.338Z"
+    },
+    {
+      "name": "Robots.txt domain reference",
+      "passed": true,
+      "details": "Contains correct domain",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:42.338Z"
+    },
+    {
+      "name": "Robots.txt public access",
+      "passed": true,
+      "details": "Public routes are allowed",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:42.338Z"
+    },
+    {
+      "name": "Sitemap XML structure",
+      "passed": true,
+      "details": "Valid XML structure",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:42.340Z"
+    },
+    {
+      "name": "Sitemap URL count",
+      "passed": true,
+      "details": "67 URLs found",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:42.340Z"
+    },
+    {
+      "name": "Sitemap canonical URLs",
+      "passed": true,
+      "details": "No parameter URLs found in sitemap",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:42.340Z"
+    },
+    {
+      "name": "Sitemap host consistency",
+      "passed": true,
+      "details": "All URLs use www subdomain",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:42.340Z"
+    },
+    {
+      "name": "Sitemap lastmod dates",
+      "passed": true,
+      "details": "67 URLs have lastmod dates",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:42.340Z"
+    },
+    {
+      "name": "SSR route accessibility (/services/plumbing)",
+      "passed": false,
+      "details": "Route returned 301",
+      "severity": "warning",
+      "timestamp": "2025-09-08T00:24:42.342Z"
+    },
+    {
+      "name": "SSR route accessibility (/pro/test-professional-sf)",
+      "passed": false,
+      "details": "Route returned 404",
+      "severity": "warning",
+      "timestamp": "2025-09-08T00:24:42.343Z"
+    },
+    {
+      "name": "Static page title (/services/index.html)",
+      "passed": true,
+      "details": "Unique title: \"Home Services - Professional Contractors | Fixlo\"",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:42.345Z"
+    },
+    {
+      "name": "Static page canonical (/services/index.html)",
+      "passed": false,
+      "details": "Incorrect canonical: https://www.fixloapp.com/services",
+      "severity": "warning",
+      "timestamp": "2025-09-08T00:24:42.345Z"
+    },
+    {
+      "name": "Static page title (/services/)",
+      "passed": true,
+      "details": "Unique title: \"Home Services - Professional Contractors | Fixlo\"",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:42.346Z"
+    },
+    {
+      "name": "Static page canonical (/services/)",
+      "passed": false,
+      "details": "Incorrect canonical: https://www.fixloapp.com/services",
+      "severity": "warning",
+      "timestamp": "2025-09-08T00:24:42.346Z"
+    }
+  ],
+  "summary": {
+    "total": 30,
+    "passed": 20,
+    "failed": 10
+  },
+  "issues": [
+    {
+      "type": "WARNING",
+      "name": "Route /how-it-works accessibility",
+      "details": "Route returned 301",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Route /contact accessibility",
+      "details": "Route returned 301",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Route /signup accessibility",
+      "details": "Route returned 301",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Route /pro/signup accessibility",
+      "details": "Route returned 301",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Route /services/plumbing accessibility",
+      "details": "Route returned 301",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Parameter test accessibility (/how-it-works?utm_campaign=brand)",
+      "details": "Returned 301",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "SSR route accessibility (/services/plumbing)",
+      "details": "Route returned 301",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "SSR route accessibility (/pro/test-professional-sf)",
+      "details": "Route returned 404",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Static page canonical (/services/index.html)",
+      "details": "Incorrect canonical: https://www.fixloapp.com/services",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Static page canonical (/services/)",
+      "details": "Incorrect canonical: https://www.fixloapp.com/services",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "MEDIUM",
+      "area": "Server-Side Rendering",
+      "recommendation": "Consider implementing SSR or static generation for key routes (/services/*, /pro/*) to improve indexability.",
+      "implementation": "Use Next.js, implement middleware-based prerendering, or create static HTML pages for critical routes."
+    }
+  ]
+}

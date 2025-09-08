@@ -21,7 +21,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const { URL } = require('url');
 
-const PRODUCTION_URL = 'https://www.fixloapp.com';
+const PRODUCTION_URL = process.env.VERIFICATION_URL || 'https://www.fixloapp.com';
 const NON_WWW_URL = 'https://fixloapp.com';
 
 class ProductionIndexingVerifier {

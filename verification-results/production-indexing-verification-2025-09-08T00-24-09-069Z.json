@@ -1,0 +1,396 @@
+{
+  "timestamp": "2025-09-08T00:24:08.083Z",
+  "checks": [
+    {
+      "name": "Canonical tag presence (/)",
+      "passed": false,
+      "details": "No canonical tag found",
+      "severity": "critical",
+      "timestamp": "2025-09-08T00:24:08.164Z"
+    },
+    {
+      "name": "Robots meta (/)",
+      "passed": true,
+      "details": "Robots meta: index, follow",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:08.164Z"
+    },
+    {
+      "name": "X-Robots-Tag header (/)",
+      "passed": true,
+      "details": "No problematic X-Robots-Tag headers",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:08.164Z"
+    },
+    {
+      "name": "Canonical tag presence (/how-it-works)",
+      "passed": false,
+      "details": "No canonical tag found",
+      "severity": "critical",
+      "timestamp": "2025-09-08T00:24:08.220Z"
+    },
+    {
+      "name": "Robots meta (/how-it-works)",
+      "passed": true,
+      "details": "Robots meta: index, follow",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:08.220Z"
+    },
+    {
+      "name": "X-Robots-Tag header (/how-it-works)",
+      "passed": true,
+      "details": "No problematic X-Robots-Tag headers",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:08.220Z"
+    },
+    {
+      "name": "Canonical tag presence (/contact)",
+      "passed": false,
+      "details": "No canonical tag found",
+      "severity": "critical",
+      "timestamp": "2025-09-08T00:24:08.274Z"
+    },
+    {
+      "name": "Robots meta (/contact)",
+      "passed": true,
+      "details": "Robots meta: index, follow",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:08.275Z"
+    },
+    {
+      "name": "X-Robots-Tag header (/contact)",
+      "passed": true,
+      "details": "No problematic X-Robots-Tag headers",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:08.275Z"
+    },
+    {
+      "name": "Canonical tag presence (/signup)",
+      "passed": false,
+      "details": "No canonical tag found",
+      "severity": "critical",
+      "timestamp": "2025-09-08T00:24:08.326Z"
+    },
+    {
+      "name": "Robots meta (/signup)",
+      "passed": true,
+      "details": "Robots meta: index, follow",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:08.326Z"
+    },
+    {
+      "name": "X-Robots-Tag header (/signup)",
+      "passed": true,
+      "details": "No problematic X-Robots-Tag headers",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:08.326Z"
+    },
+    {
+      "name": "Canonical tag presence (/pro/signup)",
+      "passed": false,
+      "details": "No canonical tag found",
+      "severity": "critical",
+      "timestamp": "2025-09-08T00:24:08.377Z"
+    },
+    {
+      "name": "Robots meta (/pro/signup)",
+      "passed": true,
+      "details": "Robots meta: index, follow",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:08.377Z"
+    },
+    {
+      "name": "X-Robots-Tag header (/pro/signup)",
+      "passed": true,
+      "details": "No problematic X-Robots-Tag headers",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:08.377Z"
+    },
+    {
+      "name": "Canonical tag presence (/services/)",
+      "passed": false,
+      "details": "No canonical tag found",
+      "severity": "critical",
+      "timestamp": "2025-09-08T00:24:08.443Z"
+    },
+    {
+      "name": "Robots meta (/services/)",
+      "passed": true,
+      "details": "Robots meta: index, follow",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:08.443Z"
+    },
+    {
+      "name": "X-Robots-Tag header (/services/)",
+      "passed": true,
+      "details": "No problematic X-Robots-Tag headers",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:08.443Z"
+    },
+    {
+      "name": "Canonical tag presence (/services/plumbing)",
+      "passed": false,
+      "details": "No canonical tag found",
+      "severity": "critical",
+      "timestamp": "2025-09-08T00:24:08.495Z"
+    },
+    {
+      "name": "Robots meta (/services/plumbing)",
+      "passed": true,
+      "details": "Robots meta: index, follow",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:08.495Z"
+    },
+    {
+      "name": "X-Robots-Tag header (/services/plumbing)",
+      "passed": true,
+      "details": "No problematic X-Robots-Tag headers",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:08.495Z"
+    },
+    {
+      "name": "Non-www to www redirect",
+      "passed": true,
+      "details": "https://fixloapp.com → https://www.fixloapp.com/ (308)",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:08.551Z"
+    },
+    {
+      "name": "Parameter handling (/?utm_source=google&utm_medium=cpc)",
+      "passed": false,
+      "details": "Canonical contains parameters: null",
+      "severity": "warning",
+      "timestamp": "2025-09-08T00:24:08.601Z"
+    },
+    {
+      "name": "Parameter handling (/?ref=social&campaign=test)",
+      "passed": false,
+      "details": "Canonical contains parameters: null",
+      "severity": "warning",
+      "timestamp": "2025-09-08T00:24:08.651Z"
+    },
+    {
+      "name": "Parameter handling (/how-it-works?utm_campaign=brand)",
+      "passed": false,
+      "details": "Canonical contains parameters: null",
+      "severity": "warning",
+      "timestamp": "2025-09-08T00:24:08.702Z"
+    },
+    {
+      "name": "Parameter handling (/?fbclid=test123)",
+      "passed": false,
+      "details": "Canonical contains parameters: null",
+      "severity": "warning",
+      "timestamp": "2025-09-08T00:24:08.752Z"
+    },
+    {
+      "name": "Robots.txt sitemap reference",
+      "passed": true,
+      "details": "Contains sitemap reference",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:08.804Z"
+    },
+    {
+      "name": "Robots.txt domain reference",
+      "passed": true,
+      "details": "Contains correct domain",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:08.804Z"
+    },
+    {
+      "name": "Robots.txt public access",
+      "passed": true,
+      "details": "Public routes are allowed",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:08.804Z"
+    },
+    {
+      "name": "Sitemap XML structure",
+      "passed": true,
+      "details": "Valid XML structure",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:08.859Z"
+    },
+    {
+      "name": "Sitemap URL count",
+      "passed": true,
+      "details": "67 URLs found",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:08.859Z"
+    },
+    {
+      "name": "Sitemap canonical URLs",
+      "passed": true,
+      "details": "No parameter URLs found in sitemap",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:08.859Z"
+    },
+    {
+      "name": "Sitemap host consistency",
+      "passed": true,
+      "details": "All URLs use www subdomain",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:08.859Z"
+    },
+    {
+      "name": "Sitemap lastmod dates",
+      "passed": true,
+      "details": "67 URLs have lastmod dates",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:08.859Z"
+    },
+    {
+      "name": "SSR implementation (/services/plumbing)",
+      "passed": false,
+      "details": "Route returns generic SPA shell - may impact indexing",
+      "severity": "critical",
+      "timestamp": "2025-09-08T00:24:08.919Z"
+    },
+    {
+      "name": "SSR implementation (/pro/test-professional-sf)",
+      "passed": false,
+      "details": "Route returns generic SPA shell - may impact indexing",
+      "severity": "critical",
+      "timestamp": "2025-09-08T00:24:08.967Z"
+    },
+    {
+      "name": "Static page title (/services/index.html)",
+      "passed": true,
+      "details": "Unique title: \"Fixlo\"",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:09.017Z"
+    },
+    {
+      "name": "Static page canonical (/services/index.html)",
+      "passed": false,
+      "details": "Incorrect canonical: null",
+      "severity": "warning",
+      "timestamp": "2025-09-08T00:24:09.018Z"
+    },
+    {
+      "name": "Static page title (/services/)",
+      "passed": true,
+      "details": "Unique title: \"Fixlo\"",
+      "severity": "normal",
+      "timestamp": "2025-09-08T00:24:09.069Z"
+    },
+    {
+      "name": "Static page canonical (/services/)",
+      "passed": false,
+      "details": "Incorrect canonical: null",
+      "severity": "warning",
+      "timestamp": "2025-09-08T00:24:09.069Z"
+    }
+  ],
+  "summary": {
+    "total": 40,
+    "passed": 25,
+    "failed": 15
+  },
+  "issues": [
+    {
+      "type": "CRITICAL",
+      "name": "Canonical tag presence (/)",
+      "details": "No canonical tag found",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "CRITICAL",
+      "name": "Canonical tag presence (/how-it-works)",
+      "details": "No canonical tag found",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "CRITICAL",
+      "name": "Canonical tag presence (/contact)",
+      "details": "No canonical tag found",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "CRITICAL",
+      "name": "Canonical tag presence (/signup)",
+      "details": "No canonical tag found",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "CRITICAL",
+      "name": "Canonical tag presence (/pro/signup)",
+      "details": "No canonical tag found",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "CRITICAL",
+      "name": "Canonical tag presence (/services/)",
+      "details": "No canonical tag found",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "CRITICAL",
+      "name": "Canonical tag presence (/services/plumbing)",
+      "details": "No canonical tag found",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Parameter handling (/?utm_source=google&utm_medium=cpc)",
+      "details": "Canonical contains parameters: null",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Parameter handling (/?ref=social&campaign=test)",
+      "details": "Canonical contains parameters: null",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Parameter handling (/how-it-works?utm_campaign=brand)",
+      "details": "Canonical contains parameters: null",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Parameter handling (/?fbclid=test123)",
+      "details": "Canonical contains parameters: null",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "CRITICAL",
+      "name": "SSR implementation (/services/plumbing)",
+      "details": "Route returns generic SPA shell - may impact indexing",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "CRITICAL",
+      "name": "SSR implementation (/pro/test-professional-sf)",
+      "details": "Route returns generic SPA shell - may impact indexing",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Static page canonical (/services/index.html)",
+      "details": "Incorrect canonical: null",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Static page canonical (/services/)",
+      "details": "Incorrect canonical: null",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "HIGH",
+      "area": "Canonical URLs",
+      "recommendation": "Implement dynamic canonical URL generation in your React app routing to ensure each route serves its own canonical URL instead of the homepage canonical.",
+      "implementation": "Update your SEOHead component or routing logic to dynamically set canonical URLs based on the current route."
+    },
+    {
+      "priority": "MEDIUM",
+      "area": "Server-Side Rendering",
+      "recommendation": "Consider implementing SSR or static generation for key routes (/services/*, /pro/*) to improve indexability.",
+      "implementation": "Use Next.js, implement middleware-based prerendering, or create static HTML pages for critical routes."
+    }
+  ]
+}
