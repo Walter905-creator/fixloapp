@@ -25,7 +25,8 @@ export default function Navbar(){
               `px-3 py-1 rounded-lg text-sm font-semibold hover:bg-white/5 ${isActive?'text-sky-300':'text-slate-200'}`
             }>{i.label}</NavLink>
           ))}
-        </nav>
+          <div className="ml-auto hidden sm:block"><a href="/services" className="btn btn-primary">Find a Pro</a></div>
+</nav>
       </div>
     </header>
   );
