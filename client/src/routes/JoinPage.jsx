@@ -34,24 +34,24 @@ export default function JoinPage(){
     <HelmetSEO title="Join Fixlo – Pros" canonicalPathname="/join" />
     <div className="container-xl py-8">
       <h1 className="text-2xl font-extrabold">Join as a Professional</h1>
-      <div className="card p-5">
+      <div className="card p-6">
         <form onSubmit={onSubmit} className="space-y-3">
-          <div><label className="block text-sm text-slate-300">Full Name</label><input name="name" className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2" required/></div>
-          <div><label className="block text-sm text-slate-300">Email</label><input name="email" className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2" type="email" required/></div>
-          <div><label className="block text-sm text-slate-300">Phone</label><input name="phone" className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2" required/></div>
-          <div><label className="block text-sm text-slate-300">Trade</label>
-            <select name="trade" className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2" required>
+          <div><label className="block text-sm text-slate-800">Full Name</label><input name="name" className="mt-1 w-full rounded-xl" required/></div>
+          <div><label className="block text-sm text-slate-800">Email</label><input name="email" className="mt-1 w-full rounded-xl" type="email" required/></div>
+          <div><label className="block text-sm text-slate-800">Phone</label><input name="phone" className="mt-1 w-full rounded-xl" required/></div>
+          <div><label className="block text-sm text-slate-800">Trade</label>
+            <select name="trade" className="mt-1 w-full rounded-xl" required>
               {['plumbing','electrical','carpentry','painting','hvac','roofing','landscaping','house-cleaning','junk-removal'].map(t=>(
                 <option key={t} value={t}>{t}</option>
               ))}
             </select>
           </div>
-          <div><label className="block text-sm text-slate-300">Date of Birth</label><input name="dob" className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2" type="date" required/></div>
-          <div className="flex items-center gap-2">
-            <input id="sms" type="checkbox" className="h-4 w-4" required/>
-            <label htmlFor="sms" className="text-xs text-slate-400">I agree to receive SMS about job leads. Reply STOP to unsubscribe.</label>
-          </div>
-          <button className="btn btn-primary">Continue to Stripe</button>
+          <div><label className="block text-sm text-slate-800">Date of Birth</label><input name="dob" className="mt-1 w-full rounded-xl" type="date" required/></div>
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <input id="sms" type="checkbox" className="rounded" required/>
+            I agree to receive SMS about job leads. Reply STOP to unsubscribe.
+          </label>
+          <button className="btn-primary w-full">Continue to Stripe</button>
         </form>
       </div>
     </div>

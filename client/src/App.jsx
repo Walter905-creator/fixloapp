@@ -36,8 +36,8 @@ export default function App(){
       <Route path="/terms" element={<TermsPage/>}/>
       <Route path="*" element={<Navigate to="/" replace/>}/>
     </Routes>
-    <footer className="border-t border-white/10 mt-8">
-      <div className="container-xl py-6 text-sm text-slate-400 flex flex-col md:flex-row items-center justify-between gap-3">
+    <footer className="border-t border-slate-200 mt-8">
+      <div className="container-xl py-6 text-sm text-slate-700 flex flex-col md:flex-row items-center justify-between gap-3">
         <div>© {new Date().getFullYear()} Fixlo. All rights reserved.</div>
         <div className="flex items-center gap-4">
           <a href="/sitemap.xml">Sitemap</a>
