@@ -1,3 +1,5 @@
+import forms from '@tailwindcss/forms'
+
 /** @type {import('tailwindcss').Config} */
 export default {
   // Disable dark mode entirely—you'll have only the light theme
@@ -16,5 +18,5 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [forms],
 };
