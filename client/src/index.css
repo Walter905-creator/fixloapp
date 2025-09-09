@@ -2,12 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base { a {@apply text-brand hover:text-brand-dark;} body {@apply bg-white text-slate-900;} }
+@layer base {
+  a { @apply text-brand hover:text-brand-dark; }
+  body { @apply bg-white text-slate-900; }
+}
+
 @layer components {
-  .container-xl {@apply max-w-6xl mx-auto px-4;}
-  .card {@apply bg-white border border-slate-200 rounded-2xl shadow-sm transition-transform duration-200 hover:-translate-y-0.5;}
-  .btn {@apply inline-flex items-center justify-center font-semibold rounded-xl px-4 py-2 transition-all duration-200;}
-  .btn-primary {@apply btn bg-brand text-white hover:bg-brand-dark;}
-  .btn-ghost {@apply btn border border-slate-300 text-slate-700 hover:bg-slate-50;}
-  .pill {@apply inline-flex items-center gap-2 rounded-full border border-slate-300 px-3 py-1 text-sm text-slate-700;}
+  .container-xl { @apply max-w-6xl mx-auto px-4; }
+
+  .card { @apply bg-white border border-slate-200 rounded-2xl shadow-sm transition-transform duration-200 hover:-translate-y-0.5; }
+
+  .btn { @apply inline-flex items-center justify-center font-semibold rounded-xl px-4 py-2 transition-all duration-200; }
+
+  /* Red (Find a Pro, Request Quotes, etc.) */
+  .btn-primary { @apply btn bg-brand text-white hover:bg-brand-dark; }
+
+  /* Green (Hero Search) */
+  .btn-accent { @apply btn bg-accent text-white hover:bg-accent-dark; }
+
+  .btn-ghost { @apply btn border border-slate-300 text-slate-700 hover:bg-slate-50; }
+
+  .pill { @apply inline-flex items-center gap-2 rounded-full border border-slate-300 px-3 py-1 text-sm text-slate-700; }
 }
