@@ -12,21 +12,32 @@ const items = [
   { to: '/pro/dashboard', label: 'Pro Dashboard' },
   { to: '/join', label: 'Join Now' }
 ];
-export default function Navbar(){
+
+export default function Navbar() {
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/80 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
       <div className="container-xl flex items-center justify-between py-3">
         <Link to="/" className="flex items-center gap-2">
           <img src={logoUrl} alt="Fixlo logo" className="h-8 w-auto rounded-md" />
         </Link>
         <nav className="hidden md:flex items-center gap-4">
           {items.map(i => (
-            <NavLink key={i.to} to={i.to} className={({isActive})=>
-              `px-3 py-1 rounded-lg text-sm font-semibold hover:bg-white/5 ${isActive?'text-sky-300':'text-slate-200'}`
-            }>{i.label}</NavLink>
+            <NavLink
+              key={i.to}
+              to={i.to}
+              className={({ isActive }) =>
+                `px-3 py-1 rounded-lg text-sm font-semibold hover:text-brand ${
+                  isActive ? 'text-brand' : 'text-slate-700'
+                }`
+              }
+            >
+              {i.label}
+            </NavLink>
           ))}
-          <div className="ml-auto hidden sm:block"><a href="/services" className="btn btn-primary">Find a Pro</a></div>
-</nav>
+          <div className="ml-auto hidden sm:block">
+            <a href="/services" className="btn-primary">Find a Pro</a>
+          </div>
+        </nav>
       </div>
     </header>
   );
