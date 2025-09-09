@@ -94,10 +94,10 @@ export default function HomePage(){
         </section>
 
         {/* How it works */}
-        <section className="py-10 md:py-14">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
+        <section className="py-10 md:py-14 bg-white">
+          <div className="grid md:grid-cols-2 gap-8 items-center text-slate-900">
             <div>
-              <h2 className="text-3xl font-bold">How it works</h2>
+              <h2 className="text-3xl font-bold text-slate-900">How it works</h2>
               <p className="mt-3 text-slate-600">
                 Tell us what you need, get matched to vetted pros, and compare quotes. Book the one that fits your project and budget.
               </p>
@@ -109,7 +109,7 @@ export default function HomePage(){
                 ].map((i)=>(
                   <div key={i.t} className="card p-4 text-center">
                     <div className="text-2xl">{i.icon}</div>
-                    <div className="mt-2">{i.t}</div>
+                    <div className="mt-2 text-slate-800">{i.t}</div>
                   </div>
                 ))}
               </div>
