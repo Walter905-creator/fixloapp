@@ -37,23 +37,23 @@ export default function ProSignupPage(){
     <div className="container-xl py-8">
       <h1 className="text-2xl font-extrabold">Join Fixlo as a Professional</h1>
       <div className="card p-6 max-w-lg">
-        <p className="text-slate-300 mb-6">Start getting quality leads in your area. Background check and onboarding included.</p>
+        <p className="text-slate-700 mb-6">Start getting quality leads in your area. Background check and onboarding included.</p>
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm text-slate-300 mb-1">Full Name</label>
-            <input name="name" className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2" required/>
+            <label className="block text-sm text-slate-800 mb-1">Full Name</label>
+            <input name="name" className="mt-1 w-full rounded-xl" required/>
           </div>
           <div>
-            <label className="block text-sm text-slate-300 mb-1">Email</label>
-            <input name="email" className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2" type="email" required/>
+            <label className="block text-sm text-slate-800 mb-1">Email</label>
+            <input name="email" className="mt-1 w-full rounded-xl" type="email" required/>
           </div>
           <div>
-            <label className="block text-sm text-slate-300 mb-1">Phone</label>
-            <input name="phone" className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2" required/>
+            <label className="block text-sm text-slate-800 mb-1">Phone</label>
+            <input name="phone" className="mt-1 w-full rounded-xl" required/>
           </div>
           <div>
-            <label className="block text-sm text-slate-300 mb-1">Trade/Service</label>
-            <select name="trade" className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2" required>
+            <label className="block text-sm text-slate-800 mb-1">Trade/Service</label>
+            <select name="trade" className="mt-1 w-full rounded-xl" required>
               <option value="">Select your trade...</option>
               {['Plumbing','Electrical','Carpentry','Painting','HVAC','Roofing','Landscaping','House Cleaning','Junk Removal'].map(t=>(
                 <option key={t} value={t.toLowerCase()}>{t}</option>
@@ -61,24 +61,22 @@ export default function ProSignupPage(){
             </select>
           </div>
           <div>
-            <label className="block text-sm text-slate-300 mb-1">City</label>
-            <input name="city" className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2" placeholder="City, State" required/>
+            <label className="block text-sm text-slate-800 mb-1">City</label>
+            <input name="city" className="mt-1 w-full rounded-xl" placeholder="City, State" required/>
           </div>
           <div>
-            <label className="block text-sm text-slate-300 mb-1">Date of Birth</label>
-            <input name="dob" className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2" type="date" required/>
+            <label className="block text-sm text-slate-800 mb-1">Date of Birth</label>
+            <input name="dob" className="mt-1 w-full rounded-xl" type="date" required/>
           </div>
-          <div className="flex items-start gap-2">
-            <input id="sms-consent" type="checkbox" className="h-4 w-4 mt-0.5" required/>
-            <label htmlFor="sms-consent" className="text-xs text-slate-400">
-              I agree to receive SMS notifications about job leads and account updates. Reply STOP to unsubscribe at any time.
-            </label>
-          </div>
-          <button type="submit" className="btn btn-primary w-full">
+          <label className="flex items-start gap-2 text-sm text-slate-700">
+            <input id="sms-consent" type="checkbox" className="rounded mt-0.5" required/>
+            I agree to receive SMS notifications about job leads and account updates. Reply STOP to unsubscribe at any time.
+          </label>
+          <button type="submit" className="btn-primary w-full">
             Continue to Payment & Background Check
           </button>
         </form>
-        <p className="text-xs text-slate-400 mt-4 text-center">
+        <p className="text-xs text-slate-600 mt-4 text-center">
           $29.99/month subscription includes background check, lead notifications, and platform access.
         </p>
       </div>

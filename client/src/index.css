@@ -4,7 +4,21 @@
 
 @layer base {
   a { @apply text-brand hover:text-brand-dark; }
-  body { @apply bg-white text-slate-900; }
+  body, #root { @apply bg-white text-slate-900; }
+  
+  /* Ensure readable controls everywhere */
+  input, textarea, select, button {
+    @apply bg-white text-slate-900 placeholder-slate-500 border border-slate-300;
+  }
+  label { @apply text-slate-800; }
+
+  /* Autofill fix */
+  input:-webkit-autofill,
+  textarea:-webkit-autofill,
+  select:-webkit-autofill {
+    -webkit-text-fill-color: rgb(30 41 59); /* slate-800 */
+    box-shadow: 0 0 0px 1000px white inset;
+  }
 }
 
 @layer components {
