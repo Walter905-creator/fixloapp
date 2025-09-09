@@ -28,7 +28,7 @@ REACT_APP_BUILD_ID=$(date +%Y%m%d-%H%M%S) \
 npm run build 2>&1 | tee build.log
 
 # Check if build was successful
-if [ -d "build" ] && [ -f "build/index.html" ]; then
+if [ -d "dist" ] && [ -f "dist/index.html" ]; then
     echo "✅ React build completed successfully"
     
     # Verify file sizes output
@@ -39,14 +39,14 @@ if [ -d "build" ] && [ -f "build/index.html" ]; then
         echo "⚠️ File size information not found in build output"
     fi
 else
-    echo "❌ React build failed - build directory or index.html not found"
+    echo "❌ React build failed - dist directory or index.html not found"
     exit 1
 fi
 
 # Return to root and deploy
 cd ..
 echo "🚚 Deploying build to root directory..."
-cp -r client/build/* .
+cp -r client/dist/* .
 echo "✅ Build deployed to root directory"
 
 # Generate sitemap
