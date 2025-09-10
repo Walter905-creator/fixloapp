@@ -1,3 +1,7 @@
+import React, { useState } from 'react';
+import HelmetSEO from '../seo/HelmetSEO';
+import { Link } from 'react-router-dom';
+
 // Quick residential, people-at-work stock photos (Unsplash Source)
 // 1200x900 for service cards (4:3), 1200x675 for hero/how-it-works (16:9)
 const U4x3 = (q) => `https://source.unsplash.com/1200x900/?${encodeURIComponent(q)}`;
@@ -20,20 +24,6 @@ const SERVICES = [
   { to:'/services/junk-removal',title:'Junk Removal',  desc:'Haul away unwanted items',              img: U4x3('junk removal loading furniture into small truck, driveway, home') },
   { to:'/services/decks',       title:'Decks',         desc:'Build, repair, staining',               img: U4x3('contractor building backyard deck, residential house, sunny') },
   { to:'/services/handyman',    title:'Handyman',      desc:'Small jobs, quick fixes',               img: U4x3('handyman using drill, fixing door hinge, inside house, residential') },
-];
-
-const SERVICES = [
-  { to:'/services/plumbing', title:'Plumbing', desc:'Faucets, pipes, drains, and more', img:svcPlumbing },
-  { to:'/services/electrical', title:'Electrical', desc:'Lighting, wiring, outlets, and more', img:svcElectrical },
-  { to:'/services/cleaning', title:'Cleaning', desc:'Housekeeping, carpets, windows', img:svcCleaning },
-  { to:'/services/roofing', title:'Roofing', desc:'Repairs, replacements, inspections', img:svcRoofing },
-  { to:'/services/hvac', title:'HVAC', desc:'Heating, cooling, vents', img:svcHVAC },
-  { to:'/services/carpentry', title:'Carpentry', desc:'Framing, trim, installs', img:svcCarpentry },
-  { to:'/services/painting', title:'Painting', desc:'Interior and exterior painting', img:svcPainting },
-  { to:'/services/landscaping', title:'Landscaping', desc:'Lawn, garden, hardscape', img:svcLandscaping },
-  { to:'/services/junk-removal', title:'Junk Removal', desc:'Haul away unwanted items', img:svcJunk },
-  { to:'/services/decks', title:'Decks', desc:'Build, repair, staining', img:svcDecks },
-  { to:'/services/handyman', title:'Handyman', desc:'Small jobs, quick fixes', img:svcHandyman },
 ];
 
 export default function HomePage(){
@@ -71,7 +61,11 @@ export default function HomePage(){
               </div>
             </div>
             <div>
-              <img src={heroPro} alt="Fixlo professional at work" className="rounded-3xl shadow-xl border border-slate-200 w-full h-auto object-cover" />
+              <img
+                src={HERO_IMG}
+                alt="Fixlo professional at work"
+                className="rounded-3xl shadow-xl border border-slate-200 w-full h-auto object-cover"
+              />
             </div>
           </div>
         </section>
@@ -121,7 +115,11 @@ export default function HomePage(){
               </div>
             </div>
             <div>
-              <img src={howItWorks} alt="How Fixlo works" className="rounded-3xl shadow-xl border border-slate-200 w-full h-auto object-cover" />
+              <img
+                src={HOW_IMG}
+                alt="How Fixlo works"
+                className="rounded-3xl shadow-xl border border-slate-200 w-full h-auto object-cover"
+              />
             </div>
           </div>
         </section>
