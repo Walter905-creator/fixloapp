@@ -1,20 +1,26 @@
-import React, { useState } from 'react';
-import HelmetSEO from '../seo/HelmetSEO';
-import { Link } from 'react-router-dom';
+// Quick residential, people-at-work stock photos (Unsplash Source)
+// 1200x900 for service cards (4:3), 1200x675 for hero/how-it-works (16:9)
+const U4x3 = (q) => `https://source.unsplash.com/1200x900/?${encodeURIComponent(q)}`;
+const U16x9 = (q) => `https://source.unsplash.com/1200x675/?${encodeURIComponent(q)}`;
 
-import heroPro from '../assets/hero-pro.jpg';
-import howItWorks from '../assets/how-it-works.jpg';
-import svcPlumbing from '../assets/service-plumbing.jpg';
-import svcElectrical from '../assets/service-electrical.jpg';
-import svcCleaning from '../assets/service-cleaning.jpg';
-import svcRoofing from '../assets/service-roofing.jpg';
-import svcHVAC from '../assets/service-hvac.jpg';
-import svcCarpentry from '../assets/service-carpentry.jpg';
-import svcPainting from '../assets/service-painting.jpg';
-import svcLandscaping from '../assets/service-landscaping.jpg';
-import svcJunk from '../assets/service-junk-removal.jpg';
-import svcDecks from '../assets/service-decks.jpg';
-import svcHandyman from '../assets/service-handyman.jpg';
+// Hero + How it Works
+const HERO_IMG = U16x9('handyman, residential, inside home, friendly, bright, smiling');
+const HOW_IMG  = U16x9('homeowner couple with contractor, living room, tablet, bright, residential');
+
+// Services (keep your order exactly)
+const SERVICES = [
+  { to:'/services/plumbing',    title:'Plumbing',      desc:'Faucets, pipes, drains, and more',      img: U4x3('plumber fixing sink, kitchen, residential, no hardhat') },
+  { to:'/services/electrical',  title:'Electrical',    desc:'Lighting, wiring, outlets, and more',   img: U4x3('electrician working at breaker panel, home, residential, bright') },
+  { to:'/services/cleaning',    title:'Cleaning',      desc:'Housekeeping, carpets, windows',        img: U4x3('house cleaner vacuum living room, residential, bright, tidy') },
+  { to:'/services/roofing',     title:'Roofing',       desc:'Repairs, replacements, inspections',    img: U4x3('roofer installing shingles, small house, residential, daylight, no hardhat') },
+  { to:'/services/hvac',        title:'HVAC',          desc:'Heating, cooling, vents',               img: U4x3('hvac technician checking outdoor ac unit, home exterior, residential') },
+  { to:'/services/carpentry',   title:'Carpentry',     desc:'Framing, trim, installs',               img: U4x3('carpenter measuring wood, home garage workshop, residential') },
+  { to:'/services/painting',    title:'Painting',      desc:'Interior and exterior painting',        img: U4x3('painter rolling paint on wall, interior, residential, bright') },
+  { to:'/services/landscaping', title:'Landscaping',   desc:'Lawn, garden, hardscape',               img: U4x3('landscaper mowing front yard, trimming hedges, residential, sunny') },
+  { to:'/services/junk-removal',title:'Junk Removal',  desc:'Haul away unwanted items',              img: U4x3('junk removal loading furniture into small truck, driveway, home') },
+  { to:'/services/decks',       title:'Decks',         desc:'Build, repair, staining',               img: U4x3('contractor building backyard deck, residential house, sunny') },
+  { to:'/services/handyman',    title:'Handyman',      desc:'Small jobs, quick fixes',               img: U4x3('handyman using drill, fixing door hinge, inside house, residential') },
+];
 
 const SERVICES = [
   { to:'/services/plumbing', title:'Plumbing', desc:'Faucets, pipes, drains, and more', img:svcPlumbing },
