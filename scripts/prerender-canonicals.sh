@@ -104,6 +104,11 @@ for i in "${!ROUTES[@]}"; do
     sed -i "s|</head>|  <link rel=\"canonical\" href=\"$canonical_url\"/>\n&|" "$target_file"
   fi
   
+  # Update Open Graph URL to match canonical
+  if grep -q 'property="og:url"' "$target_file"; then
+    sed -i "s|<meta property=\"og:url\" content=\"[^\"]*\"[^>]*>|<meta property=\"og:url\" content=\"$canonical_url\">|g" "$target_file"
+  fi
+  
   echo "✅ Generated: $target_file (canonical: $canonical_url)"
 done
 
