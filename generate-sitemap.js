@@ -140,22 +140,8 @@ function generateSitemap() {
   \n`;
   });
 
-  // Add a limited number of city-specific service pages for major cities only
-  // This prevents creating thousands of URLs that could be seen as duplicate content
-  const priorityCities = majorCities.slice(0, 10); // Limit to top 10 cities
-  
-  sitemap += `  <!-- High-priority city-specific service pages -->\n`;
-  services.forEach(service => {
-    priorityCities.forEach(city => {
-      sitemap += `  <url>
-    <loc>${baseUrl}/services/${service}/${city}</loc>
-    <lastmod>${currentDate}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  \n`;
-    });
-  });
+  // Note: Removed city-specific service pages to avoid duplicate content issues
+  // Only include pages that have unique, substantial content
 
   sitemap += `</urlset>`;
 
@@ -163,8 +149,8 @@ function generateSitemap() {
   const sitemapPath = path.join(__dirname, 'sitemap.xml');
   fs.writeFileSync(sitemapPath, sitemap);
   
-  console.log(`✅ Sitemap generated with ${services.length} services and ${priorityCities.length} cities`);
-  console.log(`📍 Total URLs: ${1 + 6 + 1 + services.length + (services.length * priorityCities.length)}`); // +1 for services page
+  console.log(`✅ Sitemap generated with ${services.length} services`);
+  console.log(`📍 Total URLs: ${1 + 6 + 1 + services.length}`); // Main + service categories only
   console.log(`📝 Sitemap saved to: ${sitemapPath}`);
   
   return sitemap;
