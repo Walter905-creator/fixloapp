@@ -11,7 +11,7 @@ const U16x9 = (q) => `https://source.unsplash.com/1200x675/?${encodeURIComponent
 const HERO_IMG = U16x9('handyman, residential, inside home, friendly, bright, smiling, no hardhat');
 const HOW_IMG  = U16x9('homeowner couple with contractor, living room, tablet, bright, residential');
 
-// Services (keep your order)
+// Services (keep your order exactly)
 const SERVICES = [
   { to:'/services/plumbing',    title:'Plumbing',      desc:'Faucets, pipes, drains, and more',      img: U4x3('plumber fixing sink, kitchen, residential, bright, no hardhat') },
   { to:'/services/electrical',  title:'Electrical',    desc:'Lighting, wiring, outlets, and more',   img: U4x3('electrician at breaker panel, residential home, bright, no hardhat') },
