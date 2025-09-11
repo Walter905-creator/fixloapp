@@ -1,11 +1,13 @@
 /** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    "./src/**/*.{js,jsx,ts,tsx}",     
-    "./public/index.html"             
-  ],
+export default {
+  content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        brand: { DEFAULT: "#FF3B30", dark: "#D92A21" },
+        accent: { DEFAULT: "#16A34A", dark: "#15803D" }
+      }
+    }
   },
-  plugins: [],
+  plugins: [require('@tailwindcss/aspect-ratio')],
 };
