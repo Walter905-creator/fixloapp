@@ -1,6 +1,3 @@
-// Downloads bright residential stock-style photos at build and saves to /public/images.
-// No API keys needed. Uses Unsplash Source with fixed sizes.
-
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
