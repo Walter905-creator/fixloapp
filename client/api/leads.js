@@ -48,13 +48,13 @@ export default async function handler(req, res) {
     TWILIO_ACCOUNT_SID,
     TWILIO_AUTH_TOKEN,
     TWILIO_MESSAGING_SERVICE_SID,
-    TWILIO_FROM,
+    TWILIO_PHONE,
     PROS_NOTIFY_NUMBERS,
     TWILIO_STATUS_CALLBACK_URL
   } = process.env;
 
-  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !(TWILIO_MESSAGING_SERVICE_SID || TWILIO_FROM)) {
-    return res.status(500).json({ error: "Twilio env vars missing (Account SID, Auth Token, and from or messagingServiceSid)" });
+  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !(TWILIO_MESSAGING_SERVICE_SID || TWILIO_PHONE)) {
+    return res.status(500).json({ error: "Twilio env vars missing (Account SID, Auth Token, and TWILIO_PHONE or TWILIO_MESSAGING_SERVICE_SID)" });
   }
 
   const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
     body: messageBody,
     ...(TWILIO_MESSAGING_SERVICE_SID
       ? { messagingServiceSid: TWILIO_MESSAGING_SERVICE_SID }
-      : { from: TWILIO_FROM }),
+      : { from: TWILIO_PHONE }),
     ...(TWILIO_STATUS_CALLBACK_URL ? { statusCallback: TWILIO_STATUS_CALLBACK_URL } : {})
   });
 
