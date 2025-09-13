@@ -49,13 +49,15 @@ if [ ! -f "$TEMPLATE_FILE" ]; then
   exit 1
 fi
 
-# Create backup if it doesn't exist (or recreate from original)
+# Create backup if it doesn't exist (or recreate from current build)
 if [ ! -f "$BUILD_DIR/index.html.original" ]; then
+  cp "$TEMPLATE_FILE" "$BUILD_DIR/index.html.original"
+else
+  # Update the original to match current build assets
   cp "$TEMPLATE_FILE" "$BUILD_DIR/index.html.original"
 fi
 
-# Update homepage canonical in the main template
-cp "$BUILD_DIR/index.html.original" "$TEMPLATE_FILE"
+# Update homepage canonical in the main template (work with current build, not old original)
 sed -i "s|<title>[^<]*</title>|<title>Fixlo – Book Trusted Home Services Near You</title>|g" "$TEMPLATE_FILE"
 
 # Ensure homepage has correct canonical
@@ -91,8 +93,8 @@ for i in "${!ROUTES[@]}"; do
     target_file="$BUILD_DIR$route"
   fi
   
-  # Copy original template and update
-  cp "$BUILD_DIR/index.html.original" "$target_file"
+  # Copy current build template and update (not the old original)
+  cp "$TEMPLATE_FILE" "$target_file"
   
   # Update title first (escape special characters)
   escaped_title=$(printf '%s\n' "$title" | sed 's/[[\.*^$()+?{|]/\\&/g')
