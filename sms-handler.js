@@ -8,7 +8,7 @@ const router = express.Router();
 // Twilio configuration
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
-const fromNumber = process.env.TWILIO_FROM_NUMBER;
+const fromNumber = process.env.TWILIO_PHONE;
 
 let client = null;
 if (accountSid && authToken) {
