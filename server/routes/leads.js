@@ -31,20 +31,22 @@ router.post('/', async (req, res) => {
     // Handle field mapping from different client implementations
     const leadName = name || fullName;
     const leadTrade = trade || service;
-    const leadAddress = address || city;
+    const leadAddress = address || city || '';  // Allow empty string as fallback
     
-    // Validate required fields
-    if (!leadName || !phone || !leadTrade || !leadAddress) {
+    // Validate required fields - address can be empty (geocoding will handle fallback)
+    if (!leadName || !phone || !leadTrade) {
       return res.status(400).json({ 
         success: false,
-        message: 'Name, phone, trade/service, and address are required' 
+        message: 'Name, phone, and trade/service are required' 
       });
     }
 
     // 1) Geocode the homeowner address with fallback
     let lat, lng, formatted;
+    const addressToGeocode = leadAddress || 'United States'; // Fallback to US if no address provided
+    
     try {
-      const geocodeResult = await geocodeAddress(leadAddress);
+      const geocodeResult = await geocodeAddress(addressToGeocode);
       lat = geocodeResult.lat;
       lng = geocodeResult.lng; 
       formatted = geocodeResult.formatted;
@@ -54,7 +56,7 @@ router.post('/', async (req, res) => {
       // Fallback to center of US coordinates when geocoding is unavailable
       lat = 39.8283;
       lng = -98.5795;
-      formatted = leadAddress; // Use original address as formatted
+      formatted = leadAddress || 'Location not specified'; // Use original address or default
     }
 
     // 2) Save lead to database
