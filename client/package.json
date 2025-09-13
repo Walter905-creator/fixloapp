@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "prebuild": "node scripts/fetch-images.mjs",
-    "build": "vite build",
+    "build": "npm run prebuild && vite build",
     "dev": "vite",
     "preview": "vite preview",
     "generate:sitemap": "node scripts/generate-sitemap.mjs",
@@ -29,3 +29,4 @@
     "vite": "^7.1.5"
   }
 }
+
