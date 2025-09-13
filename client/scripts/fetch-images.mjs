@@ -1,5 +1,5 @@
-// Fetch bright residential stock-style photos at build and serve them locally.
-// No API keys needed (uses Unsplash Source). Sizes: 16:9 for hero/how-it-works, 4:3 for services.
+// Downloads bright residential stock-style photos at build and saves to /public/images.
+// No API keys needed. Uses Unsplash Source with fixed sizes.
 
 import fs from "fs";
 import path from "path";
@@ -15,11 +15,11 @@ const outDir = path.join(__dirname, "..", "public", "images");
 fs.mkdirSync(outDir, { recursive: true });
 
 const items = [
-  // 16:9
+  // 16:9 banners
   { file: "hero-pro.jpg",        url: "https://source.unsplash.com/1200x675/?handyman,residential,inside%20home,bright,smiling,no%20hardhat" },
   { file: "how-it-works.jpg",    url: "https://source.unsplash.com/1200x675/?homeowner%20couple,contractor,living%20room,tablet,residential,bright" },
 
-  // 4:3 services
+  // 4:3 service thumbnails
   { file: "service-plumbing.jpg",      url: "https://source.unsplash.com/1200x900/?plumber,fixing%20sink,kitchen,residential,no%20hardhat" },
   { file: "service-electrical.jpg",    url: "https://source.unsplash.com/1200x900/?electrician,breaker%20panel,home,residential,bright" },
   { file: "service-cleaning.jpg",      url: "https://source.unsplash.com/1200x900/?house%20cleaner,vacuum,living%20room,residential,bright" },
@@ -43,10 +43,6 @@ async function fetchImage({ file, url }) {
 
 (async () => {
   for (const item of items) {
-    try {
-      await fetchImage(item);
-    } catch (e) {
-      console.error("x error", item.file, e.message);
-    }
+    try { await fetchImage(item); } catch (e) { console.error("x error", item.file, e.message); }
   }
 })();
