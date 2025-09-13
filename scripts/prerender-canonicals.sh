@@ -16,6 +16,7 @@ ROUTES=(
   "/services/painting"
   "/services/roofing"
   "/services/house-cleaning"
+  "/services/junk-removal"
   "/services/landscaping"
   "/pro/signup"
 )
@@ -33,6 +34,7 @@ TITLES=(
   "Painting Services - Find Trusted Professionals | Fixlo"
   "Roofing Services - Find Trusted Professionals | Fixlo"
   "House Cleaning Services - Find Trusted Professionals | Fixlo"
+  "Junk Removal Services - Find Trusted Professionals | Fixlo"
   "Landscaping Services - Find Trusted Professionals | Fixlo"
   "Professional Sign Up - Join Fixlo Network"
 )

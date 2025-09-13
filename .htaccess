@@ -38,6 +38,9 @@ RewriteRule ^sms-compliance\.html$ /sms-compliance [R=301,L]
 RewriteRule ^contact-support\.html$ /contact-support [R=301,L]
 RewriteRule ^admin\.html$ /admin [R=301,L]
 
+# Redirect service .html files to clean URLs to prevent duplicates
+RewriteRule ^services/([^/]+)\.html$ /services/$1 [R=301,L]
+
 # Redirect contact subdirectory to clean contact URL
 RewriteRule ^contact/$ /contact [R=301,L]
 RewriteRule ^contact/index\.html$ /contact [R=301,L]

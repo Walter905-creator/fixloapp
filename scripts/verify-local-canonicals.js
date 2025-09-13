@@ -17,6 +17,14 @@ const ROUTES_TO_CHECK = [
   { path: '/signup/', expectedCanonical: 'https://www.fixloapp.com/signup' },
   { path: '/services/', expectedCanonical: 'https://www.fixloapp.com/services' },
   { path: '/services/plumbing/', expectedCanonical: 'https://www.fixloapp.com/services/plumbing' },
+  { path: '/services/electrical/', expectedCanonical: 'https://www.fixloapp.com/services/electrical' },
+  { path: '/services/hvac/', expectedCanonical: 'https://www.fixloapp.com/services/hvac' },
+  { path: '/services/carpentry/', expectedCanonical: 'https://www.fixloapp.com/services/carpentry' },
+  { path: '/services/painting/', expectedCanonical: 'https://www.fixloapp.com/services/painting' },
+  { path: '/services/roofing/', expectedCanonical: 'https://www.fixloapp.com/services/roofing' },
+  { path: '/services/house-cleaning/', expectedCanonical: 'https://www.fixloapp.com/services/house-cleaning' },
+  { path: '/services/junk-removal/', expectedCanonical: 'https://www.fixloapp.com/services/junk-removal' },
+  { path: '/services/landscaping/', expectedCanonical: 'https://www.fixloapp.com/services/landscaping' },
   { path: '/pro/signup/', expectedCanonical: 'https://www.fixloapp.com/pro/signup' }
 ];
 
