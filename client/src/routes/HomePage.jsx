@@ -70,11 +70,13 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div>
+            <div className="aspect-video w-full rounded-3xl overflow-hidden border border-slate-200 shadow-xl">
               <img
                 src={HERO_IMG}
                 alt="Fixlo professional at work"
-                className="rounded-3xl shadow-xl border border-slate-200 w-full h-auto object-cover"
+                className="w-full h-full object-cover"
+                loading="eager"
+                decoding="async"
               />
             </div>
           </div>
@@ -116,7 +118,7 @@ export default function HomePage() {
             <div>
               <h2 className="text-3xl font-bold text-slate-900">How it works</h2>
               <p className="mt-3 text-slate-600">
-                Tell us what you need, get matched to vetted pros, and compare quotes. Book the one that fits your project and budget.
+                Tell us what you need, get matched to vetted pros, and compare quotes. Book the one fits your project and budget.
               </p>
               <div className="mt-6 grid grid-cols-3 gap-3 text-sm">
                 {[
