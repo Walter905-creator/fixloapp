@@ -1,6 +1,7 @@
 node_modules
 client/node_modules/
 client/build/
+client/dist/
 
 # Build-time generated files
 client/src/buildInfo.generated.js
@@ -60,3 +61,4 @@ signup/index.html
 *.swo
 build/
 *.css.map
+client/public/version.json
