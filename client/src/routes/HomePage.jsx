@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import HelmetSEO from "../seo/HelmetSEO";
 import { Link } from "react-router-dom";
+import Hero from "../components/Hero";
 
 /**
  * Local images from /public/images
@@ -28,6 +29,7 @@ export default function HomePage() {
   return (
     <>
       <HelmetSEO title="Fixlo – Book Trusted Home Services Near You" />
+      <Hero />
       <div className="container-xl">
         {/* Hero */}
         <section className="py-10 md:py-16">

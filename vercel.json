@@ -4,6 +4,14 @@
   "installCommand": "cd client && npm ci --no-fund --no-audit",
   "buildCommand": "cd client && node scripts/generate-build-info.js && npm run build",
   "outputDirectory": "client/dist",
+  "headers": [
+    {
+      "source": "/hero-banner.png",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=3600" }
+      ]
+    }
+  ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "https://fixloapp.onrender.com/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
