@@ -61,3 +61,4 @@ signup/index.html
 *.swo
 build/
 *.css.map
+client/public/version.json
