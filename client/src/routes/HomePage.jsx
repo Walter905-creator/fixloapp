@@ -3,8 +3,7 @@ import HelmetSEO from "../seo/HelmetSEO";
 import { Link } from "react-router-dom";
 
 /**
- * Local images created at build time by scripts/fetch-images.mjs
- * Files live in: client/public/images/*.jpg  → served at /images/*.jpg
+ * Local images served from /public/images
  */
 const HERO_IMG = "/images/hero-pro.jpg";
 const HOW_IMG  = "/images/how-it-works.jpg";
@@ -70,11 +69,15 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="aspect-video w-full rounded-3xl overflow-hidden border border-slate-200 shadow-xl">
+            {/* 16:9 “intrinsic ratio” box so the hero never gets too tall */}
+            <div
+              className="relative w-full rounded-3xl overflow-hidden border border-slate-200 shadow-xl"
+              style={{ paddingTop: "56.25%" }} /* 9/16 = 56.25% */
+            >
               <img
                 src={HERO_IMG}
                 alt="Fixlo professional at work"
-                className="w-full h-full object-cover"
+                className="absolute inset-0 w-full h-full object-cover"
                 loading="eager"
                 decoding="async"
               />
@@ -96,7 +99,6 @@ export default function HomePage() {
                       <span>→</span>
                     </div>
                   </div>
-                  {/* Image column with fixed aspect ratio */}
                   <div className="col-span-2 aspect-[4/3]">
                     <img
                       src={s.img}
@@ -118,7 +120,7 @@ export default function HomePage() {
             <div>
               <h2 className="text-3xl font-bold text-slate-900">How it works</h2>
               <p className="mt-3 text-slate-600">
-                Tell us what you need, get matched to vetted pros, and compare quotes. Book the one fits your project and budget.
+                Tell us what you need, get matched to vetted pros, and compare quotes. Book the one that fits your project and budget.
               </p>
               <div className="mt-6 grid grid-cols-3 gap-3 text-sm">
                 {[
@@ -133,11 +135,14 @@ export default function HomePage() {
                 ))}
               </div>
             </div>
-            <div>
+            <div
+              className="relative w-full rounded-3xl overflow-hidden border border-slate-200 shadow-xl"
+              style={{ paddingTop: "56.25%" }}
+            >
               <img
                 src={HOW_IMG}
                 alt="How Fixlo works"
-                className="rounded-3xl shadow-xl border border-slate-200 w-full h-auto object-cover"
+                className="absolute inset-0 w-full h-full object-cover"
                 loading="lazy"
                 decoding="async"
               />
