@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 
 /**
  * Local images served from /public/images
+ * (i.e., client/public/images/foo.jpg → /images/foo.jpg)
  */
 const HERO_IMG = "/images/hero-pro.jpg";
 const HOW_IMG  = "/images/how-it-works.jpg";
@@ -63,13 +64,17 @@ export default function HomePage() {
                 <span className="inline-flex items-center gap-1">
                   🛡️ <b className="text-slate-900">Background checks</b>
                 </span>
-                <span className="inline-flex items-centergap-1">
+                <span className="inline-flex items-center gap-1">
                   💬 <b className="text-slate-900">Fast quotes</b>
                 </span>
               </div>
             </div>
 
-            <div className="w-full rounded-3xl overflow-hidden border border-slate-200 shadow-xl max-h-[520px]">
+            {/* Hero image in a capped-height frame so it never looks too tall */}
+            <div
+              className="w-full rounded-3xl overflow-hidden border border-slate-200 shadow-xl"
+              style={{ maxHeight: 520 }}
+            >
               <img
                 src={HERO_IMG}
                 alt="Fixlo professional at work"
@@ -95,6 +100,7 @@ export default function HomePage() {
                       <span>→</span>
                     </div>
                   </div>
+                  {/* Image column with fixed aspect ratio for stable cards */}
                   <div className="col-span-2 aspect-[4/3]">
                     <img
                       src={s.img}
@@ -131,7 +137,12 @@ export default function HomePage() {
                 ))}
               </div>
             </div>
-            <div className="relative w-full rounded-3xl overflow-hidden border border-slate-200 shadow-xl" style={{ maxHeight: 520 }}>
+
+            {/* Same capped-height frame for this image, for visual balance */}
+            <div
+              className="w-full rounded-3xl overflow-hidden border border-slate-200 shadow-xl"
+              style={{ maxHeight: 520 }}
+            >
               <img
                 src={HOW_IMG}
                 alt="How Fixlo works"
