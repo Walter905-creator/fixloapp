@@ -19,6 +19,8 @@ ROUTES=(
   "/services/junk-removal"
   "/services/landscaping"
   "/pro/signup"
+  "/ai-assistant"
+  "/terms"
 )
 
 TITLES=(
@@ -37,6 +39,8 @@ TITLES=(
   "Junk Removal Services - Find Trusted Professionals | Fixlo"
   "Landscaping Services - Find Trusted Professionals | Fixlo"
   "Professional Sign Up - Join Fixlo Network"
+  "AI Assistant - Fixlo Home Services"
+  "Terms of Service - Fixlo"
 )
 
 BUILD_DIR="."

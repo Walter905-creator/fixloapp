@@ -15,6 +15,32 @@ RewriteRule ^(.*)$ https://www.fixloapp.com/$1 [R=301,L]
 RewriteCond %{HTTP_HOST} ^(www\.)?fixlo\.com$ [NC]
 RewriteRule ^(.*)$ https://www.fixloapp.com/$1 [R=301,L]
 
+# Remove UTM parameters and other tracking parameters for canonical URLs
+RewriteCond %{QUERY_STRING} ^(.*)(&?utm_[^&]*=?[^&]*)(.*)$ [NC]
+RewriteRule ^(.*)$ /$1?%1%3 [R=301,L]
+
+RewriteCond %{QUERY_STRING} ^(.*)(&?fbclid=?[^&]*)(.*)$ [NC]
+RewriteRule ^(.*)$ /$1?%1%3 [R=301,L]
+
+RewriteCond %{QUERY_STRING} ^(.*)(&?gclid=?[^&]*)(.*)$ [NC]
+RewriteRule ^(.*)$ /$1?%1%3 [R=301,L]
+
+RewriteCond %{QUERY_STRING} ^(.*)(&?ref=?[^&]*)(.*)$ [NC]
+RewriteRule ^(.*)$ /$1?%1%3 [R=301,L]
+
+RewriteCond %{QUERY_STRING} ^(.*)(&?campaign=?[^&]*)(.*)$ [NC]
+RewriteRule ^(.*)$ /$1?%1%3 [R=301,L]
+
+RewriteCond %{QUERY_STRING} ^(.*)(&?source=?[^&]*)(.*)$ [NC]
+RewriteRule ^(.*)$ /$1?%1%3 [R=301,L]
+
+RewriteCond %{QUERY_STRING} ^(.*)(&?medium=?[^&]*)(.*)$ [NC]
+RewriteRule ^(.*)$ /$1?%1%3 [R=301,L]
+
+# Redirect if query string is now empty after parameter removal
+RewriteCond %{QUERY_STRING} ^$
+RewriteRule ^(.*)$ /$1? [R=301,L]
+
 # Handle trailing slash redirects for consistency
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME} !-f
@@ -37,6 +63,7 @@ RewriteRule ^how-it-works\.html$ /how-it-works [R=301,L]
 RewriteRule ^sms-compliance\.html$ /sms-compliance [R=301,L]
 RewriteRule ^contact-support\.html$ /contact-support [R=301,L]
 RewriteRule ^admin\.html$ /admin [R=301,L]
+RewriteRule ^ai-assistant\.html$ /ai-assistant [R=301,L]
 
 # Redirect service .html files to clean URLs to prevent duplicates
 RewriteRule ^services/([^/]+)\.html$ /services/$1 [R=301,L]
@@ -66,9 +93,10 @@ RewriteRule ^contact/?$ /contact/index.html [L]
 RewriteRule ^services/?$ /services/index.html [L]
 RewriteRule ^services/([^/]+)/?$ /services/$1/index.html [L]
 RewriteRule ^pro/signup/?$ /pro/signup/index.html [L]
+RewriteRule ^ai-assistant/?$ /ai-assistant/index.html [L]
+RewriteRule ^terms/?$ /terms/index.html [L]
 # Static HTML files
 RewriteRule ^privacy$ /privacy.html [L]
-RewriteRule ^terms$ /terms.html [L] 
 RewriteRule ^support$ /support.html [L]
 RewriteRule ^pro-signup$ /pro-signup.html [L]
 RewriteRule ^sms-compliance$ /sms-compliance.html [L]
