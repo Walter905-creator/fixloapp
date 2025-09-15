@@ -4,7 +4,7 @@
 echo "🔍 Testing Canonical URL Fixes"
 echo "================================"
 
-BUILD_DIR="client/build"
+BUILD_DIR="client/dist"
 
 if [ ! -d "$BUILD_DIR" ]; then
   echo "❌ Build directory not found. Please run 'npm run build' first."

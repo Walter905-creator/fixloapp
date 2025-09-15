@@ -1,8 +1,8 @@
 
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "cd client && npm ci --no-fund --no-audit",
-  "buildCommand": "cd client && node scripts/generate-build-info.js && npm run build",
+  "installCommand": "cd client && npm ci",
+  "buildCommand": "cd client && node scripts/inject-build-meta.js && npm run build",
   "outputDirectory": "client/dist",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "https://fixloapp.onrender.com/api/$1" },
