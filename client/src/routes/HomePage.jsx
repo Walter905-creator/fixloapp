@@ -63,21 +63,17 @@ export default function HomePage() {
                 <span className="inline-flex items-center gap-1">
                   🛡️ <b className="text-slate-900">Background checks</b>
                 </span>
-                <span className="inline-flex items-center gap-1">
+                <span className="inline-flex items-centergap-1">
                   💬 <b className="text-slate-900">Fast quotes</b>
                 </span>
               </div>
             </div>
 
-            {/* 16:9 “intrinsic ratio” box so the hero never gets too tall */}
-            <div
-              className="relative w-full rounded-3xl overflow-hidden border border-slate-200 shadow-xl"
-              style={{ paddingTop: "56.25%" }} /* 9/16 = 56.25% */
-            >
+            <div className="w-full rounded-3xl overflow-hidden border border-slate-200 shadow-xl max-h-[520px]">
               <img
                 src={HERO_IMG}
                 alt="Fixlo professional at work"
-                className="absolute inset-0 w-full h-full object-cover"
+                className="w-full h-full object-cover"
                 loading="eager"
                 decoding="async"
               />
@@ -135,14 +131,11 @@ export default function HomePage() {
                 ))}
               </div>
             </div>
-            <div
-              className="relative w-full rounded-3xl overflow-hidden border border-slate-200 shadow-xl"
-              style={{ paddingTop: "56.25%" }}
-            >
+            <div className="relative w-full rounded-3xl overflow-hidden border border-slate-200 shadow-xl" style={{ maxHeight: 520 }}>
               <img
                 src={HOW_IMG}
                 alt="How Fixlo works"
-                className="absolute inset-0 w-full h-full object-cover"
+                className="w-full h-full object-cover"
                 loading="lazy"
                 decoding="async"
               />
