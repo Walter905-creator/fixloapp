@@ -27,27 +27,27 @@ jobs:
         run: cd client && npm ci --no-fund --no-audit
         
       - name: Generate build info
-        run: cd client && node scripts/generate-build-info.js
+        run: cd client && node scripts/inject-build-meta.js
         
-      - name: Verify buildInfo.generated.js exists
+      - name: Verify version.json exists
         run: |
-          if [ ! -f client/src/buildInfo.generated.js ]; then
-            echo "❌ buildInfo.generated.js missing!"
+          if [ ! -f client/public/version.json ]; then
+            echo "❌ version.json missing!"
             exit 1
           fi
-          echo "✅ buildInfo.generated.js exists"
+          echo "✅ version.json exists"
           
       - name: Build client
         run: cd client && npm run build
         
       - name: Verify build completed successfully
         run: |
-          if [ ! -d client/build ]; then
-            echo "❌ Client build directory missing!"
+          if [ ! -d client/dist ]; then
+            echo "❌ Client dist directory missing!"
             exit 1
           fi
-          if [ ! -f client/build/index.html ]; then
-            echo "❌ Client build index.html missing!"
+          if [ ! -f client/dist/index.html ]; then
+            echo "❌ Client dist index.html missing!"
             exit 1
           fi
           echo "✅ Build completed successfully"

@@ -5,7 +5,7 @@ try {
   // scan only tracked files; ignore node_modules and build outputs
   // Look specifically for git conflict markers that start a line
   const grep = execSync(
-    `git grep -n -E "^<<<<<<<[[:space:]]|^=======$|^>>>>>>>[[:space:]]" -- . ":(exclude)node_modules/*" ":(exclude)client/build/*"`,
+    `git grep -n -E "^<<<<<<<[[:space:]]|^=======$|^>>>>>>>[[:space:]]" -- . ":(exclude)node_modules/*" ":(exclude)client/dist/*"`,
     { stdio: 'pipe' }
   ).toString().trim();
 
