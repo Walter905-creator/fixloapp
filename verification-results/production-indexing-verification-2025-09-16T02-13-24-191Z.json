@@ -1,0 +1,298 @@
+{
+  "timestamp": "2025-09-16T02:13:22.612Z",
+  "checks": [
+    {
+      "name": "Canonical tag presence (/)",
+      "passed": false,
+      "details": "No canonical tag found",
+      "severity": "critical",
+      "timestamp": "2025-09-16T02:13:22.690Z"
+    },
+    {
+      "name": "Robots meta (/)",
+      "passed": true,
+      "details": "Robots meta: index, follow",
+      "severity": "normal",
+      "timestamp": "2025-09-16T02:13:22.690Z"
+    },
+    {
+      "name": "X-Robots-Tag header (/)",
+      "passed": true,
+      "details": "No problematic X-Robots-Tag headers",
+      "severity": "normal",
+      "timestamp": "2025-09-16T02:13:22.690Z"
+    },
+    {
+      "name": "Route /how-it-works accessibility",
+      "passed": false,
+      "details": "Route returned 404",
+      "severity": "warning",
+      "timestamp": "2025-09-16T02:13:22.739Z"
+    },
+    {
+      "name": "Route /contact accessibility",
+      "passed": false,
+      "details": "Route returned 404",
+      "severity": "warning",
+      "timestamp": "2025-09-16T02:13:22.787Z"
+    },
+    {
+      "name": "Route /signup accessibility",
+      "passed": false,
+      "details": "Route returned 404",
+      "severity": "warning",
+      "timestamp": "2025-09-16T02:13:22.845Z"
+    },
+    {
+      "name": "Route /pro/signup accessibility",
+      "passed": false,
+      "details": "Route returned 404",
+      "severity": "warning",
+      "timestamp": "2025-09-16T02:13:22.895Z"
+    },
+    {
+      "name": "Route /services/ accessibility",
+      "passed": false,
+      "details": "Route returned 404",
+      "severity": "warning",
+      "timestamp": "2025-09-16T02:13:22.946Z"
+    },
+    {
+      "name": "Route /services/plumbing accessibility",
+      "passed": false,
+      "details": "Route returned 404",
+      "severity": "warning",
+      "timestamp": "2025-09-16T02:13:22.993Z"
+    },
+    {
+      "name": "Non-www to www redirect",
+      "passed": true,
+      "details": "https://fixloapp.com → https://www.fixloapp.com/ (308)",
+      "severity": "normal",
+      "timestamp": "2025-09-16T02:13:23.470Z"
+    },
+    {
+      "name": "Parameter handling (/?utm_source=google&utm_medium=cpc)",
+      "passed": false,
+      "details": "Canonical contains parameters: null",
+      "severity": "warning",
+      "timestamp": "2025-09-16T02:13:23.519Z"
+    },
+    {
+      "name": "Parameter handling (/?ref=social&campaign=test)",
+      "passed": false,
+      "details": "Canonical contains parameters: null",
+      "severity": "warning",
+      "timestamp": "2025-09-16T02:13:23.566Z"
+    },
+    {
+      "name": "Parameter test accessibility (/how-it-works?utm_campaign=brand)",
+      "passed": false,
+      "details": "Returned 404",
+      "severity": "warning",
+      "timestamp": "2025-09-16T02:13:23.614Z"
+    },
+    {
+      "name": "Parameter handling (/?fbclid=test123)",
+      "passed": false,
+      "details": "Canonical contains parameters: null",
+      "severity": "warning",
+      "timestamp": "2025-09-16T02:13:23.661Z"
+    },
+    {
+      "name": "Robots.txt sitemap reference",
+      "passed": true,
+      "details": "Contains sitemap reference",
+      "severity": "normal",
+      "timestamp": "2025-09-16T02:13:23.840Z"
+    },
+    {
+      "name": "Robots.txt domain reference",
+      "passed": true,
+      "details": "Contains correct domain",
+      "severity": "normal",
+      "timestamp": "2025-09-16T02:13:23.840Z"
+    },
+    {
+      "name": "Robots.txt public access",
+      "passed": true,
+      "details": "Public routes are allowed",
+      "severity": "normal",
+      "timestamp": "2025-09-16T02:13:23.840Z"
+    },
+    {
+      "name": "Sitemap XML structure",
+      "passed": true,
+      "details": "Valid XML structure",
+      "severity": "normal",
+      "timestamp": "2025-09-16T02:13:23.988Z"
+    },
+    {
+      "name": "Sitemap URL count",
+      "passed": true,
+      "details": "67 URLs found",
+      "severity": "normal",
+      "timestamp": "2025-09-16T02:13:23.989Z"
+    },
+    {
+      "name": "Sitemap canonical URLs",
+      "passed": true,
+      "details": "No parameter URLs found in sitemap",
+      "severity": "normal",
+      "timestamp": "2025-09-16T02:13:23.989Z"
+    },
+    {
+      "name": "Sitemap host consistency",
+      "passed": true,
+      "details": "All URLs use www subdomain",
+      "severity": "normal",
+      "timestamp": "2025-09-16T02:13:23.989Z"
+    },
+    {
+      "name": "Sitemap lastmod dates",
+      "passed": true,
+      "details": "67 URLs have lastmod dates",
+      "severity": "normal",
+      "timestamp": "2025-09-16T02:13:23.989Z"
+    },
+    {
+      "name": "SSR route accessibility (/services/plumbing)",
+      "passed": false,
+      "details": "Route returned 404",
+      "severity": "warning",
+      "timestamp": "2025-09-16T02:13:24.040Z"
+    },
+    {
+      "name": "SSR route accessibility (/pro/test-professional-sf)",
+      "passed": false,
+      "details": "Route returned 404",
+      "severity": "warning",
+      "timestamp": "2025-09-16T02:13:24.087Z"
+    },
+    {
+      "name": "Static page accessibility (/services/index.html)",
+      "passed": false,
+      "details": "Page returned 404",
+      "severity": "warning",
+      "timestamp": "2025-09-16T02:13:24.144Z"
+    },
+    {
+      "name": "Static page accessibility (/services/)",
+      "passed": false,
+      "details": "Page returned 404",
+      "severity": "warning",
+      "timestamp": "2025-09-16T02:13:24.191Z"
+    }
+  ],
+  "summary": {
+    "total": 26,
+    "passed": 11,
+    "failed": 15
+  },
+  "issues": [
+    {
+      "type": "CRITICAL",
+      "name": "Canonical tag presence (/)",
+      "details": "No canonical tag found",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Route /how-it-works accessibility",
+      "details": "Route returned 404",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Route /contact accessibility",
+      "details": "Route returned 404",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Route /signup accessibility",
+      "details": "Route returned 404",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Route /pro/signup accessibility",
+      "details": "Route returned 404",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Route /services/ accessibility",
+      "details": "Route returned 404",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Route /services/plumbing accessibility",
+      "details": "Route returned 404",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Parameter handling (/?utm_source=google&utm_medium=cpc)",
+      "details": "Canonical contains parameters: null",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Parameter handling (/?ref=social&campaign=test)",
+      "details": "Canonical contains parameters: null",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Parameter test accessibility (/how-it-works?utm_campaign=brand)",
+      "details": "Returned 404",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Parameter handling (/?fbclid=test123)",
+      "details": "Canonical contains parameters: null",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "SSR route accessibility (/services/plumbing)",
+      "details": "Route returned 404",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "SSR route accessibility (/pro/test-professional-sf)",
+      "details": "Route returned 404",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Static page accessibility (/services/index.html)",
+      "details": "Page returned 404",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    },
+    {
+      "type": "WARNING",
+      "name": "Static page accessibility (/services/)",
+      "details": "Page returned 404",
+      "solution": "Review implementation and follow Google's indexing guidelines"
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "HIGH",
+      "area": "Canonical URLs",
+      "recommendation": "Implement dynamic canonical URL generation in your React app routing to ensure each route serves its own canonical URL instead of the homepage canonical.",
+      "implementation": "Update your SEOHead component or routing logic to dynamically set canonical URLs based on the current route."
+    },
+    {
+      "priority": "MEDIUM",
+      "area": "Server-Side Rendering",
+      "recommendation": "Consider implementing SSR or static generation for key routes (/services/*, /pro/*) to improve indexability.",
+      "implementation": "Use Next.js, implement middleware-based prerendering, or create static HTML pages for critical routes."
+    }
+  ]
+}
