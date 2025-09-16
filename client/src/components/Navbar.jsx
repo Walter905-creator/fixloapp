@@ -8,8 +8,14 @@ const items = [
   // { to: '/assistant', label: 'AI Assistant' }, // Hidden per requirements
   { to: '/contact', label: 'Contact' },
   { to: '/pro/sign-in', label: 'Pro Sign In' },
+
   { to: '/pro/dashboard', label: 'Pro Dashboard' },
   { to: '/join', label: 'Join Now' }
+
+  { to: '/admin', label: 'Admin' },
+  { to: '/pro/dashboard', label: 'Pro Dashboard' }
+  // Removed 'Join Now' from regular items to create as separate CTA button
+ main
 ];
 
 export default function Navbar() {
@@ -33,7 +39,13 @@ export default function Navbar() {
               {i.label}
             </NavLink>
           ))}
-          <div className="ml-auto hidden sm:block">
+          <div className="ml-auto hidden sm:flex items-center gap-3">
+            <Link 
+              to="/join"
+              className="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700 transition join-now-pulse"
+            >
+              Join Now
+            </Link>
             <a href="/services" className="btn-primary">Find a Pro</a>
           </div>
         </nav>

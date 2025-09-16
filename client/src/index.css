@@ -38,3 +38,19 @@
 
   .pill { @apply inline-flex items-center gap-2 rounded-full border border-slate-300 px-3 py-1 text-sm text-slate-700; }
 }
+
+/* Custom pulse animation for Join Now button */
+@keyframes joinNowPulse {
+  0%, 100% { 
+    transform: scale(1); 
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.7); /* green-600 with opacity */
+  }
+  50% { 
+    transform: scale(1.05); 
+    box-shadow: 0 0 15px 3px rgba(22, 163, 74, 0.5); /* green-600 with opacity */
+  }
+}
+
+.join-now-pulse {
+  animation: joinNowPulse 2s infinite;
+}
