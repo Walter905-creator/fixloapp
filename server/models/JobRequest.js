@@ -32,6 +32,14 @@ const JobRequestSchema = new mongoose.Schema({
     trim: true,
     maxLength: [200, 'Address cannot exceed 200 characters']
   },
+  zip: {
+    type: String,
+    trim: true
+  },
+  location: {
+    type: { type: String, enum: ['Point'], default: 'Point' },
+    coordinates: { type: [Number], default: [0, 0] }, // [lng, lat]
+  },
   description: {
     type: String,
     required: [true, 'Description is required'],
@@ -54,5 +62,8 @@ const JobRequestSchema = new mongoose.Schema({
 // Create indexes for better performance
 JobRequestSchema.index({ trade: 1, createdAt: -1 });
 JobRequestSchema.index({ status: 1, createdAt: -1 });
+
+// Create 2dsphere index for geospatial queries
+JobRequestSchema.index({ location: '2dsphere' });
 
 module.exports = mongoose.model("JobRequest", JobRequestSchema);

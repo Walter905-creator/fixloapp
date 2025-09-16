@@ -8,6 +8,7 @@ const Stripe = require("stripe");
 const Pro = require("../models/Pro");
 const Review = require("../models/Review");
 const auth = require("../middleware/auth");
+const { geocode } = require("../utils/geocode");
 
 // If your Cloudinary utils export a configured Multer uploader:
 const { upload } = require("../utils/cloudinary");
@@ -75,6 +76,17 @@ router.post("/register", async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashed = await bcrypt.hash(password, salt);
 
+    // Geocode the pro's location
+    let coordinates = [-74.006, 40.7128]; // Default to NYC
+    try {
+      const coords = await geocode({ address: location });
+      if (coords) {
+        coordinates = [coords.lng, coords.lat];
+      }
+    } catch (geocodeError) {
+      console.warn('Geocoding failed for pro location:', geocodeError.message);
+    }
+
     const newPro = await Pro.create({
       name,
       email: email.toLowerCase(),
@@ -83,7 +95,7 @@ router.post("/register", async (req, res) => {
       trade,
       location: {
         address: location,
-        coordinates: [-74.006, 40.7128], // TODO: replace with real geocode if available
+        coordinates: coordinates,
       },
       dob: new Date(dob),
       paymentStatus: "pending",

@@ -105,10 +105,10 @@ router.post('/', async (req, res) => {
       // Continue without failing the request
     }
 
-    // 3) Query nearby pros (default 30 miles) if SMS consent given
+    // 3) Query nearby pros (configurable radius) if SMS consent given
     let pros = [];
     let notificationsSent = 0;
-    const radiusMiles = 30;
+    const radiusMiles = parseInt(process.env.LEAD_RADIUS_MILES) || 30;
     const radiusMeters = milesToMeters(radiusMiles);
 
     if (smsConsent) {

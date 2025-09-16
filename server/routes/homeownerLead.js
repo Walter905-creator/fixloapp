@@ -34,9 +34,9 @@ router.post('/', async (req, res) => {
       formatted = address; // Use original address as formatted
     }
 
-    // 2) Query nearby pros (default 30 miles) with database fallback
+    // 2) Query nearby pros (configurable radius) with database fallback
     let pros = [];
-    const radiusMiles = 30;
+    const radiusMiles = parseInt(process.env.LEAD_RADIUS_MILES) || 30;
     const radiusMeters = milesToMeters(radiusMiles);
 
     // Save lead to database before notifying pros
