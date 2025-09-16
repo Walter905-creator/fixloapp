@@ -231,6 +231,7 @@ function preflight(path, methods = "POST, OPTIONS") {
 }
 preflight("/api/pro-signup");
 preflight("/api/homeowner-lead");
+preflight("/api/requests");
 preflight("/api/*", "POST, OPTIONS, GET, PUT, DELETE, HEAD");
 
 // ----------------------- Routes -----------------------
@@ -248,7 +249,11 @@ app.use("/api/pro", generalRateLimit, require("./routes/proJobs")); // professio
 app.use("/api/pro/jobs", generalRateLimit, require("./routes/proJobs")); // professional job management
 app.use("/api/homeowner-lead", require("./routes/homeownerLead"));
 app.use("/api/leads", require("./routes/leads")); // Lead management with database storage
+
 app.use("/api/requests", require("./routes/requests")); // Homeowner service requests
+
+app.use("/api/requests", require("./routes/requests")); // Standardized service requests
+ main
 app.use("/api/service-request", require("./routes/serviceRequest"));
 app.use("/api/notify", require("./routes/notify"));
 
@@ -528,6 +533,25 @@ app.get("/api/health", async (req, res) => {
     db,
     time: new Date().toISOString(),
     apiOnly: true,
+  });
+});
+
+// SMS health check endpoint
+app.get('/health/sms', (req, res) => {
+  const ok = !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE);
+  console.log('🏥 SMS Health Check:', {
+    hasSid: !!process.env.TWILIO_ACCOUNT_SID,
+    hasToken: !!process.env.TWILIO_AUTH_TOKEN,
+    hasPhone: !!process.env.TWILIO_PHONE,
+    phone: process.env.TWILIO_PHONE || 'not set',
+    radiusMiles: process.env.MATCH_RADIUS_MI || '30 (default)'
+  });
+  
+  res.status(ok ? 200 : 503).json({
+    ok,
+    hasSid: !!process.env.TWILIO_ACCOUNT_SID,
+    hasToken: !!process.env.TWILIO_AUTH_TOKEN,
+    hasPhone: !!process.env.TWILIO_PHONE
   });
 });
 

@@ -3,12 +3,7 @@ const router = express.Router();
 const JobRequest = require('../models/JobRequest');
 const Pro = require('../models/Pro');
 const { geocodeAddress } = require('../utils/geocode');
-
-// Optional: Twilio SMS
-let twilioClient = null;
-if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
-  twilioClient = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-}
+const { sendSms, normalizeE164 } = require('../utils/twilio');
 
 function milesToMeters(mi) { return mi * 1609.344; }
 
@@ -18,26 +13,39 @@ router.post('/', async (req, res) => {
     console.log('📝 Lead submission received');
     
     const { 
-      name, fullName, 
-      email, 
+      serviceType, 
+      fullName, 
       phone, 
-      trade, service, 
-      address, city,
-      description,
-      source,
-      photoUrl
+      email, 
+      address, 
+      description, 
+      city, 
+      state, 
+      smsConsent,
+      // Legacy field mappings
+      name, 
+      trade, 
+      service
     } = req.body || {};
     
     // Handle field mapping from different client implementations
-    const leadName = name || fullName;
-    const leadTrade = trade || service;
+    const leadName = fullName || name;
+    const leadTrade = serviceType || trade || service;
     const leadAddress = address || city || '';  // Allow empty string as fallback
     
-    // Validate required fields - address can be empty (geocoding will handle fallback)
+    // Validate required fields
     if (!leadName || !phone || !leadTrade) {
       return res.status(400).json({ 
         success: false,
-        message: 'Name, phone, and trade/service are required' 
+        message: 'Name, phone, and service type are required' 
+      });
+    }
+
+    // Validate SMS consent if provided
+    if (smsConsent === false) {
+      return res.status(400).json({
+        success: false,
+        message: 'SMS consent is required to submit a service request'
       });
     }
 
@@ -86,9 +94,9 @@ router.post('/', async (req, res) => {
       // Continue without failing the request
     }
 
-    // 3) Query nearby pros (default 30 miles) with database fallback
+    // 3) Query nearby pros with configurable radius
     let pros = [];
-    const radiusMiles = 30;
+    const radiusMiles = parseInt(process.env.MATCH_RADIUS_MI) || 30;
     const radiusMeters = milesToMeters(radiusMiles);
 
     try {
@@ -107,7 +115,7 @@ router.post('/', async (req, res) => {
           }
         }).limit(50); // safety cap
         
-        console.log(`✅ Found ${pros.length} nearby pros for ${leadTrade}`);
+        console.log(`✅ Found ${pros.length} nearby pros for ${leadTrade} within ${radiusMiles} miles`);
       } else {
         console.warn('⚠️ Database not connected, cannot query for pros');
       }
@@ -116,46 +124,37 @@ router.post('/', async (req, res) => {
       // Continue with empty pros array
     }
 
-    // 4) Fire-and-forget notify (SMS/email) – do not block response
-    (async () => {
-      if (twilioClient && pros.length && process.env.TWILIO_PHONE) {
-        const msg = `FIXLO: New ${leadTrade} request near ${formatted}. ${leadName} (${phone}). "${description || 'No description provided'}"`;
-        
-        for (const pro of pros) {
-          try {
-            await twilioClient.messages.create({
-              to: pro.phone,
-              from: process.env.TWILIO_PHONE, // must be a valid Twilio number you own
-              body: msg
-            });
-            console.log(`✅ SMS sent to pro: ${pro.phone}`);
-          } catch (err) {
-            console.error(`❌ Twilio SMS error to ${pro.phone}:`, err.message);
-          }
-        }
-      } else {
-        if (!twilioClient) {
-          console.log('⚠️ Twilio not configured - SMS notifications disabled');
-        }
-        if (!pros.length) {
-          console.log('⚠️ No nearby pros found for notifications');
-        }
-        if (!process.env.TWILIO_PHONE) {
-          console.log('⚠️ TWILIO_PHONE not configured - SMS notifications disabled');
+    // 4) Notify matched professionals via SMS
+    let notified = 0;
+    if (pros.length) {
+      for (const pro of pros) {
+        try {
+          await sendSms(
+            pro.phone,
+            `[${leadTrade}] ${city || 'Unknown'}, ${state || 'Unknown'} – ${description || 'Service request'}\nContact: ${leadName} ${normalizeE164(phone)}`
+          );
+          notified++;
+        } catch (e) {
+          console.warn('Twilio send failed for', pro._id || pro.phone, e.message);
         }
       }
-    })().catch(console.error);
+      console.log(`📱 Notified ${notified}/${pros.length} professionals`);
+    } else {
+      console.warn('No nearby pros found — skipping SMS');
+    }
 
-    // 5) Return success response immediately
-    return res.json({
+    // 5) Return success response immediately with 201 status
+    return res.status(201).json({
+      ok: true,
       success: true,
       message: 'Lead received and processed successfully',
       data: {
         leadId: savedLead ? savedLead._id : null,
         matchedPros: pros.length,
+        notified: notified,
         address: formatted,
-        trade: leadTrade,
-        notificationsSent: twilioClient && pros.length > 0
+        serviceType: leadTrade,
+        radiusMiles: radiusMiles
       }
     });
 
