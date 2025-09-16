@@ -1,8 +1,10 @@
 import React from 'react';
 import HelmetSEO from '../seo/HelmetSEO';
 import CloudinaryUploader from '../components/CloudinaryUploader';
+import { API_BASE } from '../utils/config';
+
 export default function ProDashboardPage(){
-  const api = import.meta.env.VITE_API_BASE || '';
+  const api = API_BASE;
   const [leads, setLeads] = React.useState([]);
   const [loaded, setLoaded] = React.useState(false);
   React.useEffect(()=>{

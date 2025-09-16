@@ -1,12 +1,9 @@
-import forms from '@tailwindcss/forms'
-
+// client/tailwind.config.js
 /** @type {import('tailwindcss').Config} */
 export default {
-  // Disable dark mode entirely—you'll have only the light theme
-  darkMode: false, // or 'false' as a string if that works better
   content: [
     "./index.html",
-    "./src/**/*.{js,jsx,ts,tsx}"
+    "./src/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {
     extend: {
@@ -18,5 +15,8 @@ export default {
       },
     },
   },
-  plugins: [forms],
+  plugins: [
+    require("@tailwindcss/forms"),
+    require("@tailwindcss/aspect-ratio"),
+  ],
 };

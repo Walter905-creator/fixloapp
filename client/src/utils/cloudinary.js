@@ -1,6 +1,8 @@
+import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from './config';
+
 export async function uploadToCloudinary(file){
-  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-  const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+  const cloudName = CLOUDINARY_CLOUD_NAME;
+  const uploadPreset = CLOUDINARY_UPLOAD_PRESET;
   if(!cloudName || !uploadPreset){
     throw new Error('Missing Cloudinary env. Set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET.');
   }

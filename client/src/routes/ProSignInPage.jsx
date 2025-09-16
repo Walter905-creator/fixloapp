@@ -1,7 +1,9 @@
 import React from 'react';
 import HelmetSEO from '../seo/HelmetSEO';
+import { API_BASE } from '../utils/config';
+
 export default function ProSignInPage(){
-  const api = import.meta.env.VITE_API_BASE || '';
+  const api = API_BASE;
   async function submit(e){
     e.preventDefault();
     const form = new FormData(e.currentTarget);
