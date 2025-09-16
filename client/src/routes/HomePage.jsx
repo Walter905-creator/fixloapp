@@ -5,7 +5,6 @@ import { Link } from "react-router-dom";
 /**
  * Local images from /public/images
  */
-const HERO_IMG = "/images/hero-pro.jpg";
 const HOW_IMG  = "/images/how-it-works.jpg";
 
 const SERVICES = [
@@ -29,52 +28,42 @@ export default function HomePage() {
     <>
       <HelmetSEO title="Fixlo – Book Trusted Home Services Near You" />
       <div className="container-xl">
-        {/* Hero */}
-        <section className="py-10 md:py-16">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div>
-              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-tight">
-                Search services
-                <br />
-                near you
-              </h1>
-              <p className="mt-4 text-slate-600">
-                Discover vetted pros, compare quotes, and book with confidence.
-              </p>
+        {/* Search Header */}
+        <section className="py-8 md:py-12">
+          <div className="text-center max-w-2xl mx-auto">
+            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-tight">
+              Search services
+              <br />
+              near you
+            </h1>
+            <p className="mt-4 text-slate-600">
+              Discover vetted pros, compare quotes, and book with confidence.
+            </p>
 
-              <div className="mt-6">
-                <div className="flex items-center gap-3 bg-white rounded-2xl p-2 shadow-md border border-slate-200">
-                  <input
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="What service do you need?"
-                    className="flex-1 bg-transparent px-4 py-3 rounded-xl text-slate-900 placeholder-slate-500 outline-none"
-                  />
-                  <Link to="/services" className="btn-accent px-5 py-3 rounded-xl">
-                    Search
-                  </Link>
-                </div>
-              </div>
-
-              <div className="mt-6 flex items-center gap-4 text-sm text-slate-600">
-                <span className="inline-flex items-center gap-1">
-                  ⭐ <b className="text-slate-900">Trusted pros</b>
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  🛡️ <b className="text-slate-900">Background checks</b>
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  💬 <b className="text-slate-900">Fast quotes</b>
-                </span>
+            <div className="mt-6">
+              <div className="flex items-center gap-3 bg-white rounded-2xl p-2 shadow-md border border-slate-200">
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="What service do you need?"
+                  className="flex-1 bg-transparent px-4 py-3 rounded-xl text-slate-900 placeholder-slate-500 outline-none"
+                />
+                <Link to="/services" className="btn-accent px-5 py-3 rounded-xl">
+                  Search
+                </Link>
               </div>
             </div>
 
-            <div>
-              <img
-                src={HERO_IMG}
-                alt="Fixlo professional at work"
-                className="rounded-3xl shadow-xl border border-slate-200 w-full h-auto object-cover"
-              />
+            <div className="mt-6 flex items-center justify-center gap-4 text-sm text-slate-600">
+              <span className="inline-flex items-center gap-1">
+                ⭐ <b className="text-slate-900">Trusted pros</b>
+              </span>
+              <span className="inline-flex items-center gap-1">
+                🛡️ <b className="text-slate-900">Background checks</b>
+              </span>
+              <span className="inline-flex items-center gap-1">
+                💬 <b className="text-slate-900">Fast quotes</b>
+              </span>
             </div>
           </div>
         </section>
@@ -111,23 +100,19 @@ export default function HomePage() {
         {/* How it works */}
         <section className="py-10 md:py-14 bg-white">
           <div className="grid md:grid-cols-2 gap-8 items-center text-slate-900">
-            <div>
-              <h2 className="text-3xl font-bold text-slate-900">How it works</h2>
-              <p className="mt-3 text-slate-600">
-                Tell us what you need, get matched to vetted pros, and compare quotes. Book the one that fits your project and budget.
-              </p>
-              <div className="mt-6 grid grid-cols-3 gap-3 text-sm">
-                {[
-                  { icon: "📝", t: "Post your job" },
-                  { icon: "⚡", t: "Get quick quotes" },
-                  { icon: "✅", t: "Hire with confidence" }
-                ].map((i) => (
-                  <div key={i.t} className="card p-4 text-center">
-                    <div className="text-2xl">{i.icon}</div>
-                    <div className="mt-2 text-slate-800">{i.t}</div>
-                  </div>
-                ))}
-              </div>
+            <div className="flex justify-center">
+              <figure className="mx-auto w-full max-w-[520px] px-4">
+                <img
+                  src="/fixlo-pro-small.jpg"
+                  alt="Fixlo professional at work"
+                  width="520"
+                  height="520"
+                  loading="lazy"
+                  decoding="async"
+                  style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover', borderRadius: '12px' }}
+                />
+                <figcaption className="sr-only">Fixlo professional at work</figcaption>
+              </figure>
             </div>
             <div>
               <img
