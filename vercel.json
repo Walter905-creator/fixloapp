@@ -1,0 +1,147 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/terms.html",
+      "destination": "/terms",
+      "permanent": true
+    },
+    {
+      "source": "/privacy.html", 
+      "destination": "/privacy",
+      "permanent": true
+    },
+    {
+      "source": "/contact.html",
+      "destination": "/contact", 
+      "permanent": true
+    },
+    {
+      "source": "/signup.html",
+      "destination": "/signup",
+      "permanent": true
+    },
+    {
+      "source": "/support.html",
+      "destination": "/support",
+      "permanent": true
+    },
+    {
+      "source": "/how-it-works.html",
+      "destination": "/how-it-works",
+      "permanent": true
+    },
+    {
+      "source": "/admin.html",
+      "destination": "/admin",
+      "permanent": true
+    },
+    {
+      "source": "/pro-signup.html",
+      "destination": "/pro-signup", 
+      "permanent": true
+    },
+    {
+      "source": "/sms-compliance.html",
+      "destination": "/sms-compliance",
+      "permanent": true
+    },
+    {
+      "source": "/contact-support.html",
+      "destination": "/contact-support",
+      "permanent": true
+    },
+    {
+      "source": "/ai-assistant.html", 
+      "destination": "/ai-assistant",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/terms",
+      "destination": "/terms.html"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/privacy.html"
+    },
+    {
+      "source": "/support", 
+      "destination": "/support.html"
+    },
+    {
+      "source": "/pro-signup",
+      "destination": "/pro-signup.html"
+    },
+    {
+      "source": "/sms-compliance",
+      "destination": "/sms-compliance.html"
+    },
+    {
+      "source": "/contact-support",
+      "destination": "/contact-support.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin.html"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/dashboard.html"
+    },
+    {
+      "source": "/signup",
+      "destination": "/signup/index.html"
+    },
+    {
+      "source": "/how-it-works",
+      "destination": "/how-it-works/index.html"
+    },
+    {
+      "source": "/contact", 
+      "destination": "/contact/index.html"
+    },
+    {
+      "source": "/services",
+      "destination": "/services/index.html"
+    },
+    {
+      "source": "/services/(.*)",
+      "destination": "/services/$1/index.html"
+    },
+    {
+      "source": "/pro/signup",
+      "destination": "/pro/signup/index.html"
+    },
+    {
+      "source": "/ai-assistant",
+      "destination": "/ai-assistant/index.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/sitemap.xml",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/xml"
+        }
+      ]
+    },
+    {
+      "source": "/robots.txt",
+      "headers": [
+        {
+          "key": "Content-Type", 
+          "value": "text/plain"
+        }
+      ]
+    }
+  ]
+}
