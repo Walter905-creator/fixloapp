@@ -32,10 +32,6 @@ function ServiceLeadForm({service, city}){
     phone: '', 
     city: city || '', 
     state: '', 
- copilot/fix-7797c005-0d3a-44a8-b920-367533b5e812
-    details: '', 
-
-
     details: '',
     smsConsent: false
   });
