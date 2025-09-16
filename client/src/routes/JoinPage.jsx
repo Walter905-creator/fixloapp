@@ -1,7 +1,9 @@
 import React from 'react';
 import HelmetSEO from '../seo/HelmetSEO';
+import { STRIPE_CHECKOUT_URL } from '../utils/config';
+
 export default function JoinPage(){
-  const stripeUrlRaw = import.meta.env.VITE_STRIPE_CHECKOUT_URL;
+  const stripeUrlRaw = STRIPE_CHECKOUT_URL;
 
   function resolveCheckoutURL(raw){
     const s = (raw || '').trim();
