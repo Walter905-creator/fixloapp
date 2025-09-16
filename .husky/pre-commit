@@ -1,0 +1,2 @@
+# Check for AI Assistant references before committing
+npm run check-ai
