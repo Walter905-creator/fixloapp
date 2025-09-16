@@ -27,6 +27,51 @@ function ServiceLeadForm({service, city}){
     phone: '', 
     city: city || '', 
     state: '', 
+
+    details: '',
+    smsConsent: false
+  });
+  const api = import.meta.env.VITE_API_BASE || '';
+  const submit = async (e)=>{ e.preventDefault();
+    if (!form.smsConsent) {
+      alert('Please agree to receive SMS updates to submit your request.');
+      return;
+    }
+    try{
+      const url = `${api}/api/leads`;
+      const payload = {
+        serviceType: service,
+        fullName: form.name,
+        phone: form.phone,
+        description: form.details,
+        city: city ? city.replace(/-/g, ' ') : '',
+        state: '', // Could be enhanced to detect state from city
+        smsConsent: form.smsConsent
+      };
+      const response = await fetch(url, { 
+        method:'POST', 
+        headers:{'Content-Type':'application/json'}, 
+        body: JSON.stringify(payload) 
+      });
+      if (response.ok) {
+        alert('Thanks! We will text you shortly.');
+        setForm({name:'', phone:'', details:'', smsConsent: false});
+      } else {
+        alert('There was an error submitting your request. Please try again.');
+      }
+    }catch(err){ 
+      console.error('Submit error:', err);
+      alert('There was an error submitting your request. Please try again.'); 
+    }
+
+  const [form, setForm] = React.useState({
+    fullName: '', 
+    phone: '', 
+    city: city || '',
+    state: '',
+ main
+
+ main
     details: '',
     smsConsent: false
   });

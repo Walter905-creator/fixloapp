@@ -13,8 +13,8 @@ fs.mkdirSync(outDir, { recursive: true });
 
 const PEXELS_KEY = process.env.PEXELS_API_KEY || "";
 if (!PEXELS_KEY) {
-  console.warn(
-    "[fetch-images] Warning: PEXELS_API_KEY is not set. No images will be fetched."
+  console.log(
+    "[fetch-images] PEXELS_API_KEY is not set. Will use existing images if available."
   );
 }
 
@@ -143,8 +143,15 @@ async function downloadVerified(url, destPath) {
 
 async function ensureOne(file, query, w, h) {
   const to = path.join(outDir, file);
+  
+  // Check if file already exists
+  if (fs.existsSync(to)) {
+    console.log(`[fetch-images] ✓ ${file} already exists, skipping`);
+    return;
+  }
+  
   if (!PEXELS_KEY) {
-    console.warn(`[fetch-images] Skipping ${file}; no PEXELS_API_KEY`);
+    console.warn(`[fetch-images] Skipping ${file}; no PEXELS_API_KEY and file doesn't exist`);
     return;
   }
   const url = await searchPexels(query, w, h);
