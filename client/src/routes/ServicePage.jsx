@@ -28,9 +28,9 @@ function ServiceLeadForm({service, city}){
     phone: '', 
     city: city || '', 
     state: '', 
-
-
-  const [form, setForm] = React.useState({name:'', phone:'', details:'', smsConsent: false});
+    details: '',
+    smsConsent: false
+  });
   const api = import.meta.env.VITE_API_BASE || '';
   const submit = async (e)=>{ e.preventDefault();
     if (!form.smsConsent) {
