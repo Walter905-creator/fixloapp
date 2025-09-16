@@ -21,6 +21,41 @@ export default function ServicePage(){
   </>);
 }
 function ServiceLeadForm({service, city}){
+
+  const [form, setForm] = React.useState({name:'', phone:'', details:'', smsConsent: false});
+  const api = import.meta.env.VITE_API_BASE || '';
+  const submit = async (e)=>{ e.preventDefault();
+    if (!form.smsConsent) {
+      alert('Please agree to receive SMS updates to submit your request.');
+      return;
+    }
+    try{
+      const url = `${api}/api/leads`;
+      const payload = {
+        serviceType: service,
+        fullName: form.name,
+        phone: form.phone,
+        description: form.details,
+        city: city ? city.replace(/-/g, ' ') : '',
+        state: '', // Could be enhanced to detect state from city
+        smsConsent: form.smsConsent
+      };
+      const response = await fetch(url, { 
+        method:'POST', 
+        headers:{'Content-Type':'application/json'}, 
+        body: JSON.stringify(payload) 
+      });
+      if (response.ok) {
+        alert('Thanks! We will text you shortly.');
+        setForm({name:'', phone:'', details:'', smsConsent: false});
+      } else {
+        alert('There was an error submitting your request. Please try again.');
+      }
+    }catch(err){ 
+      console.error('Submit error:', err);
+      alert('There was an error submitting your request. Please try again.'); 
+    }
+
   const [form, setForm] = React.useState({
     fullName: '', 
     phone: '', 
@@ -39,6 +74,7 @@ function ServiceLeadForm({service, city}){
   const validatePhone = (phone) => {
     const cleaned = phone.replace(/\D/g, '');
     return cleaned.length >= 10;
+   main
   };
   
   const submit = async (e) => { 
@@ -184,6 +220,12 @@ function ServiceLeadForm({service, city}){
         checked={form.smsConsent}
         onChange={e=>setForm({...form, smsConsent:e.target.checked})}
         required
+ copilot/fix-77ec40a9-af79-4875-9d6e-a25b27d3d09e
+      />
+      <span>I agree to receive SMS updates about my request. Reply STOP to unsubscribe.</span>
+    </label>
+    <button className="btn-primary w-full" disabled={!form.smsConsent}>Request Quotes</button>
+
         disabled={loading}
       />
       <span>I agree to receive SMS updates about my request. Reply STOP to unsubscribe. *</span>
@@ -202,5 +244,6 @@ function ServiceLeadForm({service, city}){
     >
       {loading ? 'Submitting...' : 'Request Quotes'}
     </button>
+ main
   </form>);
 }

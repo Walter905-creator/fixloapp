@@ -532,6 +532,25 @@ app.get("/api/health", async (req, res) => {
   });
 });
 
+// SMS health check endpoint
+app.get('/health/sms', (req, res) => {
+  const ok = !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE);
+  console.log('🏥 SMS Health Check:', {
+    hasSid: !!process.env.TWILIO_ACCOUNT_SID,
+    hasToken: !!process.env.TWILIO_AUTH_TOKEN,
+    hasPhone: !!process.env.TWILIO_PHONE,
+    phone: process.env.TWILIO_PHONE || 'not set',
+    radiusMiles: process.env.MATCH_RADIUS_MI || '30 (default)'
+  });
+  
+  res.status(ok ? 200 : 503).json({
+    ok,
+    hasSid: !!process.env.TWILIO_ACCOUNT_SID,
+    hasToken: !!process.env.TWILIO_AUTH_TOKEN,
+    hasPhone: !!process.env.TWILIO_PHONE
+  });
+});
+
 app.get("/api/version", (req, res) => {
   return res.json({
     name: "fixlo-backend",

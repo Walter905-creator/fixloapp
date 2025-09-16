@@ -11,8 +11,13 @@
     <meta property="og:type" content="website">
     <meta property="og:image" content="/cover.png">
     <meta name="twitter:card" content="summary_large_image">
+
+    <script type="module" crossorigin src="/assets/index-BJ3iDuXt.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BM_NDlhO.css">
+
     <script type="module" crossorigin src="/assets/index-BwLaXoWF.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-DrtPKB7M.css">
+ main
   </head>
   <body class="bg-slate-950 text-slate-100">
     <div id="root"></div>
