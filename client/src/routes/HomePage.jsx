@@ -106,7 +106,7 @@ export default function HomePage() {
                   src="/fixlo-pro-small.jpg"
                   alt="Fixlo professional at work"
                   width="520"
-                  height="520"
+                  height="293"
                   loading="lazy"
                   decoding="async"
                   style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover', borderRadius: '12px' }}
