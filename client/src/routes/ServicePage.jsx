@@ -21,14 +21,39 @@ export default function ServicePage(){
   </>);
 }
 function ServiceLeadForm({service, city}){
-  const [form, setForm] = React.useState({name:'', phone:'', details:''});
+  const [form, setForm] = React.useState({name:'', phone:'', details:'', smsConsent: false});
   const api = import.meta.env.VITE_API_BASE || '';
   const submit = async (e)=>{ e.preventDefault();
+    if (!form.smsConsent) {
+      alert('Please agree to receive SMS updates to submit your request.');
+      return;
+    }
     try{
       const url = `${api}/api/leads`;
-      await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ ...form, service, city }) });
-      alert('Thanks! We will text you shortly.');
-    }catch(err){ alert('Submitted locally (demo). Connect backend to process.'); }
+      const payload = {
+        serviceType: service,
+        fullName: form.name,
+        phone: form.phone,
+        description: form.details,
+        city: city ? city.replace(/-/g, ' ') : '',
+        state: '', // Could be enhanced to detect state from city
+        smsConsent: form.smsConsent
+      };
+      const response = await fetch(url, { 
+        method:'POST', 
+        headers:{'Content-Type':'application/json'}, 
+        body: JSON.stringify(payload) 
+      });
+      if (response.ok) {
+        alert('Thanks! We will text you shortly.');
+        setForm({name:'', phone:'', details:'', smsConsent: false});
+      } else {
+        alert('There was an error submitting your request. Please try again.');
+      }
+    }catch(err){ 
+      console.error('Submit error:', err);
+      alert('There was an error submitting your request. Please try again.'); 
+    }
   };
   return (<form onSubmit={submit} className="space-y-3">
     <label className="block">
@@ -43,10 +68,16 @@ function ServiceLeadForm({service, city}){
       <span className="text-slate-800">Job Details</span>
       <textarea className="mt-1 w-full rounded-xl min-h-32" value={form.details} onChange={e=>setForm({...form, details:e.target.value})} placeholder="Describe the issue or project..."></textarea>
     </label>
-    <label className="flex items-center gap-2 text-sm text-slate-700">
-      <input type="checkbox" className="rounded" required/>
-      I agree to receive SMS related to quotes, scheduling, and service updates.
+    <label className="flex items-start gap-2 text-sm text-slate-700">
+      <input 
+        type="checkbox" 
+        className="rounded mt-1" 
+        checked={form.smsConsent}
+        onChange={e=>setForm({...form, smsConsent:e.target.checked})}
+        required
+      />
+      <span>I agree to receive SMS updates about my request. Reply STOP to unsubscribe.</span>
     </label>
-    <button className="btn-primary w-full">Request Quotes</button>
+    <button className="btn-primary w-full" disabled={!form.smsConsent}>Request Quotes</button>
   </form>);
 }
