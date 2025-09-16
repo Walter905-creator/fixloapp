@@ -3,7 +3,7 @@
   "version": "1.7.0",
   "scripts": {
     "prebuild": "node scripts/fetch-images.mjs",
-    "build": "npm run prebuild && vite build --debug",
+    "build": "npm run prebuild && vite build",
     "dev": "vite",
     "preview": "vite preview",
     "generate:sitemap": "node scripts/generate-sitemap.mjs",
