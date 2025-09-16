@@ -8,7 +8,6 @@ const items = [
   { to: '/assistant', label: 'AI Assistant' },
   { to: '/contact', label: 'Contact' },
   { to: '/pro/sign-in', label: 'Pro Sign In' },
-  { to: '/admin', label: 'Admin' },
   { to: '/pro/dashboard', label: 'Pro Dashboard' },
   { to: '/join', label: 'Join Now' }
 ];
