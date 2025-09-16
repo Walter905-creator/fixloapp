@@ -28,9 +28,9 @@ function ServiceLeadForm({service, city}){
     phone: '', 
     city: city || '', 
     state: '', 
-
-
-  const [form, setForm] = React.useState({name:'', phone:'', details:'', smsConsent: false});
+    details: '', 
+    smsConsent: false
+  });
   const api = import.meta.env.VITE_API_BASE || '';
   const submit = async (e)=>{ e.preventDefault();
     if (!form.smsConsent) {
@@ -41,7 +41,7 @@ function ServiceLeadForm({service, city}){
       const url = `${api}/api/leads`;
       const payload = {
         serviceType: service,
-        fullName: form.name,
+        fullName: form.fullName,
         phone: form.phone,
         description: form.details,
         city: city ? city.replace(/-/g, ' ') : '',
@@ -64,15 +64,9 @@ function ServiceLeadForm({service, city}){
       alert('There was an error submitting your request. Please try again.'); 
     }
 
-  const [form, setForm] = React.useState({
-    fullName: '', 
-    phone: '', 
-    city: city || '',
-    state: '',
- main
-    details: '',
-    smsConsent: false
-  });
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const [success, setSuccess] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState('');
   const [success, setSuccess] = React.useState(false);
