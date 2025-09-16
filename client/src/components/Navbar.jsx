@@ -8,9 +8,14 @@ const items = [
   // { to: '/assistant', label: 'AI Assistant' }, // Hidden per requirements
   { to: '/contact', label: 'Contact' },
   { to: '/pro/sign-in', label: 'Pro Sign In' },
+
+  { to: '/pro/dashboard', label: 'Pro Dashboard' },
+  { to: '/join', label: 'Join Now' }
+
   { to: '/admin', label: 'Admin' },
   { to: '/pro/dashboard', label: 'Pro Dashboard' }
   // Removed 'Join Now' from regular items to create as separate CTA button
+ main
 ];
 
 export default function Navbar() {
