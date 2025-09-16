@@ -40,7 +40,9 @@ export default function App(){
       <div className="container-xl py-6 text-sm text-slate-700 flex flex-col md:flex-row items-center justify-between gap-3">
         <div>© {new Date().getFullYear()} Fixlo. All rights reserved.</div>
         <div className="flex items-center gap-4">
-          <a href="/sitemap.xml">Sitemap</a>
+          {false && (
+            <a href="/sitemap.xml">Sitemap</a>
+          )}
           <a href="/terms">Terms</a>
         </div>
       </div>
