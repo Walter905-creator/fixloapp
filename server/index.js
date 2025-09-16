@@ -251,9 +251,6 @@ app.use("/api/homeowner-lead", require("./routes/homeownerLead"));
 app.use("/api/leads", require("./routes/leads")); // Lead management with database storage
 
 app.use("/api/requests", require("./routes/requests")); // Homeowner service requests
-
-app.use("/api/requests", require("./routes/requests")); // Standardized service requests
- main
 app.use("/api/service-request", require("./routes/serviceRequest"));
 app.use("/api/notify", require("./routes/notify"));
 
