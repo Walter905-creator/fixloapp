@@ -12,7 +12,7 @@ import AdminPage from './routes/AdminPage.jsx';
 import ProDashboardPage from './routes/ProDashboardPage.jsx';
 import JoinPage from './routes/JoinPage.jsx';
 import ServicePage from './routes/ServicePage.jsx';
-import TermsPage from './routes/TermsPage.jsx';
+import Terms from './pages/Terms.jsx';
 import SignupPage from './routes/SignupPage.jsx';
 import ProSignupPage from './routes/ProSignupPage.jsx';
 export default function App(){
@@ -33,7 +33,7 @@ export default function App(){
       <Route path="/admin" element={<AdminPage/>}/>
       <Route path="/pro/dashboard" element={<ProDashboardPage/>}/>
       <Route path="/join" element={<JoinPage/>}/>
-      <Route path="/terms" element={<TermsPage/>}/>
+      <Route path="/terms" element={<Terms/>}/>
       <Route path="*" element={<Navigate to="/" replace/>}/>
     </Routes>
     <footer className="border-t border-slate-200 mt-8">
