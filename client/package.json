@@ -1,6 +1,7 @@
 {
   "name": "fixlo-client",
   "version": "1.7.0",
+  "type": "module",
   "scripts": {
     "prebuild": "node scripts/fetch-images.mjs",
     "build": "npm run prebuild && vite build",
