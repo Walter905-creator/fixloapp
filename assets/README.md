@@ -13,6 +13,11 @@ This directory contains the official Fixlo logo assets for use across web and mo
 - `fixlo-icon.png` - Icon only in PNG format
 - `fixlo-logo-white.png` - White version for dark backgrounds
 
+### Google Ads Assets (client/public/logos/ads/)
+- `fixlo-logo-square.png` - Square transparent logo (512x512, "Fixlo" mark only)
+- `fixlo-logo-dark.png` - Dark background horizontal logo (1200x300, white text)
+- `fixlo-logo-tagline.png` - Stacked logo with tagline (1024x1024, "Fixlo" + "Trusted Home Services")
+
 ## Usage Guidelines:
 
 ### Web Implementation
@@ -39,6 +44,18 @@ import { Image } from 'react-native';
 - **Mobile App:** 200px width (auto height)
 - **Favicon:** 32x32px (use icon version)
 - **App Store:** 1024x1024px (use icon version, scaled)
+
+### Google Ads Implementation
+```html
+<!-- Square transparent logo for profile/avatar use -->
+<img src="/client/public/logos/ads/fixlo-logo-square.png" alt="Fixlo" style="width: 512px; height: 512px;">
+
+<!-- Horizontal dark background logo for banner ads -->
+<img src="/client/public/logos/ads/fixlo-logo-dark.png" alt="Fixlo" style="width: 1200px; height: 300px;">
+
+<!-- Stacked logo with tagline for promotional materials -->
+<img src="/client/public/logos/ads/fixlo-logo-tagline.png" alt="Fixlo - Trusted Home Services" style="width: 1024px; height: 1024px;">
+```
 
 ## Brand Colors:
 - Primary Gradient: #667eea → #764ba2
