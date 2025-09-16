@@ -82,7 +82,8 @@ router.post('/', async (req, res) => {
           trade: normalizedTrade,
           address: leadAddress.trim(),
           description: description ? description.trim() : '',
-          status: 'pending'
+          status: 'pending',
+          location: { type: 'Point', coordinates: [lng, lat] }
         });
         
         console.log('✅ Lead saved to database:', savedLead._id);
@@ -96,7 +97,7 @@ router.post('/', async (req, res) => {
 
     // 3) Query nearby pros with configurable radius
     let pros = [];
-    const radiusMiles = parseInt(process.env.MATCH_RADIUS_MI) || 30;
+    const radiusMiles = parseInt(process.env.LEAD_RADIUS_MILES) || 30;
     const radiusMeters = milesToMeters(radiusMiles);
 
     try {
