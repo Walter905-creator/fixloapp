@@ -26,6 +26,7 @@ index-static-backup.html
 # Test and admin files
 test*.html
 admin*.html
+test-api-requests.js
 
 # Build artifacts and temp files
 *.log
@@ -36,6 +37,8 @@ admin*.html
 .env.development.local
 .env.test.local
 .env.production.local
+# Keep client/.env for frontend configuration
+!client/.env
 
 # React build artifacts in root - keep essential files for deployment
 static/js/*.map
@@ -46,6 +49,7 @@ static/css/*.map
 # index.html - REMOVED from ignore (needed for deployment)
 # asset-manifest.json - REMOVED from ignore (needed for deployment)
 index.html.backup
+index.html.original
 health.txt
 # Build-generated HTML files
 contact/index.html
