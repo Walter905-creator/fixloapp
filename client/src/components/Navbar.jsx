@@ -5,7 +5,7 @@ import logoUrl from '../assets/fixlo-logo.png';
 const items = [
   { to: '/services', label: 'Services' },
   { to: '/how-it-works', label: 'How It Works' },
-  { to: '/assistant', label: 'AI Assistant' },
+  // { to: '/assistant', label: 'AI Assistant' }, // Hidden per requirements
   { to: '/contact', label: 'Contact' },
   { to: '/pro/sign-in', label: 'Pro Sign In' },
   { to: '/admin', label: 'Admin' },

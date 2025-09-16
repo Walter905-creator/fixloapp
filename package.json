@@ -6,6 +6,7 @@
     "node": ">=18.0.0 <22.0.0"
   },
   "scripts": {
+    "prepare": "husky",
     "clean-old-builds": "rm -rf client/build build public && echo '🧹 Cleaned old builds'",
     "install-client": "cd client && npm install --no-fund --no-audit",
     "build-client": "cd client && node scripts/inject-build-meta.js && REACT_APP_BUILD_TIMESTAMP=$(date +%s) GENERATE_SOURCEMAP=false npm run build",
@@ -25,7 +26,8 @@
     "verify-local-canonicals": "node scripts/verify-local-canonicals.js",
     "verify-summary": "node scripts/verification-summary.js",
     "force-deploy": "./force-vercel-deploy.sh",
-    "set-build-metadata": "node scripts/set-build-metadata.js"
+    "set-build-metadata": "node scripts/set-build-metadata.js",
+    "check-ai": "grep -E \"^[^/]*{.*'AI Assistant'\" client/src/components/Navbar.jsx && echo 'ERROR: Active AI Assistant found in navigation!' && exit 1 || echo 'Navigation AI Assistant check - OK'"
   },
   "dependencies": {
     "@vercel/og": "^0.6.3",
@@ -34,5 +36,8 @@
     "express": "^5.1.0",
     "playwright": "^1.54.2",
     "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
   }
 }
