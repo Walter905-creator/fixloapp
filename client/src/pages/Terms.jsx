@@ -53,7 +53,7 @@ export default function Terms() {
           Unless otherwise stated, <strong>fees are non-refundable</strong>.
         </li>
         <li>
-          <strong>Chargebacks &amp; Disputes.</strong> Contact Fixlo first at <a href="mailto:support@fixloapp.com">support@fixloapp.com</a>. 
+          <strong>Chargebacks &amp; Disputes.</strong> Contact Fixlo first at <a href="mailto:pro4u.improvements@gmail.com">pro4u.improvements@gmail.com</a>. 
           We may suspend accounts with unresolved payment issues.
         </li>
       </ul>
@@ -135,7 +135,7 @@ export default function Terms() {
 
       <h2>16. Contact</h2>
       <p>
-        Questions about these Terms? Contact <a href="mailto:support@fixloapp.com">support@fixloapp.com</a>.
+        Questions about these Terms? Contact <a href="mailto:pro4u.improvements@gmail.com">pro4u.improvements@gmail.com</a>.
       </p>
     </main>
   );
