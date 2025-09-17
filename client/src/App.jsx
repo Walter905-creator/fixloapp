@@ -1,5 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import ProBanner from './components/ProBanner';
 import Navbar from './components/Navbar';
 import HomePage from './routes/HomePage.jsx';
 import ServicesPage from './routes/ServicesPage.jsx';
@@ -18,6 +19,7 @@ import SignupPage from './routes/SignupPage.jsx';
 import ProSignupPage from './routes/ProSignupPage.jsx';
 export default function App(){
   return (<>
+    <ProBanner />
     <Navbar/>
     <Routes>
       <Route path="/" element={<HomePage/>}/>
