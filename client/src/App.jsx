@@ -1,5 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import PromoBanner from './components/PromoBanner';
 import ProBanner from './components/ProBanner';
 import Navbar from './components/Navbar';
 import HomePage from './routes/HomePage.jsx';
@@ -19,6 +20,7 @@ import SignupPage from './routes/SignupPage.jsx';
 import ProSignupPage from './routes/ProSignupPage.jsx';
 export default function App(){
   return (<>
+    <PromoBanner />
     <ProBanner />
     <Navbar/>
     <Routes>
