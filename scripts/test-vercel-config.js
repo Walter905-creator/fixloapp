@@ -86,13 +86,13 @@ if (!fs.existsSync(indexPath)) {
 }
 
 const indexContent = fs.readFileSync(indexPath, 'utf8');
-const bundleMatch = indexContent.match(/main\.([a-f0-9]+)\.js/);
+const bundleMatch = indexContent.match(/index-([a-zA-Z0-9_-]+)\.js/) || indexContent.match(/main\.([a-f0-9]+)\.js/);
 if (!bundleMatch) {
   console.error('❌ Bundle hash not found in index.html');
   process.exit(1);
 }
 
-console.log(`✅ Build deployed with bundle: main.${bundleMatch[1]}.js`);
+console.log(`✅ Build deployed with bundle: ${bundleMatch[0]}`);
 
 console.log('\n🎉 All Vercel configuration tests passed!');
 console.log('🚀 Ready for production deployment');
