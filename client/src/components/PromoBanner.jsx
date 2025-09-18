@@ -12,7 +12,6 @@ function isWithinWindow(startISO, endISO, now = new Date()) {
   const end = new Date(endISO + "T23:59:59");
   return now >= start && now <= end;
 }
- copilot/fix-a2bc7149-e268-4076-8edd-20656eb13f7f
 
 function isDismissedToday() {
   const today = new Date().toISOString().slice(0,10);
