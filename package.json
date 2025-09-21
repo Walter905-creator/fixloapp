@@ -27,7 +27,9 @@
     "verify-summary": "node scripts/verification-summary.js",
     "force-deploy": "./force-vercel-deploy.sh",
     "set-build-metadata": "node scripts/set-build-metadata.js",
-    "check-ai": "grep -E \"^[^/]*{.*'AI Assistant'\" client/src/components/Navbar.jsx && echo 'ERROR: Active AI Assistant found in navigation!' && exit 1 || echo 'Navigation AI Assistant check - OK'"
+    "check-ai": "grep -E \"^[^/]*{.*'AI Assistant'\" client/src/components/Navbar.jsx && echo 'ERROR: Active AI Assistant found in navigation!' && exit 1 || echo 'Navigation AI Assistant check - OK'",
+    "activate-owner-pro": "node scripts/activate-owner-pro.js",
+    "test-walter-lead": "node scripts/test-walter-lead.js"
   },
   "dependencies": {
     "@vercel/og": "^0.6.3",
@@ -38,6 +40,7 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
-    "husky": "^9.1.7"
+    "husky": "^9.1.7",
+    "mongodb": "^6.20.0"
   }
 }
