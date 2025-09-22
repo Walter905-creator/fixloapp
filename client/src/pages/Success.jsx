@@ -5,7 +5,7 @@ export default function Success() {
   useEffect(() => {
     // Trigger Google Ads conversion event
     window.gtag && window.gtag('event', 'conversion', {
-      'send_to': 'AW-17355871496/CONVERSION_LABEL_PLACEHOLDER',
+      'send_to': 'AW-17355871496/iOK8CN_dh_kaEIiq9tNA',
       'transaction_id': Date.now().toString() // optional unique ID
     });
   }, []);
