@@ -224,9 +224,10 @@
             // Fire Google Ads conversion immediately when payment success loads
             if (window.gtag) {
                 window.gtag('event', 'conversion', {
-                    send_to: 'AW-17355871496', // Replace with label when available
-                    value: 59.99,
-                    currency: 'USD',
+                    'send_to': 'AW-17355871496/iOK8CN_dh_kaEIiq9tNA',
+                    'transaction_id': sessionId || Date.now().toString(),
+                    'value': 59.99,
+                    'currency': 'USD'
                 });
             }
             
