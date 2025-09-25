@@ -2,6 +2,7 @@ import React from 'react';
 import HelmetSEO from '../seo/HelmetSEO';
 import { Link } from 'react-router-dom';
 import list from '../data/services.json';
+import StickyProCTA from '../components/StickyProCTA';
 export default function ServicesPage(){
   return (<>
     <HelmetSEO title="Services | Fixlo" canonicalPathname="/services" />
@@ -16,5 +17,6 @@ export default function ServicesPage(){
         ))}
       </div>
     </div>
+    <StickyProCTA />
   </>);
 }
