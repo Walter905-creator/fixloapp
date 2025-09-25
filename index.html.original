@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Fixlo</title>
+    <title>Fixlo – Book Trusted Home Services Near You</title>
     <meta name="description" content="Fixlo connects homeowners with trusted pros for plumbing, electrical, junk removal & more. Fast, easy, nationwide.">
     <meta name="robots" content="index, follow">
     <meta property="og:title" content="Fixlo – Trusted Home Services">
@@ -23,7 +23,8 @@
     </script>
     <script type="module" crossorigin src="/assets/index-VHlhY1Bl.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-DdFK_H3W.css">
-  </head>
+    <link rel="canonical" href="https://www.fixloapp.com/"/>
+</head>
   <body class="bg-slate-950 text-slate-100">
     <div id="root"></div>
   </body>

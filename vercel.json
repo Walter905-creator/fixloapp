@@ -80,6 +80,28 @@
       "permanent": true
     },
     {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "query",
+          "key": "utm_content"
+        }
+      ],
+      "destination": "/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "query",
+          "key": "utm_term"
+        }
+      ],
+      "destination": "/:path*",
+      "permanent": true
+    },
+    {
       "source": "/terms.html",
       "destination": "/terms",
       "permanent": true
