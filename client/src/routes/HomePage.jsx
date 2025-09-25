@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import HelmetSEO from "../seo/HelmetSEO";
 import { Link } from "react-router-dom";
+import ProValueBanner from "../components/ProValueBanner";
+import StickyProCTA from "../components/StickyProCTA";
 
 /**
  * Local images from /public/images
@@ -68,6 +70,8 @@ export default function HomePage() {
           </div>
         </section>
 
+        <ProValueBanner />
+
         {/* Services */}
         <section className="py-6 md:py-8">
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -126,6 +130,7 @@ export default function HomePage() {
           </div>
         </section>
       </div>
+      <StickyProCTA />
     </>
   );
 }

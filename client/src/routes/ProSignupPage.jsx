@@ -1,6 +1,8 @@
 import React from 'react';
 import HelmetSEO from '../seo/HelmetSEO';
 import { STRIPE_CHECKOUT_URL } from '../utils/config';
+import ProValueBanner from '../components/ProValueBanner';
+import StickyProCTA from '../components/StickyProCTA';
 
 export default function ProSignupPage(){
   const stripeUrlRaw = STRIPE_CHECKOUT_URL;
@@ -35,6 +37,7 @@ export default function ProSignupPage(){
 
   return (<>
     <HelmetSEO title="Professional Sign Up | Fixlo" canonicalPathname="/pro/signup" />
+    <ProValueBanner dense />
     <div className="container-xl py-8">
       <h1 className="text-2xl font-extrabold">Join Fixlo as a Professional</h1>
       <div className="card p-6 max-w-lg">
@@ -82,5 +85,6 @@ export default function ProSignupPage(){
         </p>
       </div>
     </div>
+    <StickyProCTA />
   </>);
 }
