@@ -102,6 +102,50 @@
       "permanent": true
     },
     {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "query",
+          "key": "utm_id"
+        }
+      ],
+      "destination": "/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "query",
+          "key": "dclid"
+        }
+      ],
+      "destination": "/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "query",
+          "key": "msclkid"
+        }
+      ],
+      "destination": "/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "query",
+          "key": "twclid"
+        }
+      ],
+      "destination": "/:path*",
+      "permanent": true
+    },
+    {
       "source": "/terms.html",
       "destination": "/terms",
       "permanent": true
