@@ -103,7 +103,7 @@ sitemap += `  <url>\n    <loc>${baseUrl}/services</loc>\n    <priority>0.9</prio
 // Add service pages for each city
 for (const service of services) {
   for (const city of cities) {
-    sitemap += `  <url>\n    <loc>${baseUrl}/services/${service}-in-${city}</loc>\n    <priority>0.8</priority>\n  </url>\n`;
+    sitemap += `  <url>\n    <loc>${baseUrl}/services/${service}/${city}</loc>\n    <priority>0.8</priority>\n  </url>\n`;
   }
 }
 
