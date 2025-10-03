@@ -22,7 +22,7 @@ export default function ProDashboardPage(){
     load();
   }, [api]);
   return (<>
-    <HelmetSEO title="Pro Dashboard | Fixlo" canonicalPathname="/pro/dashboard" />
+    <HelmetSEO title="Pro Dashboard | Fixlo" canonicalPathname="/pro/dashboard" robots="noindex, nofollow" />
     <div className="container-xl py-8">
       <h1 className="text-2xl font-extrabold">Pro Dashboard</h1>
       <div className="grid md:grid-cols-3 gap-4 mt-4">

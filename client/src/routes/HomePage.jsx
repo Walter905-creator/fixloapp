@@ -28,7 +28,7 @@ export default function HomePage() {
 
   return (
     <>
-      <HelmetSEO title="Fixlo – Book Trusted Home Services Near You" />
+      <HelmetSEO title="Fixlo – Book Trusted Home Services Near You" canonicalPathname="/" />
       <div className="container-xl">
         {/* Search Header */}
         <section className="py-8 md:py-12">

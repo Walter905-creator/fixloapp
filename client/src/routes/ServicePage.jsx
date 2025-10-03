@@ -11,12 +11,51 @@ export default function ServicePage(){
   const title = makeTitle({ service: s, city: c });
   const desc = makeDescription({ service: s, city: c });
   const canonical = `/services/${s}${c ? '/'+c : ''}`;
+  
+  // Format display names
+  const serviceName = s ? s.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Home Services';
+  const cityName = c ? c.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'your area';
+  
   return (<>
     <HelmetSEO title={title} description={desc} canonicalPathname={canonical} />
     <div className="container-xl py-8">
       <h1 className="text-2xl font-extrabold">{title}</h1>
+      
+      {/* Service Information Section */}
+      <div className="card p-6 mt-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4">Professional {serviceName} Services in {cityName}</h2>
+        <div className="prose prose-slate max-w-none">
+          <p className="text-slate-700 mb-4">
+            Looking for reliable {serviceName.toLowerCase()} professionals in {cityName}? Fixlo connects you with vetted, background-checked contractors who are ready to help with your project. Whether you need emergency repairs, routine maintenance, or a major renovation, our network of trusted professionals has you covered.
+          </p>
+          
+          <h3 className="text-lg font-semibold mt-6 mb-3">Why Choose Fixlo for {serviceName}?</h3>
+          <ul className="list-disc list-inside space-y-2 text-slate-700">
+            <li><strong>Background-Checked Professionals:</strong> Every contractor in our network undergoes thorough background screening to ensure your safety and peace of mind.</li>
+            <li><strong>Fast Response Times:</strong> Get matched with available pros in {cityName} within minutes, not days. Most service requests receive responses within 24 hours.</li>
+            <li><strong>Competitive Quotes:</strong> Compare quotes from multiple qualified professionals to find the best value for your {serviceName.toLowerCase()} project.</li>
+            <li><strong>Real-Time Updates:</strong> Stay informed throughout the entire process with SMS notifications about your service request status.</li>
+            <li><strong>Quality Guarantee:</strong> All professionals maintain high standards of workmanship and customer service to stay in our network.</li>
+          </ul>
+          
+          <h3 className="text-lg font-semibold mt-6 mb-3">How It Works</h3>
+          <ol className="list-decimal list-inside space-y-2 text-slate-700">
+            <li><strong>Submit Your Request:</strong> Tell us about your {serviceName.toLowerCase()} needs using the form below. The more details you provide, the better we can match you with the right professional.</li>
+            <li><strong>Get Matched:</strong> We'll connect you with qualified {serviceName.toLowerCase()} professionals in {cityName} who are available to take on your project.</li>
+            <li><strong>Compare & Choose:</strong> Review quotes and profiles from interested contractors, then select the one that best fits your needs and budget.</li>
+            <li><strong>Schedule Service:</strong> Work directly with your chosen professional to schedule the service at a time that's convenient for you.</li>
+          </ol>
+          
+          <p className="text-slate-700 mt-6">
+            Ready to get started? Fill out the form below to receive quotes from trusted {serviceName.toLowerCase()} professionals in {cityName}. Our service is free for homeowners, and there's no obligation to hire.
+          </p>
+        </div>
+      </div>
+      
+      {/* Service Request Form */}
       <div className="card p-6 mt-4">
-        <p className="text-slate-700 mb-4">Describe your job and get matched with vetted pros in {c ? c.replace(/-/g,' ') : 'your area'}.</p>
+        <h2 className="text-xl font-semibold mb-4">Request {serviceName} Service in {cityName}</h2>
+        <p className="text-slate-700 mb-4">Describe your job and get matched with vetted pros in {cityName}.</p>
         <ServiceLeadForm service={s} city={c}/>
       </div>
     </div>
