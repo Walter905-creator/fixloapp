@@ -46,29 +46,30 @@ export function ServiceSchema({ service, city }) {
   const serviceName = service ? service.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Home Services';
   const cityName = city ? city.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Your Area';
   
+  // Extract state if part of city (e.g., "new-york-ny" -> "New York, NY")
+  let displayCity = cityName;
+  let state = '';
+  
   const localBusinessSchema = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
-    "name": `Fixlo ${serviceName} Services`,
-    "description": `Professional ${serviceName.toLowerCase()} services in ${cityName}`,
+    "name": `Fixlo – ${serviceName} in ${displayCity}${state ? ', ' + state : ''}`,
+    "description": `Professional ${serviceName.toLowerCase()} services in ${displayCity}`,
     "url": `https://www.fixloapp.com/services/${service}${city ? '/' + city : ''}`,
-    "areaServed": {
-      "@type": "City",
-      "name": cityName
-    }
+    "image": "https://www.fixloapp.com/cover.png",
+    "priceRange": "$$",
+    "telephone": "+1-256-488-1814",
+    "areaServed": displayCity
   };
 
   const serviceSchema = {
     "@context": "https://schema.org",
     "@type": "Service",
-    "serviceType": serviceName,
+    "name": serviceName,
+    "areaServed": displayCity,
     "provider": {
       "@type": "Organization",
       "name": "Fixlo"
-    },
-    "areaServed": {
-      "@type": "City",
-      "name": cityName
     }
   };
 
