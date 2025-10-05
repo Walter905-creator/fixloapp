@@ -93,17 +93,20 @@ const cities = [
 
 const baseUrl = "https://www.fixloapp.com";
 
+// Get current date in ISO format for lastmod
+const lastmod = new Date().toISOString().split('T')[0];
+
 let sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n`;
 sitemap += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
 
 // Add main pages
-sitemap += `  <url>\n    <loc>${baseUrl}/</loc>\n    <priority>1.0</priority>\n  </url>\n`;
-sitemap += `  <url>\n    <loc>${baseUrl}/services</loc>\n    <priority>0.9</priority>\n  </url>\n`;
+sitemap += `  <url>\n    <loc>${baseUrl}/</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>1.0</priority>\n  </url>\n`;
+sitemap += `  <url>\n    <loc>${baseUrl}/services</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
 
 // Add service pages for each city
 for (const service of services) {
   for (const city of cities) {
-    sitemap += `  <url>\n    <loc>${baseUrl}/services/${service}/${city}</loc>\n    <priority>0.8</priority>\n  </url>\n`;
+    sitemap += `  <url>\n    <loc>${baseUrl}/services/${service}/${city}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
   }
 }
 

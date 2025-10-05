@@ -1,6 +1,7 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import HelmetSEO from '../seo/HelmetSEO';
+import { ServiceSchema } from '../seo/Schema';
 import { makeTitle, makeDescription, slugify } from '../utils/seo';
 import { API_BASE } from '../utils/config';
 
@@ -18,6 +19,7 @@ export default function ServicePage(){
   
   return (<>
     <HelmetSEO title={title} description={desc} canonicalPathname={canonical} />
+    <ServiceSchema service={s} city={c} />
     <div className="container-xl py-8">
       <h1 className="text-2xl font-extrabold">{title}</h1>
       

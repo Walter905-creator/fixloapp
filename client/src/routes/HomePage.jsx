@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import HelmetSEO from "../seo/HelmetSEO";
+import Schema from "../seo/Schema";
 import { Link } from "react-router-dom";
 import ProValueBanner from "../components/ProValueBanner";
 import StickyProCTA from "../components/StickyProCTA";
@@ -29,6 +30,7 @@ export default function HomePage() {
   return (
     <>
       <HelmetSEO title="Fixlo – Book Trusted Home Services Near You" canonicalPathname="/" />
+      <Schema />
       <div className="container-xl">
         {/* Search Header */}
         <section className="py-8 md:py-12">
@@ -74,6 +76,10 @@ export default function HomePage() {
 
         {/* Services */}
         <section className="py-6 md:py-8">
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-6 text-center">
+            Book trusted home services: plumbing, electrical, junk removal, cleaning & more.
+          </h2>
+          
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {SERVICES.map((s) => (
               <Link key={s.to} to={s.to} className="group card overflow-hidden">
@@ -98,6 +104,40 @@ export default function HomePage() {
                 </div>
               </Link>
             ))}
+          </div>
+
+          {/* Popular near you */}
+          <div className="mt-10 p-6 bg-white rounded-2xl border border-slate-200">
+            <h3 className="text-xl font-semibold text-slate-900 mb-4">Popular services near you</h3>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 text-sm">
+              <Link to="/services/plumbing/new-york" className="text-brand hover:underline">
+                Plumbing in New York
+              </Link>
+              <Link to="/services/electrical/los-angeles" className="text-brand hover:underline">
+                Electrical in Los Angeles
+              </Link>
+              <Link to="/services/cleaning/chicago" className="text-brand hover:underline">
+                Cleaning in Chicago
+              </Link>
+              <Link to="/services/hvac/houston" className="text-brand hover:underline">
+                HVAC in Houston
+              </Link>
+              <Link to="/services/plumbing/phoenix" className="text-brand hover:underline">
+                Plumbing in Phoenix
+              </Link>
+              <Link to="/services/roofing/philadelphia" className="text-brand hover:underline">
+                Roofing in Philadelphia
+              </Link>
+              <Link to="/services/junk-removal/san-antonio" className="text-brand hover:underline">
+                Junk Removal in San Antonio
+              </Link>
+              <Link to="/services/painting/san-diego" className="text-brand hover:underline">
+                Painting in San Diego
+              </Link>
+              <Link to="/services/landscaping/dallas" className="text-brand hover:underline">
+                Landscaping in Dallas
+              </Link>
+            </div>
           </div>
         </section>
 
