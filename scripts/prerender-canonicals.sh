@@ -61,15 +61,11 @@ else
   cp "$TEMPLATE_FILE" "$BUILD_DIR/index.html.original"
 fi
 
-# Update homepage canonical in the main template (work with current build, not old original)
-sed -i "s|<title>[^<]*</title>|<title>Fixlo – Book Trusted Home Services Near You</title>|g" "$TEMPLATE_FILE"
-
-# Ensure homepage has correct canonical
-if grep -q 'rel="canonical"' "$TEMPLATE_FILE"; then
-  sed -i "s|<link rel=\"canonical\" href=\"[^\"]*\"[^>]*>|<link rel=\"canonical\" href=\"https://www.fixloapp.com/\"/>|g" "$TEMPLATE_FILE"
-else
-  sed -i "s|</head>|  <link rel=\"canonical\" href=\"https://www.fixloapp.com/\"/>\n&|" "$TEMPLATE_FILE"
-fi
+# Add fallback title to homepage (React Helmet will override this dynamically)
+# First remove any existing title tags to avoid duplicates
+sed -i '/<title>/d' "$TEMPLATE_FILE"
+# Then add the homepage title before the comment
+sed -i "s|<!-- Title, description, robots, canonical, and social|<title>Fixlo – Book Trusted Home Services Near You</title>\n    <!-- Title, description, robots, canonical, and social|" "$TEMPLATE_FILE"
 
 # Generate route-specific HTML files
 for i in "${!ROUTES[@]}"; do
@@ -100,24 +96,15 @@ for i in "${!ROUTES[@]}"; do
   # Copy current build template and update (not the old original)
   cp "$TEMPLATE_FILE" "$target_file"
   
-  # Update title first (escape special characters)
+  # Remove any existing title tags first to avoid duplicates
+  sed -i '/<title>/d' "$target_file"
+  
+  # Add title as fallback (React Helmet will override this)
+  # Escape special characters in title
   escaped_title=$(printf '%s\n' "$title" | sed 's/[[\.*^$()+?{|]/\\&/g')
-  sed -i "s|<title>[^<]*</title>|<title>$escaped_title</title>|g" "$target_file"
+  sed -i "s|<!-- Title, description, robots, canonical, and social|<title>$escaped_title</title>\n    <!-- Title, description, robots, canonical, and social|" "$target_file"
   
-  # Replace existing canonical URL with the correct one
-  if grep -q 'rel="canonical"' "$target_file"; then
-    sed -i "s|<link rel=\"canonical\" href=\"[^\"]*\"[^>]*>|<link rel=\"canonical\" href=\"$canonical_url\"/>|g" "$target_file"
-  else
-    # Insert new canonical before </head> if none exists
-    sed -i "s|</head>|  <link rel=\"canonical\" href=\"$canonical_url\"/>\n&|" "$target_file"
-  fi
-  
-  # Update Open Graph URL to match canonical
-  if grep -q 'property="og:url"' "$target_file"; then
-    sed -i "s|<meta property=\"og:url\" content=\"[^\"]*\"[^>]*>|<meta property=\"og:url\" content=\"$canonical_url\">|g" "$target_file"
-  fi
-  
-  echo "✅ Generated: $target_file (canonical: $canonical_url)"
+  echo "✅ Generated: $target_file (title: $title - SEO tags managed by React Helmet)"
 done
 
 echo "🎉 Pre-rendering complete! Generated HTML files with route-specific canonical URLs."
