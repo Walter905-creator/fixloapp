@@ -6,7 +6,7 @@ export default function StickyProCTA() {
     <div className="fixed inset-x-0 bottom-0 z-40 block md:hidden">
       <div className="mx-auto max-w-6xl px-4 pb-3">
         <button
-          onClick={() => navigate("/pro/signup")}
+          onClick={() => navigate("/join")}
           className="w-full rounded-2xl bg-emerald-600 text-white font-semibold py-3 shadow"
         >
           Get Unlimited Leads – $59/mo

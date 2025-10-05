@@ -30,7 +30,7 @@ export default function ProValueBanner({ dense = false }) {
           <div className="justify-self-start md:justify-self-end">
             <button
               type="button"
-              onClick={() => navigate("/pro/signup")}
+              onClick={() => navigate("/join")}
               className="inline-flex items-center rounded-2xl px-5 py-3 text-base font-semibold bg-white text-emerald-700 shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-white/60"
               aria-label="Join Fixlo Pro Today"
             >
