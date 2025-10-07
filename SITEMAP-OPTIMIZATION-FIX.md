@@ -266,6 +266,44 @@ The 4,230 city/service combinations like `/services/plumbing/chicago`:
 - `GSC-INDEXING-FIX-FINAL-IMPLEMENTATION.md` - Comprehensive GSC fix history
 - `CANONICAL-URL-FIX-SUMMARY.md` - Canonical tag implementation
 
+## Troubleshooting
+
+### Issue: Sitemap still shows 4,232 URLs after deployment
+
+**Cause**: Build artifacts from previous builds may still contain old sitemap  
+**Solution**:
+```bash
+# Clean and rebuild
+rm -rf client/dist client/build
+npm run build
+
+# Verify sitemap
+npm run verify-sitemap
+```
+
+### Issue: `npm run generate-sitemap` fails
+
+**Cause**: Database warning is normal (mongoose not needed for static sitemap)  
+**Solution**: Ignore the warning - static sitemap (17 URLs) is correct
+
+### Issue: Google still showing old sitemap URLs
+
+**Cause**: Google cache can take 1-2 weeks to update  
+**Solution**:
+1. Submit new sitemap in Google Search Console
+2. Request re-indexing of main pages
+3. Wait for Google to recrawl (1-2 weeks)
+4. Monitor Coverage report for improvements
+
+### Issue: Want to add more URLs to sitemap
+
+**Warning**: Only add pages with unique, substantial content  
+**Process**:
+1. Edit root `generate-sitemap.js` (NOT scripts/generate-sitemap.js)
+2. Add URL to the services array or main pages section
+3. Ensure page has unique content and canonical tag
+4. Test with `npm run generate-sitemap && npm run verify-sitemap`
+
 ## Support
 
 For questions or issues:
