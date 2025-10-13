@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Pre-render canonical URLs for main routes
-# This script updates the index.html template with route-specific canonical URLs
+# This script updates the index.html template with route-specific canonical URLs and titles
 
 ROUTES=(
   "/"
@@ -46,7 +46,7 @@ TITLES=(
 BUILD_DIR="."
 TEMPLATE_FILE="$BUILD_DIR/index.html"
 
-echo "🔧 Pre-rendering canonical URLs for SEO..."
+echo "🔧 Pre-rendering canonical URLs and titles for SEO..."
 
 if [ ! -f "$TEMPLATE_FILE" ]; then
   echo "❌ Build file not found. Please run 'npm run build' first."
@@ -61,11 +61,12 @@ else
   cp "$TEMPLATE_FILE" "$BUILD_DIR/index.html.original"
 fi
 
-# Add fallback title to homepage (React Helmet will override this dynamically)
-# First remove any existing title tags to avoid duplicates
+# Add fallback title and canonical to homepage
+# First remove any existing title and canonical tags to avoid duplicates
 sed -i '/<title>/d' "$TEMPLATE_FILE"
-# Then add the homepage title before the comment
-sed -i "s|<!-- Title, description, robots, canonical, and social|<title>Fixlo – Book Trusted Home Services Near You</title>\n    <!-- Title, description, robots, canonical, and social|" "$TEMPLATE_FILE"
+sed -i '/<link rel="canonical"/d' "$TEMPLATE_FILE"
+# Then add the homepage title and canonical before the comment
+sed -i "s|<!-- Title, description, robots, canonical, and social|<title>Fixlo – Book Trusted Home Services Near You</title>\n    <link rel=\"canonical\" href=\"https://www.fixloapp.com/\" />\n    <!-- Title, description, robots, canonical, and social|" "$TEMPLATE_FILE"
 
 # Generate route-specific HTML files
 for i in "${!ROUTES[@]}"; do
@@ -96,15 +97,16 @@ for i in "${!ROUTES[@]}"; do
   # Copy current build template and update (not the old original)
   cp "$TEMPLATE_FILE" "$target_file"
   
-  # Remove any existing title tags first to avoid duplicates
+  # Remove any existing title and canonical tags first to avoid duplicates
   sed -i '/<title>/d' "$target_file"
+  sed -i '/<link rel="canonical"/d' "$target_file"
   
-  # Add title as fallback (React Helmet will override this)
+  # Add title and canonical as fallback (React Helmet will override these dynamically if needed)
   # Escape special characters in title
   escaped_title=$(printf '%s\n' "$title" | sed 's/[[\.*^$()+?{|]/\\&/g')
-  sed -i "s|<!-- Title, description, robots, canonical, and social|<title>$escaped_title</title>\n    <!-- Title, description, robots, canonical, and social|" "$target_file"
+  sed -i "s|<!-- Title, description, robots, canonical, and social|<title>$escaped_title</title>\n    <link rel=\"canonical\" href=\"$canonical_url\" />\n    <!-- Title, description, robots, canonical, and social|" "$target_file"
   
-  echo "✅ Generated: $target_file (title: $title - SEO tags managed by React Helmet)"
+  echo "✅ Generated: $target_file (canonical: $canonical_url)"
 done
 
-echo "🎉 Pre-rendering complete! Generated HTML files with route-specific canonical URLs."
+echo "🎉 Pre-rendering complete! Generated HTML files with route-specific canonical URLs and titles."
