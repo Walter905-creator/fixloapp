@@ -14,6 +14,21 @@ deployment-archive/
 android/
 ios/
 
+# Expo/React Native
+.expo/
+.expo-shared/
+fixlo-app/ios/Pods/
+fixlo-app/ios/build/
+fixlo-app/android/build/
+fixlo-app/android/.gradle/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+
 # Legacy documentation and scripts
 docs/legacy/
 scripts/legacy/

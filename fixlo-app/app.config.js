@@ -2,6 +2,7 @@ export default {
   expo: {
     name: "Fixlo",
     slug: "fixlo-app",
+    scheme: "fixlo",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/icon.png",
@@ -31,12 +32,13 @@ export default {
       favicon: "./assets/favicon.png"
     },
     extra: {
-      apiUrl: process.env.EXPO_PUBLIC_API_URL || "https://fixlo-backend.onrender.com",
+      apiUrl: process.env.EXPO_PUBLIC_API_URL || "https://fixloapp.onrender.com",
       websiteUrl: "https://fixloapp.com",
       privacyPolicyUrl: "https://fixloapp.com/privacy",
       termsOfServiceUrl: "https://fixloapp.com/terms",
+      stripePublishableKey: "pk_live_REPLACE",
       eas: {
-        projectId: "your-project-id-here" // Will be set when running eas init
+        projectId: "REPLACE_ME_ON_EAS_INIT"
       }
     },
     plugins: [

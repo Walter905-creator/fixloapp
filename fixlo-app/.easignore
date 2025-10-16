@@ -1,0 +1,9 @@
+node_modules
+ios/Pods
+.git
+.github
+.vercel
+.expo
+dist
+build
+.DS_Store
