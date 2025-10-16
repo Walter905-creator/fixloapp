@@ -171,8 +171,14 @@ YOUR_DOMAIN=https://www.fixloapp.com
 
 ### 3. Set Up Stripe Webhook
 
+**Important:** There are two webhook endpoints available:
+- `/webhook/stripe` - Legacy minimal handler (in index.js)
+- `/api/stripe/webhook` - **Recommended** - Full featured handler with all event processing
+
+**Use the recommended endpoint:**
+
 1. Go to Stripe Dashboard → Developers → Webhooks
-2. Add endpoint: `https://your-domain.com/api/stripe/webhook`
+2. Add endpoint: `https://your-domain.com/api/stripe/webhook` (recommended)
 3. Select events to send:
    - `checkout.session.completed`
    - `invoice.payment_succeeded`
@@ -180,6 +186,8 @@ YOUR_DOMAIN=https://www.fixloapp.com
    - `customer.subscription.trial_will_end`
    - `customer.subscription.deleted`
 4. Copy the webhook signing secret to `STRIPE_WEBHOOK_SECRET`
+
+**Note:** The `/api/stripe/webhook` endpoint includes comprehensive event handling and Pro model updates.
 
 ### 4. Test the Implementation
 
