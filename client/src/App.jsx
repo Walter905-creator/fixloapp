@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import PromoBanner from './components/PromoBanner';
 import ProBanner from './components/ProBanner';
+import FreeTrialBanner from './components/FreeTrialBanner';
 import Navbar from './components/Navbar';
 import HomePage from './routes/HomePage.jsx';
 import ServicesPage from './routes/ServicesPage.jsx';
@@ -22,6 +23,7 @@ export default function App(){
   return (<>
     <PromoBanner />
     <ProBanner />
+    <FreeTrialBanner />
     <Navbar/>
     <Routes>
       <Route path="/" element={<HomePage/>}/>
