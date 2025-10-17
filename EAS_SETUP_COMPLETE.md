@@ -30,7 +30,7 @@ Complete guide for:
 - Troubleshooting CI/CD builds
 
 ### 3. Mobile App README (NEW)
-**File**: `fixlo-app/README.md`
+**File**: `mobile/README.md`
 
 Quick start guide for mobile developers with:
 - Installation instructions
@@ -49,26 +49,26 @@ Added GitHub Actions CI/CD section with quick setup instructions.
 The following components were already properly configured in the repository:
 
 ### 1. EAS Configuration
-**File**: `fixlo-app/eas.json`
+**File**: `mobile/eas.json`
 - Development profile (iOS Simulator + Android APK)
 - Preview profile (internal distribution)
 - Production profile (store submission)
 
 ### 2. App Configuration
-**File**: `fixlo-app/app.config.js`
+**File**: `mobile/app.config.js`
 - Scheme: `fixlo`
 - iOS Bundle ID: `com.fixlo.app`
 - Android Package: `com.fixlo.app`
 - EAS Project ID placeholder
 
 ### 3. NPM Scripts
-**File**: `fixlo-app/package.json`
+**File**: `mobile/package.json`
 - All EAS build commands (dev, preview, production)
 - Login and initialization commands
 - Standard Expo commands (start, ios, android)
 
 ### 4. Build Exclusions
-**File**: `fixlo-app/.easignore`
+**File**: `mobile/.easignore`
 - Properly excludes node_modules, build artifacts, etc.
 
 ### 5. Comprehensive Documentation
@@ -89,7 +89,7 @@ The following components were already properly configured in the repository:
 
 2. **Login and Initialize**:
    ```bash
-   cd fixlo-app
+   cd mobile
    npm run eas:login
    npm run eas:init  # Writes actual projectId to app.config.js
    ```
@@ -135,7 +135,7 @@ fixloapp/
 ├── docs/
 │   ├── eas-dev-build.md           # UPDATED: Main EAS guide
 │   └── github-eas-builds.md       # NEW: CI/CD guide
-└── fixlo-app/
+└── mobile/
     ├── .easignore                 # Existing: Build exclusions
     ├── app.config.js              # Existing: App configuration
     ├── eas.json                   # Existing: Build profiles
@@ -195,7 +195,7 @@ fixloapp/
 - **Documentation**: 
   - [Main Setup Guide](docs/eas-dev-build.md)
   - [GitHub Actions Guide](docs/github-eas-builds.md)
-  - [Quick Start](fixlo-app/README.md)
+  - [Quick Start](mobile/README.md)
 
 - **Expo Resources**:
   - [EAS Build Documentation](https://docs.expo.dev/build/introduction/)

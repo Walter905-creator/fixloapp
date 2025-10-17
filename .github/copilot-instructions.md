@@ -13,7 +13,7 @@ Fixlo is a full-stack home services marketplace application connecting homeowner
 
 **Frontend (client/)**: React 18.2.0, React Router, Tailwind CSS, Socket.io client, Axios
 **Backend (server/)**: Node.js 18+, Express, MongoDB/Mongoose, Socket.io, Twilio, Stripe, JWT auth
-**Mobile (fixlo-app/)**: Expo ~51.0.8, React Native 0.74.1, React Navigation
+**Mobile (mobile/)**: Expo ~51.0.8, React Native 0.74.1, React Navigation
 
 ## Working Effectively
 
@@ -88,7 +88,7 @@ Fixlo is a full-stack home services marketplace application connecting homeowner
 #### Mobile App Development
 1. Navigate to mobile app directory:
    ```bash
-   cd fixlo-app
+   cd mobile
    npm install
    ```
 

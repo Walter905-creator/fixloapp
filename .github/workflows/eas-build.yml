@@ -4,156 +4,55 @@ on:
   workflow_dispatch:
     inputs:
       platform:
-
-        description: 'Platform to build'
-        required: true
-        type: choice
-        options:
-          - ios
-          - android
-      profile:
-        description: 'Build profile'
-        required: true
-        type: choice
-        options:
-          - development
-          - preview
-          - production
-
-jobs:
-  build:
-    name: EAS Build - ${{ inputs.platform }} (${{ inputs.profile }})
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: fixlo-app/package-lock.json
-
-      - name: Install dependencies
-        working-directory: fixlo-app
-        run: npm ci
-
-      - name: Setup EAS
-        uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Build with EAS
-        working-directory: fixlo-app
-        run: |
-          eas build \
-            --platform ${{ inputs.platform }} \
-            --profile ${{ inputs.profile }} \
-            --non-interactive \
-            --no-wait
-
-      - name: Build Summary
-        run: |
-          echo "### EAS Build Started 🚀" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Platform:** ${{ inputs.platform }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Profile:** ${{ inputs.profile }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Check [EAS Dashboard](https://expo.dev/accounts/[your-account]/projects/fixlo-app/builds) for build progress." >> $GITHUB_STEP_SUMMARY
-
         description: 'ios or android'
-        required: true
         type: choice
         options: [ios, android]
-      profile:
-        description: 'EAS profile: development, preview, production'
         required: true
+      profile:
+        description: 'development, preview, or production'
         type: choice
         options: [development, preview, production]
+        required: true
       branch:
         description: 'Git branch to build from'
-        required: true
         default: main
-        type: string
-  # Uncomment to auto-build on main pushes:
+        required: true
+  # Uncomment to auto-build on pushes to main:
   # push:
   #   branches: [ main ]
 
 jobs:
   eas-build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
     steps:
-      - name: Check out the repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.branch || 'main' }}
-
-      - name: Resolve Expo app directory
-        id: resolve
-        shell: bash
-        run: |
-          set -e
-          if [ -f "./app.json" ] || ls app.config.* >/dev/null 2>&1; then
-            echo "APP_DIR=." >> $GITHUB_ENV
-            echo "✅ Detected Expo app at root"
-            exit 0
-          fi
-          # search one level down for monorepo layouts
-          found=""
-          for d in */ ; do
-            [ -d "$d" ] || continue
-            if [ -f "$d/app.json" ] || ls "$d"/app.config.* >/dev/null 2>&1; then
-              found="$d"
-              break
-            fi
-          done
-          if [ -z "$found" ]; then
-            echo "❌ Could not find an Expo app (no app.json or app.config.*)." >&2
-            exit 1
-          fi
-          echo "APP_DIR=${found%/}" >> $GITHUB_ENV
-          echo "✅ Detected Expo app dir: ${found%/}"
-
-      - name: Use Node.js
-        uses: actions/setup-node@v4
+          ref: ${{ github.event.inputs.branch }}
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: 'npm'
-          cache-dependency-path: ${{ env.APP_DIR }}/package-lock.json
-
-      - name: Install dependencies
-        working-directory: ${{ env.APP_DIR }}
-        run: npm ci
-
-      - name: Install EAS CLI
-        run: npm i -g eas-cli
-
-      - name: Verify EAS project linkage
-        working-directory: ${{ env.APP_DIR }}
+          cache-dependency-path: mobile/package-lock.json
+      - name: Validate Expo app presence
         run: |
-          jq -re '.expo.extra.eas.projectId' app.json 2>/dev/null || \
-          grep -R "extra.*eas.*projectId" -n . || \
-          echo "⚠️ projectId not found; ensure 'eas init' has been run locally."
-
+          if [ ! -f "app.json" ] && ! ls app.config.* >/dev/null 2>&1; then
+            echo "❌ No app.json or app.config.* found in mobile/"; exit 1;
+          fi
+      - run: npm ci
+      - run: npx eas-cli@latest --version
       - name: Run EAS Build
-        working-directory: ${{ env.APP_DIR }}
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          eas build \
+          npx eas-cli@latest build \
             --platform "${{ github.event.inputs.platform }}" \
             --profile  "${{ github.event.inputs.profile }}" \
             --non-interactive \
             --no-wait
-
-      - name: Show build page URL
-        working-directory: ${{ env.APP_DIR }}
+      - name: Show recent builds
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: |
-          echo "Build submitted. View builds at:"
-          eas build:list --limit=5
-           main
+        run: npx eas-cli@latest build:list --limit=5

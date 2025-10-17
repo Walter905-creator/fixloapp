@@ -38,7 +38,7 @@ export default {
       termsOfServiceUrl: "https://fixloapp.com/terms",
       stripePublishableKey: "pk_live_REPLACE",
       eas: {
-        projectId: "REPLACE_ME_ON_EAS_INIT"
+        projectId: "c557b673-3e59-434b-a5e2-f6154d4fbfc8"
       }
     },
     plugins: [
