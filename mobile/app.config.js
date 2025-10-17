@@ -1,4 +1,5 @@
-export default {
+/** @type {import('@expo/config').ExpoConfig} */
+module.exports = {
   expo: {
     name: "Fixlo",
     slug: "mobile",
@@ -11,7 +12,7 @@ export default {
     splash: {
       image: "./assets/splash.png",
       resizeMode: "contain",
-      backgroundColor: "#3b82f6"
+      backgroundColor: "#ffffff"
     },
     assetBundlePatterns: [
       "**/*"
@@ -24,7 +25,7 @@ export default {
     android: {
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
-        backgroundColor: "#3b82f6"
+        backgroundColor: "#ffffff"
       },
       package: "com.fixlo.app",
       versionCode: 1
