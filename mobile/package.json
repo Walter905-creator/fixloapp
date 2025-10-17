@@ -12,6 +12,8 @@
     "eas:configure": "eas build:configure",
     "eas:build:dev:ios": "eas build -p ios --profile development",
     "eas:build:dev:android": "eas build -p android --profile development",
+    "eas:build:ios:dev": "eas build -p ios --profile development",
+    "eas:build:android:dev": "eas build -p android --profile development",
     "eas:build:preview:ios": "eas build -p ios --profile preview",
     "eas:build:preview:android": "eas build -p android --profile preview",
     "eas:build:prod:ios": "eas build -p ios --profile production",

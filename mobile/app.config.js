@@ -1,7 +1,8 @@
 export default {
   expo: {
     name: "Fixlo",
-    slug: "fixlo-app",
+    slug: "mobile",
+    owner: "fixloapp",
     scheme: "fixlo",
     version: "1.0.0",
     orientation: "portrait",

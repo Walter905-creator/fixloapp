@@ -21,6 +21,36 @@ Before you can use this workflow, you need:
 2. The Expo app linked to EAS project `c557b673-3e59-434b-a5e2-f6154d4fbfc8` (@fixloapp/mobile)
 3. An `EXPO_TOKEN` added to GitHub repository secrets
 
+**⚠️ Important Configuration Requirements:**
+
+The project configuration must match the EAS project to avoid build errors:
+- **Slug**: Must be set to `"mobile"` (not "fixlo-app" or other values)
+- **Owner**: Must be set to `"fixloapp"` (the Expo account owner)
+- **Project ID**: Must be `"c557b673-3e59-434b-a5e2-f6154d4fbfc8"`
+
+These values are configured in `mobile/app.config.js`:
+
+```javascript
+export default {
+  expo: {
+    name: "Fixlo",
+    slug: "mobile",        // Must match EAS project slug
+    owner: "fixloapp",     // Must match Expo account owner
+    // ... other config ...
+    extra: {
+      eas: {
+        projectId: "c557b673-3e59-434b-a5e2-f6154d4fbfc8"
+      }
+    }
+  }
+};
+```
+
+If these values don't match, you'll see an error like:
+```
+Slug for project identified by extra.eas.projectId (mobile) does not match the slug field (fixlo-app)
+```
+
 ## Creating and Adding EXPO_TOKEN
 
 ### Step 1: Install EAS CLI
