@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       platform:
+
         description: 'Platform to build'
         required: true
         type: choice
@@ -62,3 +63,97 @@ jobs:
           echo "- **Profile:** ${{ inputs.profile }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Check [EAS Dashboard](https://expo.dev/accounts/[your-account]/projects/fixlo-app/builds) for build progress." >> $GITHUB_STEP_SUMMARY
+
+        description: 'ios or android'
+        required: true
+        type: choice
+        options: [ios, android]
+      profile:
+        description: 'EAS profile: development, preview, production'
+        required: true
+        type: choice
+        options: [development, preview, production]
+      branch:
+        description: 'Git branch to build from'
+        required: true
+        default: main
+        type: string
+  # Uncomment to auto-build on main pushes:
+  # push:
+  #   branches: [ main ]
+
+jobs:
+  eas-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch || 'main' }}
+
+      - name: Resolve Expo app directory
+        id: resolve
+        shell: bash
+        run: |
+          set -e
+          if [ -f "./app.json" ] || ls app.config.* >/dev/null 2>&1; then
+            echo "APP_DIR=." >> $GITHUB_ENV
+            echo "✅ Detected Expo app at root"
+            exit 0
+          fi
+          # search one level down for monorepo layouts
+          found=""
+          for d in */ ; do
+            [ -d "$d" ] || continue
+            if [ -f "$d/app.json" ] || ls "$d"/app.config.* >/dev/null 2>&1; then
+              found="$d"
+              break
+            fi
+          done
+          if [ -z "$found" ]; then
+            echo "❌ Could not find an Expo app (no app.json or app.config.*)." >&2
+            exit 1
+          fi
+          echo "APP_DIR=${found%/}" >> $GITHUB_ENV
+          echo "✅ Detected Expo app dir: ${found%/}"
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: ${{ env.APP_DIR }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ env.APP_DIR }}
+        run: npm ci
+
+      - name: Install EAS CLI
+        run: npm i -g eas-cli
+
+      - name: Verify EAS project linkage
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          jq -re '.expo.extra.eas.projectId' app.json 2>/dev/null || \
+          grep -R "extra.*eas.*projectId" -n . || \
+          echo "⚠️ projectId not found; ensure 'eas init' has been run locally."
+
+      - name: Run EAS Build
+        working-directory: ${{ env.APP_DIR }}
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          eas build \
+            --platform "${{ github.event.inputs.platform }}" \
+            --profile  "${{ github.event.inputs.profile }}" \
+            --non-interactive \
+            --no-wait
+
+      - name: Show build page URL
+        working-directory: ${{ env.APP_DIR }}
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          echo "Build submitted. View builds at:"
+          eas build:list --limit=5
+           main
