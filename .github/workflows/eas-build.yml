@@ -4,6 +4,66 @@ on:
   workflow_dispatch:
     inputs:
       platform:
+
+        description: 'Platform to build'
+        required: true
+        type: choice
+        options:
+          - ios
+          - android
+      profile:
+        description: 'Build profile'
+        required: true
+        type: choice
+        options:
+          - development
+          - preview
+          - production
+
+jobs:
+  build:
+    name: EAS Build - ${{ inputs.platform }} (${{ inputs.profile }})
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: fixlo-app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: fixlo-app
+        run: npm ci
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build with EAS
+        working-directory: fixlo-app
+        run: |
+          eas build \
+            --platform ${{ inputs.platform }} \
+            --profile ${{ inputs.profile }} \
+            --non-interactive \
+            --no-wait
+
+      - name: Build Summary
+        run: |
+          echo "### EAS Build Started 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Platform:** ${{ inputs.platform }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Profile:** ${{ inputs.profile }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check [EAS Dashboard](https://expo.dev/accounts/[your-account]/projects/fixlo-app/builds) for build progress." >> $GITHUB_STEP_SUMMARY
+
         description: 'ios or android'
         required: true
         type: choice
@@ -96,3 +156,4 @@ jobs:
         run: |
           echo "Build submitted. View builds at:"
           eas build:list --limit=5
+           main
