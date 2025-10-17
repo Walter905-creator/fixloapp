@@ -9,7 +9,7 @@ If you plan to use `@stripe/stripe-react-native` for native payment processing i
 1. **Development builds are REQUIRED** - The Stripe SDK contains native code that cannot run in Expo Go
 2. **Installation steps**:
    ```bash
-   cd fixlo-app
+   cd mobile
    npx expo install @stripe/stripe-react-native
    ```
 

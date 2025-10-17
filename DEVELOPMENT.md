@@ -29,7 +29,7 @@
 fixloapp/
 ├── client/           # React frontend
 ├── server/           # Node.js backend
-├── fixlo-app/        # Expo mobile app
+├── mobile/           # Expo mobile app
 ├── api/              # Vercel serverless functions
 ├── docs/             # Documentation
 ├── scripts/          # Utility scripts

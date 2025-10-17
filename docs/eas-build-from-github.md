@@ -6,7 +6,7 @@ This document describes how to build the Fixlo Expo mobile app using Expo Applic
 
 The **EAS Build** workflow automates building iOS and Android versions of the Fixlo mobile app using EAS Build. It:
 
-- ✅ Automatically detects the Expo app directory (`fixlo-app/`)
+- ✅ Runs from the `mobile/` directory
 - ✅ Supports manual builds with configurable platform, profile, and branch
 - ✅ Can optionally auto-build on pushes to `main` (disabled by default)
 - ✅ Uses secure `EXPO_TOKEN` authentication
@@ -18,7 +18,7 @@ The **EAS Build** workflow automates building iOS and Android versions of the Fi
 Before you can use this workflow, you need:
 
 1. An Expo account (sign up at https://expo.dev)
-2. The Expo app linked to an EAS project (`eas init` already configured)
+2. The Expo app linked to EAS project `c557b673-3e59-434b-a5e2-f6154d4fbfc8` (@fixloapp/mobile)
 3. An `EXPO_TOKEN` added to GitHub repository secrets
 
 ## Creating and Adding EXPO_TOKEN
@@ -123,7 +123,7 @@ To automatically build on every push to `main`:
 
 ## Build Profiles
 
-The workflow supports three build profiles defined in `fixlo-app/eas.json`:
+The workflow supports three build profiles defined in `mobile/eas.json`:
 
 ### Development
 - **Purpose**: Testing and debugging
