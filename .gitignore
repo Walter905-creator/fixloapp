@@ -17,6 +17,9 @@ ios/
 # Expo/React Native
 .expo/
 .expo-shared/
+mobile/.expo
+mobile/dist
+mobile/.expo-shared
 fixlo-app/ios/Pods/
 fixlo-app/ios/build/
 fixlo-app/android/build/
