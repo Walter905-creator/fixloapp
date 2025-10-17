@@ -26,6 +26,11 @@ jobs:
   eas-build:
     runs-on: ubuntu-latest
     steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch || 'main' }}
+
       - name: Resolve Expo app directory
         id: resolve
         shell: bash
@@ -51,11 +56,6 @@ jobs:
           fi
           echo "APP_DIR=${found%/}" >> $GITHUB_ENV
           echo "✅ Detected Expo app dir: ${found%/}"
-
-      - name: Check out the repository
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.branch || 'main' }}
 
       - name: Use Node.js
         uses: actions/setup-node@v4
