@@ -184,8 +184,18 @@ eas device:create                  # Register iOS device
 eas device:list                    # List registered devices
 ```
 
+## GitHub Actions CI/CD
+
+You can also trigger EAS builds from GitHub Actions. See the [GitHub EAS Builds Guide](./github-eas-builds.md) for setup instructions.
+
+### Quick Setup
+1. Create an Expo token: `eas token:create`
+2. Add token to GitHub repo secrets as `EXPO_TOKEN`
+3. Trigger builds from **Actions** → **EAS Build** → **Run workflow**
+
 ## Additional Resources
 
+- [GitHub EAS Builds Guide](./github-eas-builds.md) - CI/CD setup for automated builds
 - [EAS Build Documentation](https://docs.expo.dev/build/introduction/)
 - [Development Builds](https://docs.expo.dev/develop/development-builds/introduction/)
 - [EAS CLI Reference](https://docs.expo.dev/eas/cli/)
