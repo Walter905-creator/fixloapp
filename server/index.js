@@ -139,6 +139,9 @@ app.use(express.json());
 app.use(express.static(__dirname)); // e.g., admin assets, images used by API docs, etc.
 app.use(express.static(path.join(__dirname, ".."))); // safety (no client build served)
 
+// Privacy Policy static file route
+app.use('/privacy-policy', express.static(path.join(__dirname, '../client/public/privacy-policy.html')));
+
 // ----------------------- Socket.IO -----------------------
 const io = new Server(server, {
   cors: { origin: allowedOrigins, methods: ["GET", "POST"] },

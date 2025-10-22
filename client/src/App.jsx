@@ -52,6 +52,7 @@ export default function App(){
             <a href="/sitemap.xml">Sitemap</a>
           )}
           <a href="/terms">Terms</a>
+          <a href="/privacy-policy">Privacy Policy</a>
         </div>
       </div>
     </footer>
