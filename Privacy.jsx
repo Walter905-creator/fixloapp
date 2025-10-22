@@ -192,7 +192,14 @@ export default function Privacy() {
         industry-standard security measures to protect payment data.
       </p>
 
-      <h2>13. Changes to This Privacy Policy</h2>
+      <h2>13. Cookies and Tracking Technologies</h2>
+      <p>
+        We use cookies and similar tracking technologies to enhance your experience on our Platform. You can control 
+        cookie preferences through your browser settings. Note that disabling cookies may affect the functionality of 
+        certain features.
+      </p>
+
+      <h2>14. Changes to This Privacy Policy</h2>
       <p>
         We may update this Privacy Policy from time to time to reflect changes in our practices or applicable law. 
         The "Last updated" date above indicates when this Privacy Policy was last revised. Material changes will be 
@@ -200,7 +207,7 @@ export default function Privacy() {
         changes are posted constitutes acceptance of the updated Privacy Policy.
       </p>
 
-      <h2>14. Contact Us</h2>
+      <h2>15. Contact Us</h2>
       <p>
         If you have questions about this Privacy Policy or our privacy practices, please contact us at:
       </p>

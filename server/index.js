@@ -270,6 +270,9 @@ app.use("/api/ai", require("./routes/ai")); // AI assistant
 app.use("/api/contact", require("./routes/contact")); // contact form
 app.use("/api/referrals", require("./routes/referrals")); // referral rewards
 
+// Privacy & Data Rights (GDPR/CCPA compliance)
+app.use("/api/privacy", require("./routes/privacy")); // data access, export, deletion
+
 // Share Profiles & Boost system
 app.use("/api", require("./routes/profiles")); // slug lookup
 app.use("/api", require("./routes/share")); // share events/boost logic
