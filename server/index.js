@@ -27,6 +27,7 @@ const securityHeaders = require("./middleware/security");
 const sanitizeInput = require("./middleware/sanitization");
 const shield = require("./middleware/shield");
 const errorHandler = require("./middleware/errorHandler");
+const { privacyAuditLogger } = require("./middleware/privacyAudit");
 const {
   generalRateLimit,
   authRateLimit,
@@ -208,6 +209,12 @@ try {
   console.log("✅ Rate limiter loaded");
 } catch (e) {
   console.error("❌ Rate limiter failed:", e.message);
+}
+try {
+  app.use(privacyAuditLogger);
+  console.log("✅ Privacy audit logger loaded");
+} catch (e) {
+  console.error("❌ Privacy audit logger failed:", e.message);
 }
 
 // ----------------------- Explicit preflights for hot endpoints -----------------------
