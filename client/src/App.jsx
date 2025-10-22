@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import PromoBanner from './components/PromoBanner';
 import ProBanner from './components/ProBanner';
 import FreeTrialBanner from './components/FreeTrialBanner';
+import CookieConsent from './components/CookieConsent';
 import Navbar from './components/Navbar';
 import HomePage from './routes/HomePage.jsx';
 import ServicesPage from './routes/ServicesPage.jsx';
@@ -16,6 +17,8 @@ import ProDashboardPage from './routes/ProDashboardPage.jsx';
 import JoinPage from './routes/JoinPage.jsx';
 import ServicePage from './routes/ServicePage.jsx';
 import Terms from './pages/Terms.jsx';
+import Privacy from './pages/Privacy.jsx';
+import PrivacySettings from './pages/PrivacySettings.jsx';
 import Success from './pages/Success.jsx';
 import SignupPage from './routes/SignupPage.jsx';
 import ProSignupPage from './routes/ProSignupPage.jsx';
@@ -41,6 +44,9 @@ export default function App(){
       <Route path="/pro/dashboard" element={<ProDashboardPage/>}/>
       <Route path="/join" element={<JoinPage/>}/>
       <Route path="/terms" element={<Terms/>}/>
+      <Route path="/privacy" element={<Privacy/>}/>
+      <Route path="/privacy-policy" element={<Privacy/>}/>
+      <Route path="/privacy-settings" element={<PrivacySettings/>}/>
       <Route path="/success" element={<Success/>}/>
       <Route path="*" element={<Navigate to="/" replace/>}/>
     </Routes>
@@ -53,8 +59,10 @@ export default function App(){
           )}
           <a href="/terms">Terms</a>
           <a href="/privacy-policy">Privacy Policy</a>
+          <a href="/privacy-settings">Privacy Settings</a>
         </div>
       </div>
     </footer>
+    <CookieConsent />
   </>);
 }

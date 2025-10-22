@@ -27,6 +27,7 @@ const securityHeaders = require("./middleware/security");
 const sanitizeInput = require("./middleware/sanitization");
 const shield = require("./middleware/shield");
 const errorHandler = require("./middleware/errorHandler");
+const { privacyAuditLogger } = require("./middleware/privacyAudit");
 const {
   generalRateLimit,
   authRateLimit,
@@ -209,6 +210,12 @@ try {
 } catch (e) {
   console.error("❌ Rate limiter failed:", e.message);
 }
+try {
+  app.use(privacyAuditLogger);
+  console.log("✅ Privacy audit logger loaded");
+} catch (e) {
+  console.error("❌ Privacy audit logger failed:", e.message);
+}
 
 // ----------------------- Explicit preflights for hot endpoints -----------------------
 function preflight(path, methods = "POST, OPTIONS") {
@@ -269,6 +276,9 @@ app.use("/api", require("./routes/ipinfo")); // IP info proxy
 app.use("/api/ai", require("./routes/ai")); // AI assistant
 app.use("/api/contact", require("./routes/contact")); // contact form
 app.use("/api/referrals", require("./routes/referrals")); // referral rewards
+
+// Privacy & Data Rights (GDPR/CCPA compliance)
+app.use("/api/privacy", require("./routes/privacy")); // data access, export, deletion
 
 // Share Profiles & Boost system
 app.use("/api", require("./routes/profiles")); // slug lookup

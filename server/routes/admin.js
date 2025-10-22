@@ -318,4 +318,62 @@ router.get('/shield-log', (req, res) => {
   }
 });
 
+// ✅ Privacy Audit Log endpoint - View privacy-related actions (GDPR/CCPA compliance)
+router.get('/privacy-audit-log', async (req, res) => {
+  try {
+    const { getPrivacyAuditLogs } = require('../middleware/privacyAudit');
+    const limit = parseInt(req.query.limit) || 100;
+    const logs = await getPrivacyAuditLogs(limit);
+    
+    res.json({
+      count: logs.length,
+      logs: logs
+    });
+  } catch (error) {
+    console.error('Error fetching privacy audit logs:', error);
+    res.status(500).json({ error: 'Failed to fetch privacy audit logs' });
+  }
+});
+
+// ✅ Clean up old privacy logs endpoint
+router.post('/privacy-audit-cleanup', async (req, res) => {
+  try {
+    const { cleanupOldPrivacyLogs } = require('../middleware/privacyAudit');
+    const retentionDays = parseInt(req.body.retentionDays) || 365;
+    const result = await cleanupOldPrivacyLogs(retentionDays);
+    
+    res.json({
+      message: 'Privacy audit logs cleaned up',
+      ...result
+    });
+  } catch (error) {
+    console.error('Error cleaning up privacy logs:', error);
+    res.status(500).json({ error: 'Failed to clean up privacy logs' });
+  }
+});
+
+// ✅ Data retention statistics endpoint
+router.get('/data-retention-stats', async (req, res) => {
+  try {
+    const { getRetentionStatistics } = require('../services/dataRetention');
+    const stats = await getRetentionStatistics();
+    res.json(stats);
+  } catch (error) {
+    console.error('Error fetching retention statistics:', error);
+    res.status(500).json({ error: 'Failed to fetch retention statistics' });
+  }
+});
+
+// ✅ Run data retention tasks manually
+router.post('/run-data-retention', async (req, res) => {
+  try {
+    const { runDataRetentionTasks } = require('../services/dataRetention');
+    const result = await runDataRetentionTasks();
+    res.json(result);
+  } catch (error) {
+    console.error('Error running data retention tasks:', error);
+    res.status(500).json({ error: 'Failed to run data retention tasks' });
+  }
+});
+
 module.exports = router;
