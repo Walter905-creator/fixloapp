@@ -18,7 +18,15 @@
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "ios": {
+        "image": "latest",
+        "resourceClass": "m-medium",
+        "cocoapods": "1.15.2"
+      },
+      "env": {
+        "EXPO_DOCTOR": "skip"
+      }
     }
   },
   "submit": {
