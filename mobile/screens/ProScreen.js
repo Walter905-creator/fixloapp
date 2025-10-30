@@ -90,7 +90,10 @@ export default function ProScreen({ navigation }) {
         <Text style={styles.signupButtonText}>Sign Up as Pro - $59.99/month</Text>
       </TouchableOpacity>
       
-      <TouchableOpacity style={styles.loginButton}>
+      <TouchableOpacity 
+        style={styles.loginButton}
+        onPress={() => navigation.navigate('Login', { userType: 'pro' })}
+      >
         <Text style={styles.loginButtonText}>Already a member? Login</Text>
       </TouchableOpacity>
       

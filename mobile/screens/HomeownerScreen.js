@@ -14,11 +14,23 @@ export default function HomeownerScreen({ navigation }) {
         <Text style={styles.buttonText}>Post a Job Request</Text>
       </TouchableOpacity>
       
-      <TouchableOpacity style={[styles.button, styles.secondaryButton]}>
+      <TouchableOpacity 
+        style={[styles.button, styles.secondaryButton]}
+        onPress={() => {
+          // Future: Navigate to active requests list
+          alert('Coming soon: View your active job requests');
+        }}
+      >
         <Text style={[styles.buttonText, styles.secondaryButtonText]}>My Active Requests</Text>
       </TouchableOpacity>
       
-      <TouchableOpacity style={[styles.button, styles.secondaryButton]}>
+      <TouchableOpacity 
+        style={[styles.button, styles.secondaryButton]}
+        onPress={() => {
+          // Future: Navigate to pros list
+          alert('Coming soon: Browse professional profiles');
+        }}
+      >
         <Text style={[styles.buttonText, styles.secondaryButtonText]}>Browse Professionals</Text>
       </TouchableOpacity>
       
