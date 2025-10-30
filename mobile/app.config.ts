@@ -14,7 +14,12 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.fixloapp.mobile",
-      buildNumber: "2"
+      buildNumber: "5",
+      infoPlist: {
+        NSCameraUsageDescription: "Allow Fixlo to access your camera to take photos of your projects.",
+        NSPhotoLibraryUsageDescription: "Allow Fixlo to access your photos to upload project images.",
+        NSLocationWhenInUseUsageDescription: "Allow Fixlo to access your location to find nearby professionals."
+      }
     },
     android: {
       package: "com.fixloapp.mobile",
@@ -23,6 +28,7 @@ export default {
     },
     plugins: [
       "expo-notifications",
+      "expo-in-app-purchases",
       [
         "expo-build-properties",
         {

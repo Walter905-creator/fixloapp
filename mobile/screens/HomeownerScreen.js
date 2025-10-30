@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 
 export default function HomeownerScreen({ navigation }) {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>🏠 Homeowner Dashboard</Text>
-      <Text style={styles.subtitle}>Find trusted professionals for your home</Text>
+      <View style={styles.content}>
+        <Text style={styles.title}>🏠 Homeowner Dashboard</Text>
+        <Text style={styles.subtitle}>Find trusted professionals for your home</Text>
       
       <TouchableOpacity 
         style={styles.button}
@@ -14,15 +15,30 @@ export default function HomeownerScreen({ navigation }) {
         <Text style={styles.buttonText}>Post a Job Request</Text>
       </TouchableOpacity>
       
-      <TouchableOpacity style={[styles.button, styles.secondaryButton]}>
+      <TouchableOpacity 
+        style={[styles.button, styles.secondaryButton]}
+        activeOpacity={0.7}
+        onPress={() => {
+          // Future: Navigate to active requests list
+          Alert.alert('Coming Soon', 'View your active job requests');
+        }}
+      >
         <Text style={[styles.buttonText, styles.secondaryButtonText]}>My Active Requests</Text>
       </TouchableOpacity>
       
-      <TouchableOpacity style={[styles.button, styles.secondaryButton]}>
+      <TouchableOpacity 
+        style={[styles.button, styles.secondaryButton]}
+        activeOpacity={0.7}
+        onPress={() => {
+          // Future: Navigate to pros list
+          Alert.alert('Coming Soon', 'Browse professional profiles');
+        }}
+      >
         <Text style={[styles.buttonText, styles.secondaryButtonText]}>Browse Professionals</Text>
       </TouchableOpacity>
       
-      <Text style={styles.note}>✅ Free for homeowners!</Text>
+        <Text style={styles.note}>✅ Free for homeowners!</Text>
+      </View>
     </View>
   );
 }
@@ -32,7 +48,13 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     backgroundColor: '#f8fafc',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  content: {
+    width: '100%',
+    maxWidth: 600,
+    alignItems: 'stretch'
   },
   title: {
     fontSize: 28,
@@ -53,7 +75,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 10,
     marginVertical: 8,
-    alignItems: 'center'
+    alignItems: 'center',
+    minHeight: 50
   },
   secondaryButton: {
     backgroundColor: 'transparent',

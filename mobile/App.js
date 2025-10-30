@@ -6,33 +6,57 @@ import HomeownerScreen from './screens/HomeownerScreen';
 import ProScreen from './screens/ProScreen';
 import ProSignupScreen from './screens/ProSignupScreen';
 import HomeownerJobRequestScreen from './screens/HomeownerJobRequestScreen';
+import LoginScreen from './screens/LoginScreen';
+import SignupScreen from './screens/SignupScreen';
 
 const Stack = createNativeStackNavigator();
 
 function HomeScreen({ navigation }) {
   return (
     <View style={styles.container}>
-      <Image 
-        source={require('./assets/fixlo-logo.png')} 
-        style={styles.logo}
-        resizeMode="contain"
-      />
-      <Text style={styles.title}>Welcome to Fixlo</Text>
-      <Text style={styles.subtitle}>Connect with trusted professionals in your area</Text>
+      <View style={styles.content}>
+        <Image 
+          source={require('./assets/fixlo-logo.png')} 
+          style={styles.logo}
+          resizeMode="contain"
+        />
+        <Text style={styles.title}>Welcome to Fixlo</Text>
+        <Text style={styles.subtitle}>Connect with trusted professionals in your area</Text>
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate('Homeowner')}
-      >
-        <Text style={styles.buttonText}>🏠 I am a Homeowner</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.button}
+          activeOpacity={0.7}
+          onPress={() => navigation.navigate('Homeowner')}
+        >
+          <Text style={styles.buttonText}>🏠 I am a Homeowner</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[styles.button, { backgroundColor: '#2563eb' }]}
-        onPress={() => navigation.navigate('Pro')}
-      >
-        <Text style={styles.buttonText}>👷 I am a Pro</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: '#2563eb' }]}
+          activeOpacity={0.7}
+          onPress={() => navigation.navigate('Pro')}
+        >
+          <Text style={styles.buttonText}>👷 I am a Pro</Text>
+        </TouchableOpacity>
+
+        <View style={styles.authLinksContainer}>
+          <TouchableOpacity
+            style={styles.authLink}
+            onPress={() => navigation.navigate('Login', { userType: 'homeowner' })}
+          >
+            <Text style={styles.authLinkText}>🏠 Homeowner Login</Text>
+          </TouchableOpacity>
+          
+          <Text style={styles.authDivider}>•</Text>
+          
+          <TouchableOpacity
+            style={styles.authLink}
+            onPress={() => navigation.navigate('Login', { userType: 'pro' })}
+          >
+            <Text style={styles.authLinkText}>👷 Pro Login</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </View>
   );
 }
@@ -55,6 +79,16 @@ export default function App() {
           name="Fixlo" 
           component={HomeScreen} 
           options={{ title: 'Fixlo - Home Services' }}
+        />
+        <Stack.Screen 
+          name="Login" 
+          component={LoginScreen} 
+          options={{ title: 'Sign In' }}
+        />
+        <Stack.Screen 
+          name="Signup" 
+          component={SignupScreen} 
+          options={{ title: 'Create Account' }}
         />
         <Stack.Screen 
           name="Homeowner" 
@@ -89,6 +123,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 20
   },
+  content: {
+    width: '100%',
+    maxWidth: 600,
+    alignItems: 'center'
+  },
   logo: {
     width: 300,
     height: 120,
@@ -113,8 +152,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     borderRadius: 12,
     marginVertical: 12,
-    width: '85%',
+    width: '100%',
     alignItems: 'center',
+    minHeight: 60,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -128,5 +168,28 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 20,
     fontWeight: '600'
+  },
+  authLinksContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 30,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+    width: '100%'
+  },
+  authLink: {
+    padding: 10
+  },
+  authLinkText: {
+    color: '#2563eb',
+    fontSize: 16,
+    fontWeight: '600'
+  },
+  authDivider: {
+    color: '#94a3b8',
+    fontSize: 16,
+    marginHorizontal: 10
   }
 });
