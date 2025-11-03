@@ -14,11 +14,31 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.fixloapp.mobile",
-      buildNumber: "5",
+      buildNumber: "6",
       infoPlist: {
         NSCameraUsageDescription: "Allow Fixlo to access your camera to take photos of your projects.",
         NSPhotoLibraryUsageDescription: "Allow Fixlo to access your photos to upload project images.",
         NSLocationWhenInUseUsageDescription: "Allow Fixlo to access your location to find nearby professionals."
+      },
+      privacyManifests: {
+        NSPrivacyAccessedAPITypes: [
+          {
+            NSPrivacyAccessedAPIType: "NSPrivacyAccessedAPICategoryFileTimestamp",
+            NSPrivacyAccessedAPITypeReasons: ["C617.1"]
+          },
+          {
+            NSPrivacyAccessedAPIType: "NSPrivacyAccessedAPICategorySystemBootTime",
+            NSPrivacyAccessedAPITypeReasons: ["35F9.1"]
+          },
+          {
+            NSPrivacyAccessedAPIType: "NSPrivacyAccessedAPICategoryDiskSpace",
+            NSPrivacyAccessedAPITypeReasons: ["E174.1"]
+          },
+          {
+            NSPrivacyAccessedAPIType: "NSPrivacyAccessedAPICategoryUserDefaults",
+            NSPrivacyAccessedAPITypeReasons: ["CA92.1"]
+          }
+        ]
       }
     },
     android: {
