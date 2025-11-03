@@ -28,7 +28,6 @@ export default {
     },
     plugins: [
       "expo-notifications",
-      "expo-in-app-purchases",
       [
         "expo-build-properties",
         {
