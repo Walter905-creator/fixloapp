@@ -3,7 +3,7 @@
 **Date**: November 3, 2024  
 **App**: Fixlo Mobile  
 **Version**: 1.0.0  
-**Build**: 5  
+**Build**: 6  
 **Status**: ✅ READY FOR SUBMISSION
 
 ---
@@ -294,7 +294,7 @@ npm run eas:build:prod:ios
 ### After Build Completes
 1. Download the .ipa file
 2. Upload to App Store Connect via Transporter or Xcode
-3. Select build in App Store Connect
+3. Select build 6 in App Store Connect
 4. Complete app metadata
 5. Upload screenshots
 6. Submit for review
@@ -428,4 +428,4 @@ Good luck with your submission! 🚀
 **Last Updated**: November 3, 2024  
 **Compliance**: Apple App Store Requirements 2024-2025  
 **Privacy Manifest**: ✅ Implemented  
-**Build Number**: 5
+**Build Number**: 6
