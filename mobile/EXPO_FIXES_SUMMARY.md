@@ -6,6 +6,7 @@ Fix Expo Doctor errors related to missing assets and duplicate configuration fil
 - `cannot access file at './assets/adaptive-icon.png'`
 - `cannot access file at './assets/splash.png'`
 - Conflicting app.json vs app.config.js
+- **NEW (Nov 2025)**: EAS build failure with `expo-in-app-purchases` plugin error
 
 ## Changes Made
 
@@ -38,6 +39,15 @@ Updated packages for Expo SDK 51 compatibility:
 - `react-native`: 0.74.1 → 0.74.5
 - `react-native-safe-area-context`: 4.10.1 → 4.10.5
 
+### 5. Fixed expo-in-app-purchases Plugin Error (Nov 2025) ✅
+- **Problem**: EAS build failed with "Failed to resolve plugin for module 'expo-in-app-purchases'"
+- **Root Cause**: `expo-in-app-purchases` v14.5.0 doesn't provide a config plugin
+- **Action**: Removed `"expo-in-app-purchases"` from the plugins array in app.config.ts
+- **Reason**: The package doesn't require a config plugin - it works as a regular dependency
+- **Result**: `npx expo config --json` now runs successfully
+- **Impact**: No functionality lost - package still imported and used in `ProSignupScreen.js`
+- **Note**: Only packages that modify native project settings need config plugins
+
 ## Verification Results
 
 ✅ app.json successfully removed (no conflict)
@@ -46,6 +56,8 @@ Updated packages for Expo SDK 51 compatibility:
 ✅ Package versions aligned with Expo SDK 51 requirements
 ✅ iOS and Android build identifiers properly configured
 ✅ EAS project ID configured correctly
+✅ **NEW**: expo config command runs successfully without plugin errors
+✅ **NEW**: expo-in-app-purchases package works as regular dependency
 
 ## Build Readiness
 
