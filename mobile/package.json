@@ -8,7 +8,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "postinstall": "patch-package",
-    "eas-build-pre-install": "echo '✅ Ensuring expo-in-app-purchases plugin override exists' && cp -f node_modules/expo-in-app-purchases/app.plugin.js node_modules/expo-in-app-purchases/app.plugin.js"
+    "eas-build-pre-install": "echo '✅ Skipping old expo-in-app-purchases plugin — safe to proceed'"
   },
   "dependencies": {
     "expo": "54.0.22",
