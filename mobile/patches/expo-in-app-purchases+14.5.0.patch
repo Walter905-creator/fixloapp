@@ -3,11 +3,14 @@ deleted file mode 100644
 index 0000000..0000000
 --- a/app.plugin.js
 +++ /dev/null
-@@ -1,7 +0,0 @@
--// dummy deleted plugin file removed to prevent EAS Build errors
+@@ -1,10 +0,0 @@
+-// Removed invalid expo-in-app-purchases plugin file
+-// Original app.plugin.js caused “Unexpected token typeof” during EAS build.
 -
 -module.exports = function withNoopPlugin(config) {
 -  console.log("🧩 Skipping invalid expo-in-app-purchases plugin.");
 -  return config;
 -};
+-
+-// This ensures EAS Build can read config without crashing
 -
