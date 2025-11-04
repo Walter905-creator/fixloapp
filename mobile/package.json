@@ -7,8 +7,8 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "postinstall": "node scripts/remove-bad-plugin.js",
-    "eas-build-pre-install": "npm install && node scripts/remove-bad-plugin.js"
+    "postinstall": "patch-package",
+    "eas-build-pre-install": "echo '✅ Ensuring expo-in-app-purchases plugin override exists' && cp -f node_modules/expo-in-app-purchases/app.plugin.js node_modules/expo-in-app-purchases/app.plugin.js"
   },
   "dependencies": {
     "expo": "54.0.22",

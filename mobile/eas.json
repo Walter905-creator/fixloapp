@@ -7,12 +7,7 @@
       "node": "20.11.1",
       "ios": {
         "image": "latest",
-        "resourceClass": "m-medium",
-        "hooks": {
-          "prebuild": {
-            "command": "node scripts/remove-bad-plugin.js"
-          }
-        }
+        "resourceClass": "m-medium"
       },
       "android": {
         "buildType": "app-bundle"

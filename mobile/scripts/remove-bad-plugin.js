@@ -1,8 +1,8 @@
 // scripts/remove-bad-plugin.js
-// Removes the invalid config plugin file from expo-in-app-purchases before EAS reads app config
+// Removes the invalid config plugin file from expo-in-app-purchases (CommonJS safe)
 
-import fs from "fs";
-import path from "path";
+const fs = require("fs");
+const path = require("path");
 
 const pluginPath = path.join(
   "node_modules",
@@ -13,7 +13,7 @@ const pluginPath = path.join(
 try {
   if (fs.existsSync(pluginPath)) {
     fs.rmSync(pluginPath);
-    console.log("🧩 Removed invalid expo-in-app-purchases app.plugin.js");
+    console.log("🧩 Removed invalid expo-in-app-purchases app.plugin.js ✅");
   } else {
     console.log("✅ No invalid plugin found — nothing to remove");
   }
