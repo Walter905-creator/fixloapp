@@ -1,35 +1,22 @@
 {
   "cli": {
-    "version": ">= 16.18.0",
-    "appVersionSource": "remote"
+    "version": ">= 3.13.0"
   },
   "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal",
-      "android": {
-        "buildType": "apk"
-      },
-      "ios": {
-        "simulator": true
-      }
-    },
-    "preview": {
-      "distribution": "internal"
-    },
     "production": {
-      "autoIncrement": true,
+      "node": "20.11.1",
       "ios": {
         "image": "latest",
         "resourceClass": "m-medium",
-        "cocoapods": "1.15.2"
+        "hooks": {
+          "prebuild": {
+            "command": "node scripts/remove-bad-plugin.js"
+          }
+        }
       },
-      "env": {
-        "EXPO_DOCTOR": "skip"
+      "android": {
+        "buildType": "app-bundle"
       }
     }
-  },
-  "submit": {
-    "production": {}
   }
 }
