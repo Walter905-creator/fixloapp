@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "8f3b81c3-891c-4c33-b655-b4c1d141a287"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.fixloapp.mobile",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    }
+  }
+}
