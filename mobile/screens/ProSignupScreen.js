@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   Platform
 } from 'react-native';
-import * as InAppPurchases from 'expo-in-app-purchases';
+
 
 // Product ID for the Pro subscription (should match App Store Connect configuration)
 const PRO_SUBSCRIPTION_ID = Platform.select({
