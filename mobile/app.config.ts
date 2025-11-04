@@ -20,7 +20,7 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.fixloapp.mobile",
-      buildNumber: "7",
+  buildNumber: "8",
       infoPlist: {
         NSCameraUsageDescription: "Allow Fixlo to access your camera for profile photos.",
         NSPhotoLibraryUsageDescription: "Allow Fixlo to access your photo library for uploads.",
@@ -33,7 +33,7 @@ export default {
         backgroundColor: "#ffffff"
       },
       package: "com.fixloapp.mobile",
-      versionCode: 7
+  versionCode: 8
     },
     web: {
       favicon: "./assets/icon.png"
