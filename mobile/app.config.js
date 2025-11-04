@@ -1,3 +1,4 @@
+// This file mirrors `app.config.ts` to avoid Expo config conflicts.
 export default {
   expo: {
     name: "Fixlo",
@@ -19,8 +20,10 @@ export default {
       supportsTablet: true,
       bundleIdentifier: "com.fixloapp.mobile",
       buildNumber: "7",
-      entitlements: {
-        "com.apple.InAppPurchase": true
+      infoPlist: {
+        NSCameraUsageDescription: "Allow Fixlo to access your camera for profile photos.",
+        NSPhotoLibraryUsageDescription: "Allow Fixlo to access your photo library for uploads.",
+        NSLocationWhenInUseUsageDescription: "Allow Fixlo to use your location to show nearby services."
       }
     },
 
@@ -33,12 +36,12 @@ export default {
       }
     },
 
-    // ✅ Removed the broken plugin, only keeping working ones
     plugins: ["expo-notifications"],
 
     extra: {
       eas: {
-        projectId: "8e7a9024-28f9-47f1-bed0-cb74077b66ae"
+        // keep projectId from the TypeScript config
+        projectId: "8f3b81c3-891c-4c33-b655-b4c1d141a287"
       }
     }
   }
