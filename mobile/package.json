@@ -7,7 +7,8 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "eas-build-pre-install": "npm install && npx patch-package"
+    "preinstall": "node scripts/remove-bad-plugin.js",
+    "eas-build-pre-install": "npm install && node scripts/remove-bad-plugin.js"
   },
   "dependencies": {
     "expo": "54.0.22",
