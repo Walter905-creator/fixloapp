@@ -33,16 +33,8 @@ export default {
       }
     },
 
-    // 🚫 Important: Skip loading the invalid expo-in-app-purchases plugin
-    plugins: [
-      "expo-notifications",
-      [
-        "expo-in-app-purchases",
-        {
-          _disabled: true
-        }
-      ]
-    ],
+    // ✅ Removed the broken plugin, only keeping working ones
+    plugins: ["expo-notifications"],
 
     extra: {
       eas: {
