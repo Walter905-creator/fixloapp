@@ -342,7 +342,7 @@ app.post("/api/subscribe", async (req, res) => {
 app.post("/api/pro-signup", async (req, res) => {
   try {
     const { ENABLE_BG_CHECKS } = require('./config/flags');
-    const { isCheckrEnabled, createCandidateAndInvitation } = require('./utils/checkr');
+    const { isCheckrEnabled, createCandidateAndInvitation, parseFullName, formatDobForCheckr } = require('./utils/checkr');
     const { name, email, phone, trade, location, dob, role, termsConsent, smsConsent, ssn, zipcode } =
       req.body || {};
 
@@ -401,12 +401,10 @@ app.post("/api/pro-signup", async (req, res) => {
         console.log('🔍 Initiating Checkr background check for new Pro');
         
         // Parse name into first and last name
-        const nameParts = name.trim().split(' ');
-        const firstName = nameParts[0] || name;
-        const lastName = nameParts.slice(1).join(' ') || nameParts[0];
+        const { firstName, lastName } = parseFullName(name);
         
         // Format DOB for Checkr (YYYY-MM-DD)
-        const dobFormatted = new Date(dob).toISOString().split('T')[0];
+        const dobFormatted = formatDobForCheckr(dob);
         
         checkrData = await createCandidateAndInvitation({
           email: email.toLowerCase(),
@@ -490,7 +488,7 @@ app.post("/api/pro-signup", async (req, res) => {
 app.post("/api/signup/pro", async (req, res) => {
   try {
     const { ENABLE_BG_CHECKS } = require('./config/flags');
-    const { isCheckrEnabled, createCandidateAndInvitation } = require('./utils/checkr');
+    const { isCheckrEnabled, createCandidateAndInvitation, parseFullName, formatDobForCheckr } = require('./utils/checkr');
     const { name, email, phone, trade, location, dob, role, termsConsent, smsConsent, ssn, zipcode } =
       req.body || {};
 
@@ -549,12 +547,10 @@ app.post("/api/signup/pro", async (req, res) => {
         console.log('🔍 Initiating Checkr background check for new Pro');
         
         // Parse name into first and last name
-        const nameParts = name.trim().split(' ');
-        const firstName = nameParts[0] || name;
-        const lastName = nameParts.slice(1).join(' ') || nameParts[0];
+        const { firstName, lastName } = parseFullName(name);
         
         // Format DOB for Checkr (YYYY-MM-DD)
-        const dobFormatted = new Date(dob).toISOString().split('T')[0];
+        const dobFormatted = formatDobForCheckr(dob);
         
         checkrData = await createCandidateAndInvitation({
           email: email.toLowerCase(),

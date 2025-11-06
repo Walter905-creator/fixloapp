@@ -29,6 +29,27 @@ function isCheckrEnabled() {
 }
 
 /**
+ * Parse a full name into first and last name
+ * @param {string} name - Full name to parse
+ * @returns {Object} Object with firstName and lastName
+ */
+function parseFullName(name) {
+  const nameParts = name.trim().split(' ');
+  const firstName = nameParts[0] || name;
+  const lastName = nameParts.slice(1).join(' ') || nameParts[0];
+  return { firstName, lastName };
+}
+
+/**
+ * Format date of birth for Checkr API (YYYY-MM-DD)
+ * @param {Date|string} dob - Date of birth
+ * @returns {string} Formatted date string
+ */
+function formatDobForCheckr(dob) {
+  return new Date(dob).toISOString().split('T')[0];
+}
+
+/**
  * Make authenticated request to Checkr API
  * @param {string} method - HTTP method (GET, POST, etc.)
  * @param {string} endpoint - API endpoint path
@@ -176,4 +197,6 @@ module.exports = {
   createCandidateAndInvitation,
   getReport,
   getCandidate,
+  parseFullName,
+  formatDobForCheckr,
 };

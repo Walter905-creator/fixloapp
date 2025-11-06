@@ -4,75 +4,11 @@
 
 const express = require('express');
 const crypto = require('crypto');
-const axios = require('axios');
 const Pro = require('../models/Pro');
 const { sendSms } = require('../utils/twilio');
+const { getCheckrConfig, checkrApiRequest } = require('../utils/checkr');
 
 const router = express.Router();
-
-/* -------------------------------- Utilities -------------------------------- */
-
-/**
- * Get Checkr API configuration from environment variables
- * @returns {Object} Configuration object with apiKey and baseUrl
- */
-function getCheckrConfig() {
-  const apiKey = process.env.CHECKR_API_KEY;
-  const baseUrl = 'https://api.checkr.com/v1';
-  
-  if (!apiKey) {
-    console.warn('⚠️ CHECKR_API_KEY not configured');
-    return null;
-  }
-  
-  return { apiKey, baseUrl };
-}
-
-/**
- * Make authenticated request to Checkr API
- * @param {string} method - HTTP method (GET, POST, etc.)
- * @param {string} endpoint - API endpoint path
- * @param {Object} data - Request body data
- * @returns {Promise<Object>} API response data
- */
-async function checkrApiRequest(method, endpoint, data = null) {
-  const config = getCheckrConfig();
-  
-  if (!config) {
-    throw new Error('Checkr API not configured');
-  }
-  
-  const url = `${config.baseUrl}${endpoint}`;
-  const auth = Buffer.from(`${config.apiKey}:`).toString('base64');
-  
-  const options = {
-    method,
-    url,
-    headers: {
-      'Authorization': `Basic ${auth}`,
-      'Content-Type': 'application/json',
-    },
-  };
-  
-  if (data) {
-    options.data = data;
-  }
-  
-  console.log(`📡 Checkr API ${method} ${endpoint}`);
-  
-  try {
-    const response = await axios(options);
-    console.log(`✅ Checkr API response: ${response.status}`);
-    return response.data;
-  } catch (error) {
-    console.error(`❌ Checkr API error: ${error.message}`);
-    if (error.response) {
-      console.error(`   Status: ${error.response.status}`);
-      console.error(`   Data:`, error.response.data);
-    }
-    throw error;
-  }
-}
 
 /**
  * Verify Checkr webhook signature
@@ -135,7 +71,7 @@ async function notifyProOfStatusChange(pro, status) {
     }
     
     // Send SMS if Pro has SMS notifications enabled and phone number
-    if (pro.notificationSettings?.sms && pro.phone) {
+    if (pro.notificationSettings.sms && pro.phone) {
       console.log(`📱 Sending SMS notification to Pro ${pro._id}`);
       await sendSms(pro.phone, message);
     }
