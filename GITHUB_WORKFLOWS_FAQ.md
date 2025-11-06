@@ -38,7 +38,7 @@ The path `/home/runner/work/_temp/runtime-logs/` is:
 
 ## Our Repository Workflows
 
-The fixloapp repository has two main workflow files:
+The fixloapp repository has the following workflows:
 
 ### 1. CI Workflow (`.github/workflows/ci.yml`)
 - **Purpose**: Continuous Integration - builds and validates code changes
