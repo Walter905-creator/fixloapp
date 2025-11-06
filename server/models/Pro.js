@@ -197,6 +197,12 @@ const proSchema = new mongoose.Schema({
   checkrCandidateId: {
     type: String
   },
+  checkrReportId: {
+    type: String
+  },
+  checkrInvitationId: {
+    type: String
+  },
   
   // Contact preferences
   notificationSettings: {

@@ -277,6 +277,9 @@ app.use("/api/ai", require("./routes/ai")); // AI assistant
 app.use("/api/contact", require("./routes/contact")); // contact form
 app.use("/api/referrals", require("./routes/referrals")); // referral rewards
 
+// Background check integration (Checkr)
+app.use("/api/checkr", require("./routes/checkrRoutes")); // Checkr candidate creation & webhooks
+
 // Privacy & Data Rights (GDPR/CCPA compliance)
 app.use("/api/privacy", require("./routes/privacy")); // data access, export, deletion
 
@@ -339,7 +342,8 @@ app.post("/api/subscribe", async (req, res) => {
 app.post("/api/pro-signup", async (req, res) => {
   try {
     const { ENABLE_BG_CHECKS } = require('./config/flags');
-    const { name, email, phone, trade, location, dob, role, termsConsent, smsConsent } =
+    const { isCheckrEnabled, createCandidateAndInvitation, parseFullName, formatDobForCheckr } = require('./utils/checkr');
+    const { name, email, phone, trade, location, dob, role, termsConsent, smsConsent, ssn, zipcode } =
       req.body || {};
 
     if (!name || !email || !phone || !trade || !location || !dob) {
@@ -386,12 +390,41 @@ app.post("/api/pro-signup", async (req, res) => {
     // Background check decision based on feature flag
     let verificationStatus = 'pending';
     let verificationNotes = '';
+    let checkrData = null;
 
     if (!ENABLE_BG_CHECKS) {
       verificationStatus = 'skipped';
       verificationNotes = 'Background checks temporarily disabled by config.';
-    } else {
-      // existing Checkr invitation / flow would go here when implemented
+    } else if (isCheckrEnabled() && ssn && zipcode) {
+      // Initiate Checkr background check if credentials and data provided
+      try {
+        console.log('🔍 Initiating Checkr background check for new Pro');
+        
+        // Parse name into first and last name
+        const { firstName, lastName } = parseFullName(name);
+        
+        // Format DOB for Checkr (YYYY-MM-DD)
+        const dobFormatted = formatDobForCheckr(dob);
+        
+        checkrData = await createCandidateAndInvitation({
+          email: email.toLowerCase(),
+          phone: phone.trim(),
+          firstName,
+          lastName,
+          dob: dobFormatted,
+          ssn,
+          zipcode
+        });
+        
+        console.log(`✅ Checkr invitation created: ${checkrData.invitationId}`);
+        verificationNotes = 'Background check invitation sent via Checkr';
+      } catch (checkrError) {
+        console.error('❌ Checkr integration error:', checkrError.message);
+        // Don't fail signup if Checkr fails - log and continue
+        verificationNotes = `Background check failed to initiate: ${checkrError.message}`;
+      }
+    } else if (isCheckrEnabled()) {
+      verificationNotes = 'Background check requires SSN and ZIP code - awaiting additional info';
     }
 
     // Allow same email registering for a different trade, but require explicit consent flags
@@ -405,6 +438,12 @@ app.post("/api/pro-signup", async (req, res) => {
       wantsNotifications: true,
       verificationStatus,
       verificationNotes,
+      // Add Checkr IDs if available
+      ...(checkrData && {
+        checkrCandidateId: checkrData.candidateId,
+        checkrInvitationId: checkrData.invitationId,
+        backgroundCheckStatus: 'pending',
+      }),
       smsConsent: {
         given: Boolean(smsConsent?.given),
         dateGiven: smsConsent?.dateGiven || new Date(),
@@ -424,7 +463,18 @@ app.post("/api/pro-signup", async (req, res) => {
       updatedAt: new Date(),
     });
 
-    return res.status(201).json({ success: true, proId: pro._id, verificationStatus });
+    const response = {
+      success: true,
+      proId: pro._id,
+      verificationStatus,
+    };
+    
+    // Include Checkr invitation URL if available
+    if (checkrData?.invitationUrl) {
+      response.backgroundCheckUrl = checkrData.invitationUrl;
+    }
+
+    return res.status(201).json(response);
   } catch (err) {
     console.error("❌ Pro signup error:", err.message);
     return res
@@ -438,7 +488,8 @@ app.post("/api/pro-signup", async (req, res) => {
 app.post("/api/signup/pro", async (req, res) => {
   try {
     const { ENABLE_BG_CHECKS } = require('./config/flags');
-    const { name, email, phone, trade, location, dob, role, termsConsent, smsConsent } =
+    const { isCheckrEnabled, createCandidateAndInvitation, parseFullName, formatDobForCheckr } = require('./utils/checkr');
+    const { name, email, phone, trade, location, dob, role, termsConsent, smsConsent, ssn, zipcode } =
       req.body || {};
 
     if (!name || !email || !phone || !trade || !location || !dob) {
@@ -485,12 +536,41 @@ app.post("/api/signup/pro", async (req, res) => {
     // Background check decision based on feature flag
     let verificationStatus = 'pending';
     let verificationNotes = '';
+    let checkrData = null;
 
     if (!ENABLE_BG_CHECKS) {
       verificationStatus = 'skipped';
       verificationNotes = 'Background checks temporarily disabled by config.';
-    } else {
-      // existing Checkr invitation / flow would go here when implemented
+    } else if (isCheckrEnabled() && ssn && zipcode) {
+      // Initiate Checkr background check if credentials and data provided
+      try {
+        console.log('🔍 Initiating Checkr background check for new Pro');
+        
+        // Parse name into first and last name
+        const { firstName, lastName } = parseFullName(name);
+        
+        // Format DOB for Checkr (YYYY-MM-DD)
+        const dobFormatted = formatDobForCheckr(dob);
+        
+        checkrData = await createCandidateAndInvitation({
+          email: email.toLowerCase(),
+          phone: phone.trim(),
+          firstName,
+          lastName,
+          dob: dobFormatted,
+          ssn,
+          zipcode
+        });
+        
+        console.log(`✅ Checkr invitation created: ${checkrData.invitationId}`);
+        verificationNotes = 'Background check invitation sent via Checkr';
+      } catch (checkrError) {
+        console.error('❌ Checkr integration error:', checkrError.message);
+        // Don't fail signup if Checkr fails - log and continue
+        verificationNotes = `Background check failed to initiate: ${checkrError.message}`;
+      }
+    } else if (isCheckrEnabled()) {
+      verificationNotes = 'Background check requires SSN and ZIP code - awaiting additional info';
     }
 
     // Allow same email registering for a different trade, but require explicit consent flags
@@ -504,6 +584,12 @@ app.post("/api/signup/pro", async (req, res) => {
       wantsNotifications: true,
       verificationStatus,
       verificationNotes,
+      // Add Checkr IDs if available
+      ...(checkrData && {
+        checkrCandidateId: checkrData.candidateId,
+        checkrInvitationId: checkrData.invitationId,
+        backgroundCheckStatus: 'pending',
+      }),
       smsConsent: {
         given: Boolean(smsConsent?.given),
         dateGiven: smsConsent?.dateGiven || new Date(),
@@ -523,7 +609,18 @@ app.post("/api/signup/pro", async (req, res) => {
       updatedAt: new Date(),
     });
 
-    return res.status(201).json({ success: true, proId: pro._id, verificationStatus });
+    const response = {
+      success: true,
+      proId: pro._id,
+      verificationStatus,
+    };
+    
+    // Include Checkr invitation URL if available
+    if (checkrData?.invitationUrl) {
+      response.backgroundCheckUrl = checkrData.invitationUrl;
+    }
+
+    return res.status(201).json(response);
   } catch (err) {
     console.error("❌ Pro signup error:", err.message);
     return res
