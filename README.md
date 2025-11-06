@@ -152,6 +152,12 @@ REACT_APP_API_URL=http://localhost:10000
 2. **For Professionals**: Subscribe via Stripe, get added to the system by admin, receive SMS notifications for new jobs
 3. **For Admins**: Login at `/admin/login`, manage professionals and view job requests at `/admin`
 
+## Documentation
+
+- **[FEATURES.md](./FEATURES.md)** - Complete list of all 40+ implemented features
+- **[GITHUB_WORKFLOWS_FAQ.md](./GITHUB_WORKFLOWS_FAQ.md)** - GitHub Actions workflows FAQ and troubleshooting
+- **[.github/copilot-instructions.md](./.github/copilot-instructions.md)** - Development instructions for Copilot coding agent
+
 ## Contributing
 
 1. Fork the repository
