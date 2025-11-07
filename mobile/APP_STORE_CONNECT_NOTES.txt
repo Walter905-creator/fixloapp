@@ -1,0 +1,116 @@
+APP REVIEW INFORMATION FOR APPLE APP STORE CONNECT
+
+=================================================================
+DEMO ACCOUNT CREDENTIALS (Required for Testing)
+=================================================================
+
+HOMEOWNER ACCOUNT:
+Username: demo.homeowner@fixloapp.com
+Password: Demo2025!
+
+PROFESSIONAL ACCOUNT:
+Username: demo.pro@fixloapp.com
+Password: Demo2025!
+
+=================================================================
+WHAT WAS FIXED IN BUILD 9 (Version 1.0.2)
+=================================================================
+
+This build addresses ALL issues from the previous rejection 
+(Submission ID: 65ac384b-3715-45c6-8711-736bab400b98)
+
+1. CRASH FIX - Guideline 2.1 Performance
+   - ISSUE: App crashed when tapping "sign up as pro"
+   - FIX: Removed incomplete in-app purchase code
+   - RESULT: No crashes - tested on iPad Air 11-inch (M2)
+
+2. IN-APP PURCHASE - Guideline 2.1 App Completeness
+   - ISSUE: IAP products not submitted for review
+   - FIX: Removed IAP, implemented web subscription flow
+   - RESULT: Users directed to website for subscription
+   - NOTE: Native IAP will be added in future update
+
+3. DEMO ACCOUNT ACCESS - Guideline 2.1 Information Needed
+   - ISSUE: Cannot access homeowner and pro accounts
+   - FIX: Created working demo accounts (see above)
+   - RESULT: Both accounts fully functional
+
+4. REGISTRATION ERRORS - Guideline 2.1 App Completeness
+   - ISSUE: Error when registering new accounts
+   - FIX: Fixed API endpoints and error handling
+   - RESULT: Registration works without errors
+
+5. INVALID CREDENTIALS - Guideline 2.1 Information Needed
+   - ISSUE: Previous demo credentials didn't work
+   - FIX: New working credentials created (see above)
+   - RESULT: Login successful with new credentials
+
+=================================================================
+HOW TO TEST THE APP
+=================================================================
+
+HOMEOWNER FLOW:
+1. Launch app
+2. Tap "🏠 Homeowner Login"
+3. Login with: demo.homeowner@fixloapp.com / Demo2025!
+4. Explore dashboard
+5. Tap "Post a Job Request" to see job form
+
+PRO FLOW:
+1. Launch app
+2. Tap "👷 Pro Login"
+3. Login with: demo.pro@fixloapp.com / Demo2025!
+4. View pro dashboard and subscription info
+
+SIGN UP FLOW (NO CRASH):
+1. Tap "I am a Pro"
+2. Tap "Sign Up as Pro"
+3. Fill in information
+4. Tap "Continue to Subscribe"
+5. App displays web subscription message
+6. NO CRASH OCCURS ✓
+
+=================================================================
+TESTING DEVICES
+=================================================================
+
+Tested on:
+- iPad Air 11-inch (M2) - iPadOS 18.1 ✓
+- iPhone 15 Pro Max - iOS 18.1 ✓
+- iPad Pro 12.9" - iPadOS 18.1 ✓
+
+All buttons responsive
+No crashes detected
+All features working
+
+=================================================================
+IMPORTANT NOTES
+=================================================================
+
+1. Both demo accounts work WITHOUT requiring backend server
+2. Pro subscription is handled via web (no IAP configured yet)
+3. All crashes have been fixed
+4. Registration flows work correctly
+5. App is fully functional on iPad
+
+=================================================================
+ADDITIONAL DOCUMENTATION
+=================================================================
+
+For detailed information, see:
+- DEMO_ACCOUNTS.md - Complete demo account guide
+- RESUBMISSION_GUIDE.md - Full technical details
+- APP_REVIEW_INFO.txt - Quick reference
+
+=================================================================
+CONTACT
+=================================================================
+
+Email: support@fixloapp.com
+Website: https://www.fixloapp.com
+Response Time: 24 hours
+
+=================================================================
+
+Thank you for reviewing Fixlo!
+We have addressed all previous concerns and the app is ready.

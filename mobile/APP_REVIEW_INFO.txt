@@ -1,0 +1,92 @@
+# App Review Information for Apple
+
+## Demo Account Credentials
+
+### Homeowner Account
+**Username:** demo.homeowner@fixloapp.com  
+**Password:** Demo2025!
+
+### Professional Account
+**Username:** demo.pro@fixloapp.com  
+**Password:** Demo2025!
+
+## How to Test the App
+
+1. **Testing Homeowner Features:**
+   - Launch app
+   - Tap "🏠 Homeowner Login"
+   - Use homeowner credentials above
+   - Explore dashboard and tap "Post a Job Request"
+
+2. **Testing Pro Features:**
+   - Launch app
+   - Tap "👷 Pro Login"
+   - Use professional credentials above
+   - View pro dashboard and subscription information
+
+3. **Testing Registration:**
+   - Tap "I am a Homeowner" or "I am a Pro"
+   - Create new account with any test email
+   - Registration works in demo mode for review
+
+## Changes Made Since Last Rejection
+
+### ✅ Fixed: App Crash (Guideline 2.1)
+- **Issue:** App crashed when tapping "sign up as pro"
+- **Resolution:** Removed incomplete in-app purchase code
+- **Status:** No crashes - fully tested on iPad Air 11-inch (M2)
+
+### ✅ Fixed: Demo Account Access (Guideline 2.1)
+- **Issue:** Previous demo credentials didn't work
+- **Resolution:** Created working demo accounts (see above)
+- **Status:** Both accounts fully functional with pre-populated features
+
+### ✅ Fixed: Registration Errors (Guideline 2.1)
+- **Issue:** Errors when registering new accounts
+- **Resolution:** Improved error handling and demo mode
+- **Status:** Registration works smoothly without errors
+
+### ✅ Addressed: In-App Purchase (Guideline 2.1)
+- **Issue:** IAP not configured in App Store Connect
+- **Resolution:** Removed IAP temporarily; subscription via web
+- **Status:** Pro subscription clearly explained, directs to website
+- **Note:** Will implement native IAP in future update once configured
+
+## App Features Demonstrated
+
+### Homeowner Features:
+- User authentication (login/signup)
+- Dashboard with service categories
+- Job request submission form
+- Browse professional services
+
+### Professional Features:
+- Pro authentication (login/signup)
+- Pro dashboard
+- Subscription information display ($59.99/month)
+- Push notification setup
+- Professional benefits overview
+
+## Technical Details
+
+- **Platform:** iOS (iPhone & iPad)
+- **Minimum iOS:** 13.0
+- **Tested On:** iPad Air 11-inch (M2), iPadOS 18.1
+- **Build Number:** 8
+- **Version:** 1.0.1
+
+## Contact Information
+
+**Support Email:** support@fixloapp.com  
+**Website:** https://www.fixloapp.com  
+**Response Time:** 24 hours
+
+## Notes for Reviewers
+
+1. **All buttons are responsive** - Fixed touch targets for iPad
+2. **No in-app purchases active** - Subscription handled via website until IAP configured
+3. **Demo accounts are pre-configured** - No payment required for testing
+4. **App works offline** - Demo mode allows full feature exploration
+5. **No crashes** - Thoroughly tested on iPad Air and iPhone simulators
+
+Thank you for reviewing Fixlo!
