@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   View, 
   Text, 
@@ -8,15 +8,8 @@ import {
   ScrollView, 
   TouchableOpacity,
   ActivityIndicator,
-  Platform
+  Linking
 } from 'react-native';
-
-
-// Product ID for the Pro subscription (should match App Store Connect configuration)
-const PRO_SUBSCRIPTION_ID = Platform.select({
-  ios: 'com.fixloapp.mobile.pro.monthly',
-  android: 'com.fixloapp.mobile.pro.monthly'
-});
 
 export default function ProSignupScreen({ navigation }) {
   const [name, setName] = useState('');
@@ -24,122 +17,37 @@ export default function ProSignupScreen({ navigation }) {
   const [phone, setPhone] = useState('');
   const [trade, setTrade] = useState('');
   const [loading, setLoading] = useState(false);
-  const [purchaseLoading, setPurchaseLoading] = useState(false);
-  const [products, setProducts] = useState([]);
-  const [purchaseError, setPurchaseError] = useState(null);
 
-  useEffect(() => {
-    // Connect to the store and get available products
-    const initializeIAP = async () => {
-      try {
-        await InAppPurchases.connectAsync();
-        
-        // Get available products
-        const { results, responseCode } = await InAppPurchases.getProductsAsync([PRO_SUBSCRIPTION_ID]);
-        
-        if (responseCode === InAppPurchases.IAPResponseCode.OK) {
-          setProducts(results);
-          console.log('✅ Products loaded:', results);
-        } else {
-          console.log('⚠️ No products available or not in production environment');
-        }
-      } catch (error) {
-        console.error('❌ Error initializing IAP:', error);
-        setPurchaseError('In-App Purchase not available in development. Will be enabled in production.');
-      }
-    };
-
-    initializeIAP();
-
-    // Set up purchase listener
-    const purchaseListener = InAppPurchases.setPurchaseListener(({ responseCode, results }) => {
-      if (responseCode === InAppPurchases.IAPResponseCode.OK) {
-        results.forEach((purchase) => {
-          if (!purchase.acknowledged) {
-            console.log('✅ Purchase successful:', purchase);
-            // Finish the transaction
-            InAppPurchases.finishTransactionAsync(purchase, true);
-            
-            Alert.alert(
-              '🎉 Welcome to Fixlo Pro!',
-              'Your subscription is now active. You can start receiving job leads immediately!',
-              [
-                {
-                  text: 'Get Started',
-                  onPress: () => navigation.navigate('Pro')
-                }
-              ]
-            );
-          }
-        });
-      } else if (responseCode === InAppPurchases.IAPResponseCode.USER_CANCELED) {
-        setPurchaseLoading(false);
-        Alert.alert('Purchase Cancelled', 'You can subscribe at any time to start receiving leads.');
-      } else {
-        setPurchaseLoading(false);
-        Alert.alert('Purchase Failed', 'Unable to complete purchase. Please try again.');
-      }
-    });
-
-    return () => {
-      // Cleanup
-      purchaseListener.remove();
-      InAppPurchases.disconnectAsync();
-    };
-  }, [navigation]);
-
-  const handlePurchase = async () => {
+  const handleSubscribe = async () => {
     if (!name || !email || !phone || !trade) {
-      Alert.alert("Missing Info", "Please fill out all fields before subscribing.");
+      Alert.alert("Missing Info", "Please fill out all fields before continuing.");
       return;
     }
 
-    setPurchaseLoading(true);
-    setPurchaseError(null);
-
-    try {
-      // In development/testing, simulate the purchase
-      if (__DEV__ || products.length === 0) {
-        // Simulate purchase delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        Alert.alert(
-          '🎉 Test Mode: Subscription Successful!',
-          'In production, this will process real payments through Apple.\n\nYour Pro account is ready!',
-          [
-            {
-              text: 'Continue',
-              onPress: () => navigation.navigate('Pro')
-            }
-          ]
-        );
-        setPurchaseLoading(false);
-        return;
-      }
-
-      // Production purchase
-      await InAppPurchases.purchaseItemAsync(PRO_SUBSCRIPTION_ID);
-      // Purchase listener will handle the result
-    } catch (error) {
-      console.error('❌ Purchase error:', error);
-      setPurchaseLoading(false);
-      
-      if (error.code === 'E_USER_CANCELLED') {
-        Alert.alert('Purchase Cancelled', 'You can subscribe at any time.');
-      } else {
-        Alert.alert(
-          'Purchase Error',
-          'Unable to process purchase. Please try again or contact support.'
-        );
-      }
-    }
-  };
-
-  const getProductPrice = () => {
-    if (products.length > 0 && products[0].price) {
-      return products[0].localizedPrice || products[0].price;
-    }
-    return '$59.99'; // Default fallback
+    setLoading(true);
+    
+    // Simulate processing
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    Alert.alert(
+      '✅ Information Saved!',
+      'Thank you for your interest in Fixlo Pro. To complete your subscription and start receiving job leads, please visit our website to set up billing.\n\nYou will receive an email with next steps.',
+      [
+        {
+          text: 'Visit Website',
+          onPress: () => {
+            Linking.openURL('https://www.fixloapp.com/pro-signup');
+          }
+        },
+        {
+          text: 'Maybe Later',
+          style: 'cancel',
+          onPress: () => navigation.goBack()
+        }
+      ]
+    );
+    
+    setLoading(false);
   };
 
   return (
@@ -148,16 +56,10 @@ export default function ProSignupScreen({ navigation }) {
         <Text style={styles.title}>🚀 Join Fixlo Pro</Text>
         <Text style={styles.subtitle}>Get unlimited job leads and grow your business</Text>
 
-        {purchaseError && (
-          <View style={styles.errorBanner}>
-            <Text style={styles.errorText}>ℹ️ {purchaseError}</Text>
-          </View>
-        )}
-
         <View style={styles.pricingCard}>
           <Text style={styles.pricingTitle}>Pro Subscription</Text>
-          <Text style={styles.pricingAmount}>{getProductPrice()}/month</Text>
-          <Text style={styles.pricingNote}>Billed monthly through Apple</Text>
+          <Text style={styles.pricingAmount}>$59.99/month</Text>
+          <Text style={styles.pricingNote}>Subscribe online to get started</Text>
           
           <View style={styles.benefitsContainer}>
             <Text style={styles.benefitItem}>✅ Unlimited job leads</Text>
@@ -220,23 +122,22 @@ export default function ProSignupScreen({ navigation }) {
         </View>
 
         <TouchableOpacity
-          style={[styles.subscribeButton, purchaseLoading && styles.buttonDisabled]}
-          onPress={handlePurchase}
-          disabled={purchaseLoading}
+          style={[styles.subscribeButton, loading && styles.buttonDisabled]}
+          onPress={handleSubscribe}
+          disabled={loading}
         >
-          {purchaseLoading ? (
+          {loading ? (
             <ActivityIndicator color="white" />
           ) : (
             <Text style={styles.subscribeButtonText}>
-              Subscribe Now - {getProductPrice()}/month
+              Continue to Subscribe - $59.99/month
             </Text>
           )}
         </TouchableOpacity>
 
         <Text style={styles.disclaimer}>
-          By subscribing, you agree to our Terms of Service and Privacy Policy. 
-          Subscription automatically renews unless cancelled at least 24 hours before 
-          the end of the current period. Manage subscriptions in App Store settings.
+          You'll be directed to our website to complete your subscription setup and billing. 
+          By subscribing, you agree to our Terms of Service and Privacy Policy.
         </Text>
 
         <TouchableOpacity
@@ -272,19 +173,6 @@ const styles = StyleSheet.create({
     color: '#475569',
     marginBottom: 25,
     textAlign: 'center'
-  },
-  errorBanner: {
-    backgroundColor: '#fef3c7',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 20,
-    borderLeftWidth: 4,
-    borderLeftColor: '#f59e0b'
-  },
-  errorText: {
-    fontSize: 14,
-    color: '#92400e',
-    lineHeight: 20
   },
   pricingCard: {
     backgroundColor: '#ffffff',

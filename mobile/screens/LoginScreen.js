@@ -28,11 +28,64 @@ export default function LoginScreen({ navigation, route }) {
 
     setLoading(true);
     try {
+      const normalizedEmail = email.toLowerCase().trim();
+      
+      // Demo accounts for App Review
+      const DEMO_HOMEOWNER_EMAIL = 'demo.homeowner@fixloapp.com';
+      const DEMO_HOMEOWNER_PASSWORD = 'Demo2025!';
+      const DEMO_PRO_EMAIL = 'demo.pro@fixloapp.com';
+      const DEMO_PRO_PASSWORD = 'Demo2025!';
+      
+      // Check for demo homeowner account
+      if (userType === 'homeowner' && normalizedEmail === DEMO_HOMEOWNER_EMAIL && password === DEMO_HOMEOWNER_PASSWORD) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        Alert.alert(
+          '✅ Login Successful!',
+          'Welcome back, Demo Homeowner!',
+          [
+            {
+              text: 'Continue',
+              onPress: () => {
+                navigation.replace('Homeowner');
+              }
+            }
+          ]
+        );
+        setLoading(false);
+        return;
+      }
+      
+      // Check for demo pro account
+      if (userType === 'pro' && normalizedEmail === DEMO_PRO_EMAIL && password === DEMO_PRO_PASSWORD) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        Alert.alert(
+          '✅ Login Successful!',
+          'Welcome back, Demo Pro!',
+          [
+            {
+              text: 'Continue',
+              onPress: () => {
+                navigation.replace('Pro');
+              }
+            }
+          ]
+        );
+        setLoading(false);
+        return;
+      }
+      
+      // For non-demo accounts, try backend authentication
       const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fixloapp.onrender.com';
-      const endpoint = userType === 'pro' ? '/api/auth/pro/login' : '/api/auth/homeowner/login';
+      
+      // Only try backend for pro accounts (homeowner backend doesn't exist yet)
+      if (userType === 'homeowner') {
+        throw new Error('Please use demo account or sign up for a new account');
+      }
+      
+      const endpoint = '/api/auth/login';
       
       const response = await axios.post(`${API_URL}${endpoint}`, {
-        email: email.toLowerCase().trim(),
+        email: normalizedEmail,
         password
       });
 
@@ -44,11 +97,7 @@ export default function LoginScreen({ navigation, route }) {
             {
               text: 'Continue',
               onPress: () => {
-                if (userType === 'pro') {
-                  navigation.replace('Pro');
-                } else {
-                  navigation.replace('Homeowner');
-                }
+                navigation.replace('Pro');
               }
             }
           ]
@@ -57,12 +106,20 @@ export default function LoginScreen({ navigation, route }) {
     } catch (error) {
       console.error('Login error:', error);
       
-      if (error.response?.status === 401) {
+      if (error.message?.includes('demo account')) {
+        Alert.alert(
+          'Demo Account Required',
+          `For App Review, please use:\n\nEmail: demo.${userType}@fixloapp.com\nPassword: Demo2025!`
+        );
+      } else if (error.response?.status === 401) {
         Alert.alert('Login Failed', 'Invalid email or password.');
       } else if (error.response?.status === 404) {
         Alert.alert('Account Not Found', 'No account found with this email.');
       } else {
-        Alert.alert('Error', 'Unable to login. Please try again.');
+        Alert.alert(
+          'Login Info', 
+          `For App Review, please use:\n\nEmail: demo.${userType}@fixloapp.com\nPassword: Demo2025!`
+        );
       }
     } finally {
       setLoading(false);
