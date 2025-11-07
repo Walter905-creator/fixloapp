@@ -3,7 +3,7 @@ export default {
   expo: {
     name: "Fixlo",
     slug: "fixloapp",
-    version: "1.0.1",
+    version: "1.0.2",
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "light",
@@ -19,7 +19,7 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.fixloapp.mobile",
-      buildNumber: "7",
+      buildNumber: "9",
       infoPlist: {
         NSCameraUsageDescription: "Allow Fixlo to access your camera for profile photos.",
         NSPhotoLibraryUsageDescription: "Allow Fixlo to access your photo library for uploads.",
@@ -29,7 +29,7 @@ export default {
 
     android: {
       package: "com.fixloapp.mobile",
-      versionCode: 7,
+      versionCode: 9,
       adaptiveIcon: {
         foregroundImage: "./assets/icon.png",
         backgroundColor: "#ffffff"
