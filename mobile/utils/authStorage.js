@@ -9,17 +9,24 @@ const STORAGE_KEYS = {
   TOKEN: '@fixlo_auth_token',
   USER: '@fixlo_user_data',
   USER_TYPE: '@fixlo_user_type',
+  TOKEN_EXPIRY: '@fixlo_token_expiry',
+  REFRESH_TOKEN: '@fixlo_refresh_token',
 };
 
 /**
- * Save authentication token
+ * Save authentication token with expiry
  * @param {string} token - JWT token
+ * @param {number} expiresIn - Token expiry time in seconds (default: 7 days)
  * @returns {Promise<boolean>} Success status
  */
-export const saveAuthToken = async (token) => {
+export const saveAuthToken = async (token, expiresIn = 604800) => {
   try {
-    await AsyncStorage.setItem(STORAGE_KEYS.TOKEN, token);
-    console.log('✅ Auth token saved');
+    const expiryTime = Date.now() + (expiresIn * 1000);
+    await AsyncStorage.multiSet([
+      [STORAGE_KEYS.TOKEN, token],
+      [STORAGE_KEYS.TOKEN_EXPIRY, expiryTime.toString()],
+    ]);
+    console.log('✅ Auth token saved with expiry:', new Date(expiryTime).toISOString());
     return true;
   } catch (error) {
     console.error('❌ Error saving auth token:', error);
@@ -106,15 +113,23 @@ export const getUserType = async () => {
  * @param {string} token - JWT token
  * @param {Object} userData - User profile data
  * @param {string} userType - 'homeowner' or 'pro'
+ * @param {string} refreshToken - Optional refresh token
+ * @param {number} expiresIn - Token expiry time in seconds
  * @returns {Promise<boolean>} Success status
  */
-export const saveSession = async (token, userData, userType) => {
+export const saveSession = async (token, userData, userType, refreshToken = null, expiresIn = 604800) => {
   try {
-    await Promise.all([
-      saveAuthToken(token),
+    const promises = [
+      saveAuthToken(token, expiresIn),
       saveUserData(userData),
       saveUserType(userType),
-    ]);
+    ];
+    
+    if (refreshToken) {
+      promises.push(saveRefreshToken(refreshToken));
+    }
+    
+    await Promise.all(promises);
     console.log('✅ Session saved successfully');
     return true;
   } catch (error) {
@@ -162,11 +177,81 @@ export const clearSession = async () => {
       STORAGE_KEYS.TOKEN,
       STORAGE_KEYS.USER,
       STORAGE_KEYS.USER_TYPE,
+      STORAGE_KEYS.TOKEN_EXPIRY,
+      STORAGE_KEYS.REFRESH_TOKEN,
     ]);
     console.log('✅ Session cleared');
     return true;
   } catch (error) {
     console.error('❌ Error clearing session:', error);
+    return false;
+  }
+};
+
+/**
+ * Save refresh token
+ * @param {string} refreshToken - Refresh token
+ * @returns {Promise<boolean>} Success status
+ */
+export const saveRefreshToken = async (refreshToken) => {
+  try {
+    await AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+    console.log('✅ Refresh token saved');
+    return true;
+  } catch (error) {
+    console.error('❌ Error saving refresh token:', error);
+    return false;
+  }
+};
+
+/**
+ * Get refresh token
+ * @returns {Promise<string|null>} Refresh token or null
+ */
+export const getRefreshToken = async () => {
+  try {
+    const refreshToken = await AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+    return refreshToken;
+  } catch (error) {
+    console.error('❌ Error getting refresh token:', error);
+    return null;
+  }
+};
+
+/**
+ * Get token expiry time
+ * @returns {Promise<number|null>} Expiry timestamp or null
+ */
+export const getTokenExpiry = async () => {
+  try {
+    const expiry = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN_EXPIRY);
+    return expiry ? parseInt(expiry, 10) : null;
+  } catch (error) {
+    console.error('❌ Error getting token expiry:', error);
+    return null;
+  }
+};
+
+/**
+ * Check if token is expired or will expire soon
+ * @param {number} bufferMinutes - Buffer time in minutes before expiry (default: 5 minutes)
+ * @returns {Promise<boolean>} True if token needs refresh
+ */
+export const shouldRefreshToken = async (bufferMinutes = 5) => {
+  try {
+    const expiry = await getTokenExpiry();
+    if (!expiry) return false;
+    
+    const bufferTime = bufferMinutes * 60 * 1000;
+    const shouldRefresh = Date.now() >= (expiry - bufferTime);
+    
+    if (shouldRefresh) {
+      console.log('⏰ Token needs refresh (expires at:', new Date(expiry).toISOString(), ')');
+    }
+    
+    return shouldRefresh;
+  } catch (error) {
+    console.error('❌ Error checking token expiry:', error);
     return false;
   }
 };
@@ -179,7 +264,16 @@ export const isAuthenticated = async () => {
   try {
     const token = await getAuthToken();
     const userType = await getUserType();
-    return !!token && !!userType;
+    const expiry = await getTokenExpiry();
+    
+    // Check if token exists and is not expired
+    const isValid = !!token && !!userType && (!expiry || Date.now() < expiry);
+    
+    if (!isValid && token) {
+      console.log('⚠️ Token expired or invalid');
+    }
+    
+    return isValid;
   } catch (error) {
     console.error('❌ Error checking authentication:', error);
     return false;
