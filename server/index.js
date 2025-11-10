@@ -147,8 +147,25 @@ app.use('/privacy-policy', express.static(path.join(__dirname, '../client/public
 const io = new Server(server, {
   cors: { origin: allowedOrigins, methods: ["GET", "POST"] },
 });
+
+// Make io accessible to routes
+app.set('io', io);
+
 io.on("connection", (socket) => {
   console.log("🔌 Socket connected", socket.id);
+  
+  // Handle message sending
+  socket.on("message:send", (message) => {
+    console.log("📤 Message sent via socket:", message._id);
+    io.emit("message:new", message);
+  });
+
+  // Handle message read status
+  socket.on("message:read", (data) => {
+    console.log("✅ Message read via socket:", data.messageId);
+    io.emit("message:read", data);
+  });
+
   socket.on("disconnect", () => console.log("🔌 Socket disconnected", socket.id));
 });
 
@@ -276,6 +293,9 @@ app.use("/api", require("./routes/ipinfo")); // IP info proxy
 app.use("/api/ai", require("./routes/ai")); // AI assistant
 app.use("/api/contact", require("./routes/contact")); // contact form
 app.use("/api/referrals", require("./routes/referrals")); // referral rewards
+
+// Direct messaging
+app.use("/api", generalRateLimit, require("./routes/messages")); // messaging API
 
 // Background check integration (Checkr)
 app.use("/api/checkr", require("./routes/checkrRoutes")); // Checkr candidate creation & webhooks

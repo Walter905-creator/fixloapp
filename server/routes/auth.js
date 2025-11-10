@@ -175,4 +175,42 @@ router.post('/register', async (req, res) => {
   }
 });
 
+/**
+ * Refresh authentication token
+ */
+router.post('/refresh', async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(400).json({ error: 'Refresh token is required' });
+    }
+
+    // Verify refresh token
+    const jwt = require('jsonwebtoken');
+    let decoded;
+    try {
+      decoded = jwt.verify(refreshToken, process.env.JWT_SECRET || 'fallback-secret');
+    } catch (error) {
+      return res.status(401).json({ error: 'Invalid or expired refresh token' });
+    }
+
+    // Generate new access token
+    const newToken = sign({
+      id: decoded.id,
+      email: decoded.email,
+      role: decoded.role,
+    });
+
+    res.json({
+      token: newToken,
+      expiresIn: 604800, // 7 days in seconds
+    });
+
+  } catch (error) {
+    console.error('❌ Token refresh error:', error);
+    res.status(500).json({ error: 'Failed to refresh token' });
+  }
+});
+
 module.exports = router;

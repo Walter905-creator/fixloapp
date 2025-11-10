@@ -1,14 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 import { registerForPushNotificationsAsync, setupNotificationListeners } from '../utils/notifications';
 import { subscribeToNewJobs } from '../utils/socketService';
 import { clearSession } from '../utils/authStorage';
+import { offlineQueue } from '../utils/offlineQueue';
+import JobFilterModal from '../components/JobFilterModal';
+import { filterJobs } from '../utils/jobFilter';
 import axios from 'axios';
 
 export default function ProScreen({ navigation }) {
   const [pushToken, setPushToken] = useState(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [newJobCount, setNewJobCount] = useState(0);
+  const [offlineStatus, setOfflineStatus] = useState({ isOnline: true, queueSize: 0 });
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [jobs, setJobs] = useState([]);
+  const [filteredJobs, setFilteredJobs] = useState([]);
+  const [activeFilters, setActiveFilters] = useState(null);
 
   useEffect(() => {
     async function setupNotifications() {
@@ -40,6 +48,7 @@ export default function ProScreen({ navigation }) {
       const unsubscribeJobs = subscribeToNewJobs((job) => {
         console.log('📢 New job notification:', job);
         setNewJobCount((prev) => prev + 1);
+        setJobs((prev) => [job, ...prev]);
         Alert.alert(
           '🆕 New Job Available!',
           `${job.trade || 'Service'} - ${job.address || 'Location TBD'}`,
@@ -49,17 +58,46 @@ export default function ProScreen({ navigation }) {
           ]
         );
       });
+
+      // Listen to offline queue status
+      const unsubscribeQueue = offlineQueue.addListener((status) => {
+        setOfflineStatus(status);
+      });
       
       // Cleanup listeners on unmount
       return () => {
         listeners.notificationListener.remove();
         listeners.responseListener.remove();
         unsubscribeJobs();
+        unsubscribeQueue();
       };
     }
 
     setupNotifications();
+    
+    // Get initial offline queue status
+    setOfflineStatus(offlineQueue.getStatus());
   }, []);
+
+  useEffect(() => {
+    // Apply filters whenever jobs or active filters change
+    if (activeFilters) {
+      const filtered = filterJobs(jobs, activeFilters);
+      setFilteredJobs(filtered);
+    } else {
+      setFilteredJobs(jobs);
+    }
+  }, [jobs, activeFilters]);
+
+  const handleApplyFilters = (filters) => {
+    setActiveFilters(filters);
+    console.log('✅ Filters applied:', filters);
+  };
+
+  const handleClearFilters = () => {
+    setActiveFilters(null);
+    console.log('🗑️ Filters cleared');
+  };
   const testNotification = async () => {
     if (pushToken) {
       try {
@@ -77,107 +115,284 @@ export default function ProScreen({ navigation }) {
     }
   };
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>👷 Welcome Pro!</Text>
-      <Text style={styles.subtitle}>Join our network of trusted professionals</Text>
-      
-      <View style={styles.notificationStatus}>
-        <Text style={styles.statusText}>
-          🔔 Notifications: {notificationsEnabled ? '✅ Enabled' : '❌ Disabled'}
-        </Text>
-        {pushToken && (
-          <Text style={styles.tokenText}>
-            📱 Device registered for job alerts
-          </Text>
-        )}
-        {newJobCount > 0 && (
-          <Text style={styles.newJobsText}>
-            🆕 {newJobCount} new job{newJobCount > 1 ? 's' : ''} available!
-          </Text>
-        )}
-      </View>
-      
-      <View style={styles.benefitsContainer}>
-        <Text style={styles.benefitItem}>✅ Unlimited leads for $59.99/month</Text>
-        <Text style={styles.benefitItem}>✅ Direct client connections</Text>
-        <Text style={styles.benefitItem}>✅ Instant push notifications</Text>
-        <Text style={styles.benefitItem}>✅ Professional profile & reviews</Text>
-        <Text style={styles.benefitItem}>✅ Payment protection</Text>
-      </View>
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            await clearSession();
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Fixlo' }],
+            });
+          },
+        },
+      ]
+    );
+  };
 
-      <TouchableOpacity 
-        style={styles.signupButton}
-        onPress={() => navigation.navigate('Pro Signup')}
-      >
-        <Text style={styles.signupButtonText}>Sign Up as Pro - $59.99/month</Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity 
-        style={styles.loginButton}
-        onPress={() => navigation.navigate('Login', { userType: 'pro' })}
-      >
-        <Text style={styles.loginButtonText}>Already a member? Login</Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity 
-        style={styles.logoutButton}
-        onPress={async () => {
-          await clearSession();
-          Alert.alert('Logged Out', 'You have been logged out successfully');
-          navigation.replace('Fixlo');
-        }}
-      >
-        <Text style={styles.logoutButtonText}>🚪 Logout</Text>
-      </TouchableOpacity>
-      
-      {pushToken && (
-        <TouchableOpacity 
-          style={styles.testButton}
+  return (
+    <ScrollView style={styles.container}>
+      <View style={styles.content}>
+        <Text style={styles.title}>👷 Welcome Pro!</Text>
+        <Text style={styles.subtitle}>Join our network of trusted professionals</Text>
+        
+        {/* Notification Status */}
+        <View style={styles.statusCard}>
+          <Text style={styles.statusTitle}>📱 System Status</Text>
+          <View style={styles.statusRow}>
+            <Text style={styles.statusLabel}>🔔 Notifications:</Text>
+            <Text style={[styles.statusValue, notificationsEnabled && styles.statusValueGood]}>
+              {notificationsEnabled ? '✅ Enabled' : '❌ Disabled'}
+            </Text>
+          </View>
+          {pushToken && (
+            <Text style={styles.statusSubtext}>Device registered for job alerts</Text>
+          )}
+          {newJobCount > 0 && (
+            <View style={styles.newJobsBadge}>
+              <Text style={styles.newJobsText}>
+                🆕 {newJobCount} new job{newJobCount > 1 ? 's' : ''} available!
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Offline Queue Status */}
+        <View style={styles.statusCard}>
+          <Text style={styles.statusTitle}>📶 Network Status</Text>
+          <View style={styles.statusRow}>
+            <Text style={styles.statusLabel}>Connection:</Text>
+            <Text style={[styles.statusValue, offlineStatus.isOnline && styles.statusValueGood]}>
+              {offlineStatus.isOnline ? '✅ Online' : '⚠️ Offline'}
+            </Text>
+          </View>
+          {offlineStatus.queueSize > 0 && (
+            <View style={styles.warningBox}>
+              <Text style={styles.warningText}>
+                📥 {offlineStatus.queueSize} action{offlineStatus.queueSize > 1 ? 's' : ''} queued
+              </Text>
+              <Text style={styles.warningSubtext}>
+                {offlineStatus.isProcessing ? 'Processing...' : 'Will sync when online'}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Job Filters */}
+        <View style={styles.filterSection}>
+          <View style={styles.filterHeader}>
+            <Text style={styles.filterTitle}>🔍 Job Filters</Text>
+            {activeFilters && (
+              <TouchableOpacity onPress={handleClearFilters}>
+                <Text style={styles.clearFiltersText}>Clear</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          <TouchableOpacity
+            style={styles.filterButton}
+            onPress={() => setShowFilterModal(true)}
+          >
+            <Text style={styles.filterButtonText}>
+              {activeFilters 
+                ? `Filtering: ${activeFilters.trades?.length || 0} trades, ${activeFilters.maxDistance ? `${activeFilters.maxDistance}mi` : 'any distance'}`
+                : '📋 Set Job Preferences'}
+            </Text>
+          </TouchableOpacity>
+          {activeFilters && (
+            <Text style={styles.filterResultText}>
+              Showing {filteredJobs.length} of {jobs.length} jobs
+            </Text>
+          )}
+        </View>
+
+        {/* Action Buttons */}
+        <TouchableOpacity
+          style={styles.button}
+          activeOpacity={0.7}
+          onPress={() => navigation.navigate('Messages')}
+        >
+          <Text style={styles.buttonText}>💬 Messages</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.button}
+          activeOpacity={0.7}
           onPress={testNotification}
         >
-          <Text style={styles.testButtonText}>Test Notification</Text>
+          <Text style={styles.buttonText}>🔔 Test Notification</Text>
         </TouchableOpacity>
-      )}
-    </View>
+
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: '#dc2626' }]}
+          activeOpacity={0.7}
+          onPress={handleLogout}
+        >
+          <Text style={styles.buttonText}>🚪 Logout</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Job Filter Modal */}
+      <JobFilterModal
+        visible={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        onApplyFilters={handleApplyFilters}
+      />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: '#f8fafc',
-    justifyContent: 'center'
+  },
+  content: {
+    padding: 20,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#1e293b',
     textAlign: 'center',
-    marginBottom: 10
+    marginBottom: 10,
   },
   subtitle: {
     fontSize: 16,
     color: '#64748b',
     textAlign: 'center',
-    marginBottom: 20
+    marginBottom: 24,
   },
-  notificationStatus: {
-    backgroundColor: '#f1f5f9',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 20,
-    alignItems: 'center'
+  statusCard: {
+    backgroundColor: '#ffffff',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  statusText: {
+  statusTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
-    marginBottom: 5
+    color: '#1e293b',
+    marginBottom: 12,
   },
-  tokenText: {
+  statusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  statusLabel: {
     fontSize: 14,
+    color: '#64748b',
+  },
+  statusValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#dc2626',
+  },
+  statusValueGood: {
+    color: '#16a34a',
+  },
+  statusSubtext: {
+    fontSize: 13,
+    color: '#94a3b8',
+    marginTop: 4,
+  },
+  newJobsBadge: {
+    backgroundColor: '#fef3c7',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 12,
+  },
+  newJobsText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#92400e',
+    textAlign: 'center',
+  },
+  warningBox: {
+    backgroundColor: '#fef3c7',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 12,
+  },
+  warningText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#92400e',
+  },
+  warningSubtext: {
+    fontSize: 12,
+    color: '#b45309',
+    marginTop: 4,
+  },
+  filterSection: {
+    marginBottom: 16,
+  },
+  filterHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  filterTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1e293b',
+  },
+  clearFiltersText: {
+    fontSize: 14,
+    color: '#f97316',
+    fontWeight: '600',
+  },
+  filterButton: {
+    backgroundColor: '#ffffff',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+    borderStyle: 'dashed',
+  },
+  filterButtonText: {
+    fontSize: 15,
+    color: '#374151',
+    textAlign: 'center',
+  },
+  filterResultText: {
+    fontSize: 13,
+    color: '#64748b',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  button: {
+    backgroundColor: '#f97316',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginVertical: 8,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});
     color: '#10b981',
     textAlign: 'center'
   },
