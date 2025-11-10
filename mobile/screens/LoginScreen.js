@@ -13,6 +13,7 @@ import {
   Image
 } from 'react-native';
 import axios from 'axios';
+import { buildApiUrl, API_ENDPOINTS } from '../config/api';
 
 export default function LoginScreen({ navigation, route }) {
   const userType = route.params?.userType || 'homeowner';
@@ -75,19 +76,27 @@ export default function LoginScreen({ navigation, route }) {
       }
       
       // For non-demo accounts, try backend authentication
-      const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fixloapp.onrender.com';
+      console.log('🔐 Attempting backend login for:', userType);
       
       // Only try backend for pro accounts (homeowner backend doesn't exist yet)
       if (userType === 'homeowner') {
         throw new Error('Please use demo account or sign up for a new account');
       }
       
-      const endpoint = '/api/auth/login';
+      const apiUrl = buildApiUrl(API_ENDPOINTS.AUTH_LOGIN);
+      console.log('API URL:', apiUrl);
       
-      const response = await axios.post(`${API_URL}${endpoint}`, {
+      const response = await axios.post(apiUrl, {
         email: normalizedEmail,
         password
+      }, {
+        timeout: 30000,
+        headers: {
+          'Content-Type': 'application/json',
+        }
       });
+
+      console.log('✅ Login successful:', response.data);
 
       if (response.data.token) {
         Alert.alert(
@@ -104,17 +113,50 @@ export default function LoginScreen({ navigation, route }) {
         );
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('❌ Login error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        code: error.code,
+      });
       
+      // Handle demo account message
       if (error.message?.includes('demo account')) {
         Alert.alert(
           'Demo Account Required',
           `For App Review, please use:\n\nEmail: demo.${userType}@fixloapp.com\nPassword: Demo2025!`
         );
-      } else if (error.response?.status === 401) {
-        Alert.alert('Login Failed', 'Invalid email or password.');
-      } else if (error.response?.status === 404) {
-        Alert.alert('Account Not Found', 'No account found with this email.');
+        setLoading(false);
+        return;
+      }
+      
+      // Network errors
+      if (error.code === 'ECONNABORTED') {
+        Alert.alert(
+          'Connection Timeout',
+          'The request took too long. Please check your internet connection and try again.'
+        );
+        setLoading(false);
+        return;
+      }
+      
+      if (!error.response) {
+        Alert.alert(
+          'Network Error',
+          'Unable to connect to the server. Please check your internet connection and try again.'
+        );
+        setLoading(false);
+        return;
+      }
+      
+      // Server errors
+      const status = error.response.status;
+      const errorMessage = error.response.data?.message || error.response.data?.error;
+      
+      if (status === 401) {
+        Alert.alert('Login Failed', errorMessage || 'Invalid email or password.');
+      } else if (status === 404) {
+        Alert.alert('Account Not Found', errorMessage || 'No account found with this email.');
       } else {
         Alert.alert(
           'Login Info', 

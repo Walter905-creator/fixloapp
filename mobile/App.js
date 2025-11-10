@@ -11,6 +11,43 @@ import SignupScreen from './screens/SignupScreen';
 
 const Stack = createNativeStackNavigator();
 
+// Error Boundary Component to prevent app crashes
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('🚨 App Error Caught:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorTitle}>😔 Something went wrong</Text>
+          <Text style={styles.errorText}>
+            The app encountered an unexpected error. Please restart the app.
+          </Text>
+          <TouchableOpacity
+            style={styles.errorButton}
+            onPress={() => this.setState({ hasError: false, error: null })}
+          >
+            <Text style={styles.errorButtonText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 function HomeScreen({ navigation }) {
   return (
     <View style={styles.container}>
@@ -63,55 +100,57 @@ function HomeScreen({ navigation }) {
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        screenOptions={{
-          headerStyle: {
-            backgroundColor: '#f97316',
-          },
-          headerTintColor: '#fff',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
-        }}
-      >
-        <Stack.Screen 
-          name="Fixlo" 
-          component={HomeScreen} 
-          options={{ title: 'Fixlo - Home Services' }}
-        />
-        <Stack.Screen 
-          name="Login" 
-          component={LoginScreen} 
-          options={{ title: 'Sign In' }}
-        />
-        <Stack.Screen 
-          name="Signup" 
-          component={SignupScreen} 
-          options={{ title: 'Create Account' }}
-        />
-        <Stack.Screen 
-          name="Homeowner" 
-          component={HomeownerScreen} 
-          options={{ title: 'Homeowner Dashboard' }}
-        />
-        <Stack.Screen 
-          name="Pro" 
-          component={ProScreen} 
-          options={{ title: 'Pro Dashboard' }}
-        />
-        <Stack.Screen 
-          name="Pro Signup" 
-          component={ProSignupScreen} 
-          options={{ title: 'Join as Pro - $59.99/month' }}
-        />
-        <Stack.Screen 
-          name="Post a Job" 
-          component={HomeownerJobRequestScreen} 
-          options={{ title: 'Submit Job Request' }}
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <ErrorBoundary>
+      <NavigationContainer>
+        <Stack.Navigator
+          screenOptions={{
+            headerStyle: {
+              backgroundColor: '#f97316',
+            },
+            headerTintColor: '#fff',
+            headerTitleStyle: {
+              fontWeight: 'bold',
+            },
+          }}
+        >
+          <Stack.Screen 
+            name="Fixlo" 
+            component={HomeScreen} 
+            options={{ title: 'Fixlo - Home Services' }}
+          />
+          <Stack.Screen 
+            name="Login" 
+            component={LoginScreen} 
+            options={{ title: 'Sign In' }}
+          />
+          <Stack.Screen 
+            name="Signup" 
+            component={SignupScreen} 
+            options={{ title: 'Create Account' }}
+          />
+          <Stack.Screen 
+            name="Homeowner" 
+            component={HomeownerScreen} 
+            options={{ title: 'Homeowner Dashboard' }}
+          />
+          <Stack.Screen 
+            name="Pro" 
+            component={ProScreen} 
+            options={{ title: 'Pro Dashboard' }}
+          />
+          <Stack.Screen 
+            name="Pro Signup" 
+            component={ProSignupScreen} 
+            options={{ title: 'Join as Pro - $59.99/month' }}
+          />
+          <Stack.Screen 
+            name="Post a Job" 
+            component={HomeownerJobRequestScreen} 
+            options={{ title: 'Submit Job Request' }}
+          />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </ErrorBoundary>
   );
 }
 
@@ -191,5 +230,37 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
     fontSize: 16,
     marginHorizontal: 10
+  },
+  errorContainer: {
+    flex: 1,
+    backgroundColor: '#fef2f2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#dc2626',
+    marginBottom: 10,
+    textAlign: 'center'
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#991b1b',
+    textAlign: 'center',
+    marginBottom: 30,
+    lineHeight: 24
+  },
+  errorButton: {
+    backgroundColor: '#dc2626',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8
+  },
+  errorButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600'
   }
 });
