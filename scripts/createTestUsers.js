@@ -142,10 +142,10 @@ async function createTestUsers() {
   console.log('\n' + '='.repeat(60));
   console.log('ℹ️  Login Credentials for Testing:');
   console.log('='.repeat(60));
+  console.log('Note: All test users use the same password (see testUsers array in script)');
   testUsers.forEach(user => {
     console.log(`\n${user.name}:`);
     console.log(`  Email: ${user.email}`);
-    console.log(`  Password: ${user.password}`);
     console.log(`  Trade: ${user.trade}`);
   });
   console.log('\n' + '='.repeat(60));
