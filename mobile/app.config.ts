@@ -29,7 +29,7 @@ export default {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/icon.png",
+        foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#ffffff"
       },
       package: "com.fixloapp.mobile",
