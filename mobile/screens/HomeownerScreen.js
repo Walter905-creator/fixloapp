@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import { buildApiUrl, API_ENDPOINTS } from '../config/api';
+import { subscribeToJobUpdates, subscribeToNewJobs } from '../utils/socketService';
+import { clearSession } from '../utils/authStorage';
 
 export default function HomeownerScreen({ navigation }) {
   const [jobRequests, setJobRequests] = useState([]);
@@ -76,6 +78,30 @@ export default function HomeownerScreen({ navigation }) {
   // Load job requests when component mounts
   useEffect(() => {
     fetchJobRequests();
+
+    // Subscribe to real-time job updates
+    const unsubscribeUpdates = subscribeToJobUpdates((update) => {
+      console.log('📢 Job update received:', update);
+      // Update the job in the list
+      setJobRequests((prevJobs) =>
+        prevJobs.map((job) =>
+          job._id === update.jobId ? { ...job, ...update } : job
+        )
+      );
+    });
+
+    // Subscribe to new jobs
+    const unsubscribeNew = subscribeToNewJobs((newJob) => {
+      console.log('📢 New job received:', newJob);
+      // Add new job to the list
+      setJobRequests((prevJobs) => [newJob, ...prevJobs]);
+    });
+
+    // Cleanup subscriptions on unmount
+    return () => {
+      unsubscribeUpdates();
+      unsubscribeNew();
+    };
   }, []);
 
   // Handle pull-to-refresh
@@ -87,7 +113,11 @@ export default function HomeownerScreen({ navigation }) {
   // Render a single job request item
   const renderJobRequest = (request) => {
     return (
-      <View key={request._id} style={styles.requestCard}>
+      <TouchableOpacity
+        key={request._id}
+        style={styles.requestCard}
+        onPress={() => navigation.navigate('Job Detail', { jobId: request._id })}
+      >
         <Text style={styles.requestTitle}>
           {request.trade ? request.trade.replace(/_/g, ' ').toUpperCase() : 'Service Request'}
         </Text>
@@ -105,7 +135,7 @@ export default function HomeownerScreen({ navigation }) {
             {new Date(request.createdAt).toLocaleDateString()}
           </Text>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -127,6 +157,17 @@ export default function HomeownerScreen({ navigation }) {
             onPress={() => navigation.navigate('Post a Job')}
           >
             <Text style={styles.buttonText}>+ Post a Job Request</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.logoutButton}
+            onPress={async () => {
+              await clearSession();
+              Alert.alert('Logged Out', 'You have been logged out successfully');
+              navigation.replace('Fixlo');
+            }}
+          >
+            <Text style={styles.logoutButtonText}>🚪 Logout</Text>
           </TouchableOpacity>
 
           {/* Job Requests Section */}
@@ -379,6 +420,22 @@ const styles = StyleSheet.create({
     marginTop: 30,
     fontSize: 16,
     color: '#059669',
+    fontWeight: '600'
+  },
+  logoutButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: '#dc2626',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    marginVertical: 8,
+    alignItems: 'center',
+    minHeight: 50,
+  },
+  logoutButtonText: {
+    color: '#dc2626',
+    fontSize: 16,
     fontWeight: '600'
   }
 });
