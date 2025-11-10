@@ -1,13 +1,16 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import HomeownerScreen from './screens/HomeownerScreen';
 import ProScreen from './screens/ProScreen';
 import ProSignupScreen from './screens/ProSignupScreen';
 import HomeownerJobRequestScreen from './screens/HomeownerJobRequestScreen';
 import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
+import JobDetailScreen from './screens/JobDetailScreen';
+import { getSession } from './utils/authStorage';
+import { initializeSocket, disconnectSocket } from './utils/socketService';
 
 const Stack = createNativeStackNavigator();
 
@@ -99,10 +102,64 @@ function HomeScreen({ navigation }) {
 }
 
 export default function App() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [initialRoute, setInitialRoute] = useState('Fixlo');
+
+  useEffect(() => {
+    // Initialize Socket.io connection
+    initializeSocket();
+
+    // Check for saved session and auto-login
+    checkSession();
+
+    // Cleanup on unmount
+    return () => {
+      disconnectSocket();
+    };
+  }, []);
+
+  const checkSession = async () => {
+    try {
+      const session = await getSession();
+      console.log('📱 Session check:', session);
+
+      if (session.isAuthenticated) {
+        // Auto-login based on user type
+        if (session.userType === 'homeowner') {
+          setInitialRoute('Homeowner');
+        } else if (session.userType === 'pro') {
+          setInitialRoute('Pro');
+        }
+        console.log('✅ Auto-login successful:', session.userType);
+      } else {
+        console.log('ℹ️ No saved session found');
+      }
+    } catch (error) {
+      console.error('❌ Error checking session:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Image 
+          source={require('./assets/fixlo-logo.png')} 
+          style={styles.logo}
+          resizeMode="contain"
+        />
+        <ActivityIndicator size="large" color="#f97316" style={{ marginTop: 20 }} />
+        <Text style={styles.loadingText}>Loading Fixlo...</Text>
+      </View>
+    );
+  }
+
   return (
     <ErrorBoundary>
       <NavigationContainer>
         <Stack.Navigator
+          initialRouteName={initialRoute}
           screenOptions={{
             headerStyle: {
               backgroundColor: '#f97316',
@@ -147,6 +204,11 @@ export default function App() {
             name="Post a Job" 
             component={HomeownerJobRequestScreen} 
             options={{ title: 'Submit Job Request' }}
+          />
+          <Stack.Screen 
+            name="Job Detail" 
+            component={JobDetailScreen} 
+            options={{ title: 'Job Details' }}
           />
         </Stack.Navigator>
       </NavigationContainer>
@@ -262,5 +324,17 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600'
-  }
+  },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#64748b',
+    marginTop: 10,
+  },
 });

@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { registerForPushNotificationsAsync, setupNotificationListeners } from '../utils/notifications';
+import { subscribeToNewJobs } from '../utils/socketService';
+import { clearSession } from '../utils/authStorage';
 import axios from 'axios';
 
 export default function ProScreen({ navigation }) {
   const [pushToken, setPushToken] = useState(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [newJobCount, setNewJobCount] = useState(0);
 
   useEffect(() => {
     async function setupNotifications() {
@@ -33,10 +36,25 @@ export default function ProScreen({ navigation }) {
       // Setup notification listeners
       const listeners = setupNotificationListeners();
       
+      // Subscribe to real-time new jobs
+      const unsubscribeJobs = subscribeToNewJobs((job) => {
+        console.log('📢 New job notification:', job);
+        setNewJobCount((prev) => prev + 1);
+        Alert.alert(
+          '🆕 New Job Available!',
+          `${job.trade || 'Service'} - ${job.address || 'Location TBD'}`,
+          [
+            { text: 'View Later', style: 'cancel' },
+            { text: 'View Now', onPress: () => navigation.navigate('Job Detail', { jobId: job._id }) }
+          ]
+        );
+      });
+      
       // Cleanup listeners on unmount
       return () => {
         listeners.notificationListener.remove();
         listeners.responseListener.remove();
+        unsubscribeJobs();
       };
     }
 
@@ -73,6 +91,11 @@ export default function ProScreen({ navigation }) {
             📱 Device registered for job alerts
           </Text>
         )}
+        {newJobCount > 0 && (
+          <Text style={styles.newJobsText}>
+            🆕 {newJobCount} new job{newJobCount > 1 ? 's' : ''} available!
+          </Text>
+        )}
       </View>
       
       <View style={styles.benefitsContainer}>
@@ -95,6 +118,17 @@ export default function ProScreen({ navigation }) {
         onPress={() => navigation.navigate('Login', { userType: 'pro' })}
       >
         <Text style={styles.loginButtonText}>Already a member? Login</Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity 
+        style={styles.logoutButton}
+        onPress={async () => {
+          await clearSession();
+          Alert.alert('Logged Out', 'You have been logged out successfully');
+          navigation.replace('Fixlo');
+        }}
+      >
+        <Text style={styles.logoutButtonText}>🚪 Logout</Text>
       </TouchableOpacity>
       
       {pushToken && (
@@ -198,5 +232,27 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600'
+  },
+  logoutButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: '#dc2626',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginTop: 10,
+    alignItems: 'center'
+  },
+  logoutButtonText: {
+    color: '#dc2626',
+    fontSize: 16,
+    fontWeight: '600'
+  },
+  newJobsText: {
+    fontSize: 14,
+    color: '#f97316',
+    fontWeight: 'bold',
+    marginTop: 5,
+    textAlign: 'center'
   }
 });

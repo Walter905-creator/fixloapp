@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import { buildApiUrl, API_ENDPOINTS } from '../config/api';
+import { saveSession } from '../utils/authStorage';
 
 export default function LoginScreen({ navigation, route }) {
   const userType = route.params?.userType || 'homeowner';
@@ -40,6 +41,14 @@ export default function LoginScreen({ navigation, route }) {
       // Check for demo homeowner account
       if (userType === 'homeowner' && normalizedEmail === DEMO_HOMEOWNER_EMAIL && password === DEMO_HOMEOWNER_PASSWORD) {
         await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Save session data
+        await saveSession(
+          'demo_homeowner_token',
+          { email: DEMO_HOMEOWNER_EMAIL, name: 'Demo Homeowner' },
+          'homeowner'
+        );
+        
         Alert.alert(
           '✅ Login Successful!',
           'Welcome back, Demo Homeowner!',
@@ -59,6 +68,14 @@ export default function LoginScreen({ navigation, route }) {
       // Check for demo pro account
       if (userType === 'pro' && normalizedEmail === DEMO_PRO_EMAIL && password === DEMO_PRO_PASSWORD) {
         await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Save session data
+        await saveSession(
+          'demo_pro_token',
+          { email: DEMO_PRO_EMAIL, name: 'Demo Pro', trade: 'General Contractor' },
+          'pro'
+        );
+        
         Alert.alert(
           '✅ Login Successful!',
           'Welcome back, Demo Pro!',
@@ -99,6 +116,13 @@ export default function LoginScreen({ navigation, route }) {
       console.log('✅ Login successful:', response.data);
 
       if (response.data.token) {
+        // Save session data
+        await saveSession(
+          response.data.token,
+          response.data.user || { email: normalizedEmail },
+          userType
+        );
+        
         Alert.alert(
           '✅ Login Successful!',
           `Welcome back!`,
