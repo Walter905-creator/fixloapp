@@ -2,6 +2,16 @@
 
 React Native mobile application for Fixlo, built with Expo.
 
+## 🎉 Recent Updates (November 2025)
+
+**Major fixes implemented** - All critical issues resolved:
+- ✅ Fixed startup crashes with ErrorBoundary
+- ✅ Enhanced error handling with detailed logging
+- ✅ Homeowner Dashboard now loads real job requests from API
+- ✅ Improved stability with comprehensive error handling
+
+See [IMPLEMENTATION_COMPLETE.md](./IMPLEMENTATION_COMPLETE.md) for full details.
+
 ## Quick Start
 
 ### Prerequisites
@@ -85,12 +95,22 @@ npm run eas:build:prod:android
 
 ```
 fixlo-app/
-├── App.js              # Main app entry
+├── App.js              # Main app entry (includes ErrorBoundary)
 ├── app.config.js       # Expo configuration
-├── eas.json           # EAS build profiles
-├── assets/            # Images, fonts, etc.
-├── screens/           # App screens
-└── utils/             # Utility functions
+├── eas.json            # EAS build profiles
+├── assets/             # Images, fonts, etc.
+├── config/             # Configuration modules
+│   └── api.js          # Centralized API configuration
+├── screens/            # App screens
+│   ├── SignupScreen.js       # Enhanced error handling
+│   ├── LoginScreen.js        # Enhanced error handling
+│   ├── HomeownerScreen.js    # Real API integration
+│   ├── ProScreen.js
+│   ├── ProSignupScreen.js
+│   └── HomeownerJobRequestScreen.js
+├── utils/              # Utility functions
+├── test-api-config.js  # API configuration tests
+└── test-integration.sh # Integration test suite
 ```
 
 ## Configuration
@@ -102,6 +122,8 @@ Create a `.env` file in the fixlo-app directory:
 ```env
 EXPO_PUBLIC_API_URL=https://fixloapp.onrender.com
 ```
+
+**Note**: The app includes a fallback to `https://fixloapp.onrender.com` if the environment variable is not set. See `config/api.js` for details.
 
 ### App Configuration
 
@@ -126,6 +148,18 @@ npm run eas:build:dev:android
 
 ## Troubleshooting
 
+### Run Tests
+
+Before debugging issues, run the test suite:
+
+```bash
+# Test API configuration
+node test-api-config.js
+
+# Run integration tests
+./test-integration.sh
+```
+
 ### Can't connect to Metro bundler
 - Ensure `npm start` is running
 - Check device/emulator is on same network
@@ -140,6 +174,22 @@ npm run eas:build:dev:android
 - Development builds create a **custom dev client** with your native dependencies
 - ❌ Don't use Expo Go app from App Store
 - ✅ Use the dev client built with EAS (named "Fixlo")
+
+### App Crashes or Errors
+- Check console logs for detailed error information
+- ErrorBoundary will catch crashes and show recovery screen
+- Verify API connectivity: `curl https://fixloapp.onrender.com/api/health`
+- Review error handling documentation in `FIXES_IMPLEMENTATION_SUMMARY.md`
+
+## Additional Documentation
+
+### Recent Fixes & Implementation
+- **[IMPLEMENTATION_COMPLETE.md](./IMPLEMENTATION_COMPLETE.md)** - Complete summary of recent fixes
+- **[FIXES_IMPLEMENTATION_SUMMARY.md](./FIXES_IMPLEMENTATION_SUMMARY.md)** - Technical implementation details
+
+### Original Documentation
+- **[EAS Dev Build Setup](../docs/eas-dev-build.md)** - Complete EAS setup guide (if exists)
+- **[GitHub Actions Builds](../docs/github-eas-builds.md)** - CI/CD setup for automated builds (if exists)
 
 ## Resources
 
