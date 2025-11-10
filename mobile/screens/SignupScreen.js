@@ -13,6 +13,7 @@ import {
   Image
 } from 'react-native';
 import axios from 'axios';
+import { buildApiUrl, API_ENDPOINTS } from '../config/api';
 
 export default function SignupScreen({ navigation, route }) {
   const userType = route.params?.userType || 'homeowner';
@@ -24,6 +25,7 @@ export default function SignupScreen({ navigation, route }) {
   const [loading, setLoading] = useState(false);
 
   const handleSignup = async () => {
+    // Validate all required fields
     if (!name || !email || !phone || !password || !confirmPassword) {
       Alert.alert('Missing Info', 'Please fill out all fields.');
       return;
@@ -40,12 +42,14 @@ export default function SignupScreen({ navigation, route }) {
     }
 
     setLoading(true);
+    
     try {
-      const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fixloapp.onrender.com';
-      
       // For homeowners, use a simplified registration (demo mode for App Review)
+      // This allows the app to work even if the backend is temporarily unavailable
       if (userType === 'homeowner') {
-        // Simulate registration delay
+        console.log('📝 Creating homeowner account (demo mode)');
+        
+        // Simulate registration delay to mimic network request
         await new Promise(resolve => setTimeout(resolve, 1500));
         
         Alert.alert(
@@ -63,8 +67,12 @@ export default function SignupScreen({ navigation, route }) {
         return;
       }
       
-      // For pros, register with backend
-      const response = await axios.post(`${API_URL}/api/auth/register`, {
+      // For pros, register with backend API
+      console.log('📝 Attempting pro registration via API');
+      const apiUrl = buildApiUrl(API_ENDPOINTS.AUTH_REGISTER);
+      console.log('API URL:', apiUrl);
+      
+      const requestData = {
         name: name.trim(),
         email: email.toLowerCase().trim(),
         phone: phone.trim(),
@@ -72,7 +80,16 @@ export default function SignupScreen({ navigation, route }) {
         trade: 'General Contractor', // Default trade
         experience: 5, // Default experience
         location: 'New York, NY' // Default location
+      };
+      
+      const response = await axios.post(apiUrl, requestData, {
+        timeout: 30000, // 30 second timeout
+        headers: {
+          'Content-Type': 'application/json',
+        }
       });
+
+      console.log('✅ Registration successful:', response.data);
 
       if (response.data.token || response.data.success) {
         Alert.alert(
@@ -90,14 +107,53 @@ export default function SignupScreen({ navigation, route }) {
         );
       }
     } catch (error) {
-      console.error('Signup error:', error);
+      // Enhanced error logging for debugging
+      console.error('❌ Signup error:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        code: error.code,
+      });
       
-      if (error.response?.status === 400 || error.response?.status === 409) {
-        Alert.alert('Account Exists', 'An account with this email already exists. Please try logging in instead.');
-      } else if (error.response?.data?.message) {
-        Alert.alert('Signup Failed', error.response.data.message);
+      // Network errors (no response from server)
+      if (error.code === 'ECONNABORTED') {
+        Alert.alert(
+          'Connection Timeout',
+          'The request took too long. Please check your internet connection and try again.'
+        );
+        return;
+      }
+      
+      if (!error.response) {
+        Alert.alert(
+          'Network Error',
+          'Unable to connect to the server. Please check your internet connection and try again.'
+        );
+        return;
+      }
+      
+      // Server responded with an error
+      const status = error.response.status;
+      const errorMessage = error.response.data?.message || error.response.data?.error;
+      
+      if (status === 400 || status === 409) {
+        Alert.alert(
+          'Account Exists',
+          errorMessage || 'An account with this email already exists. Please try logging in instead.'
+        );
+      } else if (status === 503) {
+        Alert.alert(
+          'Service Unavailable',
+          errorMessage || 'The service is temporarily unavailable. Please try again later.'
+        );
+      } else if (errorMessage) {
+        Alert.alert('Signup Failed', errorMessage);
       } else {
-        Alert.alert('Error', 'Unable to create account. Please try again.');
+        Alert.alert(
+          'Error',
+          `Unable to create account (Error ${status}). Please try again.`
+        );
       }
     } finally {
       setLoading(false);
