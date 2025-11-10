@@ -29,8 +29,10 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
+    "@types/react": "^19.2.2",
     "patch-package": "^8.0.0",
-    "postinstall-postinstall": "^2.1.0"
+    "postinstall-postinstall": "^2.1.0",
+    "typescript": "^5.9.3"
   },
   "private": true
 }
