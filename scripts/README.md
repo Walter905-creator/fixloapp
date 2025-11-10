@@ -1,6 +1,6 @@
-# Walter Arevalo Pro Activation Scripts
+# Fixlo Scripts
 
-This directory contains scripts to activate Walter Arevalo as a Pro user in the Fixlo application, bypassing Stripe subscription requirements.
+This directory contains utility scripts for the Fixlo application including Pro activation, testing, and user creation.
 
 ## Scripts
 
@@ -43,6 +43,52 @@ npm run test-walter-lead
 - Lead submission endpoint functionality
 - Charlotte, NC handyman service lead creation
 - SMS notification trigger verification
+
+### 3. `createTestUsers.js`
+Creates sample test Pro users in the Fixlo backend for testing mobile and web logins.
+
+**Usage:**
+```bash
+# Run directly
+node scripts/createTestUsers.js
+
+# Or use npm script
+npm run create-test-users
+```
+
+**Features:**
+- Creates 3 test Pro users with different trades
+- Clear console output with success/warning/error indicators
+- Handles multiple error scenarios gracefully:
+  - User already exists (⚠️ warning, not error)
+  - Service unavailable (❌ error)
+  - API errors (❌ error)
+  - Network errors (❌ error)
+- Provides detailed summary at the end
+- Shows login credentials for testing
+- No database connection required (uses API endpoint)
+
+**Test Users Created:**
+
+1. **Test Pro** (testpro@fixlo.com)
+   - Trade: Plumbing
+   - Password: FixloTest123
+   - Phone: 555-111-2222
+   - Location: New York, NY
+
+2. **Test Homeowner** (testhomeowner@fixlo.com)
+   - Trade: Electrical
+   - Password: FixloTest123
+   - Phone: 555-333-4444
+   - Location: Los Angeles, CA
+
+3. **Demo User** (demo@fixlo.com)
+   - Trade: Handyman
+   - Password: FixloTest123
+   - Phone: 555-777-8888
+   - Location: Chicago, IL
+
+**Note:** All test users are created as Pro accounts since Fixlo's architecture only includes Pro user accounts. Homeowners don't need accounts - they simply submit job requests.
 
 ## Walter's Pro Profile Data
 
@@ -115,6 +161,18 @@ The scripts handle common errors:
 
 ## Dependencies
 
-- `mongodb` - MongoDB native client (installed as dev dependency)
-- Server must have `mongoose` for Pro model (already installed)
-- Server must have Twilio configuration for SMS notifications
+**Required dependencies (already installed):**
+- `mongodb` - MongoDB native client (dev dependency)
+- `axios` - HTTP client for API requests
+- Server dependencies:
+  - `mongoose` - MongoDB ODM for Pro model
+  - `twilio` - SMS notification service
+
+**Installation:**
+```bash
+# Install all dependencies
+npm install
+
+# Or install specific script dependencies
+npm install --save axios
+```

@@ -31,10 +31,12 @@
     "set-build-metadata": "node scripts/set-build-metadata.js",
     "check-ai": "grep -E \"^[^/]*{.*'AI Assistant'\" client/src/components/Navbar.jsx && echo 'ERROR: Active AI Assistant found in navigation!' && exit 1 || echo 'Navigation AI Assistant check - OK'",
     "activate-owner-pro": "node scripts/activate-owner-pro.js",
-    "test-walter-lead": "node scripts/test-walter-lead.js"
+    "test-walter-lead": "node scripts/test-walter-lead.js",
+    "create-test-users": "node scripts/createTestUsers.js"
   },
   "dependencies": {
     "@vercel/og": "^0.6.3",
+    "axios": "^1.10.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "expo": "^54.0.22",
