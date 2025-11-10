@@ -31,7 +31,7 @@ export default {
       package: "com.fixloapp.mobile",
       versionCode: 9,
       adaptiveIcon: {
-        foregroundImage: "./assets/icon.png",
+        foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#ffffff"
       }
     },
