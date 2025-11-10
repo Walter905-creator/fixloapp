@@ -9,8 +9,13 @@ import HomeownerJobRequestScreen from './screens/HomeownerJobRequestScreen';
 import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
 import JobDetailScreen from './screens/JobDetailScreen';
+import MessagesScreen from './screens/MessagesScreen';
+import ChatScreen from './screens/ChatScreen';
 import { getSession } from './utils/authStorage';
 import { initializeSocket, disconnectSocket } from './utils/socketService';
+import { offlineQueue } from './utils/offlineQueue';
+import { messagingService } from './utils/messagingService';
+import { registerBackgroundFetch } from './utils/backgroundFetch';
 
 const Stack = createNativeStackNavigator();
 
@@ -106,17 +111,43 @@ export default function App() {
   const [initialRoute, setInitialRoute] = useState('Fixlo');
 
   useEffect(() => {
-    // Initialize Socket.io connection
-    initializeSocket();
-
-    // Check for saved session and auto-login
-    checkSession();
+    // Initialize all services
+    initializeServices();
 
     // Cleanup on unmount
     return () => {
       disconnectSocket();
+      offlineQueue.destroy();
+      messagingService.destroy();
     };
   }, []);
+
+  const initializeServices = async () => {
+    try {
+      // Initialize Socket.io connection
+      initializeSocket();
+
+      // Initialize offline queue manager
+      await offlineQueue.initialize();
+
+      // Initialize messaging service
+      await messagingService.initialize();
+
+      // Check for saved session and auto-login
+      await checkSession();
+
+      // Register background fetch for pro users
+      const session = await getSession();
+      if (session.userType === 'pro') {
+        await registerBackgroundFetch();
+        console.log('✅ Background fetch registered for pro user');
+      }
+    } catch (error) {
+      console.error('❌ Error initializing services:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const checkSession = async () => {
     try {
@@ -136,8 +167,6 @@ export default function App() {
       }
     } catch (error) {
       console.error('❌ Error checking session:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -209,6 +238,16 @@ export default function App() {
             name="Job Detail" 
             component={JobDetailScreen} 
             options={{ title: 'Job Details' }}
+          />
+          <Stack.Screen 
+            name="Messages" 
+            component={MessagesScreen} 
+            options={{ title: 'Messages' }}
+          />
+          <Stack.Screen 
+            name="Chat" 
+            component={ChatScreen} 
+            options={{ title: 'Chat' }}
           />
         </Stack.Navigator>
       </NavigationContainer>
