@@ -7,10 +7,20 @@
       "node": "20.11.1",
       "ios": {
         "image": "latest",
-        "resourceClass": "m-medium"
+        "resourceClass": "m-medium",
+        "appleTeamId": "YKAYTX4AWR"
       },
       "android": {
         "buildType": "app-bundle"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "support@fixloapp.com",
+        "ascAppId": "placeholder",
+        "appleTeamId": "YKAYTX4AWR"
       }
     }
   }

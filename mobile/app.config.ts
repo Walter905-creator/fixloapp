@@ -3,7 +3,7 @@ export default {
     name: "Fixlo",
   slug: "fixloapp",
   scheme: "fixloapp",
-  owner: "fixloapp",
+  owner: "fixlo-app",
   version: "1.0.2",
     runtimeVersion: { policy: "sdkVersion" },
     orientation: "portrait",
@@ -39,7 +39,7 @@ export default {
       favicon: "./assets/icon.png"
     },
     extra: {
-      eas: { projectId: "8f3b81c3-891c-4c33-b655-b4c1d141a287" }
+      eas: { projectId: "f13247bf-8aca-495f-9b71-e94d1cc480a5" }
     }
   }
 };

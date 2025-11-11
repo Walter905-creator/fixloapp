@@ -41,7 +41,7 @@ export default {
     extra: {
       eas: {
         // keep projectId from the TypeScript config
-        projectId: "8f3b81c3-891c-4c33-b655-b4c1d141a287"
+        projectId: "f13247bf-8aca-495f-9b71-e94d1cc480a5"
       }
     }
   }
