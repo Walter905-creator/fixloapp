@@ -9,7 +9,12 @@
       "bundleIdentifier": "com.fixloapp.mobile",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
-    }
+      },
+      "buildNumber": "2"
+    },
+    "android": {
+      "versionCode": 2
+    },
+    "version": "1.0.1"
   }
 }

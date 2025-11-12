@@ -1,0 +1,50 @@
+{
+  "cli": {
+    "version": ">= 3.22.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "simulator": true
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "image": "latest"
+      },
+      "android": {
+        "gradleCommand": ":app:assembleRelease"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "ios": {
+        "image": "latest",
+        "buildType": "release",
+        "simulator": false
+      },
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://fixloapp.com"
+      }
+    }
+  },
+  "submit": {
+    "ios": {
+      "appleId": "your-apple-id@email.com",
+      "ascAppId": "6754519765",
+      "appleTeamId": "YOUR_TEAM_ID"
+    },
+    "android": {
+      "serviceAccountKeyPath": "./google-play-service-account.json"
+    }
+  }
+}
