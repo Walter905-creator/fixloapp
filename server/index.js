@@ -445,7 +445,11 @@ app.post("/api/pro-signup", async (req, res) => {
       email: normalizedEmail,
       phone: normalizedPhone,
       trade: normalizedTrade,
-      location: normalizedLocation,
+      location: {
+        type: 'Point',
+        coordinates: [-74.006, 40.7128], // Default coordinates (NYC)
+        address: normalizedLocation
+      },
       dob: birthDate,
       zipcode: normalizedZipcode,
       role: "pro",
@@ -574,7 +578,11 @@ app.post("/api/signup/pro", async (req, res) => {
       email: normalizedEmail,
       phone: normalizedPhone,
       trade: normalizedTrade,
-      location: normalizedLocation,
+      location: {
+        type: 'Point',
+        coordinates: [-74.006, 40.7128], // Default coordinates (NYC)
+        address: normalizedLocation
+      },
       dob: birthDate,
       zipcode: normalizedZipcode,
       role: "pro",
