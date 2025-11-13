@@ -37,6 +37,7 @@ const {
 // ----------------------- Models & Services -----------------------
 const Pro = require("./models/Pro");
 const geocodingService = require("./utils/geocoding");
+const { sign } = require("./utils/jwt");
 
 // ----------------------- Stripe (lazy) -----------------------
 let stripe = null;
@@ -483,10 +484,14 @@ app.post("/api/pro-signup", async (req, res) => {
       updatedAt: new Date(),
     });
 
+    // Generate JWT token for automatic login
+    const token = sign({ id: pro._id, role: "pro", email: pro.email });
+
     const response = {
       success: true,
       proId: pro._id,
       verificationStatus,
+      token,
     };
     
     // Include Checkr invitation URL if available
@@ -629,10 +634,14 @@ app.post("/api/signup/pro", async (req, res) => {
       updatedAt: new Date(),
     });
 
+    // Generate JWT token for automatic login
+    const token = sign({ id: pro._id, role: "pro", email: pro.email });
+
     const response = {
       success: true,
       proId: pro._id,
       verificationStatus,
+      token,
     };
     
     // Include Checkr invitation URL if available
