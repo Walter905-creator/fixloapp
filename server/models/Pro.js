@@ -97,6 +97,10 @@ const proSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  zipcode: {
+    type: String,
+    trim: true
+  },
   
   // Public slug for profile sharing
   slug: { 
@@ -211,10 +215,21 @@ const proSchema = new mongoose.Schema({
     push: { type: Boolean, default: true }
   },
   
-  // SMS consent from signup
+  // SMS consent from signup (structured for compliance)
   smsConsent: {
-    type: Boolean,
-    default: false
+    given: { type: Boolean, default: false },
+    dateGiven: { type: Date },
+    ipAddress: { type: String },
+    userAgent: { type: String },
+    consentText: { type: String }
+  },
+  
+  // Terms consent (structured for compliance)
+  termsConsent: {
+    given: { type: Boolean, default: false },
+    dateGiven: { type: Date },
+    ipAddress: { type: String },
+    userAgent: { type: String }
   },
 
   // Job notification preferences

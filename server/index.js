@@ -1,7 +1,3 @@
-// Fixlo Backend API — v2.4.0 (API-ONLY MODE, no frontend serving)
-// Last updated: 2025-08-20
-
-// ----------------------- Core & Setup -----------------------
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -9,16 +5,10 @@ const dotenv = require("dotenv");
 const http = require("http");
 const path = require("path");
 const { Server } = require("socket.io");
-
 dotenv.config();
-
 const app = express();
 const server = http.createServer(app);
-
-// Trust proxy (Render / Cloud proxy aware: rate-limit & IPs)
 app.set("trust proxy", 1);
-
-// ----------------------- Utilities & Middleware -----------------------
 const axios = require("axios");
 const requestLogger = require("./middleware/logger");
 const performanceMonitor = require("./utils/performanceMonitor");
@@ -28,82 +18,42 @@ const sanitizeInput = require("./middleware/sanitization");
 const shield = require("./middleware/shield");
 const errorHandler = require("./middleware/errorHandler");
 const { privacyAuditLogger } = require("./middleware/privacyAudit");
-const {
-  generalRateLimit,
-  authRateLimit,
-  adminRateLimit,
-} = require("./middleware/rateLimiter");
-
-// ----------------------- Models & Services -----------------------
+const { generalRateLimit, authRateLimit, adminRateLimit } = require("./middleware/rateLimiter");
 const Pro = require("./models/Pro");
 const geocodingService = require("./utils/geocoding");
 const { sign } = require("./utils/jwt");
-
-// ----------------------- Stripe (lazy) -----------------------
 let stripe = null;
 if (process.env.STRIPE_SECRET_KEY) {
   try {
     stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-  } catch (e) {
-    console.warn("⚠️ Stripe not initialized:", e?.message || e);
-  }
-} else {
-  console.warn("⚠️ STRIPE_SECRET_KEY not found — Stripe features disabled");
+  } catch (e) {}
 }
-
-// ----------------------- CORS -----------------------
 const allowedOrigins = process.env.CORS_ALLOWED_ORIGINS
-  ? process
-      .env
-      .CORS_ALLOWED_ORIGINS
-      .split(",")
-      .map((o) => o.trim())
+  ? process.env.CORS_ALLOWED_ORIGINS.split(",").map((o) => o.trim())
   : [
       "https://www.fixloapp.com",
       "https://fixloapp.com",
       "http://localhost:3000",
       "http://localhost:8000",
     ];
-
-console.log("🔍 CORS Configuration");
-console.log("📋 Allowed Origins:", allowedOrigins);
-console.log(
-  "🌐 Env CORS_ALLOWED_ORIGINS:",
-  process.env.CORS_ALLOWED_ORIGINS || "not set (using defaults)"
-);
-
-// Early OPTIONS (preflight) passthrough — avoids any redirect/middleware side effects
 app.use((req, res, next) => {
   if (req.method !== "OPTIONS") return next();
-
   const origin = req.headers.origin;
   let allowedOrigin = "https://www.fixloapp.com";
   if (!origin) {
-    console.log(`🔍 OPTIONS ${req.path} — no origin, using default`);
   } else if (allowedOrigins.includes(origin)) {
     allowedOrigin = origin;
-    console.log(`🔍 OPTIONS ${req.path} — origin allowed: ${origin}`);
   } else {
-    console.log(`❌ OPTIONS ${req.path} — origin not allowed: ${origin}`);
     return res.status(403).json({ error: "CORS policy violation" });
   }
-
   res
     .header("Access-Control-Allow-Origin", allowedOrigin)
-    .header(
-      "Access-Control-Allow-Methods",
-      "POST, OPTIONS, GET, PUT, DELETE, HEAD"
-    )
-    .header(
-      "Access-Control-Allow-Headers",
-      "Content-Type, Authorization, X-Requested-With, Accept, Origin"
-    )
+    .header("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE, HEAD")
+    .header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin")
     .header("Access-Control-Allow-Credentials", "true")
     .header("Access-Control-Max-Age", "86400")
     .sendStatus(204);
 });
-
-// Normal CORS for non-OPTIONS requests
 app.use(
   cors({
     origin(origin, cb) {
@@ -125,133 +75,49 @@ app.use(
       "Access-Control-Request-Method",
       "Access-Control-Request-Headers",
     ],
-    exposedHeaders: [
-      "Access-Control-Allow-Origin",
-      "Access-Control-Allow-Credentials",
-    ],
+    exposedHeaders: ["Access-Control-Allow-Origin", "Access-Control-Allow-Credentials"],
   })
 );
-
-// ----------------------- Body Parsers -----------------------
-// Raw body for Stripe webhooks must be before express.json
 app.use("/webhook/stripe", express.raw({ type: "application/json" }));
 app.use(express.json());
-
-// ----------------------- Static serving (API assets only) -----------------------
-app.use(express.static(__dirname)); // e.g., admin assets, images used by API docs, etc.
-app.use(express.static(path.join(__dirname, ".."))); // safety (no client build served)
-
-// Privacy Policy static file route
+app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname, "..")));
 app.use('/privacy-policy', express.static(path.join(__dirname, '../client/public/privacy-policy.html')));
-
-// ----------------------- Socket.IO -----------------------
 const io = new Server(server, {
   cors: { origin: allowedOrigins, methods: ["GET", "POST"] },
 });
-
-// Make io accessible to routes
 app.set('io', io);
-
 io.on("connection", (socket) => {
-  console.log("🔌 Socket connected", socket.id);
-  
-  // Handle message sending
   socket.on("message:send", (message) => {
-    console.log("📤 Message sent via socket:", message._id);
     io.emit("message:new", message);
   });
-
-  // Handle message read status
   socket.on("message:read", (data) => {
-    console.log("✅ Message read via socket:", data.messageId);
     io.emit("message:read", data);
   });
-
-  socket.on("disconnect", () => console.log("🔌 Socket disconnected", socket.id));
 });
-
-// ----------------------- Diagnostics -----------------------
-console.log(`🌍 NODE_ENV = ${process.env.NODE_ENV}`);
-console.log(`🛰️ API-ONLY MODE — Frontend is served by Vercel (https://fixloapp.com)`);
-
-// Request logging
-try {
-  app.use(requestLogger);
-  console.log("✅ Request logger loaded");
-} catch (e) {
-  console.error("❌ Logger failed:", e.message);
-}
-
-// Perf monitor
-try {
-  app.use(performanceMonitor.middleware());
-  console.log("✅ Performance monitor loaded");
-} catch (e) {
-  console.error("❌ Perf monitor failed:", e.message);
-}
-
-// Normalize paths & log API requests
+app.use(requestLogger);
+app.use(performanceMonitor.middleware());
 app.use((req, res, next) => {
   if (req.path.startsWith("/api/")) {
-    console.log(
-      `🔍 API ${req.method} ${req.path} (origin: ${req.headers.origin || "n/a"})`
-    );
-    if (req.path.endsWith("/") && req.path !== "/api/") {
-      console.log(`⚠️ Trailing slash potential issue: ${req.path}`);
-    }
+    if (req.path.endsWith("/") && req.path !== "/api/") {}
   }
   next();
 });
-
-// Security, sanitization, shield, rate limiting
-try {
-  app.use(securityHeaders);
-  console.log("✅ Security headers loaded");
-} catch (e) {
-  console.error("❌ Security headers failed:", e.message);
-}
-try {
-  app.use(sanitizeInput);
-  console.log("✅ Sanitization loaded");
-} catch (e) {
-  console.error("❌ Sanitization failed:", e.message);
-}
-try {
-  app.use(shield);
-  console.log("✅ Shield loaded");
-} catch (e) {
-  console.error("❌ Shield failed:", e.message);
-}
-try {
-  app.use(generalRateLimit);
-  console.log("✅ Rate limiter loaded");
-} catch (e) {
-  console.error("❌ Rate limiter failed:", e.message);
-}
-try {
-  app.use(privacyAuditLogger);
-  console.log("✅ Privacy audit logger loaded");
-} catch (e) {
-  console.error("❌ Privacy audit logger failed:", e.message);
-}
-
-// ----------------------- Explicit preflights for hot endpoints -----------------------
+app.use(securityHeaders);
+app.use(sanitizeInput);
+app.use(shield);
+app.use(generalRateLimit);
+app.use(privacyAuditLogger);
 function preflight(path, methods = "POST, OPTIONS") {
   app.options(path, (req, res) => {
     const origin = req.headers.origin;
     let allowedOrigin = "https://www.fixloapp.com";
     if (origin && allowedOrigins.includes(origin)) allowedOrigin = origin;
-    else if (origin) {
-      console.log(`❌ Origin "${origin}" not allowed for ${path}`);
-      return res.status(403).json({ error: "CORS policy violation" });
-    }
+    else if (origin) return res.status(403).json({ error: "CORS policy violation" });
     res
       .header("Access-Control-Allow-Origin", allowedOrigin)
       .header("Access-Control-Allow-Methods", methods)
-      .header(
-        "Access-Control-Allow-Headers",
-        "Content-Type, Authorization, X-Requested-With, Accept, Origin"
-      )
+      .header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin")
       .header("Access-Control-Allow-Credentials", "true")
       .header("Access-Control-Max-Age", "86400")
       .sendStatus(204);
@@ -261,55 +127,34 @@ preflight("/api/pro-signup");
 preflight("/api/homeowner-lead");
 preflight("/api/requests");
 preflight("/api/*", "POST, OPTIONS, GET, PUT, DELETE, HEAD");
-
-// ----------------------- Routes -----------------------
-// Note: Cloudinary signing route is required for Pro photo uploads
-app.use("/api/cloudinary", require("./routes/cloudinary")); // POST /api/cloudinary/sign
-
+app.use("/api/cloudinary", require("./routes/cloudinary"));
 app.use("/api/admin", adminRateLimit, require("./routes/admin"));
 app.use("/api/auth", authRateLimit, require("./routes/auth"));
 app.use("/api/pro-auth", authRateLimit, require("./routes/proAuth"));
-
-app.use("/api/pros", generalRateLimit, require("./routes/proRoutes")); // auth & mgmt
-
-app.use("/api/pro", generalRateLimit, require("./routes/proJobs")); // professional jobs
-
-app.use("/api/pro/jobs", generalRateLimit, require("./routes/proJobs")); // professional job management
+app.use("/api/pros", generalRateLimit, require("./routes/proRoutes"));
+app.use("/api/pro", generalRateLimit, require("./routes/proJobs"));
+app.use("/api/pro/jobs", generalRateLimit, require("./routes/proJobs"));
 app.use("/api/homeowner-lead", require("./routes/homeownerLead"));
-app.use("/api/leads", require("./routes/leads")); // Lead management with database storage
-
-app.use("/api/requests", require("./routes/requests")); // Homeowner service requests
+app.use("/api/leads", require("./routes/leads"));
+app.use("/api/requests", require("./routes/requests"));
 app.use("/api/service-request", require("./routes/serviceRequest"));
 app.use("/api/notify", require("./routes/notify"));
-
-app.use("/api/stripe", require("./routes/stripe")); // subscription helpers
-app.use("/api/subscribe", require("./routes/subscribe")); // legacy subscribe
-app.use("/api", require("./routes/subscribe")); // exposes POST /api/subscribe/checkout
-
-app.use("/api/upload", require("./routes/upload")); // direct uploads (legacy)
-app.use("/api/reviews", require("./routes/reviews")); // reviews API (public)
-app.use("/api", require("./routes/reviewCapture")); // capture via magic links
-
-app.use("/api", require("./routes/ipinfo")); // IP info proxy
-app.use("/api/ai", require("./routes/ai")); // AI assistant
-app.use("/api/contact", require("./routes/contact")); // contact form
-app.use("/api/referrals", require("./routes/referrals")); // referral rewards
-
-// Direct messaging
-app.use("/api", generalRateLimit, require("./routes/messages")); // messaging API
-
-// Background check integration (Checkr)
-app.use("/api/checkr", require("./routes/checkrRoutes")); // Checkr candidate creation & webhooks
-
-// Privacy & Data Rights (GDPR/CCPA compliance)
-app.use("/api/privacy", require("./routes/privacy")); // data access, export, deletion
-
-// Share Profiles & Boost system
-app.use("/api", require("./routes/profiles")); // slug lookup
-app.use("/api", require("./routes/share")); // share events/boost logic
-app.use("/api", require("./routes/search")); // boosted search
-
-// ----------------------- Stripe: Simple Subscribe endpoint (kept for PricingPage.jsx) -----------------------
+app.use("/api/stripe", require("./routes/stripe"));
+app.use("/api/subscribe", require("./routes/subscribe"));
+app.use("/api", require("./routes/subscribe"));
+app.use("/api/upload", require("./routes/upload"));
+app.use("/api/reviews", require("./routes/reviews"));
+app.use("/api", require("./routes/reviewCapture"));
+app.use("/api", require("./routes/ipinfo"));
+app.use("/api/ai", require("./routes/ai"));
+app.use("/api/contact", require("./routes/contact"));
+app.use("/api/referrals", require("./routes/referrals"));
+app.use("/api", require("./routes/messages"));
+app.use("/api/checkr", require("./routes/checkrRoutes"));
+app.use("/api/privacy", require("./routes/privacy"));
+app.use("/api", require("./routes/profiles"));
+app.use("/api", require("./routes/share"));
+app.use("/api", require("./routes/search"));
 app.post("/api/subscribe", async (req, res) => {
   try {
     if (!stripe) {
@@ -318,24 +163,19 @@ app.post("/api/subscribe", async (req, res) => {
         message: "Stripe is not initialized on the server",
       });
     }
-
     const { email } = req.body || {};
     if (!email) return res.status(400).json({ error: "Email is required" });
-
     const clientUrl = process.env.CLIENT_URL || "https://www.fixloapp.com";
-
     const priceId =
       process.env.STRIPE_FIRST_MONTH_PRICE_ID ||
       process.env.STRIPE_MONTHLY_PRICE_ID ||
       process.env.STRIPE_PRICE_ID;
-
     if (!priceId) {
       return res.status(500).json({
         error: "Payment configuration error",
         message: "No Stripe price ID configured",
       });
     }
-
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [{ price: priceId, quantity: 1 }],
@@ -349,142 +189,120 @@ app.post("/api/subscribe", async (req, res) => {
         timestamp: new Date().toISOString(),
       },
     });
-
     return res.json({ success: true, url: session.url, sessionId: session.id });
   } catch (err) {
-    console.error("❌ Stripe subscribe error:", err.message);
     return res
       .status(500)
       .json({ error: "Payment processing error", message: err.message });
   }
 });
 
-// ----------------------- Pro Signup (with age check & dupe guard) -----------------------
 app.post("/api/pro-signup", async (req, res) => {
   try {
     const { ENABLE_BG_CHECKS } = require('./config/flags');
     const { isCheckrEnabled, createCandidateAndInvitation, parseFullName, formatDobForCheckr } = require('./utils/checkr');
-    const { name, email, phone, trade, location, dob, role, termsConsent, smsConsent, ssn, zipcode } =
-      req.body || {};
+    const { name, email, phone, trade, location, dob, zipcode, smsConsent, termsConsent, ssn } = req.body || {};
 
-    if (!name || !email || !phone || !trade || !location || !dob) {
+    if (!name || !email || !phone || !trade || !location || !dob || !zipcode) {
       return res.status(400).json({
         success: false,
-        message:
-          "Name, email, phone, trade, location, and date of birth are required",
+        message: "Name, email, phone, trade, location, DOB, and ZIP code are required."
       });
     }
 
+    const normalizedName = name.trim();
+    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedPhone = phone.trim();
+    const normalizedTrade = trade.toLowerCase().trim();
+    const normalizedLocation = location.toString().trim();
+    const normalizedZipcode = zipcode.toString().trim();
+
     const birthDate = new Date(dob);
-    const age = Math.floor(
-      (Date.now() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
-    );
+    const age = Math.floor((Date.now() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
     if (age < 18) {
       return res.status(400).json({
         success: false,
-        message: "You must be 18 or older to join Fixlo as a professional",
+        message: "You must be 18 or older to register as a professional."
       });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      return res.status(503).json({
-        success: false,
-        message:
-          "Professional signup is temporarily unavailable. Please try again later.",
-      });
-    }
-
-    const tradeNormalized = String(trade).trim().toLowerCase();
-
-    // disallow duplicates by email+trade
     const existingSameTrade = await Pro.findOne({
-      email: email.toLowerCase(),
-      trade: tradeNormalized,
+      email: normalizedEmail,
+      trade: normalizedTrade,
     });
     if (existingSameTrade) {
       return res.status(409).json({
         success: false,
-        message: `You are already registered for ${trade}.`,
+        message: `You are already registered for ${normalizedTrade}.`
       });
     }
 
-    // Background check decision based on feature flag
-    let verificationStatus = 'pending';
+    let verificationStatus = 'skipped';
     let verificationNotes = '';
+    let checkrCandidateId = null;
+    let checkrInvitationId = null;
+    let backgroundCheckUrl = null;
     let checkrData = null;
 
-    if (!ENABLE_BG_CHECKS) {
-      verificationStatus = 'skipped';
-      verificationNotes = 'Background checks temporarily disabled by config.';
-    } else if (isCheckrEnabled() && ssn && zipcode) {
-      // Initiate Checkr background check if credentials and data provided
+    if (ENABLE_BG_CHECKS && isCheckrEnabled()) {
       try {
-        console.log('🔍 Initiating Checkr background check for new Pro');
-        
-        // Parse name into first and last name
-        const { firstName, lastName } = parseFullName(name);
-        
-        // Format DOB for Checkr (YYYY-MM-DD)
+        const { firstName, lastName } = parseFullName(normalizedName);
         const dobFormatted = formatDobForCheckr(dob);
-        
         checkrData = await createCandidateAndInvitation({
-          email: email.toLowerCase(),
-          phone: phone.trim(),
+          email: normalizedEmail,
+          phone: normalizedPhone,
           firstName,
           lastName,
           dob: dobFormatted,
           ssn,
-          zipcode
+          zipcode: normalizedZipcode
         });
-        
-        console.log(`✅ Checkr invitation created: ${checkrData.invitationId}`);
-        verificationNotes = 'Background check invitation sent via Checkr';
+        checkrCandidateId = checkrData.candidateId;
+        checkrInvitationId = checkrData.invitationId;
+        backgroundCheckUrl = checkrData.invitationUrl;
+        verificationStatus = 'pending';
+        verificationNotes = 'Background check invitation sent';
       } catch (checkrError) {
-        console.error('❌ Checkr integration error:', checkrError.message);
-        // Don't fail signup if Checkr fails - log and continue
-        verificationNotes = `Background check failed to initiate: ${checkrError.message}`;
+        verificationStatus = 'skipped';
+        verificationNotes = `Background check failed: ${checkrError.message}`;
       }
-    } else if (isCheckrEnabled()) {
-      verificationNotes = 'Background check requires SSN and ZIP code - awaiting additional info';
     }
 
-    // Allow same email registering for a different trade, but require explicit consent flags
     const pro = await Pro.create({
-      name: name.trim(),
-      email: email.toLowerCase(),
-      phone: phone.trim(),
-      trade: tradeNormalized,
-      location: String(location).trim(),
-      role: role || "pro",
+      name: normalizedName,
+      email: normalizedEmail,
+      phone: normalizedPhone,
+      trade: normalizedTrade,
+      location: {
+        type: 'Point',
+        coordinates: [-74.006, 40.7128],
+        address: normalizedLocation
+      },
+      dob: birthDate,
+      zipcode: normalizedZipcode,
+      role: "pro",
       wantsNotifications: true,
       verificationStatus,
       verificationNotes,
-      // Add Checkr IDs if available
-      ...(checkrData && {
-        checkrCandidateId: checkrData.candidateId,
-        checkrInvitationId: checkrData.invitationId,
-        backgroundCheckStatus: 'pending',
-      }),
+      ...(checkrCandidateId && { checkrCandidateId }),
+      ...(checkrInvitationId && { checkrInvitationId }),
       smsConsent: {
         given: Boolean(smsConsent?.given),
         dateGiven: smsConsent?.dateGiven || new Date(),
         ipAddress: smsConsent?.ipAddress || "",
         userAgent: smsConsent?.userAgent || "",
-        consentText:
-          smsConsent?.consentText ||
-          "I expressly consent to receive automated SMS text messages from Fixlo. Reply STOP to unsubscribe, HELP for help.",
+        consentText: smsConsent?.consentText || "I expressly consent to receive automated SMS text messages from Fixlo. Reply STOP to unsubscribe, HELP for help."
       },
       termsConsent: {
         given: Boolean(termsConsent?.given),
         dateGiven: termsConsent?.dateGiven || new Date(),
         ipAddress: termsConsent?.ipAddress || "",
-        userAgent: termsConsent?.userAgent || "",
+        userAgent: termsConsent?.userAgent || ""
       },
       createdAt: new Date(),
-      updatedAt: new Date(),
+      updatedAt: new Date()
     });
 
-    // Generate JWT token for automatic login
     const token = sign({ id: pro._id, role: "pro", email: pro.email });
 
     const response = {
@@ -492,173 +310,141 @@ app.post("/api/pro-signup", async (req, res) => {
       proId: pro._id,
       verificationStatus,
       token,
+      backgroundCheckUrl: backgroundCheckUrl || null
     };
-    
-    // Include Checkr invitation URL if available
-    if (checkrData?.invitationUrl) {
-      response.backgroundCheckUrl = checkrData.invitationUrl;
-    }
 
     return res.status(201).json(response);
+
   } catch (err) {
-    console.error("❌ Pro signup error:", err.message);
-    return res
-      .status(500)
-      .json({ success: false, message: err.message || "Server error" });
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Server error"
+    });
   }
 });
-
-// ----------------------- Missing fallback route: /api/signup/pro -----------------------
-// Frontend expects this as fallback #3, forward to existing pro-signup logic
 app.post("/api/signup/pro", async (req, res) => {
   try {
     const { ENABLE_BG_CHECKS } = require('./config/flags');
     const { isCheckrEnabled, createCandidateAndInvitation, parseFullName, formatDobForCheckr } = require('./utils/checkr');
-    const { name, email, phone, trade, location, dob, role, termsConsent, smsConsent, ssn, zipcode } =
-      req.body || {};
+    const { name, email, phone, trade, location, dob, zipcode, smsConsent, termsConsent, ssn } = req.body || {};
 
-    if (!name || !email || !phone || !trade || !location || !dob) {
+    if (!name || !email || !phone || !trade || !location || !dob || !zipcode) {
       return res.status(400).json({
         success: false,
-        message:
-          "Name, email, phone, trade, location, and date of birth are required",
+        message: "Name, email, phone, trade, location, DOB, and ZIP code are required."
       });
     }
 
+    const normalizedName = name.trim();
+    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedPhone = phone.trim();
+    const normalizedTrade = trade.toLowerCase().trim();
+    const normalizedLocation = location.toString().trim();
+    const normalizedZipcode = zipcode.toString().trim();
+
     const birthDate = new Date(dob);
-    const age = Math.floor(
-      (Date.now() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
-    );
+    const age = Math.floor((Date.now() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
     if (age < 18) {
       return res.status(400).json({
         success: false,
-        message: "You must be 18 or older to join Fixlo as a professional",
+        message: "You must be 18 or older to register as a professional."
       });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      return res.status(503).json({
-        success: false,
-        message:
-          "Professional signup is temporarily unavailable. Please try again later.",
-      });
-    }
-
-    const tradeNormalized = String(trade).trim().toLowerCase();
-
-    // disallow duplicates by email+trade
     const existingSameTrade = await Pro.findOne({
-      email: email.toLowerCase(),
-      trade: tradeNormalized,
+      email: normalizedEmail,
+      trade: normalizedTrade,
     });
     if (existingSameTrade) {
       return res.status(409).json({
         success: false,
-        message: `You are already registered for ${trade}.`,
+        message: `You are already registered for ${normalizedTrade}.`
       });
     }
 
-    // Background check decision based on feature flag
-    let verificationStatus = 'pending';
+    let verificationStatus = 'skipped';
     let verificationNotes = '';
+    let checkrCandidateId = null;
+    let checkrInvitationId = null;
+    let backgroundCheckUrl = null;
     let checkrData = null;
 
-    if (!ENABLE_BG_CHECKS) {
-      verificationStatus = 'skipped';
-      verificationNotes = 'Background checks temporarily disabled by config.';
-    } else if (isCheckrEnabled() && ssn && zipcode) {
-      // Initiate Checkr background check if credentials and data provided
+    if (ENABLE_BG_CHECKS && isCheckrEnabled()) {
       try {
-        console.log('🔍 Initiating Checkr background check for new Pro');
-        
-        // Parse name into first and last name
-        const { firstName, lastName } = parseFullName(name);
-        
-        // Format DOB for Checkr (YYYY-MM-DD)
+        const { firstName, lastName } = parseFullName(normalizedName);
         const dobFormatted = formatDobForCheckr(dob);
-        
         checkrData = await createCandidateAndInvitation({
-          email: email.toLowerCase(),
-          phone: phone.trim(),
+          email: normalizedEmail,
+          phone: normalizedPhone,
           firstName,
           lastName,
           dob: dobFormatted,
           ssn,
-          zipcode
+          zipcode: normalizedZipcode
         });
-        
-        console.log(`✅ Checkr invitation created: ${checkrData.invitationId}`);
-        verificationNotes = 'Background check invitation sent via Checkr';
+        checkrCandidateId = checkrData.candidateId;
+        checkrInvitationId = checkrData.invitationId;
+        backgroundCheckUrl = checkrData.invitationUrl;
+        verificationStatus = 'pending';
+        verificationNotes = 'Background check invitation sent';
       } catch (checkrError) {
-        console.error('❌ Checkr integration error:', checkrError.message);
-        // Don't fail signup if Checkr fails - log and continue
-        verificationNotes = `Background check failed to initiate: ${checkrError.message}`;
+        verificationStatus = 'skipped';
+        verificationNotes = `Background check failed: ${checkrError.message}`;
       }
-    } else if (isCheckrEnabled()) {
-      verificationNotes = 'Background check requires SSN and ZIP code - awaiting additional info';
     }
 
-    // Allow same email registering for a different trade, but require explicit consent flags
     const pro = await Pro.create({
-      name: name.trim(),
-      email: email.toLowerCase(),
-      phone: phone.trim(),
-      trade: tradeNormalized,
-      location: String(location).trim(),
-      role: role || "pro",
+      name: normalizedName,
+      email: normalizedEmail,
+      phone: normalizedPhone,
+      trade: normalizedTrade,
+      location: {
+        type: 'Point',
+        coordinates: [-74.006, 40.7128],
+        address: normalizedLocation
+      },
+      dob: birthDate,
+      zipcode: normalizedZipcode,
+      role: "pro",
       wantsNotifications: true,
       verificationStatus,
       verificationNotes,
-      // Add Checkr IDs if available
-      ...(checkrData && {
-        checkrCandidateId: checkrData.candidateId,
-        checkrInvitationId: checkrData.invitationId,
-        backgroundCheckStatus: 'pending',
-      }),
+      ...(checkrCandidateId && { checkrCandidateId }),
+      ...(checkrInvitationId && { checkrInvitationId }),
       smsConsent: {
         given: Boolean(smsConsent?.given),
         dateGiven: smsConsent?.dateGiven || new Date(),
         ipAddress: smsConsent?.ipAddress || "",
         userAgent: smsConsent?.userAgent || "",
-        consentText:
-          smsConsent?.consentText ||
-          "I expressly consent to receive automated SMS text messages from Fixlo. Reply STOP to unsubscribe, HELP for help.",
+        consentText: smsConsent?.consentText || "I expressly consent to receive automated SMS text messages from Fixlo. Reply STOP to unsubscribe, HELP for help."
       },
       termsConsent: {
         given: Boolean(termsConsent?.given),
         dateGiven: termsConsent?.dateGiven || new Date(),
         ipAddress: termsConsent?.ipAddress || "",
-        userAgent: termsConsent?.userAgent || "",
+        userAgent: termsConsent?.userAgent || ""
       },
       createdAt: new Date(),
-      updatedAt: new Date(),
+      updatedAt: new Date()
     });
 
-    // Generate JWT token for automatic login
     const token = sign({ id: pro._id, role: "pro", email: pro.email });
 
-    const response = {
+    return res.status(201).json({
       success: true,
       proId: pro._id,
       verificationStatus,
       token,
-    };
-    
-    // Include Checkr invitation URL if available
-    if (checkrData?.invitationUrl) {
-      response.backgroundCheckUrl = checkrData.invitationUrl;
-    }
+      backgroundCheckUrl: backgroundCheckUrl || null
+    });
 
-    return res.status(201).json(response);
   } catch (err) {
-    console.error("❌ Pro signup error:", err.message);
-    return res
-      .status(500)
-      .json({ success: false, message: err.message || "Server error" });
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Server error"
+    });
   }
 });
-
-// ----------------------- Health & Meta -----------------------
 app.get("/api/health", async (req, res) => {
   const db =
     mongoose.connection.readyState === 1
@@ -672,17 +458,8 @@ app.get("/api/health", async (req, res) => {
   });
 });
 
-// SMS health check endpoint
 app.get('/health/sms', (req, res) => {
   const ok = !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE);
-  console.log('🏥 SMS Health Check:', {
-    hasSid: !!process.env.TWILIO_ACCOUNT_SID,
-    hasToken: !!process.env.TWILIO_AUTH_TOKEN,
-    hasPhone: !!process.env.TWILIO_PHONE,
-    phone: process.env.TWILIO_PHONE || 'not set',
-    radiusMiles: process.env.MATCH_RADIUS_MI || '30 (default)'
-  });
-  
   res.status(ok ? 200 : 503).json({
     ok,
     hasSid: !!process.env.TWILIO_ACCOUNT_SID,
@@ -700,7 +477,6 @@ app.get("/api/version", (req, res) => {
   });
 });
 
-// ----------------------- Stripe Webhook -----------------------
 app.post("/webhook/stripe", async (req, res) => {
   if (!stripe || !process.env.STRIPE_WEBHOOK_SECRET) {
     return res.status(503).send("Stripe webhook not configured");
@@ -712,30 +488,20 @@ app.post("/webhook/stripe", async (req, res) => {
       sig,
       process.env.STRIPE_WEBHOOK_SECRET
     );
-
-    // Handle subscription events here (optional)
-    console.log("💳 Stripe webhook event:", event.type);
-
     res.json({ received: true });
   } catch (err) {
-    console.error("❌ Stripe webhook error:", err.message);
     res.status(400).send(`Webhook Error: ${err.message}`);
   }
 });
 
-// ----------------------- Checkr Webhook (no-op when background checks disabled) -----------------------
 app.post('/webhook/checkr', (req, res) => {
   const { ENABLE_BG_CHECKS } = require('./config/flags');
-  if (!ENABLE_BG_CHECKS) return res.status(204).end(); // ignore quietly
-  // ... existing webhook logic would go here when background checks are enabled
-  console.log("📋 Checkr webhook received but background checks are disabled");
+  if (!ENABLE_BG_CHECKS) return res.status(204).end();
   res.status(204).end();
 });
 
-// ----------------------- Global Error Handler -----------------------
 app.use(errorHandler);
 
-// ----------------------- DB Connect & Server Start -----------------------
 async function start() {
   const MONGO_URI =
     process.env.MONGO_URI || "mongodb://127.0.0.1:27017/fixloapp";
@@ -744,24 +510,18 @@ async function start() {
   try {
     mongoose.set("strictQuery", true);
     await mongoose.connect(MONGO_URI, { maxPoolSize: 10 });
-    console.log("✅ MongoDB connected");
 
-    // (Optional) Index optimization/cleanup
     try {
       await DatabaseOptimizer.ensureIndexes?.();
-      console.log("✅ DB indexes ensured");
-    } catch (e) {
-      console.warn("⚠️ DB optimizer skipped:", e?.message || e);
-    }
+    } catch (e) {}
 
     server.listen(PORT, () => {
       console.log(`🚀 Fixlo API listening on port ${PORT}`);
     });
+
   } catch (err) {
-    console.error("❌ DB connection failed:", err.message);
     console.warn("⚠️ Starting server without database connection");
-    
-    // Start server even without database
+
     server.listen(PORT, () => {
       console.log(`🚀 Fixlo API listening on port ${PORT} (DB-less mode)`);
     });
