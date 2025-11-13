@@ -361,27 +361,14 @@ app.post("/api/subscribe", async (req, res) => {
 // ----------------------- Pro Signup (with age check & dupe guard) -----------------------
 app.post("/api/pro-signup", async (req, res) => {
   try {
-    const { ENABLE_BG_CHECKS } = require('./config/flags');
-    const { isCheckrEnabled, createCandidateAndInvitation, parseFullName, formatDobForCheckr } = require('./utils/checkr');
-    const { name, email, phone, trade, location, dob, role, termsConsent, smsConsent, ssn, zipcode } =
+    const { name, email, phone, trade, location, dob, role, termsConsent, smsConsent, wantsNotifications } =
       req.body || {};
 
-    if (!name || !email || !phone || !trade || !location || !dob) {
+    // Minimum required fields: name, email, phone
+    if (!name || !email || !phone) {
       return res.status(400).json({
         success: false,
-        message:
-          "Name, email, phone, trade, location, and date of birth are required",
-      });
-    }
-
-    const birthDate = new Date(dob);
-    const age = Math.floor(
-      (Date.now() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
-    );
-    if (age < 18) {
-      return res.status(400).json({
-        success: false,
-        message: "You must be 18 or older to join Fixlo as a professional",
+        message: "Name, email, and phone are required",
       });
     }
 
@@ -393,77 +380,41 @@ app.post("/api/pro-signup", async (req, res) => {
       });
     }
 
-    const tradeNormalized = String(trade).trim().toLowerCase();
+    // Normalize inputs with defaults
+    const nameNormalized = String(name).trim();
+    const emailNormalized = String(email).toLowerCase().trim();
+    const phoneNormalized = String(phone).trim();
+    const tradeNormalized = trade ? String(trade).toLowerCase().trim() : "general";
+    const locationNormalized = location ? String(location).trim() : "unknown";
+    const dobNormalized = dob ? new Date(dob) : new Date("1900-01-01");
 
-    // disallow duplicates by email+trade
+    // Prevent duplicates by same email + same trade combination only
     const existingSameTrade = await Pro.findOne({
-      email: email.toLowerCase(),
+      email: emailNormalized,
       trade: tradeNormalized,
     });
     if (existingSameTrade) {
       return res.status(409).json({
         success: false,
-        message: `You are already registered for ${trade}.`,
+        message: `You are already registered for ${tradeNormalized}.`,
       });
     }
 
-    // Background check decision based on feature flag
-    let verificationStatus = 'pending';
-    let verificationNotes = '';
-    let checkrData = null;
-
-    if (!ENABLE_BG_CHECKS) {
-      verificationStatus = 'skipped';
-      verificationNotes = 'Background checks temporarily disabled by config.';
-    } else if (isCheckrEnabled() && ssn && zipcode) {
-      // Initiate Checkr background check if credentials and data provided
-      try {
-        console.log('🔍 Initiating Checkr background check for new Pro');
-        
-        // Parse name into first and last name
-        const { firstName, lastName } = parseFullName(name);
-        
-        // Format DOB for Checkr (YYYY-MM-DD)
-        const dobFormatted = formatDobForCheckr(dob);
-        
-        checkrData = await createCandidateAndInvitation({
-          email: email.toLowerCase(),
-          phone: phone.trim(),
-          firstName,
-          lastName,
-          dob: dobFormatted,
-          ssn,
-          zipcode
-        });
-        
-        console.log(`✅ Checkr invitation created: ${checkrData.invitationId}`);
-        verificationNotes = 'Background check invitation sent via Checkr';
-      } catch (checkrError) {
-        console.error('❌ Checkr integration error:', checkrError.message);
-        // Don't fail signup if Checkr fails - log and continue
-        verificationNotes = `Background check failed to initiate: ${checkrError.message}`;
-      }
-    } else if (isCheckrEnabled()) {
-      verificationNotes = 'Background check requires SSN and ZIP code - awaiting additional info';
-    }
-
-    // Allow same email registering for a different trade, but require explicit consent flags
+    // Create Pro with simplified logic
     const pro = await Pro.create({
-      name: name.trim(),
-      email: email.toLowerCase(),
-      phone: phone.trim(),
+      name: nameNormalized,
+      email: emailNormalized,
+      phone: phoneNormalized,
       trade: tradeNormalized,
-      location: String(location).trim(),
+      location: {
+        type: "Point",
+        coordinates: [-74.006, 40.7128], // Default to NYC
+        address: locationNormalized,
+      },
+      dob: dobNormalized,
       role: role || "pro",
-      wantsNotifications: true,
-      verificationStatus,
-      verificationNotes,
-      // Add Checkr IDs if available
-      ...(checkrData && {
-        checkrCandidateId: checkrData.candidateId,
-        checkrInvitationId: checkrData.invitationId,
-        backgroundCheckStatus: 'pending',
-      }),
+      wantsNotifications: wantsNotifications !== undefined ? Boolean(wantsNotifications) : true,
+      verificationStatus: "pending",
       smsConsent: {
         given: Boolean(smsConsent?.given),
         dateGiven: smsConsent?.dateGiven || new Date(),
@@ -483,18 +434,11 @@ app.post("/api/pro-signup", async (req, res) => {
       updatedAt: new Date(),
     });
 
-    const response = {
+    return res.status(201).json({
       success: true,
       proId: pro._id,
-      verificationStatus,
-    };
-    
-    // Include Checkr invitation URL if available
-    if (checkrData?.invitationUrl) {
-      response.backgroundCheckUrl = checkrData.invitationUrl;
-    }
-
-    return res.status(201).json(response);
+      verificationStatus: "pending",
+    });
   } catch (err) {
     console.error("❌ Pro signup error:", err.message);
     return res
@@ -507,27 +451,14 @@ app.post("/api/pro-signup", async (req, res) => {
 // Frontend expects this as fallback #3, forward to existing pro-signup logic
 app.post("/api/signup/pro", async (req, res) => {
   try {
-    const { ENABLE_BG_CHECKS } = require('./config/flags');
-    const { isCheckrEnabled, createCandidateAndInvitation, parseFullName, formatDobForCheckr } = require('./utils/checkr');
-    const { name, email, phone, trade, location, dob, role, termsConsent, smsConsent, ssn, zipcode } =
+    const { name, email, phone, trade, location, dob, role, termsConsent, smsConsent, wantsNotifications } =
       req.body || {};
 
-    if (!name || !email || !phone || !trade || !location || !dob) {
+    // Minimum required fields: name, email, phone
+    if (!name || !email || !phone) {
       return res.status(400).json({
         success: false,
-        message:
-          "Name, email, phone, trade, location, and date of birth are required",
-      });
-    }
-
-    const birthDate = new Date(dob);
-    const age = Math.floor(
-      (Date.now() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
-    );
-    if (age < 18) {
-      return res.status(400).json({
-        success: false,
-        message: "You must be 18 or older to join Fixlo as a professional",
+        message: "Name, email, and phone are required",
       });
     }
 
@@ -539,77 +470,41 @@ app.post("/api/signup/pro", async (req, res) => {
       });
     }
 
-    const tradeNormalized = String(trade).trim().toLowerCase();
+    // Normalize inputs with defaults
+    const nameNormalized = String(name).trim();
+    const emailNormalized = String(email).toLowerCase().trim();
+    const phoneNormalized = String(phone).trim();
+    const tradeNormalized = trade ? String(trade).toLowerCase().trim() : "general";
+    const locationNormalized = location ? String(location).trim() : "unknown";
+    const dobNormalized = dob ? new Date(dob) : new Date("1900-01-01");
 
-    // disallow duplicates by email+trade
+    // Prevent duplicates by same email + same trade combination only
     const existingSameTrade = await Pro.findOne({
-      email: email.toLowerCase(),
+      email: emailNormalized,
       trade: tradeNormalized,
     });
     if (existingSameTrade) {
       return res.status(409).json({
         success: false,
-        message: `You are already registered for ${trade}.`,
+        message: `You are already registered for ${tradeNormalized}.`,
       });
     }
 
-    // Background check decision based on feature flag
-    let verificationStatus = 'pending';
-    let verificationNotes = '';
-    let checkrData = null;
-
-    if (!ENABLE_BG_CHECKS) {
-      verificationStatus = 'skipped';
-      verificationNotes = 'Background checks temporarily disabled by config.';
-    } else if (isCheckrEnabled() && ssn && zipcode) {
-      // Initiate Checkr background check if credentials and data provided
-      try {
-        console.log('🔍 Initiating Checkr background check for new Pro');
-        
-        // Parse name into first and last name
-        const { firstName, lastName } = parseFullName(name);
-        
-        // Format DOB for Checkr (YYYY-MM-DD)
-        const dobFormatted = formatDobForCheckr(dob);
-        
-        checkrData = await createCandidateAndInvitation({
-          email: email.toLowerCase(),
-          phone: phone.trim(),
-          firstName,
-          lastName,
-          dob: dobFormatted,
-          ssn,
-          zipcode
-        });
-        
-        console.log(`✅ Checkr invitation created: ${checkrData.invitationId}`);
-        verificationNotes = 'Background check invitation sent via Checkr';
-      } catch (checkrError) {
-        console.error('❌ Checkr integration error:', checkrError.message);
-        // Don't fail signup if Checkr fails - log and continue
-        verificationNotes = `Background check failed to initiate: ${checkrError.message}`;
-      }
-    } else if (isCheckrEnabled()) {
-      verificationNotes = 'Background check requires SSN and ZIP code - awaiting additional info';
-    }
-
-    // Allow same email registering for a different trade, but require explicit consent flags
+    // Create Pro with simplified logic
     const pro = await Pro.create({
-      name: name.trim(),
-      email: email.toLowerCase(),
-      phone: phone.trim(),
+      name: nameNormalized,
+      email: emailNormalized,
+      phone: phoneNormalized,
       trade: tradeNormalized,
-      location: String(location).trim(),
+      location: {
+        type: "Point",
+        coordinates: [-74.006, 40.7128], // Default to NYC
+        address: locationNormalized,
+      },
+      dob: dobNormalized,
       role: role || "pro",
-      wantsNotifications: true,
-      verificationStatus,
-      verificationNotes,
-      // Add Checkr IDs if available
-      ...(checkrData && {
-        checkrCandidateId: checkrData.candidateId,
-        checkrInvitationId: checkrData.invitationId,
-        backgroundCheckStatus: 'pending',
-      }),
+      wantsNotifications: wantsNotifications !== undefined ? Boolean(wantsNotifications) : true,
+      verificationStatus: "pending",
       smsConsent: {
         given: Boolean(smsConsent?.given),
         dateGiven: smsConsent?.dateGiven || new Date(),
@@ -629,18 +524,11 @@ app.post("/api/signup/pro", async (req, res) => {
       updatedAt: new Date(),
     });
 
-    const response = {
+    return res.status(201).json({
       success: true,
       proId: pro._id,
-      verificationStatus,
-    };
-    
-    // Include Checkr invitation URL if available
-    if (checkrData?.invitationUrl) {
-      response.backgroundCheckUrl = checkrData.invitationUrl;
-    }
-
-    return res.status(201).json(response);
+      verificationStatus: "pending",
+    });
   } catch (err) {
     console.error("❌ Pro signup error:", err.message);
     return res

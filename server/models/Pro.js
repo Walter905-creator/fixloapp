@@ -54,6 +54,7 @@ const proSchema = new mongoose.Schema({
     type: String,
     required: true,
     enum: [
+      'general',
       'plumbing',
       'electrical', 
       'landscaping',
@@ -85,7 +86,8 @@ const proSchema = new mongoose.Schema({
     },
     address: {
       type: String,
-      required: true
+      required: false,
+      default: 'unknown'
     }
   },
   // Additional location fields
@@ -106,7 +108,8 @@ const proSchema = new mongoose.Schema({
   },
   dob: {
     type: Date,
-    required: true
+    required: false,
+    default: new Date('1900-01-01')
   },
   isActive: {
     type: Boolean,
