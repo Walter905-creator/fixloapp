@@ -4,7 +4,7 @@ export default {
   slug: "fixloapp",
   scheme: "fixloapp",
   owner: "fixloapp",
-  version: "1.0.2",
+  version: "1.0.1",
     runtimeVersion: { policy: "sdkVersion" },
     orientation: "portrait",
     icon: "./assets/icon.png",
@@ -20,8 +20,9 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.fixloapp.mobile",
-  buildNumber: "9",
+  buildNumber: "20",
       infoPlist: {
+        ITSAppUsesNonExemptEncryption: false,
         NSCameraUsageDescription: "Allow Fixlo to access your camera for profile photos.",
         NSPhotoLibraryUsageDescription: "Allow Fixlo to access your photo library for uploads.",
         NSLocationWhenInUseUsageDescription: "Allow Fixlo to use your location to show nearby services."
@@ -33,13 +34,13 @@ export default {
         backgroundColor: "#ffffff"
       },
       package: "com.fixloapp.mobile",
-  versionCode: 9
+  versionCode: 20
     },
     web: {
       favicon: "./assets/icon.png"
     },
     extra: {
-      eas: { projectId: "8f3b81c3-891c-4c33-b655-b4c1d141a287" }
+      eas: { projectId: "f13247bf-8aca-495f-9b71-e94d1cc480a5" }
     }
   }
 };
