@@ -3,7 +3,7 @@ export default {
   expo: {
     name: "Fixlo",
     slug: "fixloapp",
-    version: "1.0.2",
+    version: "1.0.1",
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "light",
@@ -19,8 +19,9 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.fixloapp.mobile",
-      buildNumber: "9",
+      buildNumber: "20",
       infoPlist: {
+        ITSAppUsesNonExemptEncryption: false,
         NSCameraUsageDescription: "Allow Fixlo to access your camera for profile photos.",
         NSPhotoLibraryUsageDescription: "Allow Fixlo to access your photo library for uploads.",
         NSLocationWhenInUseUsageDescription: "Allow Fixlo to use your location to show nearby services."
@@ -29,7 +30,7 @@ export default {
 
     android: {
       package: "com.fixloapp.mobile",
-      versionCode: 9,
+      versionCode: 20,
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#ffffff"
@@ -40,8 +41,7 @@ export default {
 
     extra: {
       eas: {
-        // keep projectId from the TypeScript config
-        projectId: "8f3b81c3-891c-4c33-b655-b4c1d141a287"
+        projectId: "f13247bf-8aca-495f-9b71-e94d1cc480a5"
       }
     }
   }
