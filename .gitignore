@@ -84,3 +84,4 @@ signup/index.html
 build/
 *.css.map
 client/public/version.json
+mobile/app.config.ts.old
