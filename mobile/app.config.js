@@ -1,10 +1,12 @@
 // Consolidated Expo configuration - single source of truth
+// IMPORTANT: This project must always build under the "fixlo-app" account.
+// This is the paid Expo account for iOS/Android builds to prevent free-plan quota exhaustion.
 export default {
   expo: {
     name: "Fixlo",
     slug: "fixloapp",
     scheme: "fixloapp",
-    owner: "fixloapp",
+    owner: "fixlo-app",
     version: "1.0.2",
     orientation: "portrait",
     icon: "./assets/icon.png",
