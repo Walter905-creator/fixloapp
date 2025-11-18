@@ -5,7 +5,7 @@ This directory contains the automated SEO landing page generation system for Fix
 ## 📋 Overview
 
 The system automatically generates:
-- **5,000 pages** (50 services × 50 cities × 2 languages)
+- **1,000 pages** (50 services × 10 cities × 2 languages)
 - Full SEO optimization (meta tags, JSON-LD schema, canonical URLs)
 - Viral slang integration for modern, engaging content
 - Unique content for each page (no duplicate content issues)
@@ -16,7 +16,7 @@ The system automatically generates:
 ```
 seo/
 ├── services.json       # List of all services (50 services)
-├── cities.json         # List of major U.S. cities (50 cities)
+├── cities.json         # List of major U.S. cities (10 top cities)
 ├── slang.json          # Viral slang terms (English + Spanish)
 ├── generator.mjs       # Main generation script
 └── README.md          # This file
@@ -42,8 +42,8 @@ This will generate all SEO pages for every service/city combination in both Engl
 
 ### Generation Time
 
-- **Total pages**: 5,000 (50 services × 50 cities × 2 languages)
-- **Estimated time**: 5-10 seconds
+- **Total pages**: 1,000 (50 services × 10 cities × 2 languages)
+- **Estimated time**: 1-2 seconds
 - **Output**: `client/src/pages/services/[service]/[city]/`
 
 ## 📝 Adding New Services
@@ -324,4 +324,4 @@ Part of the Fixlo application. All rights reserved.
 
 **Last Updated**: November 2025  
 **Version**: 1.0.0  
-**Pages Generated**: 5,000
+**Pages Generated**: 1,000
