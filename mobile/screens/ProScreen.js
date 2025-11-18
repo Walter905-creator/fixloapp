@@ -392,18 +392,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-});
-    color: '#10b981',
-    textAlign: 'center'
-  },
   benefitsContainer: {
-    marginBottom: 30
+    marginBottom: 30,
   },
   benefitItem: {
     fontSize: 16,
     color: '#374151',
     marginBottom: 12,
-    paddingLeft: 10
+    paddingLeft: 10,
   },
   signupButton: {
     backgroundColor: '#2563eb',
@@ -424,16 +420,16 @@ const styles = StyleSheet.create({
   signupButtonText: {
     color: 'white',
     fontSize: 18,
-    fontWeight: 'bold'
+    fontWeight: 'bold',
   },
   loginButton: {
     paddingVertical: 15,
-    alignItems: 'center'
+    alignItems: 'center',
   },
   loginButtonText: {
     color: '#2563eb',
     fontSize: 16,
-    fontWeight: '600'
+    fontWeight: '600',
   },
   testButton: {
     backgroundColor: '#10b981',
@@ -441,12 +437,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 8,
     marginTop: 10,
-    alignItems: 'center'
+    alignItems: 'center',
   },
   testButtonText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: '600'
+    fontWeight: '600',
   },
   logoutButton: {
     backgroundColor: 'transparent',
@@ -456,18 +452,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 8,
     marginTop: 10,
-    alignItems: 'center'
+    alignItems: 'center',
   },
   logoutButtonText: {
     color: '#dc2626',
     fontSize: 16,
-    fontWeight: '600'
+    fontWeight: '600',
   },
   newJobsText: {
     fontSize: 14,
     color: '#f97316',
     fontWeight: 'bold',
     marginTop: 5,
-    textAlign: 'center'
-  }
+    textAlign: 'center',
+  },
 });
