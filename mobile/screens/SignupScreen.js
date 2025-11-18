@@ -68,10 +68,9 @@ export default function SignupScreen({ navigation, route }) {
       }
       
       // For pros, register with backend API
-      console.log('📝 Attempting pro registration via API');
+
       const apiUrl = buildApiUrl(API_ENDPOINTS.AUTH_REGISTER);
-      console.log('API URL:', apiUrl);
-      
+
       const requestData = {
         name: name.trim(),
         email: email.toLowerCase().trim(),
@@ -88,8 +87,6 @@ export default function SignupScreen({ navigation, route }) {
           'Content-Type': 'application/json',
         }
       });
-
-      console.log('✅ Registration successful:', response.data);
 
       if (response.data.token || response.data.success) {
         Alert.alert(
@@ -108,7 +105,9 @@ export default function SignupScreen({ navigation, route }) {
       }
     } catch (error) {
       // Enhanced error logging for debugging
+      if (__DEV__) {
       console.error('❌ Signup error:', {
+      }
         message: error.message,
         status: error.response?.status,
         statusText: error.response?.statusText,

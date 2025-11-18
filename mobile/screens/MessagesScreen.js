@@ -39,7 +39,9 @@ export default function MessagesScreen({ navigation }) {
       const data = await messagingService.fetchConversations();
       setConversations(data);
     } catch (error) {
+      if (__DEV__) {
       console.error('Error loading conversations:', error);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);

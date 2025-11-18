@@ -15,12 +15,10 @@ let isConnected = false;
  */
 export const initializeSocket = () => {
   if (socket) {
-    console.log('⚠️ Socket already initialized');
     return socket;
   }
 
   const apiUrl = getApiUrl();
-  console.log('🔌 Initializing Socket.io connection to:', apiUrl);
 
   socket = io(apiUrl, {
     transports: ['websocket', 'polling'],
@@ -32,33 +30,47 @@ export const initializeSocket = () => {
 
   socket.on('connect', () => {
     isConnected = true;
-    console.log('✅ Socket.io connected:', socket.id);
+    if (__DEV__) {
+
+    }
   });
 
   socket.on('disconnect', (reason) => {
     isConnected = false;
-    console.log('❌ Socket.io disconnected:', reason);
+    if (__DEV__) {
+
+    }
   });
 
   socket.on('connect_error', (error) => {
-    console.error('❌ Socket.io connection error:', error.message);
+    if (__DEV__) {
+      console.error('❌ Socket.io connection error:', error.message);
+    }
   });
 
   socket.on('reconnect', (attemptNumber) => {
     isConnected = true;
-    console.log('🔄 Socket.io reconnected after', attemptNumber, 'attempts');
+    if (__DEV__) {
+
+    }
   });
 
   socket.on('reconnect_attempt', (attemptNumber) => {
-    console.log('🔄 Socket.io reconnection attempt:', attemptNumber);
+    if (__DEV__) {
+
+    }
   });
 
   socket.on('reconnect_error', (error) => {
-    console.error('❌ Socket.io reconnection error:', error.message);
+    if (__DEV__) {
+      console.error('❌ Socket.io reconnection error:', error.message);
+    }
   });
 
   socket.on('reconnect_failed', () => {
-    console.error('❌ Socket.io reconnection failed - giving up');
+    if (__DEV__) {
+      console.error('❌ Socket.io reconnection failed - giving up');
+    }
   });
 
   return socket;
@@ -69,7 +81,7 @@ export const initializeSocket = () => {
  * @returns {Object|null} Socket instance or null
  */
 export const getSocket = () => {
-  if (!socket) {
+  if (!socket && __DEV__) {
     console.warn('⚠️ Socket not initialized. Call initializeSocket() first.');
   }
   return socket;
@@ -88,7 +100,6 @@ export const isSocketConnected = () => {
  */
 export const disconnectSocket = () => {
   if (socket) {
-    console.log('🔌 Disconnecting socket...');
     socket.disconnect();
     socket = null;
     isConnected = false;
@@ -102,9 +113,9 @@ export const disconnectSocket = () => {
 export const joinRoom = (room) => {
   if (socket && isConnected) {
     socket.emit('join', room);
-    console.log('🚪 Joined room:', room);
-  } else {
-    console.warn('⚠️ Cannot join room - socket not connected');
+    if (__DEV__) {
+
+    }
   }
 };
 
@@ -115,7 +126,9 @@ export const joinRoom = (room) => {
 export const leaveRoom = (room) => {
   if (socket && isConnected) {
     socket.emit('leave', room);
-    console.log('🚪 Left room:', room);
+    if (__DEV__) {
+
+    }
   }
 };
 
@@ -126,12 +139,13 @@ export const leaveRoom = (room) => {
  */
 export const subscribeToNewJobs = (callback) => {
   if (!socket) {
-    console.warn('⚠️ Socket not initialized');
     return () => {};
   }
 
   const handleNewJob = (job) => {
-    console.log('📢 New job received:', job);
+    if (__DEV__) {
+
+    }
     callback(job);
   };
 
@@ -152,12 +166,13 @@ export const subscribeToNewJobs = (callback) => {
  */
 export const subscribeToJobUpdates = (callback) => {
   if (!socket) {
-    console.warn('⚠️ Socket not initialized');
     return () => {};
   }
 
   const handleJobUpdate = (update) => {
-    console.log('📢 Job update received:', update);
+    if (__DEV__) {
+
+    }
     callback(update);
   };
 
@@ -179,7 +194,6 @@ export const subscribeToJobUpdates = (callback) => {
  */
 export const subscribeToJobStatus = (jobId, callback) => {
   if (!socket) {
-    console.warn('⚠️ Socket not initialized');
     return () => {};
   }
 
@@ -201,9 +215,9 @@ export const subscribeToJobStatus = (jobId, callback) => {
 export const emitEvent = (event, data) => {
   if (socket && isConnected) {
     socket.emit(event, data);
-    console.log(`📤 Emitted event: ${event}`, data);
-  } else {
-    console.warn('⚠️ Cannot emit event - socket not connected');
+    if (__DEV__) {
+
+    }
   }
 };
 
@@ -215,7 +229,7 @@ export const emitEvent = (event, data) => {
  */
 export const subscribeToEvent = (event, callback) => {
   if (!socket) {
-    console.warn('⚠️ Socket not initialized');
+
     return () => {};
   }
 

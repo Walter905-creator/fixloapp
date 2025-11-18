@@ -41,7 +41,9 @@ export default function HomeownerJobRequestScreen() {
         Alert.alert('❌ Error', 'Could not send request. Please try again.');
       }
     } catch (err) {
+      if (__DEV__) {
       console.error('❌ Error sending job request:', err);
+      }
       Alert.alert('❌ Network Error', 'Something went wrong. Please try again later.');
     }
     setLoading(false);

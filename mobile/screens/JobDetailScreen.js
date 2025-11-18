@@ -34,14 +34,11 @@ export default function JobDetailScreen({ route, navigation }) {
       }
       setError(null);
 
-      console.log('📋 Fetching job details for:', jobId);
       const apiUrl = buildApiUrl(API_ENDPOINTS.LEADS_DETAIL(jobId));
       
       const response = await axios.get(apiUrl, {
         timeout: 30000,
       });
-
-      console.log('✅ Job details fetched:', response.data);
 
       if (response.data.success && response.data.data) {
         setJob(response.data.data);
@@ -52,7 +49,9 @@ export default function JobDetailScreen({ route, navigation }) {
         throw new Error('Invalid response format');
       }
     } catch (err) {
+      if (__DEV__) {
       console.error('❌ Error fetching job details:', {
+      }
         message: err.message,
         status: err.response?.status,
         data: err.response?.data,
@@ -78,7 +77,7 @@ export default function JobDetailScreen({ route, navigation }) {
 
     // Subscribe to real-time job status updates
     const unsubscribe = subscribeToJobStatus(jobId, (update) => {
-      console.log('📢 Real-time job update:', update);
+
       setJob((prevJob) => ({
         ...prevJob,
         ...update,

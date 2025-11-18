@@ -27,17 +27,18 @@ export default function ProScreen({ navigation }) {
         setPushToken(token);
         setNotificationsEnabled(true);
         
-        // Save token to backend (for now we'll use a placeholder Pro ID)
+        // Register push token with backend
         try {
           await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/api/notify/register-token`, {
-            proId: 'temp-pro-id', // In real app, this would be the logged-in Pro's ID
+            proId: 'temp-pro-id',
             token,
-            name: 'Test Pro', // Placeholder name
-            trade: 'General Contractor' // Placeholder trade
+            name: 'Pro User',
+            trade: 'General Contractor'
           });
-          console.log('✅ Push token registered with backend');
         } catch (error) {
+          if (__DEV__) {
           console.error('❌ Error registering token with backend:', error);
+          }
         }
       }
 
@@ -46,7 +47,7 @@ export default function ProScreen({ navigation }) {
       
       // Subscribe to real-time new jobs
       const unsubscribeJobs = subscribeToNewJobs((job) => {
-        console.log('📢 New job notification:', job);
+
         setNewJobCount((prev) => prev + 1);
         setJobs((prev) => [job, ...prev]);
         Alert.alert(
@@ -91,28 +92,11 @@ export default function ProScreen({ navigation }) {
 
   const handleApplyFilters = (filters) => {
     setActiveFilters(filters);
-    console.log('✅ Filters applied:', filters);
+
   };
 
   const handleClearFilters = () => {
     setActiveFilters(null);
-    console.log('🗑️ Filters cleared');
-  };
-  const testNotification = async () => {
-    if (pushToken) {
-      try {
-        // Send a test notification
-        await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/api/notify/test`, {
-          token: pushToken
-        });
-        Alert.alert('Test Sent!', 'Check for notification on your device');
-      } catch (error) {
-        Alert.alert('Error', 'Failed to send test notification');
-        console.error('❌ Test notification error:', error);
-      }
-    } else {
-      Alert.alert('No Token', 'Push token not available');
-    }
   };
 
   const handleLogout = async () => {
@@ -218,14 +202,6 @@ export default function ProScreen({ navigation }) {
           onPress={() => navigation.navigate('Messages')}
         >
           <Text style={styles.buttonText}>💬 Messages</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.button}
-          activeOpacity={0.7}
-          onPress={testNotification}
-        >
-          <Text style={styles.buttonText}>🔔 Test Notification</Text>
         </TouchableOpacity>
 
         <TouchableOpacity

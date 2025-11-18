@@ -85,7 +85,6 @@ export async function setupNotificationCategories() {
       },
     ]);
 
-    console.log('✅ Notification categories configured');
   }
 }
 
@@ -114,10 +113,11 @@ export async function registerForPushNotificationsAsync() {
       token = (await Notifications.getExpoPushTokenAsync({
         projectId: 'your-expo-project-id', // You'll get this when you create an Expo project
       })).data;
-      
-      console.log('✅ Expo Push Token:', token);
+
     } catch (error) {
+      if (__DEV__) {
       console.error('❌ Error getting push token:', error);
+      }
       return null;
     }
   } else {
@@ -155,11 +155,12 @@ export async function scheduleLocalNotification({
       },
       trigger: seconds > 0 ? { seconds } : null,
     });
-    
-    console.log('✅ Local notification scheduled:', notificationId);
+
     return notificationId;
   } catch (error) {
+    if (__DEV__) {
     console.error('❌ Error scheduling notification:', error);
+    }
     return null;
   }
 }
@@ -167,17 +168,15 @@ export async function scheduleLocalNotification({
 export function setupNotificationListeners() {
   // Listen for notifications received while app is in foreground
   const notificationListener = Notifications.addNotificationReceivedListener(notification => {
-    console.log('🔔 Notification received:', notification);
+
   });
 
   // Listen for user tapping on notification
   const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
-    console.log('👆 Notification tapped:', response);
+
     const { actionIdentifier, notification } = response;
     const { data, categoryIdentifier } = notification.request.content;
-    
-    console.log('Action:', actionIdentifier, 'Category:', categoryIdentifier, 'Data:', data);
-    
+
     // Handle different actions
     // This will be handled in the App.js to navigate to appropriate screens
   });
