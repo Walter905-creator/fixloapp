@@ -47,7 +47,9 @@ export default function SignupScreen({ navigation, route }) {
       // For homeowners, use a simplified registration (demo mode for App Review)
       // This allows the app to work even if the backend is temporarily unavailable
       if (userType === 'homeowner') {
-        console.log('📝 Creating homeowner account (demo mode)');
+        if (__DEV__) {
+          console.log('📝 Creating homeowner account (demo mode)');
+        }
         
         // Simulate registration delay to mimic network request
         await new Promise(resolve => setTimeout(resolve, 1500));

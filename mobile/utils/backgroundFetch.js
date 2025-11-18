@@ -41,7 +41,9 @@ TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
     const newJobs = response.data.jobs || [];
     
     if (newJobs.length > 0) {
-      console.log(`✅ Found ${newJobs.length} new job(s) in background`);
+      if (__DEV__) {
+        console.log(`✅ Found ${newJobs.length} new job(s) in background`);
+      }
       
       // Send local notification for new jobs
       for (const job of newJobs.slice(0, 3)) { // Limit to 3 notifications
