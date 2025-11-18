@@ -1,0 +1,12 @@
+[
+  { "city": "New York", "state": "NY" },
+  { "city": "Los Angeles", "state": "CA" },
+  { "city": "Chicago", "state": "IL" },
+  { "city": "Houston", "state": "TX" },
+  { "city": "Phoenix", "state": "AZ" },
+  { "city": "Philadelphia", "state": "PA" },
+  { "city": "San Antonio", "state": "TX" },
+  { "city": "San Diego", "state": "CA" },
+  { "city": "Dallas", "state": "TX" },
+  { "city": "San Jose", "state": "CA" }
+]

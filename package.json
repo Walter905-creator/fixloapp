@@ -32,7 +32,8 @@
     "check-ai": "grep -E \"^[^/]*{.*'AI Assistant'\" client/src/components/Navbar.jsx && echo 'ERROR: Active AI Assistant found in navigation!' && exit 1 || echo 'Navigation AI Assistant check - OK'",
     "activate-owner-pro": "node scripts/activate-owner-pro.js",
     "test-walter-lead": "node scripts/test-walter-lead.js",
-    "create-test-users": "node scripts/createTestUsers.js"
+    "create-test-users": "node scripts/createTestUsers.js",
+    "generate:seo": "node seo/generator.mjs"
   },
   "dependencies": {
     "@vercel/og": "^0.6.3",
