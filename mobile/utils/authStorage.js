@@ -26,7 +26,9 @@ export const saveAuthToken = async (token, expiresIn = 604800) => {
       [STORAGE_KEYS.TOKEN, token],
       [STORAGE_KEYS.TOKEN_EXPIRY, expiryTime.toString()],
     ]);
-    console.log('✅ Auth token saved with expiry:', new Date(expiryTime).toISOString());
+    if (__DEV__) {
+      console.log('✅ Auth token saved with expiry:', new Date(expiryTime).toISOString());
+    }
     return true;
   } catch (error) {
     if (__DEV__) {
@@ -269,7 +271,7 @@ export const shouldRefreshToken = async (bufferMinutes = 5) => {
     const bufferTime = bufferMinutes * 60 * 1000;
     const shouldRefresh = Date.now() >= (expiry - bufferTime);
     
-    if (shouldRefresh) {
+    if (shouldRefresh && __DEV__) {
       console.log('⏰ Token needs refresh (expires at:', new Date(expiry).toISOString(), ')');
     }
     
