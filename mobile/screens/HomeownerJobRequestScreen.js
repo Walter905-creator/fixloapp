@@ -18,8 +18,7 @@ export default function HomeownerJobRequestScreen() {
 
     setLoading(true);
     try {
-      // Use your backend API for job requests
-      const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fixlo-backend.onrender.com';
+      const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fixloapp.onrender.com';
       
       const res = await axios.post(`${API_URL}/api/notify/text`, {
         name,

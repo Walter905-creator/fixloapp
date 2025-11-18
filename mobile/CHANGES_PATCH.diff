@@ -1,0 +1,1233 @@
+diff --git a/mobile/App.js b/mobile/App.js
+index adb5213..0f61f12 100644
+--- a/mobile/App.js
++++ b/mobile/App.js
+@@ -33,7 +33,7 @@ class ErrorBoundary extends React.Component {
+   }
+ 
+   componentDidCatch(error, errorInfo) {
+-    console.error('🚨 App Error Caught:', error, errorInfo);
++    // Error caught - can be sent to error reporting service in production
+   }
+ 
+   render() {
+@@ -92,10 +92,9 @@ export default function App() {
+       const session = await getSession();
+       if (session.userType === 'pro') {
+         await registerBackgroundFetch();
+-        console.log('✅ Background fetch registered for pro user');
+       }
+     } catch (error) {
+-      console.error('❌ Error initializing services:', error);
++      console.error('Error initializing services:', error);
+     } finally {
+       setIsLoading(false);
+     }
+@@ -104,7 +103,6 @@ export default function App() {
+   const checkSession = async () => {
+     try {
+       const session = await getSession();
+-      console.log('📱 Session check:', session);
+ 
+       if (session.isAuthenticated) {
+         // Auto-login based on user type
+@@ -113,12 +111,9 @@ export default function App() {
+         } else if (session.userType === 'pro') {
+           setInitialRoute('Pro');
+         }
+-        console.log('✅ Auto-login successful:', session.userType);
+-      } else {
+-        console.log('ℹ️ No saved session found');
+       }
+     } catch (error) {
+-      console.error('❌ Error checking session:', error);
++      console.error('Error checking session:', error);
+     }
+   };
+ 
+diff --git a/mobile/app.config.js b/mobile/app.config.js
+index a9518e2..7e4fae5 100644
+--- a/mobile/app.config.js
++++ b/mobile/app.config.js
+@@ -28,6 +28,9 @@ export default {
+         NSCameraUsageDescription: "Allow Fixlo to access your camera for profile photos.",
+         NSPhotoLibraryUsageDescription: "Allow Fixlo to access your photo library for uploads.",
+         NSLocationWhenInUseUsageDescription: "Allow Fixlo to use your location to show nearby services."
++      },
++      entitlements: {
++        "com.apple.developer.in-app-payments": ["merchant.com.fixloapp.mobile"]
+       }
+     },
+ 
+diff --git a/mobile/config/api.js b/mobile/config/api.js
+index 492fd12..6607f53 100644
+--- a/mobile/config/api.js
++++ b/mobile/config/api.js
+@@ -56,12 +56,6 @@ export const API_CONFIG = {
+   },
+ };
+ 
+-// Log the API configuration on module load (helpful for debugging)
+-console.log('📡 API Configuration:', {
+-  baseUrl: API_BASE_URL,
+-  source: process.env.EXPO_PUBLIC_API_URL ? 'environment variable' : 'fallback (production)',
+-});
+-
+ export default {
+   getApiUrl,
+   buildApiUrl,
+diff --git a/mobile/package-lock.json b/mobile/package-lock.json
+index 89d8f18..455db54 100644
+--- a/mobile/package-lock.json
++++ b/mobile/package-lock.json
+@@ -13,6 +13,7 @@
+         "@react-native-community/netinfo": "^11.4.1",
+         "@react-navigation/native": "^7.1.19",
+         "@react-navigation/native-stack": "^7.6.2",
++        "@stripe/stripe-react-native": "^0.57.0",
+         "axios": "^1.13.2",
+         "expo": "54.0.23",
+         "expo-background-fetch": "~14.0.7",
+@@ -2676,6 +2677,22 @@
+       "integrity": "sha512-9BCxFwvbGg/RsZK9tjXd8s4UcwR0MWeFQ1XEKIQVVvAGJyINdrqKMcTRyLoK8Rse1GjzLV9cwjWV1olXRWEXVA==",
+       "license": "MIT"
+     },
++    "node_modules/@stripe/stripe-react-native": {
++      "version": "0.57.0",
++      "resolved": "https://registry.npmjs.org/@stripe/stripe-react-native/-/stripe-react-native-0.57.0.tgz",
++      "integrity": "sha512-l68At+JKyd32TzyB7e3yklHsMqF3X+38KE2+NwByxAEIbxs/K7GKjQTABv3DIGmcZ/yGTpDSlKJqrYxtKH4j2g==",
++      "license": "MIT",
++      "peerDependencies": {
++        "expo": ">=46.0.9",
++        "react": "*",
++        "react-native": "*"
++      },
++      "peerDependenciesMeta": {
++        "expo": {
++          "optional": true
++        }
++      }
++    },
+     "node_modules/@types/babel__core": {
+       "version": "7.20.5",
+       "resolved": "https://registry.npmjs.org/@types/babel__core/-/babel__core-7.20.5.tgz",
+diff --git a/mobile/package.json b/mobile/package.json
+index 6950cea..662ffc1 100644
+--- a/mobile/package.json
++++ b/mobile/package.json
+@@ -16,6 +16,7 @@
+     "@react-native-community/netinfo": "^11.4.1",
+     "@react-navigation/native": "^7.1.19",
+     "@react-navigation/native-stack": "^7.6.2",
++    "@stripe/stripe-react-native": "^0.57.0",
+     "axios": "^1.13.2",
+     "expo": "54.0.23",
+     "expo-background-fetch": "~14.0.7",
+diff --git a/mobile/screens/HomeownerJobRequestScreen.js b/mobile/screens/HomeownerJobRequestScreen.js
+index 39b89f5..e7908d2 100644
+--- a/mobile/screens/HomeownerJobRequestScreen.js
++++ b/mobile/screens/HomeownerJobRequestScreen.js
+@@ -18,8 +18,7 @@ export default function HomeownerJobRequestScreen() {
+ 
+     setLoading(true);
+     try {
+-      // Use your backend API for job requests
+-      const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fixlo-backend.onrender.com';
++      const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fixloapp.onrender.com';
+       
+       const res = await axios.post(`${API_URL}/api/notify/text`, {
+         name,
+diff --git a/mobile/screens/HomeownerScreen.js b/mobile/screens/HomeownerScreen.js
+index d01e44b..2a67530 100644
+--- a/mobile/screens/HomeownerScreen.js
++++ b/mobile/screens/HomeownerScreen.js
+@@ -28,9 +28,7 @@ export default function HomeownerScreen({ navigation }) {
+       }
+       setError(null);
+ 
+-      console.log('📋 Fetching job requests...');
+       const apiUrl = buildApiUrl(API_ENDPOINTS.LEADS_LIST);
+-      console.log('API URL:', apiUrl);
+ 
+       const response = await axios.get(apiUrl, {
+         timeout: 30000,
+@@ -40,7 +38,6 @@ export default function HomeownerScreen({ navigation }) {
+         }
+       });
+ 
+-      console.log('✅ Job requests fetched:', response.data);
+ 
+       if (response.data.success && response.data.data?.leads) {
+         setJobRequests(response.data.data.leads);
+@@ -81,7 +78,6 @@ export default function HomeownerScreen({ navigation }) {
+ 
+     // Subscribe to real-time job updates
+     const unsubscribeUpdates = subscribeToJobUpdates((update) => {
+-      console.log('📢 Job update received:', update);
+       // Update the job in the list
+       setJobRequests((prevJobs) =>
+         prevJobs.map((job) =>
+@@ -92,7 +88,6 @@ export default function HomeownerScreen({ navigation }) {
+ 
+     // Subscribe to new jobs
+     const unsubscribeNew = subscribeToNewJobs((newJob) => {
+-      console.log('📢 New job received:', newJob);
+       // Add new job to the list
+       setJobRequests((prevJobs) => [newJob, ...prevJobs]);
+     });
+@@ -164,7 +159,7 @@ export default function HomeownerScreen({ navigation }) {
+             onPress={async () => {
+               await clearSession();
+               Alert.alert('Logged Out', 'You have been logged out successfully');
+-              navigation.replace('Fixlo');
++              navigation.replace('Home');
+             }}
+           >
+             <Text style={styles.logoutButtonText}>🚪 Logout</Text>
+diff --git a/mobile/screens/JobDetailScreen.js b/mobile/screens/JobDetailScreen.js
+index f1ca49e..6935b0f 100644
+--- a/mobile/screens/JobDetailScreen.js
++++ b/mobile/screens/JobDetailScreen.js
+@@ -34,14 +34,12 @@ export default function JobDetailScreen({ route, navigation }) {
+       }
+       setError(null);
+ 
+-      console.log('📋 Fetching job details for:', jobId);
+       const apiUrl = buildApiUrl(API_ENDPOINTS.LEADS_DETAIL(jobId));
+       
+       const response = await axios.get(apiUrl, {
+         timeout: 30000,
+       });
+ 
+-      console.log('✅ Job details fetched:', response.data);
+ 
+       if (response.data.success && response.data.data) {
+         setJob(response.data.data);
+@@ -78,7 +76,6 @@ export default function JobDetailScreen({ route, navigation }) {
+ 
+     // Subscribe to real-time job status updates
+     const unsubscribe = subscribeToJobStatus(jobId, (update) => {
+-      console.log('📢 Real-time job update:', update);
+       setJob((prevJob) => ({
+         ...prevJob,
+         ...update,
+@@ -106,12 +103,25 @@ export default function JobDetailScreen({ route, navigation }) {
+           onPress: async () => {
+             setActionLoading(true);
+             try {
+-              // TODO: Implement accept job API call
+-              await new Promise(resolve => setTimeout(resolve, 1000));
++              const apiUrl = buildApiUrl(`/api/jobs/${jobId}/accept`);
++              await axios.post(apiUrl, {}, { timeout: 30000 });
++              
+               Alert.alert('Success', 'Job accepted successfully!');
+-              navigation.goBack();
++              
++              // Update job status locally
++              setJob((prevJob) => ({
++                ...prevJob,
++                status: 'accepted',
++              }));
++              
++              // Optionally navigate back after a delay
++              setTimeout(() => navigation.goBack(), 1500);
+             } catch (error) {
+-              Alert.alert('Error', 'Failed to accept job');
++              console.error('Error accepting job:', error);
++              Alert.alert(
++                'Error', 
++                error.response?.data?.message || 'Failed to accept job. Please try again.'
++              );
+             } finally {
+               setActionLoading(false);
+             }
+diff --git a/mobile/screens/LoginScreen.js b/mobile/screens/LoginScreen.js
+index 7bd63f3..0ac29bd 100644
+--- a/mobile/screens/LoginScreen.js
++++ b/mobile/screens/LoginScreen.js
+@@ -93,7 +93,6 @@ export default function LoginScreen({ navigation, route }) {
+       }
+       
+       // For non-demo accounts, try backend authentication
+-      console.log('🔐 Attempting backend login for:', userType);
+       
+       // Only try backend for pro accounts (homeowner backend doesn't exist yet)
+       if (userType === 'homeowner') {
+@@ -101,7 +100,6 @@ export default function LoginScreen({ navigation, route }) {
+       }
+       
+       const apiUrl = buildApiUrl(API_ENDPOINTS.AUTH_LOGIN);
+-      console.log('API URL:', apiUrl);
+       
+       const response = await axios.post(apiUrl, {
+         email: normalizedEmail,
+@@ -113,7 +111,6 @@ export default function LoginScreen({ navigation, route }) {
+         }
+       });
+ 
+-      console.log('✅ Login successful:', response.data);
+ 
+       if (response.data.token) {
+         // Save session data
+diff --git a/mobile/screens/ProScreen.js b/mobile/screens/ProScreen.js
+index 93494d3..abc60cc 100644
+--- a/mobile/screens/ProScreen.js
++++ b/mobile/screens/ProScreen.js
+@@ -35,7 +35,6 @@ export default function ProScreen({ navigation }) {
+             name: 'Test Pro', // Placeholder name
+             trade: 'General Contractor' // Placeholder trade
+           });
+-          console.log('✅ Push token registered with backend');
+         } catch (error) {
+           console.error('❌ Error registering token with backend:', error);
+         }
+@@ -46,7 +45,6 @@ export default function ProScreen({ navigation }) {
+       
+       // Subscribe to real-time new jobs
+       const unsubscribeJobs = subscribeToNewJobs((job) => {
+-        console.log('📢 New job notification:', job);
+         setNewJobCount((prev) => prev + 1);
+         setJobs((prev) => [job, ...prev]);
+         Alert.alert(
+@@ -91,12 +89,10 @@ export default function ProScreen({ navigation }) {
+ 
+   const handleApplyFilters = (filters) => {
+     setActiveFilters(filters);
+-    console.log('✅ Filters applied:', filters);
+   };
+ 
+   const handleClearFilters = () => {
+     setActiveFilters(null);
+-    console.log('🗑️ Filters cleared');
+   };
+   const testNotification = async () => {
+     if (pushToken) {
+@@ -128,7 +124,7 @@ export default function ProScreen({ navigation }) {
+             await clearSession();
+             navigation.reset({
+               index: 0,
+-              routes: [{ name: 'Fixlo' }],
++              routes: [{ name: 'Home' }],
+             });
+           },
+         },
+diff --git a/mobile/screens/ProSignupScreen.js b/mobile/screens/ProSignupScreen.js
+index 583947b..40354e6 100644
+--- a/mobile/screens/ProSignupScreen.js
++++ b/mobile/screens/ProSignupScreen.js
+@@ -1,4 +1,4 @@
+-import React, { useState } from 'react';
++import React, { useState, useEffect } from 'react';
+ import { 
+   View, 
+   Text, 
+@@ -8,22 +8,86 @@ import {
+   ScrollView, 
+   TouchableOpacity,
+   ActivityIndicator,
+-  Linking
++  Linking,
++  Platform
+ } from 'react-native';
++import { 
++  isApplePayAvailable, 
++  createProSubscription, 
++  formatAmount 
++} from '../utils/paymentService';
+ 
+ export default function ProSignupScreen({ navigation }) {
+   const [name, setName] = useState('');
+   const [email, setEmail] = useState('');
+   const [phone, setPhone] = useState('');
+   const [trade, setTrade] = useState('');
++  const [smsOptIn, setSmsOptIn] = useState(false);
+   const [loading, setLoading] = useState(false);
++  const [applePayAvailable, setApplePayAvailable] = useState(false);
++
++  useEffect(() => {
++    checkApplePayAvailability();
++  }, []);
++
++  const checkApplePayAvailability = async () => {
++    const available = await isApplePayAvailable();
++    setApplePayAvailable(available);
++  };
+ 
+-  const handleSubscribe = async () => {
++  const handleApplePaySubscribe = async () => {
+     if (!name || !email || !phone || !trade) {
+       Alert.alert("Missing Info", "Please fill out all fields before continuing.");
+       return;
+     }
+ 
++    if (!smsOptIn) {
++      Alert.alert("SMS Consent Required", "Please agree to receive SMS notifications to continue.");
++      return;
++    }
++
++    setLoading(true);
++
++    try {
++      // Create subscription intent
++      const paymentIntent = await createProSubscription({
++        name,
++        email,
++        phone,
++        trade,
++      });
++
++      Alert.alert(
++        '✅ Subscription Created!',
++        'Your Fixlo Pro subscription has been set up successfully. You will now receive job leads directly to your device.',
++        [
++          {
++            text: 'Get Started',
++            onPress: () => navigation.replace('Pro')
++          }
++        ]
++      );
++    } catch (error) {
++      Alert.alert(
++        'Payment Error',
++        error.message || 'Failed to process payment. Please try again.'
++      );
++    } finally {
++      setLoading(false);
++    }
++  };
++
++  const handleWebSubscribe = async () => {
++    if (!name || !email || !phone || !trade) {
++      Alert.alert("Missing Info", "Please fill out all fields before continuing.");
++      return;
++    }
++
++    if (!smsOptIn) {
++      Alert.alert("SMS Consent Required", "Please agree to receive SMS notifications to continue.");
++      return;
++    }
++
+     setLoading(true);
+     
+     // Simulate processing
+@@ -119,25 +183,60 @@ export default function ProSignupScreen({ navigation }) {
+               autoCapitalize="words"
+             />
+           </View>
++
++          <TouchableOpacity 
++            style={styles.checkboxContainer}
++            onPress={() => setSmsOptIn(!smsOptIn)}
++            activeOpacity={0.7}
++          >
++            <View style={styles.checkbox}>
++              {smsOptIn && <Text style={styles.checkmark}>✓</Text>}
++            </View>
++            <Text style={styles.checkboxLabel}>
++              I agree to receive SMS notifications about job leads and account updates. 
++              Message and data rates may apply. Reply STOP to opt out.
++            </Text>
++          </TouchableOpacity>
+         </View>
+ 
++        {applePayAvailable && (
++          <TouchableOpacity
++            style={[styles.applePayButton, loading && styles.buttonDisabled]}
++            onPress={handleApplePaySubscribe}
++            disabled={loading}
++          >
++            {loading ? (
++              <ActivityIndicator color="white" />
++            ) : (
++              <>
++                <Text style={styles.applePayIcon}>  </Text>
++                <Text style={styles.applePayButtonText}>
++                  Subscribe with Apple Pay
++                </Text>
++              </>
++            )}
++          </TouchableOpacity>
++        )}
++
+         <TouchableOpacity
+           style={[styles.subscribeButton, loading && styles.buttonDisabled]}
+-          onPress={handleSubscribe}
++          onPress={handleWebSubscribe}
+           disabled={loading}
+         >
+           {loading ? (
+             <ActivityIndicator color="white" />
+           ) : (
+             <Text style={styles.subscribeButtonText}>
+-              Continue to Subscribe - $59.99/month
++              {applePayAvailable ? 'Continue Online' : 'Continue to Subscribe - $59.99/month'}
+             </Text>
+           )}
+         </TouchableOpacity>
+ 
+         <Text style={styles.disclaimer}>
+-          You'll be directed to our website to complete your subscription setup and billing. 
+-          By subscribing, you agree to our Terms of Service and Privacy Policy.
++          {applePayAvailable 
++            ? 'Subscribe securely with Apple Pay or continue online to complete your subscription setup.' 
++            : 'You\'ll be directed to our website to complete your subscription setup and billing.'
++          } By subscribing, you agree to our Terms of Service and Privacy Policy.
+         </Text>
+ 
+         <TouchableOpacity
+@@ -287,5 +386,61 @@ const styles = StyleSheet.create({
+     color: '#64748b',
+     fontSize: 16,
+     fontWeight: '600'
++  },
++  checkboxContainer: {
++    flexDirection: 'row',
++    alignItems: 'flex-start',
++    marginTop: 20,
++    paddingHorizontal: 5
++  },
++  checkbox: {
++    width: 24,
++    height: 24,
++    borderWidth: 2,
++    borderColor: '#2563eb',
++    borderRadius: 4,
++    marginRight: 12,
++    justifyContent: 'center',
++    alignItems: 'center',
++    backgroundColor: '#ffffff',
++    flexShrink: 0
++  },
++  checkmark: {
++    color: '#2563eb',
++    fontSize: 18,
++    fontWeight: 'bold'
++  },
++  checkboxLabel: {
++    flex: 1,
++    fontSize: 13,
++    color: '#475569',
++    lineHeight: 18
++  },
++  applePayButton: {
++    backgroundColor: '#000000',
++    paddingVertical: 18,
++    paddingHorizontal: 20,
++    borderRadius: 12,
++    marginBottom: 15,
++    alignItems: 'center',
++    flexDirection: 'row',
++    justifyContent: 'center',
++    shadowColor: '#000',
++    shadowOffset: {
++      width: 0,
++      height: 2,
++    },
++    shadowOpacity: 0.25,
++    shadowRadius: 3.84,
++    elevation: 5,
++  },
++  applePayIcon: {
++    fontSize: 20,
++    marginRight: 8,
++  },
++  applePayButtonText: {
++    color: 'white',
++    fontSize: 18,
++    fontWeight: 'bold',
+   }
+ });
+diff --git a/mobile/screens/SignupScreen.js b/mobile/screens/SignupScreen.js
+index baa693c..5498d3e 100644
+--- a/mobile/screens/SignupScreen.js
++++ b/mobile/screens/SignupScreen.js
+@@ -47,7 +47,6 @@ export default function SignupScreen({ navigation, route }) {
+       // For homeowners, use a simplified registration (demo mode for App Review)
+       // This allows the app to work even if the backend is temporarily unavailable
+       if (userType === 'homeowner') {
+-        console.log('📝 Creating homeowner account (demo mode)');
+         
+         // Simulate registration delay to mimic network request
+         await new Promise(resolve => setTimeout(resolve, 1500));
+@@ -68,9 +67,7 @@ export default function SignupScreen({ navigation, route }) {
+       }
+       
+       // For pros, register with backend API
+-      console.log('📝 Attempting pro registration via API');
+       const apiUrl = buildApiUrl(API_ENDPOINTS.AUTH_REGISTER);
+-      console.log('API URL:', apiUrl);
+       
+       const requestData = {
+         name: name.trim(),
+@@ -89,7 +86,6 @@ export default function SignupScreen({ navigation, route }) {
+         }
+       });
+ 
+-      console.log('✅ Registration successful:', response.data);
+ 
+       if (response.data.token || response.data.success) {
+         Alert.alert(
+diff --git a/mobile/utils/apiClient.js b/mobile/utils/apiClient.js
+index ef4c306..b6c3f18 100644
+--- a/mobile/utils/apiClient.js
++++ b/mobile/utils/apiClient.js
+@@ -51,7 +51,6 @@ const refreshAuthToken = async () => {
+       throw new Error('No refresh token available');
+     }
+ 
+-    console.log('🔄 Refreshing authentication token...');
+     
+     const response = await axios.post(`${getApiUrl()}/api/auth/refresh`, {
+       refreshToken,
+@@ -60,7 +59,6 @@ const refreshAuthToken = async () => {
+     const { token, expiresIn } = response.data;
+     await saveAuthToken(token, expiresIn);
+     
+-    console.log('✅ Token refreshed successfully');
+     return token;
+   } catch (error) {
+     console.error('❌ Token refresh failed:', error.message);
+diff --git a/mobile/utils/authStorage.js b/mobile/utils/authStorage.js
+index 613700c..5c1b98e 100644
+--- a/mobile/utils/authStorage.js
++++ b/mobile/utils/authStorage.js
+@@ -26,7 +26,6 @@ export const saveAuthToken = async (token, expiresIn = 604800) => {
+       [STORAGE_KEYS.TOKEN, token],
+       [STORAGE_KEYS.TOKEN_EXPIRY, expiryTime.toString()],
+     ]);
+-    console.log('✅ Auth token saved with expiry:', new Date(expiryTime).toISOString());
+     return true;
+   } catch (error) {
+     console.error('❌ Error saving auth token:', error);
+@@ -56,7 +55,6 @@ export const getAuthToken = async () => {
+ export const saveUserData = async (userData) => {
+   try {
+     await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
+-    console.log('✅ User data saved');
+     return true;
+   } catch (error) {
+     console.error('❌ Error saving user data:', error);
+@@ -86,7 +84,6 @@ export const getUserData = async () => {
+ export const saveUserType = async (userType) => {
+   try {
+     await AsyncStorage.setItem(STORAGE_KEYS.USER_TYPE, userType);
+-    console.log('✅ User type saved:', userType);
+     return true;
+   } catch (error) {
+     console.error('❌ Error saving user type:', error);
+@@ -130,7 +127,6 @@ export const saveSession = async (token, userData, userType, refreshToken = null
+     }
+     
+     await Promise.all(promises);
+-    console.log('✅ Session saved successfully');
+     return true;
+   } catch (error) {
+     console.error('❌ Error saving session:', error);
+@@ -180,7 +176,6 @@ export const clearSession = async () => {
+       STORAGE_KEYS.TOKEN_EXPIRY,
+       STORAGE_KEYS.REFRESH_TOKEN,
+     ]);
+-    console.log('✅ Session cleared');
+     return true;
+   } catch (error) {
+     console.error('❌ Error clearing session:', error);
+@@ -196,7 +191,6 @@ export const clearSession = async () => {
+ export const saveRefreshToken = async (refreshToken) => {
+   try {
+     await AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+-    console.log('✅ Refresh token saved');
+     return true;
+   } catch (error) {
+     console.error('❌ Error saving refresh token:', error);
+@@ -246,7 +240,6 @@ export const shouldRefreshToken = async (bufferMinutes = 5) => {
+     const shouldRefresh = Date.now() >= (expiry - bufferTime);
+     
+     if (shouldRefresh) {
+-      console.log('⏰ Token needs refresh (expires at:', new Date(expiry).toISOString(), ')');
+     }
+     
+     return shouldRefresh;
+@@ -270,7 +263,6 @@ export const isAuthenticated = async () => {
+     const isValid = !!token && !!userType && (!expiry || Date.now() < expiry);
+     
+     if (!isValid && token) {
+-      console.log('⚠️ Token expired or invalid');
+     }
+     
+     return isValid;
+diff --git a/mobile/utils/backgroundFetch.js b/mobile/utils/backgroundFetch.js
+index bad283b..ed4c6a1 100644
+--- a/mobile/utils/backgroundFetch.js
++++ b/mobile/utils/backgroundFetch.js
+@@ -18,14 +18,12 @@ const FETCH_INTERVAL = 15 * 60; // 15 minutes (minimum allowed by iOS)
+  */
+ TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
+   try {
+-    console.log('🔄 Background fetch running...');
+     
+     // Check if user is authenticated
+     const token = await getAuthToken();
+     const userType = await getUserType();
+     
+     if (!token || userType !== 'pro') {
+-      console.log('⚠️ Not authenticated or not a pro user, skipping fetch');
+       return BackgroundFetch.BackgroundFetchResult.NoData;
+     }
+     
+@@ -42,7 +40,6 @@ TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
+     const newJobs = response.data.jobs || [];
+     
+     if (newJobs.length > 0) {
+-      console.log(`✅ Found ${newJobs.length} new job(s) in background`);
+       
+       // Send local notification for new jobs
+       for (const job of newJobs.slice(0, 3)) { // Limit to 3 notifications
+@@ -73,7 +70,6 @@ TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
+       return BackgroundFetch.BackgroundFetchResult.NewData;
+     }
+     
+-    console.log('ℹ️ No new jobs found in background fetch');
+     return BackgroundFetch.BackgroundFetchResult.NoData;
+     
+   } catch (error) {
+@@ -91,7 +87,6 @@ export async function registerBackgroundFetch() {
+     const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_FETCH_TASK);
+     
+     if (isRegistered) {
+-      console.log('✅ Background fetch already registered');
+       return true;
+     }
+     
+@@ -102,7 +97,6 @@ export async function registerBackgroundFetch() {
+       startOnBoot: true, // Start on device boot
+     });
+     
+-    console.log('✅ Background fetch registered successfully');
+     return true;
+     
+   } catch (error) {
+@@ -117,7 +111,6 @@ export async function registerBackgroundFetch() {
+ export async function unregisterBackgroundFetch() {
+   try {
+     await BackgroundFetch.unregisterTaskAsync(BACKGROUND_FETCH_TASK);
+-    console.log('✅ Background fetch unregistered');
+     return true;
+   } catch (error) {
+     console.error('❌ Failed to unregister background fetch:', error);
+diff --git a/mobile/utils/jobFilter.js b/mobile/utils/jobFilter.js
+index dc826cf..9025e05 100644
+--- a/mobile/utils/jobFilter.js
++++ b/mobile/utils/jobFilter.js
+@@ -44,7 +44,6 @@ export async function getCurrentLocation() {
+     const { status } = await Location.requestForegroundPermissionsAsync();
+     
+     if (status !== 'granted') {
+-      console.log('⚠️ Location permission not granted');
+       return null;
+     }
+     
+@@ -155,7 +154,6 @@ export function filterJobs(jobs, filters) {
+ export async function saveFilterPreferences(preferences) {
+   try {
+     await AsyncStorage.setItem(FILTER_PREFERENCES_KEY, JSON.stringify(preferences));
+-    console.log('✅ Filter preferences saved');
+     return true;
+   } catch (error) {
+     console.error('❌ Error saving filter preferences:', error);
+@@ -171,7 +169,6 @@ export async function loadFilterPreferences() {
+     const data = await AsyncStorage.getItem(FILTER_PREFERENCES_KEY);
+     if (data) {
+       const preferences = JSON.parse(data);
+-      console.log('✅ Filter preferences loaded');
+       return preferences;
+     }
+     return null;
+@@ -187,7 +184,6 @@ export async function loadFilterPreferences() {
+ export async function clearFilterPreferences() {
+   try {
+     await AsyncStorage.removeItem(FILTER_PREFERENCES_KEY);
+-    console.log('✅ Filter preferences cleared');
+     return true;
+   } catch (error) {
+     console.error('❌ Error clearing filter preferences:', error);
+diff --git a/mobile/utils/messagingService.js b/mobile/utils/messagingService.js
+index 3167e8d..a074458 100644
+--- a/mobile/utils/messagingService.js
++++ b/mobile/utils/messagingService.js
+@@ -21,7 +21,6 @@ class MessagingService {
+   async initialize() {
+     await this.loadMessagesCache();
+     this.setupSocketListeners();
+-    console.log('✅ Messaging service initialized');
+   }
+ 
+   /**
+@@ -32,7 +31,6 @@ class MessagingService {
+       const data = await AsyncStorage.getItem(MESSAGES_CACHE_KEY);
+       if (data) {
+         this.messagesCache = JSON.parse(data);
+-        console.log('✅ Messages cache loaded');
+       }
+     } catch (error) {
+       console.error('❌ Error loading messages cache:', error);
+@@ -62,23 +60,19 @@ class MessagingService {
+ 
+     // Listen for new messages
+     socket.on('message:new', (message) => {
+-      console.log('📨 New message received:', message);
+       this.handleNewMessage(message);
+     });
+ 
+     // Listen for message updates
+     socket.on('message:updated', (message) => {
+-      console.log('📝 Message updated:', message);
+       this.handleMessageUpdate(message);
+     });
+ 
+     // Listen for message read status
+     socket.on('message:read', (data) => {
+-      console.log('✅ Message marked as read:', data);
+       this.handleMessageRead(data);
+     });
+ 
+-    console.log('✅ Socket listeners configured for messaging');
+   }
+ 
+   /**
+@@ -162,7 +156,6 @@ class MessagingService {
+         socket.emit('message:send', message);
+       }
+ 
+-      console.log('✅ Message sent:', message._id);
+       return message;
+       
+     } catch (error) {
+@@ -186,7 +179,6 @@ class MessagingService {
+       this.messagesCache[conversationId] = messages;
+       await this.saveMessagesCache();
+ 
+-      console.log(`✅ Fetched ${messages.length} messages for conversation ${conversationId}`);
+       return messages;
+       
+     } catch (error) {
+@@ -204,7 +196,6 @@ class MessagingService {
+       const response = await apiClient.get('/api/conversations');
+       const conversations = response.data.conversations;
+       
+-      console.log(`✅ Fetched ${conversations.length} conversations`);
+       return conversations;
+       
+     } catch (error) {
+@@ -238,7 +229,6 @@ class MessagingService {
+         socket.emit('message:read', { conversationId, messageId });
+       }
+ 
+-      console.log('✅ Message marked as read:', messageId);
+       
+     } catch (error) {
+       console.error('❌ Error marking message as read:', error);
+@@ -256,7 +246,6 @@ class MessagingService {
+       });
+ 
+       const conversation = response.data;
+-      console.log('✅ Conversation started:', conversation._id);
+       return conversation;
+       
+     } catch (error) {
+@@ -295,7 +284,6 @@ class MessagingService {
+   async clearCache() {
+     this.messagesCache = {};
+     await AsyncStorage.removeItem(MESSAGES_CACHE_KEY);
+-    console.log('✅ Messages cache cleared');
+   }
+ 
+   /**
+diff --git a/mobile/utils/notifications.js b/mobile/utils/notifications.js
+index d57ed96..0b61a94 100644
+--- a/mobile/utils/notifications.js
++++ b/mobile/utils/notifications.js
+@@ -85,7 +85,6 @@ export async function setupNotificationCategories() {
+       },
+     ]);
+ 
+-    console.log('✅ Notification categories configured');
+   }
+ }
+ 
+@@ -115,7 +114,6 @@ export async function registerForPushNotificationsAsync() {
+         projectId: 'your-expo-project-id', // You'll get this when you create an Expo project
+       })).data;
+       
+-      console.log('✅ Expo Push Token:', token);
+     } catch (error) {
+       console.error('❌ Error getting push token:', error);
+       return null;
+@@ -156,7 +154,6 @@ export async function scheduleLocalNotification({
+       trigger: seconds > 0 ? { seconds } : null,
+     });
+     
+-    console.log('✅ Local notification scheduled:', notificationId);
+     return notificationId;
+   } catch (error) {
+     console.error('❌ Error scheduling notification:', error);
+@@ -167,16 +164,13 @@ export async function scheduleLocalNotification({
+ export function setupNotificationListeners() {
+   // Listen for notifications received while app is in foreground
+   const notificationListener = Notifications.addNotificationReceivedListener(notification => {
+-    console.log('🔔 Notification received:', notification);
+   });
+ 
+   // Listen for user tapping on notification
+   const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
+-    console.log('👆 Notification tapped:', response);
+     const { actionIdentifier, notification } = response;
+     const { data, categoryIdentifier } = notification.request.content;
+     
+-    console.log('Action:', actionIdentifier, 'Category:', categoryIdentifier, 'Data:', data);
+     
+     // Handle different actions
+     // This will be handled in the App.js to navigate to appropriate screens
+diff --git a/mobile/utils/offlineQueue.js b/mobile/utils/offlineQueue.js
+index 4e9d7b3..ec6974a 100644
+--- a/mobile/utils/offlineQueue.js
++++ b/mobile/utils/offlineQueue.js
+@@ -31,11 +31,9 @@ class OfflineQueueManager {
+       const wasOffline = !this.isOnline;
+       this.isOnline = state.isConnected;
+       
+-      console.log('📶 Network state changed:', this.isOnline ? 'Online' : 'Offline');
+       
+       // Process queue when coming back online
+       if (wasOffline && this.isOnline) {
+-        console.log('🔄 Back online, processing queued actions...');
+         this.processQueue();
+       }
+       
+@@ -43,7 +41,6 @@ class OfflineQueueManager {
+       this.notifyListeners();
+     });
+     
+-    console.log('✅ Offline queue manager initialized');
+   }
+ 
+   /**
+@@ -76,7 +73,6 @@ class OfflineQueueManager {
+       const queueData = await AsyncStorage.getItem(QUEUE_KEY);
+       if (queueData) {
+         this.queue = JSON.parse(queueData);
+-        console.log(`📥 Loaded ${this.queue.length} queued actions from storage`);
+       }
+     } catch (error) {
+       console.error('❌ Error loading queue:', error);
+@@ -90,7 +86,6 @@ class OfflineQueueManager {
+   async saveQueue() {
+     try {
+       await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(this.queue));
+-      console.log(`💾 Saved ${this.queue.length} actions to queue`);
+     } catch (error) {
+       console.error('❌ Error saving queue:', error);
+     }
+@@ -108,11 +103,9 @@ class OfflineQueueManager {
+   async addToQueue(action) {
+     // Don't queue if online and queue is empty (execute immediately)
+     if (this.isOnline && this.queue.length === 0) {
+-      console.log('📡 Online - executing action immediately');
+       try {
+         return await this.executeAction(action);
+       } catch (error) {
+-        console.log('⚠️ Failed to execute, adding to queue');
+         // If fails, add to queue for retry
+       }
+     }
+@@ -130,13 +123,11 @@ class OfflineQueueManager {
+     // Limit queue size
+     if (this.queue.length > MAX_QUEUE_SIZE) {
+       this.queue.shift(); // Remove oldest
+-      console.log('⚠️ Queue size limit reached, removed oldest action');
+     }
+     
+     await this.saveQueue();
+     this.notifyListeners();
+     
+-    console.log(`📥 Action queued: ${action.type} (${this.queue.length} in queue)`);
+     
+     return { queued: true, id: queuedAction.id };
+   }
+@@ -147,7 +138,6 @@ class OfflineQueueManager {
+   async executeAction(action) {
+     const { endpoint, method = 'POST', data } = action;
+     
+-    console.log(`🚀 Executing: ${action.type} - ${method} ${endpoint}`);
+     
+     const response = await apiClient({
+       url: endpoint,
+@@ -169,7 +159,6 @@ class OfflineQueueManager {
+     this.isProcessing = true;
+     this.notifyListeners();
+     
+-    console.log(`🔄 Processing ${this.queue.length} queued actions...`);
+     
+     const failedActions = [];
+     
+@@ -178,7 +167,6 @@ class OfflineQueueManager {
+       
+       try {
+         await this.executeAction(action);
+-        console.log(`✅ Action executed: ${action.type}`);
+         this.queue.shift(); // Remove from queue
+       } catch (error) {
+         console.error(`❌ Action failed: ${action.type}`, error.message);
+@@ -186,11 +174,9 @@ class OfflineQueueManager {
+         action.retryCount++;
+         
+         if (action.retryCount >= MAX_RETRY_ATTEMPTS) {
+-          console.log(`⚠️ Max retries reached for ${action.type}, removing from queue`);
+           this.queue.shift();
+           failedActions.push(action);
+         } else {
+-          console.log(`🔄 Will retry ${action.type} (attempt ${action.retryCount}/${MAX_RETRY_ATTEMPTS})`);
+           // Move to end of queue for retry
+           this.queue.shift();
+           this.queue.push(action);
+@@ -203,7 +189,6 @@ class OfflineQueueManager {
+     this.isProcessing = false;
+     this.notifyListeners();
+     
+-    console.log(`✅ Queue processing complete. ${this.queue.length} remaining, ${failedActions.length} failed permanently`);
+   }
+ 
+   /**
+@@ -213,7 +198,6 @@ class OfflineQueueManager {
+     this.queue = [];
+     await this.saveQueue();
+     this.notifyListeners();
+-    console.log('🗑️ Queue cleared');
+   }
+ 
+   /**
+diff --git a/mobile/utils/paymentService.js b/mobile/utils/paymentService.js
+new file mode 100644
+index 0000000..2780c9e
+--- /dev/null
++++ b/mobile/utils/paymentService.js
+@@ -0,0 +1,130 @@
++/**
++ * Payment Service for Fixlo Mobile App
++ * Handles Apple Pay and Stripe payment processing
++ */
++
++import { Platform } from 'react-native';
++import { buildApiUrl } from '../config/api';
++import axios from 'axios';
++
++/**
++ * Initialize payment intent for Pro subscription
++ * @param {Object} customerData - Customer information
++ * @returns {Promise<Object>} Payment intent details
++ */
++export const createProSubscription = async (customerData) => {
++  try {
++    const apiUrl = buildApiUrl('/api/payments/create-subscription');
++    
++    const response = await axios.post(apiUrl, {
++      name: customerData.name,
++      email: customerData.email,
++      phone: customerData.phone,
++      trade: customerData.trade,
++      amount: 5999, // $59.99 in cents
++      currency: 'usd',
++      description: 'Fixlo Pro Monthly Subscription',
++    }, {
++      timeout: 30000,
++      headers: {
++        'Content-Type': 'application/json',
++      },
++    });
++
++    return {
++      success: true,
++      clientSecret: response.data.clientSecret,
++      subscriptionId: response.data.subscriptionId,
++    };
++  } catch (error) {
++    console.error('Error creating subscription:', error);
++    throw new Error(
++      error.response?.data?.message || 'Failed to create subscription'
++    );
++  }
++};
++
++/**
++ * Process Apple Pay payment
++ * @param {Object} paymentData - Payment data from Apple Pay
++ * @param {string} clientSecret - Stripe client secret
++ * @returns {Promise<Object>} Payment result
++ */
++export const processApplePayPayment = async (paymentData, clientSecret) => {
++  try {
++    const apiUrl = buildApiUrl('/api/payments/confirm-payment');
++    
++    const response = await axios.post(apiUrl, {
++      paymentMethodId: paymentData.paymentMethodId,
++      clientSecret: clientSecret,
++    }, {
++      timeout: 30000,
++      headers: {
++        'Content-Type': 'application/json',
++      },
++    });
++
++    return {
++      success: true,
++      paymentIntentId: response.data.paymentIntentId,
++      status: response.data.status,
++    };
++  } catch (error) {
++    console.error('Error processing Apple Pay payment:', error);
++    throw new Error(
++      error.response?.data?.message || 'Failed to process payment'
++    );
++  }
++};
++
++/**
++ * Check if Apple Pay is available on the device
++ * @returns {Promise<boolean>}
++ */
++export const isApplePayAvailable = async () => {
++  // Apple Pay is only available on iOS devices
++  return Platform.OS === 'ios';
++};
++
++/**
++ * Get merchant configuration for Apple Pay
++ * @returns {Object} Merchant configuration
++ */
++export const getApplePayMerchantConfig = () => {
++  return {
++    merchantIdentifier: 'merchant.com.fixloapp.mobile',
++    merchantDisplayName: 'Fixlo Home Services',
++    countryCode: 'US',
++    currencyCode: 'USD',
++    supportedNetworks: ['visa', 'masterCard', 'amex', 'discover'],
++    merchantCapabilities: ['capability3DS', 'capabilityDebit', 'capabilityCredit'],
++  };
++};
++
++/**
++ * Format amount for display
++ * @param {number} amount - Amount in cents
++ * @returns {string} Formatted amount
++ */
++export const formatAmount = (amount) => {
++  return `$${(amount / 100).toFixed(2)}`;
++};
++
++/**
++ * Validate payment amount
++ * @param {number} amount - Amount in cents
++ * @returns {boolean}
++ */
++export const validatePaymentAmount = (amount) => {
++  // Minimum $0.50, maximum $999,999.99
++  return amount >= 50 && amount <= 99999999;
++};
++
++export default {
++  createProSubscription,
++  processApplePayPayment,
++  isApplePayAvailable,
++  getApplePayMerchantConfig,
++  formatAmount,
++  validatePaymentAmount,
++};
+diff --git a/mobile/utils/socketService.js b/mobile/utils/socketService.js
+index 94fba7a..7d514cd 100644
+--- a/mobile/utils/socketService.js
++++ b/mobile/utils/socketService.js
+@@ -15,12 +15,10 @@ let isConnected = false;
+  */
+ export const initializeSocket = () => {
+   if (socket) {
+-    console.log('⚠️ Socket already initialized');
+     return socket;
+   }
+ 
+   const apiUrl = getApiUrl();
+-  console.log('🔌 Initializing Socket.io connection to:', apiUrl);
+ 
+   socket = io(apiUrl, {
+     transports: ['websocket', 'polling'],
+@@ -32,12 +30,10 @@ export const initializeSocket = () => {
+ 
+   socket.on('connect', () => {
+     isConnected = true;
+-    console.log('✅ Socket.io connected:', socket.id);
+   });
+ 
+   socket.on('disconnect', (reason) => {
+     isConnected = false;
+-    console.log('❌ Socket.io disconnected:', reason);
+   });
+ 
+   socket.on('connect_error', (error) => {
+@@ -46,11 +42,9 @@ export const initializeSocket = () => {
+ 
+   socket.on('reconnect', (attemptNumber) => {
+     isConnected = true;
+-    console.log('🔄 Socket.io reconnected after', attemptNumber, 'attempts');
+   });
+ 
+   socket.on('reconnect_attempt', (attemptNumber) => {
+-    console.log('🔄 Socket.io reconnection attempt:', attemptNumber);
+   });
+ 
+   socket.on('reconnect_error', (error) => {
+@@ -88,7 +82,6 @@ export const isSocketConnected = () => {
+  */
+ export const disconnectSocket = () => {
+   if (socket) {
+-    console.log('🔌 Disconnecting socket...');
+     socket.disconnect();
+     socket = null;
+     isConnected = false;
+@@ -102,7 +95,6 @@ export const disconnectSocket = () => {
+ export const joinRoom = (room) => {
+   if (socket && isConnected) {
+     socket.emit('join', room);
+-    console.log('🚪 Joined room:', room);
+   } else {
+     console.warn('⚠️ Cannot join room - socket not connected');
+   }
+@@ -115,7 +107,6 @@ export const joinRoom = (room) => {
+ export const leaveRoom = (room) => {
+   if (socket && isConnected) {
+     socket.emit('leave', room);
+-    console.log('🚪 Left room:', room);
+   }
+ };
+ 
+@@ -131,7 +122,6 @@ export const subscribeToNewJobs = (callback) => {
+   }
+ 
+   const handleNewJob = (job) => {
+-    console.log('📢 New job received:', job);
+     callback(job);
+   };
+ 
+@@ -157,7 +147,6 @@ export const subscribeToJobUpdates = (callback) => {
+   }
+ 
+   const handleJobUpdate = (update) => {
+-    console.log('📢 Job update received:', update);
+     callback(update);
+   };
+ 
+@@ -201,7 +190,6 @@ export const subscribeToJobStatus = (jobId, callback) => {
+ export const emitEvent = (event, data) => {
+   if (socket && isConnected) {
+     socket.emit(event, data);
+-    console.log(`📤 Emitted event: ${event}`, data);
+   } else {
+     console.warn('⚠️ Cannot emit event - socket not connected');
+   }
