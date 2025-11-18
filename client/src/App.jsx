@@ -16,6 +16,7 @@ import AdminPage from './routes/AdminPage.jsx';
 import ProDashboardPage from './routes/ProDashboardPage.jsx';
 import JoinPage from './routes/JoinPage.jsx';
 import ServicePage from './routes/ServicePage.jsx';
+import SEOPageLoader from './routes/SEOPageLoader.jsx';
 import Terms from './pages/Terms.jsx';
 import Privacy from './pages/Privacy.jsx';
 import PrivacySettings from './pages/PrivacySettings.jsx';
@@ -32,7 +33,8 @@ export default function App(){
       <Route path="/" element={<HomePage/>}/>
       <Route path="/services" element={<ServicesPage/>}/>
       <Route path="/services/:service" element={<ServicePage/>}/>
-      <Route path="/services/:service/:city" element={<ServicePage/>}/>
+      <Route path="/services/:service/:city" element={<SEOPageLoader/>}/>
+      <Route path="/services/:service/:city/es" element={<SEOPageLoader lang="es"/>}/>
       <Route path="/how-it-works" element={<HowItWorksPage/>}/>
       <Route path="/assistant" element={<AssistantPage/>}/>
       <Route path="/contact" element={<ContactPage/>}/>
