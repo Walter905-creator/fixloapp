@@ -9,6 +9,8 @@ export default {
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "light",
+    description: "Fixlo - Connect with trusted home service professionals. Book, manage, and pay for services all in one place.",
+    runtimeVersion: "1.0.2",
 
     splash: {
       image: "./assets/splash.png",
@@ -40,7 +42,18 @@ export default {
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#ffffff"
-      }
+      },
+      permissions: [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "NOTIFICATIONS",
+        "VIBRATE",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ]
     },
 
     web: {
@@ -55,6 +68,12 @@ export default {
           "ios": {
             "useFrameworks": "static"
           }
+        }
+      ],
+      [
+        "expo-updates",
+        {
+          "username": "fixloapp"
         }
       ]
     ],
