@@ -3,10 +3,8 @@
  * Tests the version bumping functionality
  */
 
-console.log('🧪 Running Version Bump Script Tests...\n');
-
 // Test 1: Check that bumpVersion module exports expected functions
-console.log('Test 1: Version Bump Module Exports');
+
 try {
   const bumpVersion = require('../scripts/bumpVersion');
   const requiredExports = [
@@ -19,14 +17,16 @@ try {
   if (missingExports.length > 0) {
     throw new Error(`Missing exports: ${missingExports.join(', ')}`);
   }
-  console.log('✅ All version bump functions exported correctly');
+
 } catch (error) {
+  if (__DEV__) {
   console.error('❌ Version bump module test failed:', error.message);
+  }
   process.exit(1);
 }
 
 // Test 2: Test incrementPatchVersion function
-console.log('\nTest 2: Increment Patch Version');
+
 try {
   const { incrementPatchVersion } = require('../scripts/bumpVersion');
   
@@ -43,14 +43,16 @@ try {
       throw new Error(`incrementPatchVersion("${testCase.input}") returned "${result}", expected "${testCase.expected}"`);
     }
   }
-  console.log('✅ All version increment tests passed');
+
 } catch (error) {
+  if (__DEV__) {
   console.error('❌ Version increment test failed:', error.message);
+  }
   process.exit(1);
 }
 
 // Test 3: Test invalid version format handling
-console.log('\nTest 3: Invalid Version Format Handling');
+
 try {
   const { incrementPatchVersion } = require('../scripts/bumpVersion');
   
@@ -72,15 +74,16 @@ try {
     }
     errorThrown = false;
   }
-  
-  console.log('✅ Invalid version formats properly rejected');
+
 } catch (error) {
+  if (__DEV__) {
   console.error('❌ Invalid version format test failed:', error.message);
+  }
   process.exit(1);
 }
 
 // Test 4: Verify script file exists and is executable
-console.log('\nTest 4: Script File Validation');
+
 try {
   const fs = require('fs');
   const path = require('path');
@@ -94,11 +97,10 @@ try {
   if (!stats.isFile()) {
     throw new Error('bumpVersion.js is not a file');
   }
-  
-  console.log('✅ Script file exists and is valid');
+
 } catch (error) {
+  if (__DEV__) {
   console.error('❌ Script file validation failed:', error.message);
+  }
   process.exit(1);
 }
-
-console.log('\n🎉 All version bump tests passed!\n');

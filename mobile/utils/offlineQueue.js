@@ -30,17 +30,17 @@ class OfflineQueueManager {
     this.unsubscribeNetInfo = NetInfo.addEventListener(state => {
       const wasOffline = !this.isOnline;
       this.isOnline = state.isConnected;
-      
-      
+
       // Process queue when coming back online
       if (wasOffline && this.isOnline) {
+
         this.processQueue();
       }
       
       // Notify listeners
       this.notifyListeners();
     });
-    
+
   }
 
   /**
@@ -73,9 +73,12 @@ class OfflineQueueManager {
       const queueData = await AsyncStorage.getItem(QUEUE_KEY);
       if (queueData) {
         this.queue = JSON.parse(queueData);
+
       }
     } catch (error) {
+      if (__DEV__) {
       console.error('❌ Error loading queue:', error);
+      }
       this.queue = [];
     }
   }
@@ -86,8 +89,11 @@ class OfflineQueueManager {
   async saveQueue() {
     try {
       await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(this.queue));
+
     } catch (error) {
+      if (__DEV__) {
       console.error('❌ Error saving queue:', error);
+      }
     }
   }
 
@@ -103,9 +109,11 @@ class OfflineQueueManager {
   async addToQueue(action) {
     // Don't queue if online and queue is empty (execute immediately)
     if (this.isOnline && this.queue.length === 0) {
+
       try {
         return await this.executeAction(action);
       } catch (error) {
+
         // If fails, add to queue for retry
       }
     }
@@ -123,11 +131,13 @@ class OfflineQueueManager {
     // Limit queue size
     if (this.queue.length > MAX_QUEUE_SIZE) {
       this.queue.shift(); // Remove oldest
+
     }
     
     await this.saveQueue();
     this.notifyListeners();
     
+    console.log(`📥 Action queued: ${action.type} (${this.queue.length} in queue)`);
     
     return { queued: true, id: queuedAction.id };
   }
@@ -137,8 +147,7 @@ class OfflineQueueManager {
    */
   async executeAction(action) {
     const { endpoint, method = 'POST', data } = action;
-    
-    
+
     const response = await apiClient({
       url: endpoint,
       method,
@@ -158,8 +167,7 @@ class OfflineQueueManager {
 
     this.isProcessing = true;
     this.notifyListeners();
-    
-    
+
     const failedActions = [];
     
     while (this.queue.length > 0) {
@@ -167,16 +175,21 @@ class OfflineQueueManager {
       
       try {
         await this.executeAction(action);
+
         this.queue.shift(); // Remove from queue
       } catch (error) {
+        if (__DEV__) {
         console.error(`❌ Action failed: ${action.type}`, error.message);
+        }
         
         action.retryCount++;
         
         if (action.retryCount >= MAX_RETRY_ATTEMPTS) {
+
           this.queue.shift();
           failedActions.push(action);
         } else {
+          console.log(`🔄 Will retry ${action.type} (attempt ${action.retryCount}/${MAX_RETRY_ATTEMPTS})`);
           // Move to end of queue for retry
           this.queue.shift();
           this.queue.push(action);
@@ -188,7 +201,7 @@ class OfflineQueueManager {
     await this.saveQueue();
     this.isProcessing = false;
     this.notifyListeners();
-    
+
   }
 
   /**
@@ -198,6 +211,7 @@ class OfflineQueueManager {
     this.queue = [];
     await this.saveQueue();
     this.notifyListeners();
+
   }
 
   /**

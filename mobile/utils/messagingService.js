@@ -21,6 +21,7 @@ class MessagingService {
   async initialize() {
     await this.loadMessagesCache();
     this.setupSocketListeners();
+
   }
 
   /**
@@ -31,9 +32,12 @@ class MessagingService {
       const data = await AsyncStorage.getItem(MESSAGES_CACHE_KEY);
       if (data) {
         this.messagesCache = JSON.parse(data);
+
       }
     } catch (error) {
+      if (__DEV__) {
       console.error('❌ Error loading messages cache:', error);
+      }
     }
   }
 
@@ -44,7 +48,9 @@ class MessagingService {
     try {
       await AsyncStorage.setItem(MESSAGES_CACHE_KEY, JSON.stringify(this.messagesCache));
     } catch (error) {
+      if (__DEV__) {
       console.error('❌ Error saving messages cache:', error);
+      }
     }
   }
 
@@ -54,22 +60,25 @@ class MessagingService {
   setupSocketListeners() {
     const socket = getSocket();
     if (!socket) {
-      console.warn('⚠️ Socket not available for messaging');
+
       return;
     }
 
     // Listen for new messages
     socket.on('message:new', (message) => {
+
       this.handleNewMessage(message);
     });
 
     // Listen for message updates
     socket.on('message:updated', (message) => {
+
       this.handleMessageUpdate(message);
     });
 
     // Listen for message read status
     socket.on('message:read', (data) => {
+
       this.handleMessageRead(data);
     });
 
@@ -159,7 +168,9 @@ class MessagingService {
       return message;
       
     } catch (error) {
+      if (__DEV__) {
       console.error('❌ Error sending message:', error);
+      }
       throw error;
     }
   }
@@ -182,7 +193,9 @@ class MessagingService {
       return messages;
       
     } catch (error) {
+      if (__DEV__) {
       console.error('❌ Error fetching messages:', error);
+      }
       // Return cached messages if available
       return this.messagesCache[conversationId] || [];
     }
@@ -195,11 +208,13 @@ class MessagingService {
     try {
       const response = await apiClient.get('/api/conversations');
       const conversations = response.data.conversations;
-      
+
       return conversations;
       
     } catch (error) {
+      if (__DEV__) {
       console.error('❌ Error fetching conversations:', error);
+      }
       return [];
     }
   }
@@ -229,9 +244,10 @@ class MessagingService {
         socket.emit('message:read', { conversationId, messageId });
       }
 
-      
     } catch (error) {
+      if (__DEV__) {
       console.error('❌ Error marking message as read:', error);
+      }
     }
   }
 
@@ -246,10 +262,13 @@ class MessagingService {
       });
 
       const conversation = response.data;
+
       return conversation;
       
     } catch (error) {
+      if (__DEV__) {
       console.error('❌ Error starting conversation:', error);
+      }
       throw error;
     }
   }
@@ -284,6 +303,7 @@ class MessagingService {
   async clearCache() {
     this.messagesCache = {};
     await AsyncStorage.removeItem(MESSAGES_CACHE_KEY);
+
   }
 
   /**

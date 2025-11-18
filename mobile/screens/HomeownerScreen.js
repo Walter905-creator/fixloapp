@@ -38,14 +38,15 @@ export default function HomeownerScreen({ navigation }) {
         }
       });
 
-
       if (response.data.success && response.data.data?.leads) {
         setJobRequests(response.data.data.leads);
       } else {
         setJobRequests([]);
       }
     } catch (err) {
+      if (__DEV__) {
       console.error('❌ Error fetching job requests:', {
+      }
         message: err.message,
         status: err.response?.status,
         data: err.response?.data,
@@ -78,6 +79,7 @@ export default function HomeownerScreen({ navigation }) {
 
     // Subscribe to real-time job updates
     const unsubscribeUpdates = subscribeToJobUpdates((update) => {
+
       // Update the job in the list
       setJobRequests((prevJobs) =>
         prevJobs.map((job) =>
@@ -88,6 +90,7 @@ export default function HomeownerScreen({ navigation }) {
 
     // Subscribe to new jobs
     const unsubscribeNew = subscribeToNewJobs((newJob) => {
+
       // Add new job to the list
       setJobRequests((prevJobs) => [newJob, ...prevJobs]);
     });
@@ -159,7 +162,7 @@ export default function HomeownerScreen({ navigation }) {
             onPress={async () => {
               await clearSession();
               Alert.alert('Logged Out', 'You have been logged out successfully');
-              navigation.replace('Home');
+              navigation.replace('Fixlo');
             }}
           >
             <Text style={styles.logoutButtonText}>🚪 Logout</Text>

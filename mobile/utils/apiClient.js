@@ -50,7 +50,6 @@ const refreshAuthToken = async () => {
     if (!refreshToken) {
       throw new Error('No refresh token available');
     }
-
     
     const response = await axios.post(`${getApiUrl()}/api/auth/refresh`, {
       refreshToken,
@@ -61,7 +60,9 @@ const refreshAuthToken = async () => {
     
     return token;
   } catch (error) {
-    console.error('❌ Token refresh failed:', error.message);
+    if (__DEV__) {
+      console.error('❌ Token refresh failed:', error.message);
+    }
     // Clear session on refresh failure (user needs to login again)
     await clearSession();
     throw error;
@@ -130,7 +131,9 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch (refreshError) {
         // Refresh failed, user needs to login again
-        console.error('❌ Unable to refresh token, clearing session');
+        if (__DEV__) {
+          console.error('❌ Unable to refresh token, clearing session');
+        }
         await clearSession();
         return Promise.reject(refreshError);
       }

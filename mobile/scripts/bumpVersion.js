@@ -125,8 +125,7 @@ function commitVersionBump(newVersion) {
  */
 function main() {
   try {
-    console.log('🚀 Starting version bump...\n');
-    
+
     // Read both config files to ensure they're in sync
     const jsConfig = readConfigFile(APP_CONFIG_JS_PATH);
     const tsConfig = readConfigFile(APP_CONFIG_TS_PATH);
@@ -137,10 +136,10 @@ function main() {
       jsConfig.buildNumber !== tsConfig.buildNumber ||
       jsConfig.versionCode !== tsConfig.versionCode
     ) {
-      console.warn('⚠️  Warning: app.config.js and app.config.ts have different version values!');
-      console.warn(`   JS: ${jsConfig.version} / ${jsConfig.buildNumber} / ${jsConfig.versionCode}`);
-      console.warn(`   TS: ${tsConfig.version} / ${tsConfig.buildNumber} / ${tsConfig.versionCode}`);
-      console.warn('   Proceeding with app.config.js values...\n');
+
+
+
+
     }
     
     // Use values from app.config.js (the primary config)
@@ -177,30 +176,29 @@ function main() {
     );
     
     // Display success messages
-    console.log(`✅ Version bumped: ${oldVersion} → ${newVersion}`);
-    console.log(`✅ iOS buildNumber: ${oldBuildNumber} → ${newBuildNumber}`);
-    console.log(`✅ Android versionCode: ${oldVersionCode} → ${newVersionCode}`);
-    console.log('\n📝 Updated files:');
-    console.log('   - app.config.js');
-    console.log('   - app.config.ts');
-    
+
+
+
+
+
+
     // Attempt to commit the changes
     const committed = commitVersionBump(newVersion);
     if (committed) {
-      console.log('\n✅ Changes committed to git');
+
     } else {
-      console.log('\n💡 Tip: Commit these changes with:');
-      console.log(`   git add app.config.js app.config.ts`);
-      console.log(`   git commit -m "chore: bump version to ${newVersion}"`);
+
+
+
     }
-    
-    console.log('\n🎉 Version bump complete!');
-    console.log('\n📦 Next steps:');
-    console.log('   npx eas build --platform ios');
-    console.log('   npx eas submit --platform ios');
-    
+
+
+
+
   } catch (error) {
+    if (__DEV__) {
     console.error('❌ Error bumping version:', error.message);
+    }
     process.exit(1);
   }
 }

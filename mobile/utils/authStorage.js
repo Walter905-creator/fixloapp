@@ -26,9 +26,12 @@ export const saveAuthToken = async (token, expiresIn = 604800) => {
       [STORAGE_KEYS.TOKEN, token],
       [STORAGE_KEYS.TOKEN_EXPIRY, expiryTime.toString()],
     ]);
+    console.log('✅ Auth token saved with expiry:', new Date(expiryTime).toISOString());
     return true;
   } catch (error) {
+    if (__DEV__) {
     console.error('❌ Error saving auth token:', error);
+    }
     return false;
   }
 };
@@ -42,7 +45,9 @@ export const getAuthToken = async () => {
     const token = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
     return token;
   } catch (error) {
+    if (__DEV__) {
     console.error('❌ Error getting auth token:', error);
+    }
     return null;
   }
 };
@@ -55,9 +60,12 @@ export const getAuthToken = async () => {
 export const saveUserData = async (userData) => {
   try {
     await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
+
     return true;
   } catch (error) {
+    if (__DEV__) {
     console.error('❌ Error saving user data:', error);
+    }
     return false;
   }
 };
@@ -71,7 +79,9 @@ export const getUserData = async () => {
     const userData = await AsyncStorage.getItem(STORAGE_KEYS.USER);
     return userData ? JSON.parse(userData) : null;
   } catch (error) {
+    if (__DEV__) {
     console.error('❌ Error getting user data:', error);
+    }
     return null;
   }
 };
@@ -84,9 +94,12 @@ export const getUserData = async () => {
 export const saveUserType = async (userType) => {
   try {
     await AsyncStorage.setItem(STORAGE_KEYS.USER_TYPE, userType);
+
     return true;
   } catch (error) {
+    if (__DEV__) {
     console.error('❌ Error saving user type:', error);
+    }
     return false;
   }
 };
@@ -100,7 +113,9 @@ export const getUserType = async () => {
     const userType = await AsyncStorage.getItem(STORAGE_KEYS.USER_TYPE);
     return userType;
   } catch (error) {
+    if (__DEV__) {
     console.error('❌ Error getting user type:', error);
+    }
     return null;
   }
 };
@@ -127,9 +142,12 @@ export const saveSession = async (token, userData, userType, refreshToken = null
     }
     
     await Promise.all(promises);
+
     return true;
   } catch (error) {
+    if (__DEV__) {
     console.error('❌ Error saving session:', error);
+    }
     return false;
   }
 };
@@ -153,7 +171,9 @@ export const getSession = async () => {
       isAuthenticated: !!token && !!userType,
     };
   } catch (error) {
+    if (__DEV__) {
     console.error('❌ Error getting session:', error);
+    }
     return {
       token: null,
       user: null,
@@ -176,9 +196,12 @@ export const clearSession = async () => {
       STORAGE_KEYS.TOKEN_EXPIRY,
       STORAGE_KEYS.REFRESH_TOKEN,
     ]);
+
     return true;
   } catch (error) {
+    if (__DEV__) {
     console.error('❌ Error clearing session:', error);
+    }
     return false;
   }
 };
@@ -191,9 +214,12 @@ export const clearSession = async () => {
 export const saveRefreshToken = async (refreshToken) => {
   try {
     await AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+
     return true;
   } catch (error) {
+    if (__DEV__) {
     console.error('❌ Error saving refresh token:', error);
+    }
     return false;
   }
 };
@@ -207,7 +233,9 @@ export const getRefreshToken = async () => {
     const refreshToken = await AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
     return refreshToken;
   } catch (error) {
+    if (__DEV__) {
     console.error('❌ Error getting refresh token:', error);
+    }
     return null;
   }
 };
@@ -221,7 +249,9 @@ export const getTokenExpiry = async () => {
     const expiry = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN_EXPIRY);
     return expiry ? parseInt(expiry, 10) : null;
   } catch (error) {
+    if (__DEV__) {
     console.error('❌ Error getting token expiry:', error);
+    }
     return null;
   }
 };
@@ -240,11 +270,14 @@ export const shouldRefreshToken = async (bufferMinutes = 5) => {
     const shouldRefresh = Date.now() >= (expiry - bufferTime);
     
     if (shouldRefresh) {
+      console.log('⏰ Token needs refresh (expires at:', new Date(expiry).toISOString(), ')');
     }
     
     return shouldRefresh;
   } catch (error) {
+    if (__DEV__) {
     console.error('❌ Error checking token expiry:', error);
+    }
     return false;
   }
 };
@@ -263,11 +296,14 @@ export const isAuthenticated = async () => {
     const isValid = !!token && !!userType && (!expiry || Date.now() < expiry);
     
     if (!isValid && token) {
+
     }
     
     return isValid;
   } catch (error) {
+    if (__DEV__) {
     console.error('❌ Error checking authentication:', error);
+    }
     return false;
   }
 };

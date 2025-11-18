@@ -30,29 +30,47 @@ export const initializeSocket = () => {
 
   socket.on('connect', () => {
     isConnected = true;
+    if (__DEV__) {
+
+    }
   });
 
   socket.on('disconnect', (reason) => {
     isConnected = false;
+    if (__DEV__) {
+
+    }
   });
 
   socket.on('connect_error', (error) => {
-    console.error('❌ Socket.io connection error:', error.message);
+    if (__DEV__) {
+      console.error('❌ Socket.io connection error:', error.message);
+    }
   });
 
   socket.on('reconnect', (attemptNumber) => {
     isConnected = true;
+    if (__DEV__) {
+
+    }
   });
 
   socket.on('reconnect_attempt', (attemptNumber) => {
+    if (__DEV__) {
+
+    }
   });
 
   socket.on('reconnect_error', (error) => {
-    console.error('❌ Socket.io reconnection error:', error.message);
+    if (__DEV__) {
+      console.error('❌ Socket.io reconnection error:', error.message);
+    }
   });
 
   socket.on('reconnect_failed', () => {
-    console.error('❌ Socket.io reconnection failed - giving up');
+    if (__DEV__) {
+      console.error('❌ Socket.io reconnection failed - giving up');
+    }
   });
 
   return socket;
@@ -63,7 +81,7 @@ export const initializeSocket = () => {
  * @returns {Object|null} Socket instance or null
  */
 export const getSocket = () => {
-  if (!socket) {
+  if (!socket && __DEV__) {
     console.warn('⚠️ Socket not initialized. Call initializeSocket() first.');
   }
   return socket;
@@ -95,8 +113,9 @@ export const disconnectSocket = () => {
 export const joinRoom = (room) => {
   if (socket && isConnected) {
     socket.emit('join', room);
-  } else {
-    console.warn('⚠️ Cannot join room - socket not connected');
+    if (__DEV__) {
+
+    }
   }
 };
 
@@ -107,6 +126,9 @@ export const joinRoom = (room) => {
 export const leaveRoom = (room) => {
   if (socket && isConnected) {
     socket.emit('leave', room);
+    if (__DEV__) {
+
+    }
   }
 };
 
@@ -117,11 +139,13 @@ export const leaveRoom = (room) => {
  */
 export const subscribeToNewJobs = (callback) => {
   if (!socket) {
-    console.warn('⚠️ Socket not initialized');
     return () => {};
   }
 
   const handleNewJob = (job) => {
+    if (__DEV__) {
+
+    }
     callback(job);
   };
 
@@ -142,11 +166,13 @@ export const subscribeToNewJobs = (callback) => {
  */
 export const subscribeToJobUpdates = (callback) => {
   if (!socket) {
-    console.warn('⚠️ Socket not initialized');
     return () => {};
   }
 
   const handleJobUpdate = (update) => {
+    if (__DEV__) {
+
+    }
     callback(update);
   };
 
@@ -168,7 +194,6 @@ export const subscribeToJobUpdates = (callback) => {
  */
 export const subscribeToJobStatus = (jobId, callback) => {
   if (!socket) {
-    console.warn('⚠️ Socket not initialized');
     return () => {};
   }
 
@@ -190,8 +215,9 @@ export const subscribeToJobStatus = (jobId, callback) => {
 export const emitEvent = (event, data) => {
   if (socket && isConnected) {
     socket.emit(event, data);
-  } else {
-    console.warn('⚠️ Cannot emit event - socket not connected');
+    if (__DEV__) {
+
+    }
   }
 };
 
@@ -203,7 +229,7 @@ export const emitEvent = (event, data) => {
  */
 export const subscribeToEvent = (event, callback) => {
   if (!socket) {
-    console.warn('⚠️ Socket not initialized');
+
     return () => {};
   }
 

@@ -113,9 +113,11 @@ export async function registerForPushNotificationsAsync() {
       token = (await Notifications.getExpoPushTokenAsync({
         projectId: 'your-expo-project-id', // You'll get this when you create an Expo project
       })).data;
-      
+
     } catch (error) {
+      if (__DEV__) {
       console.error('❌ Error getting push token:', error);
+      }
       return null;
     }
   } else {
@@ -153,10 +155,12 @@ export async function scheduleLocalNotification({
       },
       trigger: seconds > 0 ? { seconds } : null,
     });
-    
+
     return notificationId;
   } catch (error) {
+    if (__DEV__) {
     console.error('❌ Error scheduling notification:', error);
+    }
     return null;
   }
 }
@@ -164,14 +168,15 @@ export async function scheduleLocalNotification({
 export function setupNotificationListeners() {
   // Listen for notifications received while app is in foreground
   const notificationListener = Notifications.addNotificationReceivedListener(notification => {
+
   });
 
   // Listen for user tapping on notification
   const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
+
     const { actionIdentifier, notification } = response;
     const { data, categoryIdentifier } = notification.request.content;
-    
-    
+
     // Handle different actions
     // This will be handled in the App.js to navigate to appropriate screens
   });

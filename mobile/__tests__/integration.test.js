@@ -4,10 +4,9 @@
  */
 
 // Simple validation tests (not full Jest tests since we don't have test runner configured)
-console.log('🧪 Running Mobile App Feature Validation Tests...\n');
 
 // Test 1: Check that auth storage module exports expected functions
-console.log('Test 1: Auth Storage Module');
+
 try {
   const authStorage = require('../utils/authStorage');
   const requiredExports = [
@@ -27,13 +26,15 @@ try {
   if (missingExports.length > 0) {
     throw new Error(`Missing exports: ${missingExports.join(', ')}`);
   }
-  console.log('✅ All auth storage functions exported correctly');
+
 } catch (error) {
+  if (__DEV__) {
   console.error('❌ Auth storage test failed:', error.message);
+  }
 }
 
 // Test 2: Check Socket.io service module
-console.log('\nTest 2: Socket.io Service Module');
+
 try {
   const socketService = require('../utils/socketService');
   const requiredExports = [
@@ -54,13 +55,15 @@ try {
   if (missingExports.length > 0) {
     throw new Error(`Missing exports: ${missingExports.join(', ')}`);
   }
-  console.log('✅ All socket service functions exported correctly');
+
 } catch (error) {
+  if (__DEV__) {
   console.error('❌ Socket service test failed:', error.message);
+  }
 }
 
 // Test 3: Verify screens exist
-console.log('\nTest 3: Screen Components');
+
 try {
   const fs = require('fs');
   const screens = [
@@ -76,13 +79,15 @@ try {
       throw new Error(`Screen not found: ${screen}`);
     }
   });
-  console.log('✅ All required screen components exist');
+
 } catch (error) {
+  if (__DEV__) {
   console.error('❌ Screen components test failed:', error.message);
+  }
 }
 
 // Test 4: Check package dependencies
-console.log('\nTest 4: Package Dependencies');
+
 try {
   const pkg = require('../package.json');
   const requiredDeps = {
@@ -94,11 +99,11 @@ try {
   if (missingDeps.length > 0) {
     throw new Error(`Missing dependencies: ${missingDeps.join(', ')}`);
   }
-  console.log('✅ All required dependencies installed');
-  console.log('  - @react-native-async-storage/async-storage:', pkg.dependencies['@react-native-async-storage/async-storage']);
-  console.log('  - socket.io-client:', pkg.dependencies['socket.io-client']);
-} catch (error) {
-  console.error('❌ Dependencies test failed:', error.message);
-}
 
-console.log('\n🎉 All validation tests completed!');
+
+
+} catch (error) {
+  if (__DEV__) {
+  console.error('❌ Dependencies test failed:', error.message);
+  }
+}

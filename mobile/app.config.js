@@ -47,7 +47,17 @@ export default {
       favicon: "./assets/icon.png"
     },
 
-    plugins: ["expo-notifications"],
+    plugins: [
+      "expo-notifications",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ]
+    ],
 
     extra: {
       eas: {

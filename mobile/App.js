@@ -33,7 +33,10 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    // Error caught - can be sent to error reporting service in production
+    // Error logging for crash reporting services
+    if (__DEV__) {
+      console.error('🚨 App Error Caught:', error, errorInfo);
+    }
   }
 
   render() {
@@ -94,7 +97,9 @@ export default function App() {
         await registerBackgroundFetch();
       }
     } catch (error) {
-      console.error('Error initializing services:', error);
+      if (__DEV__) {
+        console.error('❌ Error initializing services:', error);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -113,7 +118,9 @@ export default function App() {
         }
       }
     } catch (error) {
-      console.error('Error checking session:', error);
+      if (__DEV__) {
+        console.error('❌ Error checking session:', error);
+      }
     }
   };
 
