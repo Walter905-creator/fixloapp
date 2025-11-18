@@ -7,6 +7,7 @@ export default function SpaRepairChicagoESPage() {
       <Helmet>
         <title>Reparación de Spa en Chicago — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de reparación de spa en Chicago. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="reparación de spa, reparación de spa Chicago, profesionales reparación de spa, contratistas Chicago, servicios del hogar Chicago" />
         <link rel="canonical" href="https://fixloapp.com/services/spa-repair/chicago/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

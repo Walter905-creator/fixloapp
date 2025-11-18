@@ -7,6 +7,7 @@ export default function CarpentryPhoenixPage() {
       <Helmet>
         <title>Carpentry in Phoenix — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified carpentry pros in Phoenix. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="carpentry, carpentry Phoenix, carpentry professionals, Phoenix contractors, home services Phoenix" />
         <link rel="canonical" href="https://fixloapp.com/services/carpentry/phoenix" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Carpentry - Phoenix","description":"Professional carpentry services in Phoenix","url":"https://fixloapp.com/services/carpentry/phoenix","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Phoenix","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Phoenix"}}}

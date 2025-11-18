@@ -7,6 +7,7 @@ export default function LocksmithPhoenixPage() {
       <Helmet>
         <title>Locksmith in Phoenix — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified locksmith pros in Phoenix. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="locksmith, locksmith Phoenix, locksmith professionals, Phoenix contractors, home services Phoenix" />
         <link rel="canonical" href="https://fixloapp.com/services/locksmith/phoenix" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Locksmith - Phoenix","description":"Professional locksmith services in Phoenix","url":"https://fixloapp.com/services/locksmith/phoenix","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Phoenix","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Phoenix"}}}

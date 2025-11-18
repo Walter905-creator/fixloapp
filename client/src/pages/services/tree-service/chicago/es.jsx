@@ -7,6 +7,7 @@ export default function TreeServiceChicagoESPage() {
       <Helmet>
         <title>Servicio de Árboles en Chicago — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de servicio de árboles en Chicago. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="servicio de árboles, servicio de árboles Chicago, profesionales servicio de árboles, contratistas Chicago, servicios del hogar Chicago" />
         <link rel="canonical" href="https://fixloapp.com/services/tree-service/chicago/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

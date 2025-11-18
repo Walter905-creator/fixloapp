@@ -7,6 +7,7 @@ export default function AsbestosRemovalHoustonESPage() {
       <Helmet>
         <title>Eliminación de Asbesto en Houston — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de eliminación de asbesto en Houston. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="eliminación de asbesto, eliminación de asbesto Houston, profesionales eliminación de asbesto, contratistas Houston, servicios del hogar Houston" />
         <link rel="canonical" href="https://fixloapp.com/services/asbestos-removal/houston/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

@@ -7,6 +7,7 @@ export default function PressureWashingLosAngelesESPage() {
       <Helmet>
         <title>Lavado a Presión en Los Angeles — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de lavado a presión en Los Angeles. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="lavado a presión, lavado a presión Los Angeles, profesionales lavado a presión, contratistas Los Angeles, servicios del hogar Los Angeles" />
         <link rel="canonical" href="https://fixloapp.com/services/pressure-washing/los-angeles/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

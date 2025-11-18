@@ -7,6 +7,7 @@ export default function LawnCareHoustonESPage() {
       <Helmet>
         <title>Cuidado del Césped en Houston — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de cuidado del césped en Houston. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="cuidado del césped, cuidado del césped Houston, profesionales cuidado del césped, contratistas Houston, servicios del hogar Houston" />
         <link rel="canonical" href="https://fixloapp.com/services/lawn-care/houston/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

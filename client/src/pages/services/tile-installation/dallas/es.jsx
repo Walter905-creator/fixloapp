@@ -7,6 +7,7 @@ export default function TileInstallationDallasESPage() {
       <Helmet>
         <title>Instalación de Azulejos en Dallas — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de azulejos en Dallas. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de azulejos, instalación de azulejos Dallas, profesionales instalación de azulejos, contratistas Dallas, servicios del hogar Dallas" />
         <link rel="canonical" href="https://fixloapp.com/services/tile-installation/dallas/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

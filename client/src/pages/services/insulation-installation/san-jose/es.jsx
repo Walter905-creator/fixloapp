@@ -7,6 +7,7 @@ export default function InsulationInstallationSanJoseESPage() {
       <Helmet>
         <title>Instalación de Aislamiento en San Jose — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de aislamiento en San Jose. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de aislamiento, instalación de aislamiento San Jose, profesionales instalación de aislamiento, contratistas San Jose, servicios del hogar San Jose" />
         <link rel="canonical" href="https://fixloapp.com/services/insulation-installation/san-jose/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

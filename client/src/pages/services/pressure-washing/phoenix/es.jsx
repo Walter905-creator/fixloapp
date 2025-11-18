@@ -7,6 +7,7 @@ export default function PressureWashingPhoenixESPage() {
       <Helmet>
         <title>Lavado a Presión en Phoenix — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de lavado a presión en Phoenix. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="lavado a presión, lavado a presión Phoenix, profesionales lavado a presión, contratistas Phoenix, servicios del hogar Phoenix" />
         <link rel="canonical" href="https://fixloapp.com/services/pressure-washing/phoenix/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

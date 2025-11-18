@@ -7,6 +7,7 @@ export default function CarpentrySanDiegoESPage() {
       <Helmet>
         <title>Carpintería en San Diego — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de carpintería en San Diego. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="carpintería, carpintería San Diego, profesionales carpintería, contratistas San Diego, servicios del hogar San Diego" />
         <link rel="canonical" href="https://fixloapp.com/services/carpentry/san-diego/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

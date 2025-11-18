@@ -7,6 +7,7 @@ export default function ConcreteWorkNewYorkESPage() {
       <Helmet>
         <title>Trabajo de Concreto en New York — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de trabajo de concreto en New York. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="trabajo de concreto, trabajo de concreto New York, profesionales trabajo de concreto, contratistas New York, servicios del hogar New York" />
         <link rel="canonical" href="https://fixloapp.com/services/concrete-work/new-york/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

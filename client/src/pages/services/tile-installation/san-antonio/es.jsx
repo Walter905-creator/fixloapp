@@ -7,6 +7,7 @@ export default function TileInstallationSanAntonioESPage() {
       <Helmet>
         <title>Instalación de Azulejos en San Antonio — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de azulejos en San Antonio. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de azulejos, instalación de azulejos San Antonio, profesionales instalación de azulejos, contratistas San Antonio, servicios del hogar San Antonio" />
         <link rel="canonical" href="https://fixloapp.com/services/tile-installation/san-antonio/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

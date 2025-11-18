@@ -7,6 +7,7 @@ export default function CarpentrySanAntonioESPage() {
       <Helmet>
         <title>Carpintería en San Antonio — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de carpintería en San Antonio. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="carpintería, carpintería San Antonio, profesionales carpintería, contratistas San Antonio, servicios del hogar San Antonio" />
         <link rel="canonical" href="https://fixloapp.com/services/carpentry/san-antonio/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

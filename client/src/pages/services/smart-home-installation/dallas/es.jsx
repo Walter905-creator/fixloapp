@@ -7,6 +7,7 @@ export default function SmartHomeInstallationDallasESPage() {
       <Helmet>
         <title>Instalación de Casa Inteligente en Dallas — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de casa inteligente en Dallas. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de casa inteligente, instalación de casa inteligente Dallas, profesionales instalación de casa inteligente, contratistas Dallas, servicios del hogar Dallas" />
         <link rel="canonical" href="https://fixloapp.com/services/smart-home-installation/dallas/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

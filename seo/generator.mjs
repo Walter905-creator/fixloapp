@@ -45,6 +45,7 @@ function generateMeta(service, city, lang = 'en') {
     return {
       title: `${serviceES} en ${cityName} — Rápido y Confiable — Sin Mentiras | Fixlo`,
       description: `Encuentra profesionales verificados de ${serviceES.toLowerCase()} en ${cityName}. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨`,
+      keywords: `${serviceES.toLowerCase()}, ${serviceES.toLowerCase()} ${cityName}, profesionales ${serviceES.toLowerCase()}, contratistas ${cityName}, servicios del hogar ${cityName}`,
       canonical: `/services/${service}/${city}/es`
     };
   }
@@ -53,6 +54,7 @@ function generateMeta(service, city, lang = 'en') {
   return {
     title: `${serviceName} in ${cityName} — Fast & Trusted — No Cap | Fixlo`,
     description: `Find verified ${serviceName.toLowerCase()} pros in ${cityName}. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨`,
+    keywords: `${serviceName.toLowerCase()}, ${serviceName.toLowerCase()} ${cityName}, ${serviceName.toLowerCase()} professionals, ${cityName} contractors, home services ${cityName}`,
     canonical: `/services/${service}/${city}`
   };
 }
@@ -191,6 +193,7 @@ export default function ${serviceName.replace(/\s+/g, '')}${cityName.replace(/\s
       <Helmet>
         <title>${meta.title}</title>
         <meta name="description" content="${meta.description}" />
+        <meta name="keywords" content="${meta.keywords}" />
         <link rel="canonical" href="https://fixloapp.com${meta.canonical}" />
         <script type="application/ld+json">
           {${JSON.stringify(schema)}}
@@ -391,6 +394,7 @@ export default function ${serviceName.replace(/\s+/g, '')}${cityName.replace(/\s
       <Helmet>
         <title>${meta.title}</title>
         <meta name="description" content="${meta.description}" />
+        <meta name="keywords" content="${meta.keywords}" />
         <link rel="canonical" href="https://fixloapp.com${meta.canonical}" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

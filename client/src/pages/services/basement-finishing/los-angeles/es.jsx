@@ -7,6 +7,7 @@ export default function BasementFinishingLosAngelesESPage() {
       <Helmet>
         <title>Acabado de Sótanos en Los Angeles — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de acabado de sótanos en Los Angeles. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="acabado de sótanos, acabado de sótanos Los Angeles, profesionales acabado de sótanos, contratistas Los Angeles, servicios del hogar Los Angeles" />
         <link rel="canonical" href="https://fixloapp.com/services/basement-finishing/los-angeles/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

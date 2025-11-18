@@ -7,6 +7,7 @@ export default function TreeServiceHoustonESPage() {
       <Helmet>
         <title>Servicio de Árboles en Houston — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de servicio de árboles en Houston. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="servicio de árboles, servicio de árboles Houston, profesionales servicio de árboles, contratistas Houston, servicios del hogar Houston" />
         <link rel="canonical" href="https://fixloapp.com/services/tree-service/houston/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

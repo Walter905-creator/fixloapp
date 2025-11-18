@@ -7,6 +7,7 @@ export default function MasonrySanAntonioPage() {
       <Helmet>
         <title>Masonry in San Antonio — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified masonry pros in San Antonio. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="masonry, masonry San Antonio, masonry professionals, San Antonio contractors, home services San Antonio" />
         <link rel="canonical" href="https://fixloapp.com/services/masonry/san-antonio" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Masonry - San Antonio","description":"Professional masonry services in San Antonio","url":"https://fixloapp.com/services/masonry/san-antonio","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"San Antonio","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"San Antonio"}}}

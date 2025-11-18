@@ -7,6 +7,7 @@ export default function GeneralContractingNewYorkESPage() {
       <Helmet>
         <title>Contratista General en New York — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de contratista general en New York. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="contratista general, contratista general New York, profesionales contratista general, contratistas New York, servicios del hogar New York" />
         <link rel="canonical" href="https://fixloapp.com/services/general-contracting/new-york/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

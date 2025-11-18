@@ -7,6 +7,7 @@ export default function TreeServicePhiladelphiaESPage() {
       <Helmet>
         <title>Servicio de Árboles en Philadelphia — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de servicio de árboles en Philadelphia. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="servicio de árboles, servicio de árboles Philadelphia, profesionales servicio de árboles, contratistas Philadelphia, servicios del hogar Philadelphia" />
         <link rel="canonical" href="https://fixloapp.com/services/tree-service/philadelphia/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

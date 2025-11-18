@@ -7,6 +7,7 @@ export default function SpaRepairLosAngelesESPage() {
       <Helmet>
         <title>Reparación de Spa en Los Angeles — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de reparación de spa en Los Angeles. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="reparación de spa, reparación de spa Los Angeles, profesionales reparación de spa, contratistas Los Angeles, servicios del hogar Los Angeles" />
         <link rel="canonical" href="https://fixloapp.com/services/spa-repair/los-angeles/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

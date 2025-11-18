@@ -7,6 +7,7 @@ export default function FlooringDallasESPage() {
       <Helmet>
         <title>Pisos en Dallas — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de pisos en Dallas. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="pisos, pisos Dallas, profesionales pisos, contratistas Dallas, servicios del hogar Dallas" />
         <link rel="canonical" href="https://fixloapp.com/services/flooring/dallas/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

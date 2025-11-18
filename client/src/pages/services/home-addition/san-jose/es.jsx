@@ -7,6 +7,7 @@ export default function HomeAdditionSanJoseESPage() {
       <Helmet>
         <title>Adición de Hogar en San Jose — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de adición de hogar en San Jose. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="adición de hogar, adición de hogar San Jose, profesionales adición de hogar, contratistas San Jose, servicios del hogar San Jose" />
         <link rel="canonical" href="https://fixloapp.com/services/home-addition/san-jose/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

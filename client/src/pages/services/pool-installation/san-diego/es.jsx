@@ -7,6 +7,7 @@ export default function PoolInstallationSanDiegoESPage() {
       <Helmet>
         <title>Instalación de Piscinas en San Diego — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de piscinas en San Diego. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de piscinas, instalación de piscinas San Diego, profesionales instalación de piscinas, contratistas San Diego, servicios del hogar San Diego" />
         <link rel="canonical" href="https://fixloapp.com/services/pool-installation/san-diego/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

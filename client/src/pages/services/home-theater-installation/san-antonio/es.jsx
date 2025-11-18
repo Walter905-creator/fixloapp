@@ -7,6 +7,7 @@ export default function HomeTheaterInstallationSanAntonioESPage() {
       <Helmet>
         <title>Instalación de Cine en Casa en San Antonio — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de cine en casa en San Antonio. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de cine en casa, instalación de cine en casa San Antonio, profesionales instalación de cine en casa, contratistas San Antonio, servicios del hogar San Antonio" />
         <link rel="canonical" href="https://fixloapp.com/services/home-theater-installation/san-antonio/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

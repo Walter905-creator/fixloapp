@@ -7,6 +7,7 @@ export default function HeatingRepairNewYorkESPage() {
       <Helmet>
         <title>Reparación de Calefacción en New York — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de reparación de calefacción en New York. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="reparación de calefacción, reparación de calefacción New York, profesionales reparación de calefacción, contratistas New York, servicios del hogar New York" />
         <link rel="canonical" href="https://fixloapp.com/services/heating-repair/new-york/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

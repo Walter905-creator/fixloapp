@@ -7,6 +7,7 @@ export default function FenceInstallationHoustonESPage() {
       <Helmet>
         <title>Instalación de Cercas en Houston — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de cercas en Houston. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de cercas, instalación de cercas Houston, profesionales instalación de cercas, contratistas Houston, servicios del hogar Houston" />
         <link rel="canonical" href="https://fixloapp.com/services/fence-installation/houston/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

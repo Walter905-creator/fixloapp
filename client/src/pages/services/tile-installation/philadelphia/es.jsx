@@ -7,6 +7,7 @@ export default function TileInstallationPhiladelphiaESPage() {
       <Helmet>
         <title>Instalación de Azulejos en Philadelphia — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de azulejos en Philadelphia. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de azulejos, instalación de azulejos Philadelphia, profesionales instalación de azulejos, contratistas Philadelphia, servicios del hogar Philadelphia" />
         <link rel="canonical" href="https://fixloapp.com/services/tile-installation/philadelphia/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

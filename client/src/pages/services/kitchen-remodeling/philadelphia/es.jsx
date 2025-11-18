@@ -7,6 +7,7 @@ export default function KitchenRemodelingPhiladelphiaESPage() {
       <Helmet>
         <title>Remodelación de Cocinas en Philadelphia — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de remodelación de cocinas en Philadelphia. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="remodelación de cocinas, remodelación de cocinas Philadelphia, profesionales remodelación de cocinas, contratistas Philadelphia, servicios del hogar Philadelphia" />
         <link rel="canonical" href="https://fixloapp.com/services/kitchen-remodeling/philadelphia/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

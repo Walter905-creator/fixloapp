@@ -7,6 +7,7 @@ export default function HomeTheaterInstallationPhoenixESPage() {
       <Helmet>
         <title>Instalación de Cine en Casa en Phoenix — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de cine en casa en Phoenix. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de cine en casa, instalación de cine en casa Phoenix, profesionales instalación de cine en casa, contratistas Phoenix, servicios del hogar Phoenix" />
         <link rel="canonical" href="https://fixloapp.com/services/home-theater-installation/phoenix/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

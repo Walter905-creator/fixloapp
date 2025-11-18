@@ -7,6 +7,7 @@ export default function PestControlSanAntonioESPage() {
       <Helmet>
         <title>Control de Plagas en San Antonio — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de control de plagas en San Antonio. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="control de plagas, control de plagas San Antonio, profesionales control de plagas, contratistas San Antonio, servicios del hogar San Antonio" />
         <link rel="canonical" href="https://fixloapp.com/services/pest-control/san-antonio/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

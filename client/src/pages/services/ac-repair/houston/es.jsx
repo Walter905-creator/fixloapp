@@ -7,6 +7,7 @@ export default function AcRepairHoustonESPage() {
       <Helmet>
         <title>Ac Repair en Houston — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de ac repair en Houston. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="ac repair, ac repair Houston, profesionales ac repair, contratistas Houston, servicios del hogar Houston" />
         <link rel="canonical" href="https://fixloapp.com/services/ac-repair/houston/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

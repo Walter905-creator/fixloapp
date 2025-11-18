@@ -7,6 +7,7 @@ export default function SecuritySystemInstallationSanDiegoESPage() {
       <Helmet>
         <title>Instalación de Sistemas de Seguridad en San Diego — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de sistemas de seguridad en San Diego. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de sistemas de seguridad, instalación de sistemas de seguridad San Diego, profesionales instalación de sistemas de seguridad, contratistas San Diego, servicios del hogar San Diego" />
         <link rel="canonical" href="https://fixloapp.com/services/security-system-installation/san-diego/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

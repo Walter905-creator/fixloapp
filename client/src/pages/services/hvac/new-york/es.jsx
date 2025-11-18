@@ -7,6 +7,7 @@ export default function HvacNewYorkESPage() {
       <Helmet>
         <title>Hvac en New York — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de hvac en New York. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="hvac, hvac New York, profesionales hvac, contratistas New York, servicios del hogar New York" />
         <link rel="canonical" href="https://fixloapp.com/services/hvac/new-york/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

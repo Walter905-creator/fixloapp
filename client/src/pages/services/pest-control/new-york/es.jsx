@@ -7,6 +7,7 @@ export default function PestControlNewYorkESPage() {
       <Helmet>
         <title>Control de Plagas en New York — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de control de plagas en New York. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="control de plagas, control de plagas New York, profesionales control de plagas, contratistas New York, servicios del hogar New York" />
         <link rel="canonical" href="https://fixloapp.com/services/pest-control/new-york/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

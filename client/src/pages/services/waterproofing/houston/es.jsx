@@ -7,6 +7,7 @@ export default function WaterproofingHoustonESPage() {
       <Helmet>
         <title>Impermeabilización en Houston — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de impermeabilización en Houston. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="impermeabilización, impermeabilización Houston, profesionales impermeabilización, contratistas Houston, servicios del hogar Houston" />
         <link rel="canonical" href="https://fixloapp.com/services/waterproofing/houston/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

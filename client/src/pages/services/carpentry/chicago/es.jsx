@@ -7,6 +7,7 @@ export default function CarpentryChicagoESPage() {
       <Helmet>
         <title>Carpintería en Chicago — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de carpintería en Chicago. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="carpintería, carpintería Chicago, profesionales carpintería, contratistas Chicago, servicios del hogar Chicago" />
         <link rel="canonical" href="https://fixloapp.com/services/carpentry/chicago/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

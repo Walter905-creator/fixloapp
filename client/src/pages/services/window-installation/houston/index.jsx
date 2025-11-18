@@ -7,6 +7,7 @@ export default function WindowInstallationHoustonPage() {
       <Helmet>
         <title>Window Installation in Houston — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified window installation pros in Houston. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="window installation, window installation Houston, window installation professionals, Houston contractors, home services Houston" />
         <link rel="canonical" href="https://fixloapp.com/services/window-installation/houston" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Window Installation - Houston","description":"Professional window installation services in Houston","url":"https://fixloapp.com/services/window-installation/houston","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Houston","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Houston"}}}

@@ -7,6 +7,7 @@ export default function HomeAdditionLosAngelesESPage() {
       <Helmet>
         <title>Adición de Hogar en Los Angeles — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de adición de hogar en Los Angeles. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="adición de hogar, adición de hogar Los Angeles, profesionales adición de hogar, contratistas Los Angeles, servicios del hogar Los Angeles" />
         <link rel="canonical" href="https://fixloapp.com/services/home-addition/los-angeles/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

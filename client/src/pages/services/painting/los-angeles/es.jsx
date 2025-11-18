@@ -7,6 +7,7 @@ export default function PaintingLosAngelesESPage() {
       <Helmet>
         <title>Pintura en Los Angeles — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de pintura en Los Angeles. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="pintura, pintura Los Angeles, profesionales pintura, contratistas Los Angeles, servicios del hogar Los Angeles" />
         <link rel="canonical" href="https://fixloapp.com/services/painting/los-angeles/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

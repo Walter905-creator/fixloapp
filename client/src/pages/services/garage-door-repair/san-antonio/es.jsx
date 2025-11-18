@@ -7,6 +7,7 @@ export default function GarageDoorRepairSanAntonioESPage() {
       <Helmet>
         <title>Reparación de Puertas de Garaje en San Antonio — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de reparación de puertas de garaje en San Antonio. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="reparación de puertas de garaje, reparación de puertas de garaje San Antonio, profesionales reparación de puertas de garaje, contratistas San Antonio, servicios del hogar San Antonio" />
         <link rel="canonical" href="https://fixloapp.com/services/garage-door-repair/san-antonio/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

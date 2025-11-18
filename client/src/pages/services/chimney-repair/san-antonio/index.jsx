@@ -7,6 +7,7 @@ export default function ChimneyRepairSanAntonioPage() {
       <Helmet>
         <title>Chimney Repair in San Antonio — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified chimney repair pros in San Antonio. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="chimney repair, chimney repair San Antonio, chimney repair professionals, San Antonio contractors, home services San Antonio" />
         <link rel="canonical" href="https://fixloapp.com/services/chimney-repair/san-antonio" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Chimney Repair - San Antonio","description":"Professional chimney repair services in San Antonio","url":"https://fixloapp.com/services/chimney-repair/san-antonio","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"San Antonio","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"San Antonio"}}}

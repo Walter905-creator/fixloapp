@@ -7,6 +7,7 @@ export default function SmartHomeInstallationHoustonPage() {
       <Helmet>
         <title>Smart Home Installation in Houston — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified smart home installation pros in Houston. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="smart home installation, smart home installation Houston, smart home installation professionals, Houston contractors, home services Houston" />
         <link rel="canonical" href="https://fixloapp.com/services/smart-home-installation/houston" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Smart Home Installation - Houston","description":"Professional smart home installation services in Houston","url":"https://fixloapp.com/services/smart-home-installation/houston","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Houston","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Houston"}}}

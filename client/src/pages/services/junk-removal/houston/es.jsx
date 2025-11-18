@@ -7,6 +7,7 @@ export default function JunkRemovalHoustonESPage() {
       <Helmet>
         <title>Eliminación de Basura en Houston — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de eliminación de basura en Houston. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="eliminación de basura, eliminación de basura Houston, profesionales eliminación de basura, contratistas Houston, servicios del hogar Houston" />
         <link rel="canonical" href="https://fixloapp.com/services/junk-removal/houston/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

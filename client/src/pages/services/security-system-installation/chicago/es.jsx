@@ -7,6 +7,7 @@ export default function SecuritySystemInstallationChicagoESPage() {
       <Helmet>
         <title>Instalación de Sistemas de Seguridad en Chicago — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de sistemas de seguridad en Chicago. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de sistemas de seguridad, instalación de sistemas de seguridad Chicago, profesionales instalación de sistemas de seguridad, contratistas Chicago, servicios del hogar Chicago" />
         <link rel="canonical" href="https://fixloapp.com/services/security-system-installation/chicago/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

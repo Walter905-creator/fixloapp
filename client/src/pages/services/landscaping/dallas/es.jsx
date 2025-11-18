@@ -7,6 +7,7 @@ export default function LandscapingDallasESPage() {
       <Helmet>
         <title>Paisajismo en Dallas — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de paisajismo en Dallas. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="paisajismo, paisajismo Dallas, profesionales paisajismo, contratistas Dallas, servicios del hogar Dallas" />
         <link rel="canonical" href="https://fixloapp.com/services/landscaping/dallas/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

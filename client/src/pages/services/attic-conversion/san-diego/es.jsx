@@ -7,6 +7,7 @@ export default function AtticConversionSanDiegoESPage() {
       <Helmet>
         <title>Conversión de Áticos en San Diego — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de conversión de áticos en San Diego. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="conversión de áticos, conversión de áticos San Diego, profesionales conversión de áticos, contratistas San Diego, servicios del hogar San Diego" />
         <link rel="canonical" href="https://fixloapp.com/services/attic-conversion/san-diego/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

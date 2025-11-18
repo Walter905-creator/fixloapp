@@ -7,6 +7,7 @@ export default function MasonryLosAngelesESPage() {
       <Helmet>
         <title>Albañilería en Los Angeles — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de albañilería en Los Angeles. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="albañilería, albañilería Los Angeles, profesionales albañilería, contratistas Los Angeles, servicios del hogar Los Angeles" />
         <link rel="canonical" href="https://fixloapp.com/services/masonry/los-angeles/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

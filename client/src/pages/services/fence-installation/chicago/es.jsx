@@ -7,6 +7,7 @@ export default function FenceInstallationChicagoESPage() {
       <Helmet>
         <title>Instalación de Cercas en Chicago — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de cercas en Chicago. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de cercas, instalación de cercas Chicago, profesionales instalación de cercas, contratistas Chicago, servicios del hogar Chicago" />
         <link rel="canonical" href="https://fixloapp.com/services/fence-installation/chicago/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

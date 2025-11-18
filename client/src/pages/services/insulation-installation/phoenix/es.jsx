@@ -7,6 +7,7 @@ export default function InsulationInstallationPhoenixESPage() {
       <Helmet>
         <title>Instalación de Aislamiento en Phoenix — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de aislamiento en Phoenix. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de aislamiento, instalación de aislamiento Phoenix, profesionales instalación de aislamiento, contratistas Phoenix, servicios del hogar Phoenix" />
         <link rel="canonical" href="https://fixloapp.com/services/insulation-installation/phoenix/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

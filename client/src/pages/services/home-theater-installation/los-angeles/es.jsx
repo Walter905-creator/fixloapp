@@ -7,6 +7,7 @@ export default function HomeTheaterInstallationLosAngelesESPage() {
       <Helmet>
         <title>Instalación de Cine en Casa en Los Angeles — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de cine en casa en Los Angeles. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de cine en casa, instalación de cine en casa Los Angeles, profesionales instalación de cine en casa, contratistas Los Angeles, servicios del hogar Los Angeles" />
         <link rel="canonical" href="https://fixloapp.com/services/home-theater-installation/los-angeles/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

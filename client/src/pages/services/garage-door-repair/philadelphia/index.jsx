@@ -7,6 +7,7 @@ export default function GarageDoorRepairPhiladelphiaPage() {
       <Helmet>
         <title>Garage Door Repair in Philadelphia — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified garage door repair pros in Philadelphia. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="garage door repair, garage door repair Philadelphia, garage door repair professionals, Philadelphia contractors, home services Philadelphia" />
         <link rel="canonical" href="https://fixloapp.com/services/garage-door-repair/philadelphia" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Garage Door Repair - Philadelphia","description":"Professional garage door repair services in Philadelphia","url":"https://fixloapp.com/services/garage-door-repair/philadelphia","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Philadelphia","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Philadelphia"}}}

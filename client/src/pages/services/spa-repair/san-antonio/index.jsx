@@ -7,6 +7,7 @@ export default function SpaRepairSanAntonioPage() {
       <Helmet>
         <title>Spa Repair in San Antonio — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified spa repair pros in San Antonio. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="spa repair, spa repair San Antonio, spa repair professionals, San Antonio contractors, home services San Antonio" />
         <link rel="canonical" href="https://fixloapp.com/services/spa-repair/san-antonio" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Spa Repair - San Antonio","description":"Professional spa repair services in San Antonio","url":"https://fixloapp.com/services/spa-repair/san-antonio","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"San Antonio","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"San Antonio"}}}

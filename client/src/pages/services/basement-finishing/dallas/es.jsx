@@ -7,6 +7,7 @@ export default function BasementFinishingDallasESPage() {
       <Helmet>
         <title>Acabado de Sótanos en Dallas — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de acabado de sótanos en Dallas. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="acabado de sótanos, acabado de sótanos Dallas, profesionales acabado de sótanos, contratistas Dallas, servicios del hogar Dallas" />
         <link rel="canonical" href="https://fixloapp.com/services/basement-finishing/dallas/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

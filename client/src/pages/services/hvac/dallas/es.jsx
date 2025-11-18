@@ -7,6 +7,7 @@ export default function HvacDallasESPage() {
       <Helmet>
         <title>Hvac en Dallas — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de hvac en Dallas. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="hvac, hvac Dallas, profesionales hvac, contratistas Dallas, servicios del hogar Dallas" />
         <link rel="canonical" href="https://fixloapp.com/services/hvac/dallas/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

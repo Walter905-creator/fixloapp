@@ -7,6 +7,7 @@ export default function WaterproofingNewYorkPage() {
       <Helmet>
         <title>Waterproofing in New York — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified waterproofing pros in New York. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="waterproofing, waterproofing New York, waterproofing professionals, New York contractors, home services New York" />
         <link rel="canonical" href="https://fixloapp.com/services/waterproofing/new-york" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Waterproofing - New York","description":"Professional waterproofing services in New York","url":"https://fixloapp.com/services/waterproofing/new-york","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"New York","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"New York"}}}

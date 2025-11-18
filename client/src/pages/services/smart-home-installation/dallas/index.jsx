@@ -7,6 +7,7 @@ export default function SmartHomeInstallationDallasPage() {
       <Helmet>
         <title>Smart Home Installation in Dallas — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified smart home installation pros in Dallas. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="smart home installation, smart home installation Dallas, smart home installation professionals, Dallas contractors, home services Dallas" />
         <link rel="canonical" href="https://fixloapp.com/services/smart-home-installation/dallas" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Smart Home Installation - Dallas","description":"Professional smart home installation services in Dallas","url":"https://fixloapp.com/services/smart-home-installation/dallas","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Dallas","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Dallas"}}}

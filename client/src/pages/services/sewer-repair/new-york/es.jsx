@@ -7,6 +7,7 @@ export default function SewerRepairNewYorkESPage() {
       <Helmet>
         <title>Reparación de Alcantarillado en New York — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de reparación de alcantarillado en New York. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="reparación de alcantarillado, reparación de alcantarillado New York, profesionales reparación de alcantarillado, contratistas New York, servicios del hogar New York" />
         <link rel="canonical" href="https://fixloapp.com/services/sewer-repair/new-york/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

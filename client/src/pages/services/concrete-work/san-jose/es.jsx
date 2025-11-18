@@ -7,6 +7,7 @@ export default function ConcreteWorkSanJoseESPage() {
       <Helmet>
         <title>Trabajo de Concreto en San Jose — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de trabajo de concreto en San Jose. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="trabajo de concreto, trabajo de concreto San Jose, profesionales trabajo de concreto, contratistas San Jose, servicios del hogar San Jose" />
         <link rel="canonical" href="https://fixloapp.com/services/concrete-work/san-jose/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

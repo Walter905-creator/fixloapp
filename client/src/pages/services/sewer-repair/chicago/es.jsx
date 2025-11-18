@@ -7,6 +7,7 @@ export default function SewerRepairChicagoESPage() {
       <Helmet>
         <title>Reparación de Alcantarillado en Chicago — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de reparación de alcantarillado en Chicago. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="reparación de alcantarillado, reparación de alcantarillado Chicago, profesionales reparación de alcantarillado, contratistas Chicago, servicios del hogar Chicago" />
         <link rel="canonical" href="https://fixloapp.com/services/sewer-repair/chicago/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

@@ -7,6 +7,7 @@ export default function WaterHeaterRepairSanAntonioPage() {
       <Helmet>
         <title>Water Heater Repair in San Antonio — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified water heater repair pros in San Antonio. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="water heater repair, water heater repair San Antonio, water heater repair professionals, San Antonio contractors, home services San Antonio" />
         <link rel="canonical" href="https://fixloapp.com/services/water-heater-repair/san-antonio" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Water Heater Repair - San Antonio","description":"Professional water heater repair services in San Antonio","url":"https://fixloapp.com/services/water-heater-repair/san-antonio","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"San Antonio","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"San Antonio"}}}

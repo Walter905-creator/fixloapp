@@ -7,6 +7,7 @@ export default function JunkRemovalLosAngelesESPage() {
       <Helmet>
         <title>Eliminación de Basura en Los Angeles — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de eliminación de basura en Los Angeles. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="eliminación de basura, eliminación de basura Los Angeles, profesionales eliminación de basura, contratistas Los Angeles, servicios del hogar Los Angeles" />
         <link rel="canonical" href="https://fixloapp.com/services/junk-removal/los-angeles/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

@@ -7,6 +7,7 @@ export default function PoolInstallationChicagoPage() {
       <Helmet>
         <title>Pool Installation in Chicago — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified pool installation pros in Chicago. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="pool installation, pool installation Chicago, pool installation professionals, Chicago contractors, home services Chicago" />
         <link rel="canonical" href="https://fixloapp.com/services/pool-installation/chicago" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Pool Installation - Chicago","description":"Professional pool installation services in Chicago","url":"https://fixloapp.com/services/pool-installation/chicago","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Chicago","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Chicago"}}}

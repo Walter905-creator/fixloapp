@@ -7,6 +7,7 @@ export default function FoundationRepairSanAntonioESPage() {
       <Helmet>
         <title>Reparación de Cimientos en San Antonio — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de reparación de cimientos en San Antonio. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="reparación de cimientos, reparación de cimientos San Antonio, profesionales reparación de cimientos, contratistas San Antonio, servicios del hogar San Antonio" />
         <link rel="canonical" href="https://fixloapp.com/services/foundation-repair/san-antonio/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

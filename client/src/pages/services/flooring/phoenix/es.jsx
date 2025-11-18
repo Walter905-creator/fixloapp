@@ -7,6 +7,7 @@ export default function FlooringPhoenixESPage() {
       <Helmet>
         <title>Pisos en Phoenix — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de pisos en Phoenix. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="pisos, pisos Phoenix, profesionales pisos, contratistas Phoenix, servicios del hogar Phoenix" />
         <link rel="canonical" href="https://fixloapp.com/services/flooring/phoenix/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

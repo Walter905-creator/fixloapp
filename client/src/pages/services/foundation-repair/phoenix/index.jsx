@@ -7,6 +7,7 @@ export default function FoundationRepairPhoenixPage() {
       <Helmet>
         <title>Foundation Repair in Phoenix — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified foundation repair pros in Phoenix. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="foundation repair, foundation repair Phoenix, foundation repair professionals, Phoenix contractors, home services Phoenix" />
         <link rel="canonical" href="https://fixloapp.com/services/foundation-repair/phoenix" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Foundation Repair - Phoenix","description":"Professional foundation repair services in Phoenix","url":"https://fixloapp.com/services/foundation-repair/phoenix","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Phoenix","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Phoenix"}}}

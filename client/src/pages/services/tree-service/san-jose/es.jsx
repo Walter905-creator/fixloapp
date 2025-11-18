@@ -7,6 +7,7 @@ export default function TreeServiceSanJoseESPage() {
       <Helmet>
         <title>Servicio de Árboles en San Jose — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de servicio de árboles en San Jose. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="servicio de árboles, servicio de árboles San Jose, profesionales servicio de árboles, contratistas San Jose, servicios del hogar San Jose" />
         <link rel="canonical" href="https://fixloapp.com/services/tree-service/san-jose/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

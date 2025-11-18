@@ -7,6 +7,7 @@ export default function ChimneyRepairNewYorkESPage() {
       <Helmet>
         <title>Reparación de Chimeneas en New York — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de reparación de chimeneas en New York. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="reparación de chimeneas, reparación de chimeneas New York, profesionales reparación de chimeneas, contratistas New York, servicios del hogar New York" />
         <link rel="canonical" href="https://fixloapp.com/services/chimney-repair/new-york/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

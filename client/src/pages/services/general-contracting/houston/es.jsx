@@ -7,6 +7,7 @@ export default function GeneralContractingHoustonESPage() {
       <Helmet>
         <title>Contratista General en Houston — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de contratista general en Houston. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="contratista general, contratista general Houston, profesionales contratista general, contratistas Houston, servicios del hogar Houston" />
         <link rel="canonical" href="https://fixloapp.com/services/general-contracting/houston/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

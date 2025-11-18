@@ -7,6 +7,7 @@ export default function TileInstallationSanDiegoESPage() {
       <Helmet>
         <title>Instalación de Azulejos en San Diego — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de azulejos en San Diego. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de azulejos, instalación de azulejos San Diego, profesionales instalación de azulejos, contratistas San Diego, servicios del hogar San Diego" />
         <link rel="canonical" href="https://fixloapp.com/services/tile-installation/san-diego/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

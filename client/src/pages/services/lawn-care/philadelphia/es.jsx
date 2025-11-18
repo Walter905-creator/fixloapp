@@ -7,6 +7,7 @@ export default function LawnCarePhiladelphiaESPage() {
       <Helmet>
         <title>Cuidado del Césped en Philadelphia — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de cuidado del césped en Philadelphia. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="cuidado del césped, cuidado del césped Philadelphia, profesionales cuidado del césped, contratistas Philadelphia, servicios del hogar Philadelphia" />
         <link rel="canonical" href="https://fixloapp.com/services/lawn-care/philadelphia/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

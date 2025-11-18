@@ -7,6 +7,7 @@ export default function HomeTheaterInstallationSanAntonioPage() {
       <Helmet>
         <title>Home Theater Installation in San Antonio — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified home theater installation pros in San Antonio. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="home theater installation, home theater installation San Antonio, home theater installation professionals, San Antonio contractors, home services San Antonio" />
         <link rel="canonical" href="https://fixloapp.com/services/home-theater-installation/san-antonio" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Home Theater Installation - San Antonio","description":"Professional home theater installation services in San Antonio","url":"https://fixloapp.com/services/home-theater-installation/san-antonio","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"San Antonio","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"San Antonio"}}}

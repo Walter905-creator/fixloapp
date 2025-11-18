@@ -7,6 +7,7 @@ export default function AcRepairPhoenixPage() {
       <Helmet>
         <title>Ac Repair in Phoenix — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified ac repair pros in Phoenix. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="ac repair, ac repair Phoenix, ac repair professionals, Phoenix contractors, home services Phoenix" />
         <link rel="canonical" href="https://fixloapp.com/services/ac-repair/phoenix" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Ac Repair - Phoenix","description":"Professional ac repair services in Phoenix","url":"https://fixloapp.com/services/ac-repair/phoenix","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Phoenix","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Phoenix"}}}

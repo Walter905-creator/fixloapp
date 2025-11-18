@@ -7,6 +7,7 @@ export default function AsbestosRemovalSanJoseESPage() {
       <Helmet>
         <title>Eliminación de Asbesto en San Jose — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de eliminación de asbesto en San Jose. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="eliminación de asbesto, eliminación de asbesto San Jose, profesionales eliminación de asbesto, contratistas San Jose, servicios del hogar San Jose" />
         <link rel="canonical" href="https://fixloapp.com/services/asbestos-removal/san-jose/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

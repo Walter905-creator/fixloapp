@@ -7,6 +7,7 @@ export default function SewerRepairDallasPage() {
       <Helmet>
         <title>Sewer Repair in Dallas — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified sewer repair pros in Dallas. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="sewer repair, sewer repair Dallas, sewer repair professionals, Dallas contractors, home services Dallas" />
         <link rel="canonical" href="https://fixloapp.com/services/sewer-repair/dallas" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Sewer Repair - Dallas","description":"Professional sewer repair services in Dallas","url":"https://fixloapp.com/services/sewer-repair/dallas","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Dallas","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Dallas"}}}

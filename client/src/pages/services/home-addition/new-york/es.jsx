@@ -7,6 +7,7 @@ export default function HomeAdditionNewYorkESPage() {
       <Helmet>
         <title>Adición de Hogar en New York — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de adición de hogar en New York. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="adición de hogar, adición de hogar New York, profesionales adición de hogar, contratistas New York, servicios del hogar New York" />
         <link rel="canonical" href="https://fixloapp.com/services/home-addition/new-york/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

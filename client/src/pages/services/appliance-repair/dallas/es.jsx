@@ -7,6 +7,7 @@ export default function ApplianceRepairDallasESPage() {
       <Helmet>
         <title>Reparación de Electrodomésticos en Dallas — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de reparación de electrodomésticos en Dallas. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="reparación de electrodomésticos, reparación de electrodomésticos Dallas, profesionales reparación de electrodomésticos, contratistas Dallas, servicios del hogar Dallas" />
         <link rel="canonical" href="https://fixloapp.com/services/appliance-repair/dallas/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

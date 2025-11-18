@@ -7,6 +7,7 @@ export default function SpaRepairChicagoPage() {
       <Helmet>
         <title>Spa Repair in Chicago — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified spa repair pros in Chicago. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="spa repair, spa repair Chicago, spa repair professionals, Chicago contractors, home services Chicago" />
         <link rel="canonical" href="https://fixloapp.com/services/spa-repair/chicago" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Spa Repair - Chicago","description":"Professional spa repair services in Chicago","url":"https://fixloapp.com/services/spa-repair/chicago","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Chicago","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Chicago"}}}

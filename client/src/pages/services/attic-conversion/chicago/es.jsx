@@ -7,6 +7,7 @@ export default function AtticConversionChicagoESPage() {
       <Helmet>
         <title>Conversión de Áticos en Chicago — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de conversión de áticos en Chicago. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="conversión de áticos, conversión de áticos Chicago, profesionales conversión de áticos, contratistas Chicago, servicios del hogar Chicago" />
         <link rel="canonical" href="https://fixloapp.com/services/attic-conversion/chicago/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

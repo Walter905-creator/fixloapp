@@ -7,6 +7,7 @@ export default function HomeAdditionDallasESPage() {
       <Helmet>
         <title>Adición de Hogar en Dallas — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de adición de hogar en Dallas. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="adición de hogar, adición de hogar Dallas, profesionales adición de hogar, contratistas Dallas, servicios del hogar Dallas" />
         <link rel="canonical" href="https://fixloapp.com/services/home-addition/dallas/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

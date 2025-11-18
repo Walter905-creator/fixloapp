@@ -7,6 +7,7 @@ export default function ConcreteWorkPhiladelphiaESPage() {
       <Helmet>
         <title>Trabajo de Concreto en Philadelphia — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de trabajo de concreto en Philadelphia. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="trabajo de concreto, trabajo de concreto Philadelphia, profesionales trabajo de concreto, contratistas Philadelphia, servicios del hogar Philadelphia" />
         <link rel="canonical" href="https://fixloapp.com/services/concrete-work/philadelphia/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

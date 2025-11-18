@@ -7,6 +7,7 @@ export default function LocksmithSanJoseESPage() {
       <Helmet>
         <title>Cerrajería en San Jose — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de cerrajería en San Jose. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="cerrajería, cerrajería San Jose, profesionales cerrajería, contratistas San Jose, servicios del hogar San Jose" />
         <link rel="canonical" href="https://fixloapp.com/services/locksmith/san-jose/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

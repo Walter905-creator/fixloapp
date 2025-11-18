@@ -7,6 +7,7 @@ export default function InsulationInstallationLosAngelesESPage() {
       <Helmet>
         <title>Instalación de Aislamiento en Los Angeles — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de aislamiento en Los Angeles. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de aislamiento, instalación de aislamiento Los Angeles, profesionales instalación de aislamiento, contratistas Los Angeles, servicios del hogar Los Angeles" />
         <link rel="canonical" href="https://fixloapp.com/services/insulation-installation/los-angeles/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

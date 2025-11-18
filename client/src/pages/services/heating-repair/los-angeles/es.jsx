@@ -7,6 +7,7 @@ export default function HeatingRepairLosAngelesESPage() {
       <Helmet>
         <title>Reparación de Calefacción en Los Angeles — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de reparación de calefacción en Los Angeles. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="reparación de calefacción, reparación de calefacción Los Angeles, profesionales reparación de calefacción, contratistas Los Angeles, servicios del hogar Los Angeles" />
         <link rel="canonical" href="https://fixloapp.com/services/heating-repair/los-angeles/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

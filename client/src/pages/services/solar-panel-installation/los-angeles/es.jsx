@@ -7,6 +7,7 @@ export default function SolarPanelInstallationLosAngelesESPage() {
       <Helmet>
         <title>Instalación de Paneles Solares en Los Angeles — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de paneles solares en Los Angeles. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de paneles solares, instalación de paneles solares Los Angeles, profesionales instalación de paneles solares, contratistas Los Angeles, servicios del hogar Los Angeles" />
         <link rel="canonical" href="https://fixloapp.com/services/solar-panel-installation/los-angeles/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

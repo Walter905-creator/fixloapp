@@ -7,6 +7,7 @@ export default function DrywallRepairHoustonESPage() {
       <Helmet>
         <title>Reparación de Paneles de Yeso en Houston — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de reparación de paneles de yeso en Houston. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="reparación de paneles de yeso, reparación de paneles de yeso Houston, profesionales reparación de paneles de yeso, contratistas Houston, servicios del hogar Houston" />
         <link rel="canonical" href="https://fixloapp.com/services/drywall-repair/houston/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

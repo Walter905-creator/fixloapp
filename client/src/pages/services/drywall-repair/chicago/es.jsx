@@ -7,6 +7,7 @@ export default function DrywallRepairChicagoESPage() {
       <Helmet>
         <title>Reparación de Paneles de Yeso en Chicago — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de reparación de paneles de yeso en Chicago. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="reparación de paneles de yeso, reparación de paneles de yeso Chicago, profesionales reparación de paneles de yeso, contratistas Chicago, servicios del hogar Chicago" />
         <link rel="canonical" href="https://fixloapp.com/services/drywall-repair/chicago/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

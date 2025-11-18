@@ -7,6 +7,7 @@ export default function InsulationInstallationDallasPage() {
       <Helmet>
         <title>Insulation Installation in Dallas — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified insulation installation pros in Dallas. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="insulation installation, insulation installation Dallas, insulation installation professionals, Dallas contractors, home services Dallas" />
         <link rel="canonical" href="https://fixloapp.com/services/insulation-installation/dallas" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Insulation Installation - Dallas","description":"Professional insulation installation services in Dallas","url":"https://fixloapp.com/services/insulation-installation/dallas","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Dallas","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Dallas"}}}

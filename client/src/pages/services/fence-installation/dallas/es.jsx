@@ -7,6 +7,7 @@ export default function FenceInstallationDallasESPage() {
       <Helmet>
         <title>Instalación de Cercas en Dallas — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de cercas en Dallas. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de cercas, instalación de cercas Dallas, profesionales instalación de cercas, contratistas Dallas, servicios del hogar Dallas" />
         <link rel="canonical" href="https://fixloapp.com/services/fence-installation/dallas/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

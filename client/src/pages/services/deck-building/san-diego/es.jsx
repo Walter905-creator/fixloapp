@@ -7,6 +7,7 @@ export default function DeckBuildingSanDiegoESPage() {
       <Helmet>
         <title>Construcción de Terrazas en San Diego — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de construcción de terrazas en San Diego. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="construcción de terrazas, construcción de terrazas San Diego, profesionales construcción de terrazas, contratistas San Diego, servicios del hogar San Diego" />
         <link rel="canonical" href="https://fixloapp.com/services/deck-building/san-diego/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

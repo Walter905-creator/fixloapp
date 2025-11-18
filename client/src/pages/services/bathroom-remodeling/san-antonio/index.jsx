@@ -7,6 +7,7 @@ export default function BathroomRemodelingSanAntonioPage() {
       <Helmet>
         <title>Bathroom Remodeling in San Antonio — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified bathroom remodeling pros in San Antonio. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="bathroom remodeling, bathroom remodeling San Antonio, bathroom remodeling professionals, San Antonio contractors, home services San Antonio" />
         <link rel="canonical" href="https://fixloapp.com/services/bathroom-remodeling/san-antonio" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Bathroom Remodeling - San Antonio","description":"Professional bathroom remodeling services in San Antonio","url":"https://fixloapp.com/services/bathroom-remodeling/san-antonio","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"San Antonio","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"San Antonio"}}}

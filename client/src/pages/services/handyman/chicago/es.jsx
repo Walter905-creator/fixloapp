@@ -7,6 +7,7 @@ export default function HandymanChicagoESPage() {
       <Helmet>
         <title>Manitas en Chicago — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de manitas en Chicago. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="manitas, manitas Chicago, profesionales manitas, contratistas Chicago, servicios del hogar Chicago" />
         <link rel="canonical" href="https://fixloapp.com/services/handyman/chicago/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

@@ -7,6 +7,7 @@ export default function ConcreteWorkSanAntonioESPage() {
       <Helmet>
         <title>Trabajo de Concreto en San Antonio — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de trabajo de concreto en San Antonio. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="trabajo de concreto, trabajo de concreto San Antonio, profesionales trabajo de concreto, contratistas San Antonio, servicios del hogar San Antonio" />
         <link rel="canonical" href="https://fixloapp.com/services/concrete-work/san-antonio/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

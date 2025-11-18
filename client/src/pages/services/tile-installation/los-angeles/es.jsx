@@ -7,6 +7,7 @@ export default function TileInstallationLosAngelesESPage() {
       <Helmet>
         <title>Instalación de Azulejos en Los Angeles — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de azulejos en Los Angeles. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de azulejos, instalación de azulejos Los Angeles, profesionales instalación de azulejos, contratistas Los Angeles, servicios del hogar Los Angeles" />
         <link rel="canonical" href="https://fixloapp.com/services/tile-installation/los-angeles/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

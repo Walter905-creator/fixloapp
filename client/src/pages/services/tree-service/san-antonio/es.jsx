@@ -7,6 +7,7 @@ export default function TreeServiceSanAntonioESPage() {
       <Helmet>
         <title>Servicio de Árboles en San Antonio — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de servicio de árboles en San Antonio. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="servicio de árboles, servicio de árboles San Antonio, profesionales servicio de árboles, contratistas San Antonio, servicios del hogar San Antonio" />
         <link rel="canonical" href="https://fixloapp.com/services/tree-service/san-antonio/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

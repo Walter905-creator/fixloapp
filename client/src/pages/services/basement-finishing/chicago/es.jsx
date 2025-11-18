@@ -7,6 +7,7 @@ export default function BasementFinishingChicagoESPage() {
       <Helmet>
         <title>Acabado de Sótanos en Chicago — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de acabado de sótanos en Chicago. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="acabado de sótanos, acabado de sótanos Chicago, profesionales acabado de sótanos, contratistas Chicago, servicios del hogar Chicago" />
         <link rel="canonical" href="https://fixloapp.com/services/basement-finishing/chicago/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

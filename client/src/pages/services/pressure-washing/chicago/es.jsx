@@ -7,6 +7,7 @@ export default function PressureWashingChicagoESPage() {
       <Helmet>
         <title>Lavado a Presión en Chicago — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de lavado a presión en Chicago. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="lavado a presión, lavado a presión Chicago, profesionales lavado a presión, contratistas Chicago, servicios del hogar Chicago" />
         <link rel="canonical" href="https://fixloapp.com/services/pressure-washing/chicago/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

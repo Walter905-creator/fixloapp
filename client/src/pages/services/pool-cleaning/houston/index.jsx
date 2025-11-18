@@ -7,6 +7,7 @@ export default function PoolCleaningHoustonPage() {
       <Helmet>
         <title>Pool Cleaning in Houston — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified pool cleaning pros in Houston. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="pool cleaning, pool cleaning Houston, pool cleaning professionals, Houston contractors, home services Houston" />
         <link rel="canonical" href="https://fixloapp.com/services/pool-cleaning/houston" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Pool Cleaning - Houston","description":"Professional pool cleaning services in Houston","url":"https://fixloapp.com/services/pool-cleaning/houston","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Houston","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Houston"}}}

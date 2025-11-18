@@ -7,6 +7,7 @@ export default function BathroomRemodelingNewYorkPage() {
       <Helmet>
         <title>Bathroom Remodeling in New York — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified bathroom remodeling pros in New York. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="bathroom remodeling, bathroom remodeling New York, bathroom remodeling professionals, New York contractors, home services New York" />
         <link rel="canonical" href="https://fixloapp.com/services/bathroom-remodeling/new-york" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Bathroom Remodeling - New York","description":"Professional bathroom remodeling services in New York","url":"https://fixloapp.com/services/bathroom-remodeling/new-york","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"New York","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"New York"}}}

@@ -7,6 +7,7 @@ export default function CarpentryPhoenixESPage() {
       <Helmet>
         <title>Carpintería en Phoenix — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de carpintería en Phoenix. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="carpintería, carpintería Phoenix, profesionales carpintería, contratistas Phoenix, servicios del hogar Phoenix" />
         <link rel="canonical" href="https://fixloapp.com/services/carpentry/phoenix/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

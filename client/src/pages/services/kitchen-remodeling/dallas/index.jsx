@@ -7,6 +7,7 @@ export default function KitchenRemodelingDallasPage() {
       <Helmet>
         <title>Kitchen Remodeling in Dallas — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified kitchen remodeling pros in Dallas. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="kitchen remodeling, kitchen remodeling Dallas, kitchen remodeling professionals, Dallas contractors, home services Dallas" />
         <link rel="canonical" href="https://fixloapp.com/services/kitchen-remodeling/dallas" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Kitchen Remodeling - Dallas","description":"Professional kitchen remodeling services in Dallas","url":"https://fixloapp.com/services/kitchen-remodeling/dallas","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Dallas","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Dallas"}}}
