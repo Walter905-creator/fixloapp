@@ -6,13 +6,23 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "node": "20.11.1"
+      "node": "20.11.1",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://fixloapp.onrender.com"
+      }
     },
     "preview": {
       "distribution": "internal",
       "node": "20.11.1",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://fixloapp.onrender.com"
+      },
       "ios": {
-        "simulator": true
+        "simulator": true,
+        "bundleIdentifier": "com.fixloapp.mobile"
+      },
+      "android": {
+        "package": "com.fixloapp.mobile"
       }
     },
     "production": {
@@ -27,7 +37,8 @@
       },
       "android": {
         "buildType": "app-bundle",
-        "gradleCommand": ":app:bundleRelease"
+        "gradleCommand": ":app:bundleRelease",
+        "package": "com.fixloapp.mobile"
       }
     }
   },
