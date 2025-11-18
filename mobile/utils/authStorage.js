@@ -26,7 +26,6 @@ export const saveAuthToken = async (token, expiresIn = 604800) => {
       [STORAGE_KEYS.TOKEN, token],
       [STORAGE_KEYS.TOKEN_EXPIRY, expiryTime.toString()],
     ]);
-    console.log('✅ Auth token saved with expiry:', new Date(expiryTime).toISOString());
     return true;
   } catch (error) {
     console.error('❌ Error saving auth token:', error);
@@ -56,7 +55,6 @@ export const getAuthToken = async () => {
 export const saveUserData = async (userData) => {
   try {
     await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
-    console.log('✅ User data saved');
     return true;
   } catch (error) {
     console.error('❌ Error saving user data:', error);
@@ -86,7 +84,6 @@ export const getUserData = async () => {
 export const saveUserType = async (userType) => {
   try {
     await AsyncStorage.setItem(STORAGE_KEYS.USER_TYPE, userType);
-    console.log('✅ User type saved:', userType);
     return true;
   } catch (error) {
     console.error('❌ Error saving user type:', error);
@@ -130,7 +127,6 @@ export const saveSession = async (token, userData, userType, refreshToken = null
     }
     
     await Promise.all(promises);
-    console.log('✅ Session saved successfully');
     return true;
   } catch (error) {
     console.error('❌ Error saving session:', error);
@@ -180,7 +176,6 @@ export const clearSession = async () => {
       STORAGE_KEYS.TOKEN_EXPIRY,
       STORAGE_KEYS.REFRESH_TOKEN,
     ]);
-    console.log('✅ Session cleared');
     return true;
   } catch (error) {
     console.error('❌ Error clearing session:', error);
@@ -196,7 +191,6 @@ export const clearSession = async () => {
 export const saveRefreshToken = async (refreshToken) => {
   try {
     await AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
-    console.log('✅ Refresh token saved');
     return true;
   } catch (error) {
     console.error('❌ Error saving refresh token:', error);
@@ -246,7 +240,6 @@ export const shouldRefreshToken = async (bufferMinutes = 5) => {
     const shouldRefresh = Date.now() >= (expiry - bufferTime);
     
     if (shouldRefresh) {
-      console.log('⏰ Token needs refresh (expires at:', new Date(expiry).toISOString(), ')');
     }
     
     return shouldRefresh;
@@ -270,7 +263,6 @@ export const isAuthenticated = async () => {
     const isValid = !!token && !!userType && (!expiry || Date.now() < expiry);
     
     if (!isValid && token) {
-      console.log('⚠️ Token expired or invalid');
     }
     
     return isValid;

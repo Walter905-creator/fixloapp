@@ -28,9 +28,7 @@ export default function HomeownerScreen({ navigation }) {
       }
       setError(null);
 
-      console.log('📋 Fetching job requests...');
       const apiUrl = buildApiUrl(API_ENDPOINTS.LEADS_LIST);
-      console.log('API URL:', apiUrl);
 
       const response = await axios.get(apiUrl, {
         timeout: 30000,
@@ -40,7 +38,6 @@ export default function HomeownerScreen({ navigation }) {
         }
       });
 
-      console.log('✅ Job requests fetched:', response.data);
 
       if (response.data.success && response.data.data?.leads) {
         setJobRequests(response.data.data.leads);
@@ -81,7 +78,6 @@ export default function HomeownerScreen({ navigation }) {
 
     // Subscribe to real-time job updates
     const unsubscribeUpdates = subscribeToJobUpdates((update) => {
-      console.log('📢 Job update received:', update);
       // Update the job in the list
       setJobRequests((prevJobs) =>
         prevJobs.map((job) =>
@@ -92,7 +88,6 @@ export default function HomeownerScreen({ navigation }) {
 
     // Subscribe to new jobs
     const unsubscribeNew = subscribeToNewJobs((newJob) => {
-      console.log('📢 New job received:', newJob);
       // Add new job to the list
       setJobRequests((prevJobs) => [newJob, ...prevJobs]);
     });
@@ -164,7 +159,7 @@ export default function HomeownerScreen({ navigation }) {
             onPress={async () => {
               await clearSession();
               Alert.alert('Logged Out', 'You have been logged out successfully');
-              navigation.replace('Fixlo');
+              navigation.replace('Home');
             }}
           >
             <Text style={styles.logoutButtonText}>🚪 Logout</Text>

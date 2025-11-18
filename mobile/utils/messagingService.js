@@ -21,7 +21,6 @@ class MessagingService {
   async initialize() {
     await this.loadMessagesCache();
     this.setupSocketListeners();
-    console.log('✅ Messaging service initialized');
   }
 
   /**
@@ -32,7 +31,6 @@ class MessagingService {
       const data = await AsyncStorage.getItem(MESSAGES_CACHE_KEY);
       if (data) {
         this.messagesCache = JSON.parse(data);
-        console.log('✅ Messages cache loaded');
       }
     } catch (error) {
       console.error('❌ Error loading messages cache:', error);
@@ -62,23 +60,19 @@ class MessagingService {
 
     // Listen for new messages
     socket.on('message:new', (message) => {
-      console.log('📨 New message received:', message);
       this.handleNewMessage(message);
     });
 
     // Listen for message updates
     socket.on('message:updated', (message) => {
-      console.log('📝 Message updated:', message);
       this.handleMessageUpdate(message);
     });
 
     // Listen for message read status
     socket.on('message:read', (data) => {
-      console.log('✅ Message marked as read:', data);
       this.handleMessageRead(data);
     });
 
-    console.log('✅ Socket listeners configured for messaging');
   }
 
   /**
@@ -162,7 +156,6 @@ class MessagingService {
         socket.emit('message:send', message);
       }
 
-      console.log('✅ Message sent:', message._id);
       return message;
       
     } catch (error) {
@@ -186,7 +179,6 @@ class MessagingService {
       this.messagesCache[conversationId] = messages;
       await this.saveMessagesCache();
 
-      console.log(`✅ Fetched ${messages.length} messages for conversation ${conversationId}`);
       return messages;
       
     } catch (error) {
@@ -204,7 +196,6 @@ class MessagingService {
       const response = await apiClient.get('/api/conversations');
       const conversations = response.data.conversations;
       
-      console.log(`✅ Fetched ${conversations.length} conversations`);
       return conversations;
       
     } catch (error) {
@@ -238,7 +229,6 @@ class MessagingService {
         socket.emit('message:read', { conversationId, messageId });
       }
 
-      console.log('✅ Message marked as read:', messageId);
       
     } catch (error) {
       console.error('❌ Error marking message as read:', error);
@@ -256,7 +246,6 @@ class MessagingService {
       });
 
       const conversation = response.data;
-      console.log('✅ Conversation started:', conversation._id);
       return conversation;
       
     } catch (error) {
@@ -295,7 +284,6 @@ class MessagingService {
   async clearCache() {
     this.messagesCache = {};
     await AsyncStorage.removeItem(MESSAGES_CACHE_KEY);
-    console.log('✅ Messages cache cleared');
   }
 
   /**

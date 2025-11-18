@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -8,19 +8,83 @@ import {
   ScrollView, 
   TouchableOpacity,
   ActivityIndicator,
-  Linking
+  Linking,
+  Platform
 } from 'react-native';
+import { 
+  isApplePayAvailable, 
+  createProSubscription, 
+  formatAmount 
+} from '../utils/paymentService';
 
 export default function ProSignupScreen({ navigation }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [trade, setTrade] = useState('');
+  const [smsOptIn, setSmsOptIn] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [applePayAvailable, setApplePayAvailable] = useState(false);
 
-  const handleSubscribe = async () => {
+  useEffect(() => {
+    checkApplePayAvailability();
+  }, []);
+
+  const checkApplePayAvailability = async () => {
+    const available = await isApplePayAvailable();
+    setApplePayAvailable(available);
+  };
+
+  const handleApplePaySubscribe = async () => {
     if (!name || !email || !phone || !trade) {
       Alert.alert("Missing Info", "Please fill out all fields before continuing.");
+      return;
+    }
+
+    if (!smsOptIn) {
+      Alert.alert("SMS Consent Required", "Please agree to receive SMS notifications to continue.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Create subscription intent
+      const paymentIntent = await createProSubscription({
+        name,
+        email,
+        phone,
+        trade,
+      });
+
+      Alert.alert(
+        '✅ Subscription Created!',
+        'Your Fixlo Pro subscription has been set up successfully. You will now receive job leads directly to your device.',
+        [
+          {
+            text: 'Get Started',
+            onPress: () => navigation.replace('Pro')
+          }
+        ]
+      );
+    } catch (error) {
+      Alert.alert(
+        'Payment Error',
+        error.message || 'Failed to process payment. Please try again.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleWebSubscribe = async () => {
+    if (!name || !email || !phone || !trade) {
+      Alert.alert("Missing Info", "Please fill out all fields before continuing.");
+      return;
+    }
+
+    if (!smsOptIn) {
+      Alert.alert("SMS Consent Required", "Please agree to receive SMS notifications to continue.");
       return;
     }
 
@@ -119,25 +183,60 @@ export default function ProSignupScreen({ navigation }) {
               autoCapitalize="words"
             />
           </View>
+
+          <TouchableOpacity 
+            style={styles.checkboxContainer}
+            onPress={() => setSmsOptIn(!smsOptIn)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.checkbox}>
+              {smsOptIn && <Text style={styles.checkmark}>✓</Text>}
+            </View>
+            <Text style={styles.checkboxLabel}>
+              I agree to receive SMS notifications about job leads and account updates. 
+              Message and data rates may apply. Reply STOP to opt out.
+            </Text>
+          </TouchableOpacity>
         </View>
+
+        {applePayAvailable && (
+          <TouchableOpacity
+            style={[styles.applePayButton, loading && styles.buttonDisabled]}
+            onPress={handleApplePaySubscribe}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <>
+                <Text style={styles.applePayIcon}>  </Text>
+                <Text style={styles.applePayButtonText}>
+                  Subscribe with Apple Pay
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity
           style={[styles.subscribeButton, loading && styles.buttonDisabled]}
-          onPress={handleSubscribe}
+          onPress={handleWebSubscribe}
           disabled={loading}
         >
           {loading ? (
             <ActivityIndicator color="white" />
           ) : (
             <Text style={styles.subscribeButtonText}>
-              Continue to Subscribe - $59.99/month
+              {applePayAvailable ? 'Continue Online' : 'Continue to Subscribe - $59.99/month'}
             </Text>
           )}
         </TouchableOpacity>
 
         <Text style={styles.disclaimer}>
-          You'll be directed to our website to complete your subscription setup and billing. 
-          By subscribing, you agree to our Terms of Service and Privacy Policy.
+          {applePayAvailable 
+            ? 'Subscribe securely with Apple Pay or continue online to complete your subscription setup.' 
+            : 'You\'ll be directed to our website to complete your subscription setup and billing.'
+          } By subscribing, you agree to our Terms of Service and Privacy Policy.
         </Text>
 
         <TouchableOpacity
@@ -287,5 +386,61 @@ const styles = StyleSheet.create({
     color: '#64748b',
     fontSize: 16,
     fontWeight: '600'
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 20,
+    paddingHorizontal: 5
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderWidth: 2,
+    borderColor: '#2563eb',
+    borderRadius: 4,
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    flexShrink: 0
+  },
+  checkmark: {
+    color: '#2563eb',
+    fontSize: 18,
+    fontWeight: 'bold'
+  },
+  checkboxLabel: {
+    flex: 1,
+    fontSize: 13,
+    color: '#475569',
+    lineHeight: 18
+  },
+  applePayButton: {
+    backgroundColor: '#000000',
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginBottom: 15,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  applePayIcon: {
+    fontSize: 20,
+    marginRight: 8,
+  },
+  applePayButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
   }
 });

@@ -51,7 +51,6 @@ const refreshAuthToken = async () => {
       throw new Error('No refresh token available');
     }
 
-    console.log('🔄 Refreshing authentication token...');
     
     const response = await axios.post(`${getApiUrl()}/api/auth/refresh`, {
       refreshToken,
@@ -60,7 +59,6 @@ const refreshAuthToken = async () => {
     const { token, expiresIn } = response.data;
     await saveAuthToken(token, expiresIn);
     
-    console.log('✅ Token refreshed successfully');
     return token;
   } catch (error) {
     console.error('❌ Token refresh failed:', error.message);

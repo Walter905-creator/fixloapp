@@ -15,12 +15,10 @@ let isConnected = false;
  */
 export const initializeSocket = () => {
   if (socket) {
-    console.log('⚠️ Socket already initialized');
     return socket;
   }
 
   const apiUrl = getApiUrl();
-  console.log('🔌 Initializing Socket.io connection to:', apiUrl);
 
   socket = io(apiUrl, {
     transports: ['websocket', 'polling'],
@@ -32,12 +30,10 @@ export const initializeSocket = () => {
 
   socket.on('connect', () => {
     isConnected = true;
-    console.log('✅ Socket.io connected:', socket.id);
   });
 
   socket.on('disconnect', (reason) => {
     isConnected = false;
-    console.log('❌ Socket.io disconnected:', reason);
   });
 
   socket.on('connect_error', (error) => {
@@ -46,11 +42,9 @@ export const initializeSocket = () => {
 
   socket.on('reconnect', (attemptNumber) => {
     isConnected = true;
-    console.log('🔄 Socket.io reconnected after', attemptNumber, 'attempts');
   });
 
   socket.on('reconnect_attempt', (attemptNumber) => {
-    console.log('🔄 Socket.io reconnection attempt:', attemptNumber);
   });
 
   socket.on('reconnect_error', (error) => {
@@ -88,7 +82,6 @@ export const isSocketConnected = () => {
  */
 export const disconnectSocket = () => {
   if (socket) {
-    console.log('🔌 Disconnecting socket...');
     socket.disconnect();
     socket = null;
     isConnected = false;
@@ -102,7 +95,6 @@ export const disconnectSocket = () => {
 export const joinRoom = (room) => {
   if (socket && isConnected) {
     socket.emit('join', room);
-    console.log('🚪 Joined room:', room);
   } else {
     console.warn('⚠️ Cannot join room - socket not connected');
   }
@@ -115,7 +107,6 @@ export const joinRoom = (room) => {
 export const leaveRoom = (room) => {
   if (socket && isConnected) {
     socket.emit('leave', room);
-    console.log('🚪 Left room:', room);
   }
 };
 
@@ -131,7 +122,6 @@ export const subscribeToNewJobs = (callback) => {
   }
 
   const handleNewJob = (job) => {
-    console.log('📢 New job received:', job);
     callback(job);
   };
 
@@ -157,7 +147,6 @@ export const subscribeToJobUpdates = (callback) => {
   }
 
   const handleJobUpdate = (update) => {
-    console.log('📢 Job update received:', update);
     callback(update);
   };
 
@@ -201,7 +190,6 @@ export const subscribeToJobStatus = (jobId, callback) => {
 export const emitEvent = (event, data) => {
   if (socket && isConnected) {
     socket.emit(event, data);
-    console.log(`📤 Emitted event: ${event}`, data);
   } else {
     console.warn('⚠️ Cannot emit event - socket not connected');
   }

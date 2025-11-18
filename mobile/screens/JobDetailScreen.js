@@ -34,14 +34,12 @@ export default function JobDetailScreen({ route, navigation }) {
       }
       setError(null);
 
-      console.log('📋 Fetching job details for:', jobId);
       const apiUrl = buildApiUrl(API_ENDPOINTS.LEADS_DETAIL(jobId));
       
       const response = await axios.get(apiUrl, {
         timeout: 30000,
       });
 
-      console.log('✅ Job details fetched:', response.data);
 
       if (response.data.success && response.data.data) {
         setJob(response.data.data);
@@ -78,7 +76,6 @@ export default function JobDetailScreen({ route, navigation }) {
 
     // Subscribe to real-time job status updates
     const unsubscribe = subscribeToJobStatus(jobId, (update) => {
-      console.log('📢 Real-time job update:', update);
       setJob((prevJob) => ({
         ...prevJob,
         ...update,
@@ -106,12 +103,25 @@ export default function JobDetailScreen({ route, navigation }) {
           onPress: async () => {
             setActionLoading(true);
             try {
-              // TODO: Implement accept job API call
-              await new Promise(resolve => setTimeout(resolve, 1000));
+              const apiUrl = buildApiUrl(`/api/jobs/${jobId}/accept`);
+              await axios.post(apiUrl, {}, { timeout: 30000 });
+              
               Alert.alert('Success', 'Job accepted successfully!');
-              navigation.goBack();
+              
+              // Update job status locally
+              setJob((prevJob) => ({
+                ...prevJob,
+                status: 'accepted',
+              }));
+              
+              // Optionally navigate back after a delay
+              setTimeout(() => navigation.goBack(), 1500);
             } catch (error) {
-              Alert.alert('Error', 'Failed to accept job');
+              console.error('Error accepting job:', error);
+              Alert.alert(
+                'Error', 
+                error.response?.data?.message || 'Failed to accept job. Please try again.'
+              );
             } finally {
               setActionLoading(false);
             }

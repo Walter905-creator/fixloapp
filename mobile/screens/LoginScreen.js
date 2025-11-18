@@ -93,7 +93,6 @@ export default function LoginScreen({ navigation, route }) {
       }
       
       // For non-demo accounts, try backend authentication
-      console.log('🔐 Attempting backend login for:', userType);
       
       // Only try backend for pro accounts (homeowner backend doesn't exist yet)
       if (userType === 'homeowner') {
@@ -101,7 +100,6 @@ export default function LoginScreen({ navigation, route }) {
       }
       
       const apiUrl = buildApiUrl(API_ENDPOINTS.AUTH_LOGIN);
-      console.log('API URL:', apiUrl);
       
       const response = await axios.post(apiUrl, {
         email: normalizedEmail,
@@ -113,7 +111,6 @@ export default function LoginScreen({ navigation, route }) {
         }
       });
 
-      console.log('✅ Login successful:', response.data);
 
       if (response.data.token) {
         // Save session data

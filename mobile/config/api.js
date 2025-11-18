@@ -56,12 +56,6 @@ export const API_CONFIG = {
   },
 };
 
-// Log the API configuration on module load (helpful for debugging)
-console.log('📡 API Configuration:', {
-  baseUrl: API_BASE_URL,
-  source: process.env.EXPO_PUBLIC_API_URL ? 'environment variable' : 'fallback (production)',
-});
-
 export default {
   getApiUrl,
   buildApiUrl,

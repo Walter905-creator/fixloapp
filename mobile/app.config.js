@@ -28,6 +28,9 @@ export default {
         NSCameraUsageDescription: "Allow Fixlo to access your camera for profile photos.",
         NSPhotoLibraryUsageDescription: "Allow Fixlo to access your photo library for uploads.",
         NSLocationWhenInUseUsageDescription: "Allow Fixlo to use your location to show nearby services."
+      },
+      entitlements: {
+        "com.apple.developer.in-app-payments": ["merchant.com.fixloapp.mobile"]
       }
     },
 

@@ -47,7 +47,6 @@ export default function SignupScreen({ navigation, route }) {
       // For homeowners, use a simplified registration (demo mode for App Review)
       // This allows the app to work even if the backend is temporarily unavailable
       if (userType === 'homeowner') {
-        console.log('📝 Creating homeowner account (demo mode)');
         
         // Simulate registration delay to mimic network request
         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -68,9 +67,7 @@ export default function SignupScreen({ navigation, route }) {
       }
       
       // For pros, register with backend API
-      console.log('📝 Attempting pro registration via API');
       const apiUrl = buildApiUrl(API_ENDPOINTS.AUTH_REGISTER);
-      console.log('API URL:', apiUrl);
       
       const requestData = {
         name: name.trim(),
@@ -89,7 +86,6 @@ export default function SignupScreen({ navigation, route }) {
         }
       });
 
-      console.log('✅ Registration successful:', response.data);
 
       if (response.data.token || response.data.success) {
         Alert.alert(

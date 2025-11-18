@@ -44,7 +44,6 @@ export async function getCurrentLocation() {
     const { status } = await Location.requestForegroundPermissionsAsync();
     
     if (status !== 'granted') {
-      console.log('⚠️ Location permission not granted');
       return null;
     }
     
@@ -155,7 +154,6 @@ export function filterJobs(jobs, filters) {
 export async function saveFilterPreferences(preferences) {
   try {
     await AsyncStorage.setItem(FILTER_PREFERENCES_KEY, JSON.stringify(preferences));
-    console.log('✅ Filter preferences saved');
     return true;
   } catch (error) {
     console.error('❌ Error saving filter preferences:', error);
@@ -171,7 +169,6 @@ export async function loadFilterPreferences() {
     const data = await AsyncStorage.getItem(FILTER_PREFERENCES_KEY);
     if (data) {
       const preferences = JSON.parse(data);
-      console.log('✅ Filter preferences loaded');
       return preferences;
     }
     return null;
@@ -187,7 +184,6 @@ export async function loadFilterPreferences() {
 export async function clearFilterPreferences() {
   try {
     await AsyncStorage.removeItem(FILTER_PREFERENCES_KEY);
-    console.log('✅ Filter preferences cleared');
     return true;
   } catch (error) {
     console.error('❌ Error clearing filter preferences:', error);

@@ -18,14 +18,12 @@ const FETCH_INTERVAL = 15 * 60; // 15 minutes (minimum allowed by iOS)
  */
 TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
   try {
-    console.log('🔄 Background fetch running...');
     
     // Check if user is authenticated
     const token = await getAuthToken();
     const userType = await getUserType();
     
     if (!token || userType !== 'pro') {
-      console.log('⚠️ Not authenticated or not a pro user, skipping fetch');
       return BackgroundFetch.BackgroundFetchResult.NoData;
     }
     
@@ -42,7 +40,6 @@ TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
     const newJobs = response.data.jobs || [];
     
     if (newJobs.length > 0) {
-      console.log(`✅ Found ${newJobs.length} new job(s) in background`);
       
       // Send local notification for new jobs
       for (const job of newJobs.slice(0, 3)) { // Limit to 3 notifications
@@ -73,7 +70,6 @@ TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
       return BackgroundFetch.BackgroundFetchResult.NewData;
     }
     
-    console.log('ℹ️ No new jobs found in background fetch');
     return BackgroundFetch.BackgroundFetchResult.NoData;
     
   } catch (error) {
@@ -91,7 +87,6 @@ export async function registerBackgroundFetch() {
     const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_FETCH_TASK);
     
     if (isRegistered) {
-      console.log('✅ Background fetch already registered');
       return true;
     }
     
@@ -102,7 +97,6 @@ export async function registerBackgroundFetch() {
       startOnBoot: true, // Start on device boot
     });
     
-    console.log('✅ Background fetch registered successfully');
     return true;
     
   } catch (error) {
@@ -117,7 +111,6 @@ export async function registerBackgroundFetch() {
 export async function unregisterBackgroundFetch() {
   try {
     await BackgroundFetch.unregisterTaskAsync(BACKGROUND_FETCH_TASK);
-    console.log('✅ Background fetch unregistered');
     return true;
   } catch (error) {
     console.error('❌ Failed to unregister background fetch:', error);
