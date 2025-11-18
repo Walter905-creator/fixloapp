@@ -70,7 +70,9 @@ export default function ChatScreen({ route, navigation }) {
       }
       
     } catch (error) {
+      if (__DEV__) {
       console.error('Error loading messages:', error);
+      }
     } finally {
       setLoading(false);
     }
@@ -95,7 +97,9 @@ export default function ChatScreen({ route, navigation }) {
       await messagingService.sendMessage(conversationId, recipientId, messageText);
       scrollToBottom();
     } catch (error) {
+      if (__DEV__) {
       console.error('Error sending message:', error);
+      }
       // Restore input on error
       setInputText(messageText);
     } finally {

@@ -3,14 +3,40 @@
     "version": ">= 3.13.0"
   },
   "build": {
-    "production": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "node": "20.11.1"
+    },
+    "preview": {
+      "distribution": "internal",
       "node": "20.11.1",
       "ios": {
+        "simulator": true
+      }
+    },
+    "production": {
+      "node": "20.11.1",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://fixloapp.onrender.com"
+      },
+      "ios": {
         "image": "latest",
-        "resourceClass": "m-medium"
+        "resourceClass": "m-medium",
+        "bundleIdentifier": "com.fixloapp.mobile"
       },
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "app-bundle",
+        "gradleCommand": ":app:bundleRelease"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "walter@fixloapp.com",
+        "ascAppId": "placeholder",
+        "appleTeamId": "placeholder"
       }
     }
   }

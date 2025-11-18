@@ -57,7 +57,7 @@ export default function JobFilterModal({ visible, onClose, onApplyFilters }) {
     const location = await getCurrentLocation();
     if (location) {
       setUserLocation(location);
-      console.log('✅ Got user location:', location);
+
     } else {
       setUseLocation(false);
     }

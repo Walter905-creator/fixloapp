@@ -30,20 +30,17 @@ class OfflineQueueManager {
     this.unsubscribeNetInfo = NetInfo.addEventListener(state => {
       const wasOffline = !this.isOnline;
       this.isOnline = state.isConnected;
-      
-      console.log('📶 Network state changed:', this.isOnline ? 'Online' : 'Offline');
-      
+
       // Process queue when coming back online
       if (wasOffline && this.isOnline) {
-        console.log('🔄 Back online, processing queued actions...');
+
         this.processQueue();
       }
       
       // Notify listeners
       this.notifyListeners();
     });
-    
-    console.log('✅ Offline queue manager initialized');
+
   }
 
   /**
@@ -76,10 +73,12 @@ class OfflineQueueManager {
       const queueData = await AsyncStorage.getItem(QUEUE_KEY);
       if (queueData) {
         this.queue = JSON.parse(queueData);
-        console.log(`📥 Loaded ${this.queue.length} queued actions from storage`);
+
       }
     } catch (error) {
+      if (__DEV__) {
       console.error('❌ Error loading queue:', error);
+      }
       this.queue = [];
     }
   }
@@ -90,9 +89,11 @@ class OfflineQueueManager {
   async saveQueue() {
     try {
       await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(this.queue));
-      console.log(`💾 Saved ${this.queue.length} actions to queue`);
+
     } catch (error) {
+      if (__DEV__) {
       console.error('❌ Error saving queue:', error);
+      }
     }
   }
 
@@ -108,11 +109,11 @@ class OfflineQueueManager {
   async addToQueue(action) {
     // Don't queue if online and queue is empty (execute immediately)
     if (this.isOnline && this.queue.length === 0) {
-      console.log('📡 Online - executing action immediately');
+
       try {
         return await this.executeAction(action);
       } catch (error) {
-        console.log('⚠️ Failed to execute, adding to queue');
+
         // If fails, add to queue for retry
       }
     }
@@ -130,7 +131,7 @@ class OfflineQueueManager {
     // Limit queue size
     if (this.queue.length > MAX_QUEUE_SIZE) {
       this.queue.shift(); // Remove oldest
-      console.log('⚠️ Queue size limit reached, removed oldest action');
+
     }
     
     await this.saveQueue();
@@ -146,9 +147,7 @@ class OfflineQueueManager {
    */
   async executeAction(action) {
     const { endpoint, method = 'POST', data } = action;
-    
-    console.log(`🚀 Executing: ${action.type} - ${method} ${endpoint}`);
-    
+
     const response = await apiClient({
       url: endpoint,
       method,
@@ -168,9 +167,7 @@ class OfflineQueueManager {
 
     this.isProcessing = true;
     this.notifyListeners();
-    
-    console.log(`🔄 Processing ${this.queue.length} queued actions...`);
-    
+
     const failedActions = [];
     
     while (this.queue.length > 0) {
@@ -178,15 +175,17 @@ class OfflineQueueManager {
       
       try {
         await this.executeAction(action);
-        console.log(`✅ Action executed: ${action.type}`);
+
         this.queue.shift(); // Remove from queue
       } catch (error) {
+        if (__DEV__) {
         console.error(`❌ Action failed: ${action.type}`, error.message);
+        }
         
         action.retryCount++;
         
         if (action.retryCount >= MAX_RETRY_ATTEMPTS) {
-          console.log(`⚠️ Max retries reached for ${action.type}, removing from queue`);
+
           this.queue.shift();
           failedActions.push(action);
         } else {
@@ -202,8 +201,7 @@ class OfflineQueueManager {
     await this.saveQueue();
     this.isProcessing = false;
     this.notifyListeners();
-    
-    console.log(`✅ Queue processing complete. ${this.queue.length} remaining, ${failedActions.length} failed permanently`);
+
   }
 
   /**
@@ -213,7 +211,7 @@ class OfflineQueueManager {
     this.queue = [];
     await this.saveQueue();
     this.notifyListeners();
-    console.log('🗑️ Queue cleared');
+
   }
 
   /**

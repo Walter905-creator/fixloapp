@@ -18,14 +18,13 @@ const FETCH_INTERVAL = 15 * 60; // 15 minutes (minimum allowed by iOS)
  */
 TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
   try {
-    console.log('🔄 Background fetch running...');
-    
+
     // Check if user is authenticated
     const token = await getAuthToken();
     const userType = await getUserType();
     
     if (!token || userType !== 'pro') {
-      console.log('⚠️ Not authenticated or not a pro user, skipping fetch');
+
       return BackgroundFetch.BackgroundFetchResult.NoData;
     }
     
@@ -72,12 +71,13 @@ TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
       
       return BackgroundFetch.BackgroundFetchResult.NewData;
     }
-    
-    console.log('ℹ️ No new jobs found in background fetch');
+
     return BackgroundFetch.BackgroundFetchResult.NoData;
     
   } catch (error) {
+    if (__DEV__) {
     console.error('❌ Background fetch error:', error);
+    }
     return BackgroundFetch.BackgroundFetchResult.Failed;
   }
 });
@@ -91,7 +91,7 @@ export async function registerBackgroundFetch() {
     const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_FETCH_TASK);
     
     if (isRegistered) {
-      console.log('✅ Background fetch already registered');
+
       return true;
     }
     
@@ -101,12 +101,13 @@ export async function registerBackgroundFetch() {
       stopOnTerminate: false, // Continue after app is closed
       startOnBoot: true, // Start on device boot
     });
-    
-    console.log('✅ Background fetch registered successfully');
+
     return true;
     
   } catch (error) {
+    if (__DEV__) {
     console.error('❌ Failed to register background fetch:', error);
+    }
     return false;
   }
 }
@@ -117,10 +118,12 @@ export async function registerBackgroundFetch() {
 export async function unregisterBackgroundFetch() {
   try {
     await BackgroundFetch.unregisterTaskAsync(BACKGROUND_FETCH_TASK);
-    console.log('✅ Background fetch unregistered');
+
     return true;
   } catch (error) {
+    if (__DEV__) {
     console.error('❌ Failed to unregister background fetch:', error);
+    }
     return false;
   }
 }
@@ -145,7 +148,9 @@ export async function getBackgroundFetchStatus() {
       canFetch: status === BackgroundFetch.BackgroundFetchStatus.Available,
     };
   } catch (error) {
+    if (__DEV__) {
     console.error('❌ Error getting background fetch status:', error);
+    }
     return null;
   }
 }

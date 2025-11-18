@@ -35,9 +35,11 @@ export default function ProScreen({ navigation }) {
             name: 'Test Pro', // Placeholder name
             trade: 'General Contractor' // Placeholder trade
           });
-          console.log('✅ Push token registered with backend');
+
         } catch (error) {
+          if (__DEV__) {
           console.error('❌ Error registering token with backend:', error);
+          }
         }
       }
 
@@ -46,7 +48,7 @@ export default function ProScreen({ navigation }) {
       
       // Subscribe to real-time new jobs
       const unsubscribeJobs = subscribeToNewJobs((job) => {
-        console.log('📢 New job notification:', job);
+
         setNewJobCount((prev) => prev + 1);
         setJobs((prev) => [job, ...prev]);
         Alert.alert(
@@ -91,12 +93,12 @@ export default function ProScreen({ navigation }) {
 
   const handleApplyFilters = (filters) => {
     setActiveFilters(filters);
-    console.log('✅ Filters applied:', filters);
+
   };
 
   const handleClearFilters = () => {
     setActiveFilters(null);
-    console.log('🗑️ Filters cleared');
+
   };
   const testNotification = async () => {
     if (pushToken) {
@@ -108,7 +110,9 @@ export default function ProScreen({ navigation }) {
         Alert.alert('Test Sent!', 'Check for notification on your device');
       } catch (error) {
         Alert.alert('Error', 'Failed to send test notification');
+        if (__DEV__) {
         console.error('❌ Test notification error:', error);
+        }
       }
     } else {
       Alert.alert('No Token', 'Push token not available');

@@ -33,7 +33,10 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('🚨 App Error Caught:', error, errorInfo);
+    // Error logging for crash reporting services
+    if (__DEV__) {
+      console.error('🚨 App Error Caught:', error, errorInfo);
+    }
   }
 
   render() {
@@ -92,10 +95,11 @@ export default function App() {
       const session = await getSession();
       if (session.userType === 'pro') {
         await registerBackgroundFetch();
-        console.log('✅ Background fetch registered for pro user');
       }
     } catch (error) {
-      console.error('❌ Error initializing services:', error);
+      if (__DEV__) {
+        console.error('❌ Error initializing services:', error);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -104,7 +108,6 @@ export default function App() {
   const checkSession = async () => {
     try {
       const session = await getSession();
-      console.log('📱 Session check:', session);
 
       if (session.isAuthenticated) {
         // Auto-login based on user type
@@ -113,12 +116,11 @@ export default function App() {
         } else if (session.userType === 'pro') {
           setInitialRoute('Pro');
         }
-        console.log('✅ Auto-login successful:', session.userType);
-      } else {
-        console.log('ℹ️ No saved session found');
       }
     } catch (error) {
-      console.error('❌ Error checking session:', error);
+      if (__DEV__) {
+        console.error('❌ Error checking session:', error);
+      }
     }
   };
 
