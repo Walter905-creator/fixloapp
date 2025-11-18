@@ -1,8 +1,10 @@
-// This file mirrors `app.config.ts` to avoid Expo config conflicts.
+// Consolidated Expo configuration - single source of truth
 export default {
   expo: {
     name: "Fixlo",
     slug: "fixloapp",
+    scheme: "fixloapp",
+    owner: "fixloapp",
     version: "1.0.2",
     orientation: "portrait",
     icon: "./assets/icon.png",
@@ -19,7 +21,8 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.fixloapp.mobile",
-      buildNumber: "21",
+      buildNumber: "22",
+      icon: "./assets/icon.png",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         NSCameraUsageDescription: "Allow Fixlo to access your camera for profile photos.",
@@ -30,11 +33,15 @@ export default {
 
     android: {
       package: "com.fixloapp.mobile",
-      versionCode: 21,
+      versionCode: 22,
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#ffffff"
       }
+    },
+
+    web: {
+      favicon: "./assets/icon.png"
     },
 
     plugins: ["expo-notifications"],
