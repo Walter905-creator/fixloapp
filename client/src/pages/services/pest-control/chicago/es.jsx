@@ -7,6 +7,7 @@ export default function PestControlChicagoESPage() {
       <Helmet>
         <title>Control de Plagas en Chicago — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de control de plagas en Chicago. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="control de plagas, control de plagas Chicago, profesionales control de plagas, contratistas Chicago, servicios del hogar Chicago" />
         <link rel="canonical" href="https://fixloapp.com/services/pest-control/chicago/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

@@ -7,6 +7,7 @@ export default function PlumbingPhiladelphiaESPage() {
       <Helmet>
         <title>Plomería en Philadelphia — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de plomería en Philadelphia. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="plomería, plomería Philadelphia, profesionales plomería, contratistas Philadelphia, servicios del hogar Philadelphia" />
         <link rel="canonical" href="https://fixloapp.com/services/plumbing/philadelphia/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

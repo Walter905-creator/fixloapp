@@ -7,6 +7,7 @@ export default function ApplianceRepairPhiladelphiaPage() {
       <Helmet>
         <title>Appliance Repair in Philadelphia — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified appliance repair pros in Philadelphia. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="appliance repair, appliance repair Philadelphia, appliance repair professionals, Philadelphia contractors, home services Philadelphia" />
         <link rel="canonical" href="https://fixloapp.com/services/appliance-repair/philadelphia" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Appliance Repair - Philadelphia","description":"Professional appliance repair services in Philadelphia","url":"https://fixloapp.com/services/appliance-repair/philadelphia","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Philadelphia","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Philadelphia"}}}

@@ -7,6 +7,7 @@ export default function HouseCleaningSanDiegoESPage() {
       <Helmet>
         <title>Limpieza del Hogar en San Diego — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de limpieza del hogar en San Diego. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="limpieza del hogar, limpieza del hogar San Diego, profesionales limpieza del hogar, contratistas San Diego, servicios del hogar San Diego" />
         <link rel="canonical" href="https://fixloapp.com/services/house-cleaning/san-diego/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

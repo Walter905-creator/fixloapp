@@ -7,6 +7,7 @@ export default function HomeTheaterInstallationNewYorkESPage() {
       <Helmet>
         <title>Instalación de Cine en Casa en New York — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de cine en casa en New York. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de cine en casa, instalación de cine en casa New York, profesionales instalación de cine en casa, contratistas New York, servicios del hogar New York" />
         <link rel="canonical" href="https://fixloapp.com/services/home-theater-installation/new-york/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

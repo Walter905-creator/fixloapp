@@ -7,6 +7,7 @@ export default function WindowInstallationPhiladelphiaPage() {
       <Helmet>
         <title>Window Installation in Philadelphia — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified window installation pros in Philadelphia. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="window installation, window installation Philadelphia, window installation professionals, Philadelphia contractors, home services Philadelphia" />
         <link rel="canonical" href="https://fixloapp.com/services/window-installation/philadelphia" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Window Installation - Philadelphia","description":"Professional window installation services in Philadelphia","url":"https://fixloapp.com/services/window-installation/philadelphia","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Philadelphia","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Philadelphia"}}}

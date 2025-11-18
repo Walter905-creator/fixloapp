@@ -7,6 +7,7 @@ export default function LawnCareSanJoseESPage() {
       <Helmet>
         <title>Cuidado del Césped en San Jose — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de cuidado del césped en San Jose. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="cuidado del césped, cuidado del césped San Jose, profesionales cuidado del césped, contratistas San Jose, servicios del hogar San Jose" />
         <link rel="canonical" href="https://fixloapp.com/services/lawn-care/san-jose/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

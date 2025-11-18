@@ -7,6 +7,7 @@ export default function PoolInstallationHoustonPage() {
       <Helmet>
         <title>Pool Installation in Houston — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified pool installation pros in Houston. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="pool installation, pool installation Houston, pool installation professionals, Houston contractors, home services Houston" />
         <link rel="canonical" href="https://fixloapp.com/services/pool-installation/houston" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Pool Installation - Houston","description":"Professional pool installation services in Houston","url":"https://fixloapp.com/services/pool-installation/houston","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Houston","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Houston"}}}

@@ -7,6 +7,7 @@ export default function GutterCleaningHoustonESPage() {
       <Helmet>
         <title>Limpieza de Canalones en Houston — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de limpieza de canalones en Houston. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="limpieza de canalones, limpieza de canalones Houston, profesionales limpieza de canalones, contratistas Houston, servicios del hogar Houston" />
         <link rel="canonical" href="https://fixloapp.com/services/gutter-cleaning/houston/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

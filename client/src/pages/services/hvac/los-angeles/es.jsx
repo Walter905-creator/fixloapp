@@ -7,6 +7,7 @@ export default function HvacLosAngelesESPage() {
       <Helmet>
         <title>Hvac en Los Angeles — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de hvac en Los Angeles. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="hvac, hvac Los Angeles, profesionales hvac, contratistas Los Angeles, servicios del hogar Los Angeles" />
         <link rel="canonical" href="https://fixloapp.com/services/hvac/los-angeles/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

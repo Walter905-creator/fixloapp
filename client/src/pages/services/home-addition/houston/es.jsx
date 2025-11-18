@@ -7,6 +7,7 @@ export default function HomeAdditionHoustonESPage() {
       <Helmet>
         <title>Adición de Hogar en Houston — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de adición de hogar en Houston. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="adición de hogar, adición de hogar Houston, profesionales adición de hogar, contratistas Houston, servicios del hogar Houston" />
         <link rel="canonical" href="https://fixloapp.com/services/home-addition/houston/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

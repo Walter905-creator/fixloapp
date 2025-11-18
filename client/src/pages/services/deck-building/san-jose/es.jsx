@@ -7,6 +7,7 @@ export default function DeckBuildingSanJoseESPage() {
       <Helmet>
         <title>Construcción de Terrazas en San Jose — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de construcción de terrazas en San Jose. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="construcción de terrazas, construcción de terrazas San Jose, profesionales construcción de terrazas, contratistas San Jose, servicios del hogar San Jose" />
         <link rel="canonical" href="https://fixloapp.com/services/deck-building/san-jose/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

@@ -7,6 +7,7 @@ export default function HandymanSanJosePage() {
       <Helmet>
         <title>Handyman in San Jose — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified handyman pros in San Jose. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="handyman, handyman San Jose, handyman professionals, San Jose contractors, home services San Jose" />
         <link rel="canonical" href="https://fixloapp.com/services/handyman/san-jose" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Handyman - San Jose","description":"Professional handyman services in San Jose","url":"https://fixloapp.com/services/handyman/san-jose","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"San Jose","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"San Jose"}}}

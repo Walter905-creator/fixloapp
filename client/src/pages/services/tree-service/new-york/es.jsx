@@ -7,6 +7,7 @@ export default function TreeServiceNewYorkESPage() {
       <Helmet>
         <title>Servicio de Árboles en New York — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de servicio de árboles en New York. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="servicio de árboles, servicio de árboles New York, profesionales servicio de árboles, contratistas New York, servicios del hogar New York" />
         <link rel="canonical" href="https://fixloapp.com/services/tree-service/new-york/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

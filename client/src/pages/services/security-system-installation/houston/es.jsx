@@ -7,6 +7,7 @@ export default function SecuritySystemInstallationHoustonESPage() {
       <Helmet>
         <title>Instalación de Sistemas de Seguridad en Houston — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de sistemas de seguridad en Houston. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de sistemas de seguridad, instalación de sistemas de seguridad Houston, profesionales instalación de sistemas de seguridad, contratistas Houston, servicios del hogar Houston" />
         <link rel="canonical" href="https://fixloapp.com/services/security-system-installation/houston/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

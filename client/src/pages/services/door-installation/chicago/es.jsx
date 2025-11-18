@@ -7,6 +7,7 @@ export default function DoorInstallationChicagoESPage() {
       <Helmet>
         <title>Instalación de Puertas en Chicago — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de puertas en Chicago. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de puertas, instalación de puertas Chicago, profesionales instalación de puertas, contratistas Chicago, servicios del hogar Chicago" />
         <link rel="canonical" href="https://fixloapp.com/services/door-installation/chicago/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

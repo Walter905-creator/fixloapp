@@ -7,6 +7,7 @@ export default function AtticConversionSanJoseESPage() {
       <Helmet>
         <title>Conversión de Áticos en San Jose — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de conversión de áticos en San Jose. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="conversión de áticos, conversión de áticos San Jose, profesionales conversión de áticos, contratistas San Jose, servicios del hogar San Jose" />
         <link rel="canonical" href="https://fixloapp.com/services/attic-conversion/san-jose/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

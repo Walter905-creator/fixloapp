@@ -7,6 +7,7 @@ export default function ChimneyRepairDallasPage() {
       <Helmet>
         <title>Chimney Repair in Dallas — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified chimney repair pros in Dallas. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="chimney repair, chimney repair Dallas, chimney repair professionals, Dallas contractors, home services Dallas" />
         <link rel="canonical" href="https://fixloapp.com/services/chimney-repair/dallas" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Chimney Repair - Dallas","description":"Professional chimney repair services in Dallas","url":"https://fixloapp.com/services/chimney-repair/dallas","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Dallas","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Dallas"}}}

@@ -7,6 +7,7 @@ export default function WaterHeaterRepairDallasESPage() {
       <Helmet>
         <title>Reparación de Calentadores de Agua en Dallas — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de reparación de calentadores de agua en Dallas. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="reparación de calentadores de agua, reparación de calentadores de agua Dallas, profesionales reparación de calentadores de agua, contratistas Dallas, servicios del hogar Dallas" />
         <link rel="canonical" href="https://fixloapp.com/services/water-heater-repair/dallas/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

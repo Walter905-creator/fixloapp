@@ -7,6 +7,7 @@ export default function HouseCleaningLosAngelesESPage() {
       <Helmet>
         <title>Limpieza del Hogar en Los Angeles — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de limpieza del hogar en Los Angeles. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="limpieza del hogar, limpieza del hogar Los Angeles, profesionales limpieza del hogar, contratistas Los Angeles, servicios del hogar Los Angeles" />
         <link rel="canonical" href="https://fixloapp.com/services/house-cleaning/los-angeles/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

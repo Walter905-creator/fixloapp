@@ -7,6 +7,7 @@ export default function FlooringLosAngelesESPage() {
       <Helmet>
         <title>Pisos en Los Angeles — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de pisos en Los Angeles. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="pisos, pisos Los Angeles, profesionales pisos, contratistas Los Angeles, servicios del hogar Los Angeles" />
         <link rel="canonical" href="https://fixloapp.com/services/flooring/los-angeles/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

@@ -7,6 +7,7 @@ export default function FlooringSanJoseESPage() {
       <Helmet>
         <title>Pisos en San Jose — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de pisos en San Jose. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="pisos, pisos San Jose, profesionales pisos, contratistas San Jose, servicios del hogar San Jose" />
         <link rel="canonical" href="https://fixloapp.com/services/flooring/san-jose/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

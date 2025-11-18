@@ -7,6 +7,7 @@ export default function FenceInstallationPhiladelphiaESPage() {
       <Helmet>
         <title>Instalación de Cercas en Philadelphia — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de cercas en Philadelphia. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de cercas, instalación de cercas Philadelphia, profesionales instalación de cercas, contratistas Philadelphia, servicios del hogar Philadelphia" />
         <link rel="canonical" href="https://fixloapp.com/services/fence-installation/philadelphia/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

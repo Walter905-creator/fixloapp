@@ -7,6 +7,7 @@ export default function AcRepairHoustonPage() {
       <Helmet>
         <title>Ac Repair in Houston — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified ac repair pros in Houston. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="ac repair, ac repair Houston, ac repair professionals, Houston contractors, home services Houston" />
         <link rel="canonical" href="https://fixloapp.com/services/ac-repair/houston" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Ac Repair - Houston","description":"Professional ac repair services in Houston","url":"https://fixloapp.com/services/ac-repair/houston","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Houston","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Houston"}}}

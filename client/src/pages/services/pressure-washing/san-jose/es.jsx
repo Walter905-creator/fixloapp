@@ -7,6 +7,7 @@ export default function PressureWashingSanJoseESPage() {
       <Helmet>
         <title>Lavado a Presión en San Jose — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de lavado a presión en San Jose. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="lavado a presión, lavado a presión San Jose, profesionales lavado a presión, contratistas San Jose, servicios del hogar San Jose" />
         <link rel="canonical" href="https://fixloapp.com/services/pressure-washing/san-jose/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

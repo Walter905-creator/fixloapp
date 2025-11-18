@@ -7,6 +7,7 @@ export default function KitchenRemodelingSanAntonioPage() {
       <Helmet>
         <title>Kitchen Remodeling in San Antonio — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified kitchen remodeling pros in San Antonio. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="kitchen remodeling, kitchen remodeling San Antonio, kitchen remodeling professionals, San Antonio contractors, home services San Antonio" />
         <link rel="canonical" href="https://fixloapp.com/services/kitchen-remodeling/san-antonio" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Kitchen Remodeling - San Antonio","description":"Professional kitchen remodeling services in San Antonio","url":"https://fixloapp.com/services/kitchen-remodeling/san-antonio","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"San Antonio","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"San Antonio"}}}

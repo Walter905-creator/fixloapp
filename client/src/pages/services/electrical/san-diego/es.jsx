@@ -7,6 +7,7 @@ export default function ElectricalSanDiegoESPage() {
       <Helmet>
         <title>Electricidad en San Diego — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de electricidad en San Diego. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="electricidad, electricidad San Diego, profesionales electricidad, contratistas San Diego, servicios del hogar San Diego" />
         <link rel="canonical" href="https://fixloapp.com/services/electrical/san-diego/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

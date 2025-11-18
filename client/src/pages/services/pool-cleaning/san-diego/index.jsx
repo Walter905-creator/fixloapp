@@ -7,6 +7,7 @@ export default function PoolCleaningSanDiegoPage() {
       <Helmet>
         <title>Pool Cleaning in San Diego — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified pool cleaning pros in San Diego. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="pool cleaning, pool cleaning San Diego, pool cleaning professionals, San Diego contractors, home services San Diego" />
         <link rel="canonical" href="https://fixloapp.com/services/pool-cleaning/san-diego" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Pool Cleaning - San Diego","description":"Professional pool cleaning services in San Diego","url":"https://fixloapp.com/services/pool-cleaning/san-diego","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"San Diego","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"San Diego"}}}

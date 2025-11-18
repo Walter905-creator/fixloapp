@@ -7,6 +7,7 @@ export default function WaterHeaterRepairPhoenixPage() {
       <Helmet>
         <title>Water Heater Repair in Phoenix — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified water heater repair pros in Phoenix. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="water heater repair, water heater repair Phoenix, water heater repair professionals, Phoenix contractors, home services Phoenix" />
         <link rel="canonical" href="https://fixloapp.com/services/water-heater-repair/phoenix" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Water Heater Repair - Phoenix","description":"Professional water heater repair services in Phoenix","url":"https://fixloapp.com/services/water-heater-repair/phoenix","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Phoenix","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Phoenix"}}}

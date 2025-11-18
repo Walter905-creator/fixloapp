@@ -7,6 +7,7 @@ export default function SecuritySystemInstallationSanJoseESPage() {
       <Helmet>
         <title>Instalación de Sistemas de Seguridad en San Jose — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de sistemas de seguridad en San Jose. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de sistemas de seguridad, instalación de sistemas de seguridad San Jose, profesionales instalación de sistemas de seguridad, contratistas San Jose, servicios del hogar San Jose" />
         <link rel="canonical" href="https://fixloapp.com/services/security-system-installation/san-jose/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

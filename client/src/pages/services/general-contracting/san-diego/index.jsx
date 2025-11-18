@@ -7,6 +7,7 @@ export default function GeneralContractingSanDiegoPage() {
       <Helmet>
         <title>General Contracting in San Diego — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified general contracting pros in San Diego. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="general contracting, general contracting San Diego, general contracting professionals, San Diego contractors, home services San Diego" />
         <link rel="canonical" href="https://fixloapp.com/services/general-contracting/san-diego" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo General Contracting - San Diego","description":"Professional general contracting services in San Diego","url":"https://fixloapp.com/services/general-contracting/san-diego","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"San Diego","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"San Diego"}}}

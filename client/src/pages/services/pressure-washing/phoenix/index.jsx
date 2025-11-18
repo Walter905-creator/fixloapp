@@ -7,6 +7,7 @@ export default function PressureWashingPhoenixPage() {
       <Helmet>
         <title>Pressure Washing in Phoenix — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified pressure washing pros in Phoenix. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="pressure washing, pressure washing Phoenix, pressure washing professionals, Phoenix contractors, home services Phoenix" />
         <link rel="canonical" href="https://fixloapp.com/services/pressure-washing/phoenix" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Pressure Washing - Phoenix","description":"Professional pressure washing services in Phoenix","url":"https://fixloapp.com/services/pressure-washing/phoenix","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Phoenix","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Phoenix"}}}

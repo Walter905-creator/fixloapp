@@ -11,53 +11,78 @@ try {
   console.warn('⚠️ Database models not available for sitemap generation:', error.message);
 }
 
-// Define services available in the app
-const services = [
-  'plumbing',
-  'electrical', 
-  'hvac',
-  'carpentry',
-  'painting',
-  'roofing',
-  'house-cleaning',
-  'junk-removal',
-  'landscaping'
-];
+// Load services from SEO generator to ensure consistency
+let servicesData = [];
+try {
+  servicesData = require('./seo/services.json');
+} catch (error) {
+  console.warn('⚠️ Could not load services from seo/services.json:', error.message);
+}
 
-// Major cities to include in sitemap (limit to avoid too many URLs)
-const majorCities = [
-  'miami',
-  'new-york',
-  'los-angeles', 
-  'chicago',
-  'houston',
-  'phoenix',
-  'philadelphia',
-  'san-antonio',
-  'san-diego',
-  'dallas',
-  'san-jose',
-  'austin',
-  'jacksonville',
-  'fort-worth',
-  'columbus',
-  'charlotte',
-  'san-francisco',
-  'indianapolis',
-  'seattle',
-  'denver',
-  'washington',
-  'boston',
-  'el-paso',
-  'nashville',
-  'detroit',
-  'oklahoma-city',
-  'portland',
-  'las-vegas',
-  'memphis',
-  'louisville',
-  'baltimore'
-];
+// Convert service names to URL slugs
+function formatSlug(text) {
+  return text.toLowerCase().replace(/\s+/g, '-');
+}
+
+// Define services available in the app - use SEO services if available
+const services = servicesData.length > 0 
+  ? servicesData.map(formatSlug)
+  : [
+      'plumbing',
+      'electrical', 
+      'hvac',
+      'carpentry',
+      'painting',
+      'roofing',
+      'house-cleaning',
+      'junk-removal',
+      'landscaping'
+    ];
+
+// Load cities from SEO generator to ensure consistency
+let citiesData = [];
+try {
+  citiesData = require('./seo/cities.json');
+} catch (error) {
+  console.warn('⚠️ Could not load cities from seo/cities.json:', error.message);
+}
+
+// Major cities to include in sitemap - use SEO cities if available
+const majorCities = citiesData.length > 0
+  ? citiesData.map(c => formatSlug(c.city))
+  : [
+      'miami',
+      'new-york',
+      'los-angeles', 
+      'chicago',
+      'houston',
+      'phoenix',
+      'philadelphia',
+      'san-antonio',
+      'san-diego',
+      'dallas',
+      'san-jose',
+      'austin',
+      'jacksonville',
+      'fort-worth',
+      'columbus',
+      'charlotte',
+      'san-francisco',
+      'indianapolis',
+      'seattle',
+      'denver',
+      'washington',
+      'boston',
+      'el-paso',
+      'nashville',
+      'detroit',
+      'oklahoma-city',
+      'portland',
+      'las-vegas',
+      'memphis',
+      'louisville',
+      'baltimore'
+    ];
 
 function generateSitemap() {
   const currentDate = new Date().toISOString().split('T')[0];
@@ -140,8 +165,21 @@ function generateSitemap() {
   \n`;
   });
 
-  // Note: Removed city-specific service pages to avoid duplicate content issues
-  // Only include pages that have unique, substantial content
+  // Add service + city SEO landing pages (all combinations)
+  sitemap += `\n  <!-- Service + City SEO Landing Pages -->\n`;
+  let seoPageCount = 0;
+  services.forEach(service => {
+    majorCities.forEach(city => {
+      sitemap += `  <url>
+    <loc>${baseUrl}/services/${service}/${city}</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  \n`;
+      seoPageCount++;
+    });
+  });
 
   sitemap += `</urlset>`;
 
@@ -149,8 +187,11 @@ function generateSitemap() {
   const sitemapPath = path.join(__dirname, 'sitemap.xml');
   fs.writeFileSync(sitemapPath, sitemap);
   
-  console.log(`✅ Sitemap generated with ${services.length} services`);
-  console.log(`📍 Total URLs: ${1 + 6 + 1 + services.length}`); // Main + service categories only
+  console.log(`✅ Sitemap generated successfully`);
+  console.log(`📍 Services: ${services.length}`);
+  console.log(`📍 Cities: ${majorCities.length}`);
+  console.log(`📍 SEO landing pages: ${seoPageCount}`);
+  console.log(`📍 Total URLs: ${1 + 6 + 1 + services.length + seoPageCount}`);
   console.log(`📝 Sitemap saved to: ${sitemapPath}`);
   
   return sitemap;

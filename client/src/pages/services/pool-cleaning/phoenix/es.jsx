@@ -7,6 +7,7 @@ export default function PoolCleaningPhoenixESPage() {
       <Helmet>
         <title>Limpieza de Piscinas en Phoenix — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de limpieza de piscinas en Phoenix. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="limpieza de piscinas, limpieza de piscinas Phoenix, profesionales limpieza de piscinas, contratistas Phoenix, servicios del hogar Phoenix" />
         <link rel="canonical" href="https://fixloapp.com/services/pool-cleaning/phoenix/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

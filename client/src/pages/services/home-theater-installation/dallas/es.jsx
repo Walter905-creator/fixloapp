@@ -7,6 +7,7 @@ export default function HomeTheaterInstallationDallasESPage() {
       <Helmet>
         <title>Instalación de Cine en Casa en Dallas — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de cine en casa en Dallas. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de cine en casa, instalación de cine en casa Dallas, profesionales instalación de cine en casa, contratistas Dallas, servicios del hogar Dallas" />
         <link rel="canonical" href="https://fixloapp.com/services/home-theater-installation/dallas/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

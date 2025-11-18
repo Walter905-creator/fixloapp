@@ -7,6 +7,7 @@ export default function WaterproofingPhoenixESPage() {
       <Helmet>
         <title>Impermeabilización en Phoenix — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de impermeabilización en Phoenix. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="impermeabilización, impermeabilización Phoenix, profesionales impermeabilización, contratistas Phoenix, servicios del hogar Phoenix" />
         <link rel="canonical" href="https://fixloapp.com/services/waterproofing/phoenix/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

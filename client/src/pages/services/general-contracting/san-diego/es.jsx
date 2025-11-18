@@ -7,6 +7,7 @@ export default function GeneralContractingSanDiegoESPage() {
       <Helmet>
         <title>Contratista General en San Diego — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de contratista general en San Diego. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="contratista general, contratista general San Diego, profesionales contratista general, contratistas San Diego, servicios del hogar San Diego" />
         <link rel="canonical" href="https://fixloapp.com/services/general-contracting/san-diego/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

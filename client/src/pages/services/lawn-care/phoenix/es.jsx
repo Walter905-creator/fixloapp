@@ -7,6 +7,7 @@ export default function LawnCarePhoenixESPage() {
       <Helmet>
         <title>Cuidado del Césped en Phoenix — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de cuidado del césped en Phoenix. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="cuidado del césped, cuidado del césped Phoenix, profesionales cuidado del césped, contratistas Phoenix, servicios del hogar Phoenix" />
         <link rel="canonical" href="https://fixloapp.com/services/lawn-care/phoenix/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

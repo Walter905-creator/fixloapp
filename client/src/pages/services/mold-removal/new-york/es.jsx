@@ -7,6 +7,7 @@ export default function MoldRemovalNewYorkESPage() {
       <Helmet>
         <title>Eliminación de Moho en New York — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de eliminación de moho en New York. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="eliminación de moho, eliminación de moho New York, profesionales eliminación de moho, contratistas New York, servicios del hogar New York" />
         <link rel="canonical" href="https://fixloapp.com/services/mold-removal/new-york/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

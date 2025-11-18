@@ -7,6 +7,7 @@ export default function SmartHomeInstallationPhoenixESPage() {
       <Helmet>
         <title>Instalación de Casa Inteligente en Phoenix — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de casa inteligente en Phoenix. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de casa inteligente, instalación de casa inteligente Phoenix, profesionales instalación de casa inteligente, contratistas Phoenix, servicios del hogar Phoenix" />
         <link rel="canonical" href="https://fixloapp.com/services/smart-home-installation/phoenix/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

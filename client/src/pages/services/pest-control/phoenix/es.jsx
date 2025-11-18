@@ -7,6 +7,7 @@ export default function PestControlPhoenixESPage() {
       <Helmet>
         <title>Control de Plagas en Phoenix — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de control de plagas en Phoenix. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="control de plagas, control de plagas Phoenix, profesionales control de plagas, contratistas Phoenix, servicios del hogar Phoenix" />
         <link rel="canonical" href="https://fixloapp.com/services/pest-control/phoenix/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

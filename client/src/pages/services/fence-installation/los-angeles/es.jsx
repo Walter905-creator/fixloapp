@@ -7,6 +7,7 @@ export default function FenceInstallationLosAngelesESPage() {
       <Helmet>
         <title>Instalación de Cercas en Los Angeles — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de cercas en Los Angeles. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de cercas, instalación de cercas Los Angeles, profesionales instalación de cercas, contratistas Los Angeles, servicios del hogar Los Angeles" />
         <link rel="canonical" href="https://fixloapp.com/services/fence-installation/los-angeles/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

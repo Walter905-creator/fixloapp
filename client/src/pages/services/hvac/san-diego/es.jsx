@@ -7,6 +7,7 @@ export default function HvacSanDiegoESPage() {
       <Helmet>
         <title>Hvac en San Diego — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de hvac en San Diego. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="hvac, hvac San Diego, profesionales hvac, contratistas San Diego, servicios del hogar San Diego" />
         <link rel="canonical" href="https://fixloapp.com/services/hvac/san-diego/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

@@ -7,6 +7,7 @@ export default function WindowInstallationChicagoPage() {
       <Helmet>
         <title>Window Installation in Chicago — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified window installation pros in Chicago. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="window installation, window installation Chicago, window installation professionals, Chicago contractors, home services Chicago" />
         <link rel="canonical" href="https://fixloapp.com/services/window-installation/chicago" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Window Installation - Chicago","description":"Professional window installation services in Chicago","url":"https://fixloapp.com/services/window-installation/chicago","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Chicago","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Chicago"}}}

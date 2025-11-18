@@ -7,6 +7,7 @@ export default function CarpentryHoustonESPage() {
       <Helmet>
         <title>Carpintería en Houston — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de carpintería en Houston. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="carpintería, carpintería Houston, profesionales carpintería, contratistas Houston, servicios del hogar Houston" />
         <link rel="canonical" href="https://fixloapp.com/services/carpentry/houston/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

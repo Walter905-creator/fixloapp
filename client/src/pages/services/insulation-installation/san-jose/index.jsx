@@ -7,6 +7,7 @@ export default function InsulationInstallationSanJosePage() {
       <Helmet>
         <title>Insulation Installation in San Jose — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified insulation installation pros in San Jose. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="insulation installation, insulation installation San Jose, insulation installation professionals, San Jose contractors, home services San Jose" />
         <link rel="canonical" href="https://fixloapp.com/services/insulation-installation/san-jose" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Insulation Installation - San Jose","description":"Professional insulation installation services in San Jose","url":"https://fixloapp.com/services/insulation-installation/san-jose","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"San Jose","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"San Jose"}}}

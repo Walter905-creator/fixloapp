@@ -7,6 +7,7 @@ export default function ChimneyRepairSanJosePage() {
       <Helmet>
         <title>Chimney Repair in San Jose — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified chimney repair pros in San Jose. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="chimney repair, chimney repair San Jose, chimney repair professionals, San Jose contractors, home services San Jose" />
         <link rel="canonical" href="https://fixloapp.com/services/chimney-repair/san-jose" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Chimney Repair - San Jose","description":"Professional chimney repair services in San Jose","url":"https://fixloapp.com/services/chimney-repair/san-jose","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"San Jose","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"San Jose"}}}

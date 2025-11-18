@@ -7,6 +7,7 @@ export default function BathroomRemodelingSanJoseESPage() {
       <Helmet>
         <title>Remodelación de Baños en San Jose — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de remodelación de baños en San Jose. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="remodelación de baños, remodelación de baños San Jose, profesionales remodelación de baños, contratistas San Jose, servicios del hogar San Jose" />
         <link rel="canonical" href="https://fixloapp.com/services/bathroom-remodeling/san-jose/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

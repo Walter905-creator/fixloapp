@@ -7,6 +7,7 @@ export default function GeneralContractingHoustonPage() {
       <Helmet>
         <title>General Contracting in Houston — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified general contracting pros in Houston. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="general contracting, general contracting Houston, general contracting professionals, Houston contractors, home services Houston" />
         <link rel="canonical" href="https://fixloapp.com/services/general-contracting/houston" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo General Contracting - Houston","description":"Professional general contracting services in Houston","url":"https://fixloapp.com/services/general-contracting/houston","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Houston","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Houston"}}}

@@ -7,6 +7,7 @@ export default function BathroomRemodelingLosAngelesESPage() {
       <Helmet>
         <title>Remodelación de Baños en Los Angeles — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de remodelación de baños en Los Angeles. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="remodelación de baños, remodelación de baños Los Angeles, profesionales remodelación de baños, contratistas Los Angeles, servicios del hogar Los Angeles" />
         <link rel="canonical" href="https://fixloapp.com/services/bathroom-remodeling/los-angeles/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

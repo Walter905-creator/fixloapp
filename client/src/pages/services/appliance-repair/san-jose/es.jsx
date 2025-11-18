@@ -7,6 +7,7 @@ export default function ApplianceRepairSanJoseESPage() {
       <Helmet>
         <title>Reparación de Electrodomésticos en San Jose — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de reparación de electrodomésticos en San Jose. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="reparación de electrodomésticos, reparación de electrodomésticos San Jose, profesionales reparación de electrodomésticos, contratistas San Jose, servicios del hogar San Jose" />
         <link rel="canonical" href="https://fixloapp.com/services/appliance-repair/san-jose/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

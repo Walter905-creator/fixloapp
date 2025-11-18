@@ -7,6 +7,7 @@ export default function ApplianceRepairHoustonPage() {
       <Helmet>
         <title>Appliance Repair in Houston — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified appliance repair pros in Houston. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="appliance repair, appliance repair Houston, appliance repair professionals, Houston contractors, home services Houston" />
         <link rel="canonical" href="https://fixloapp.com/services/appliance-repair/houston" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Appliance Repair - Houston","description":"Professional appliance repair services in Houston","url":"https://fixloapp.com/services/appliance-repair/houston","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Houston","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Houston"}}}

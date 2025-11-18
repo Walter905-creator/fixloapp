@@ -7,6 +7,7 @@ export default function PressureWashingHoustonPage() {
       <Helmet>
         <title>Pressure Washing in Houston — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified pressure washing pros in Houston. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="pressure washing, pressure washing Houston, pressure washing professionals, Houston contractors, home services Houston" />
         <link rel="canonical" href="https://fixloapp.com/services/pressure-washing/houston" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Pressure Washing - Houston","description":"Professional pressure washing services in Houston","url":"https://fixloapp.com/services/pressure-washing/houston","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Houston","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Houston"}}}

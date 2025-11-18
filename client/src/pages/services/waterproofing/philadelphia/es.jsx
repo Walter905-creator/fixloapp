@@ -7,6 +7,7 @@ export default function WaterproofingPhiladelphiaESPage() {
       <Helmet>
         <title>Impermeabilización en Philadelphia — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de impermeabilización en Philadelphia. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="impermeabilización, impermeabilización Philadelphia, profesionales impermeabilización, contratistas Philadelphia, servicios del hogar Philadelphia" />
         <link rel="canonical" href="https://fixloapp.com/services/waterproofing/philadelphia/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

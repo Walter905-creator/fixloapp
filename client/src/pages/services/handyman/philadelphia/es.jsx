@@ -7,6 +7,7 @@ export default function HandymanPhiladelphiaESPage() {
       <Helmet>
         <title>Manitas en Philadelphia — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de manitas en Philadelphia. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="manitas, manitas Philadelphia, profesionales manitas, contratistas Philadelphia, servicios del hogar Philadelphia" />
         <link rel="canonical" href="https://fixloapp.com/services/handyman/philadelphia/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

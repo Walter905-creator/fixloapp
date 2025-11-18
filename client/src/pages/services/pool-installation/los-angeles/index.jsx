@@ -7,6 +7,7 @@ export default function PoolInstallationLosAngelesPage() {
       <Helmet>
         <title>Pool Installation in Los Angeles — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified pool installation pros in Los Angeles. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="pool installation, pool installation Los Angeles, pool installation professionals, Los Angeles contractors, home services Los Angeles" />
         <link rel="canonical" href="https://fixloapp.com/services/pool-installation/los-angeles" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Pool Installation - Los Angeles","description":"Professional pool installation services in Los Angeles","url":"https://fixloapp.com/services/pool-installation/los-angeles","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Los Angeles","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Los Angeles"}}}

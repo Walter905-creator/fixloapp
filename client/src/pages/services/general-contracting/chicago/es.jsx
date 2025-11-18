@@ -7,6 +7,7 @@ export default function GeneralContractingChicagoESPage() {
       <Helmet>
         <title>Contratista General en Chicago — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de contratista general en Chicago. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="contratista general, contratista general Chicago, profesionales contratista general, contratistas Chicago, servicios del hogar Chicago" />
         <link rel="canonical" href="https://fixloapp.com/services/general-contracting/chicago/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

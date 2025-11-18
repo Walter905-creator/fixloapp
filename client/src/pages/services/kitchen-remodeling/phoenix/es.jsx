@@ -7,6 +7,7 @@ export default function KitchenRemodelingPhoenixESPage() {
       <Helmet>
         <title>Remodelación de Cocinas en Phoenix — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de remodelación de cocinas en Phoenix. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="remodelación de cocinas, remodelación de cocinas Phoenix, profesionales remodelación de cocinas, contratistas Phoenix, servicios del hogar Phoenix" />
         <link rel="canonical" href="https://fixloapp.com/services/kitchen-remodeling/phoenix/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

@@ -7,6 +7,7 @@ export default function DoorInstallationSanAntonioESPage() {
       <Helmet>
         <title>Instalación de Puertas en San Antonio — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de puertas en San Antonio. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de puertas, instalación de puertas San Antonio, profesionales instalación de puertas, contratistas San Antonio, servicios del hogar San Antonio" />
         <link rel="canonical" href="https://fixloapp.com/services/door-installation/san-antonio/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

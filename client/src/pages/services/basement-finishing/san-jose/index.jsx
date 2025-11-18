@@ -7,6 +7,7 @@ export default function BasementFinishingSanJosePage() {
       <Helmet>
         <title>Basement Finishing in San Jose — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified basement finishing pros in San Jose. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="basement finishing, basement finishing San Jose, basement finishing professionals, San Jose contractors, home services San Jose" />
         <link rel="canonical" href="https://fixloapp.com/services/basement-finishing/san-jose" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Basement Finishing - San Jose","description":"Professional basement finishing services in San Jose","url":"https://fixloapp.com/services/basement-finishing/san-jose","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"San Jose","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"San Jose"}}}

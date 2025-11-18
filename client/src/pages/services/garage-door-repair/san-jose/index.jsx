@@ -7,6 +7,7 @@ export default function GarageDoorRepairSanJosePage() {
       <Helmet>
         <title>Garage Door Repair in San Jose — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified garage door repair pros in San Jose. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="garage door repair, garage door repair San Jose, garage door repair professionals, San Jose contractors, home services San Jose" />
         <link rel="canonical" href="https://fixloapp.com/services/garage-door-repair/san-jose" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Garage Door Repair - San Jose","description":"Professional garage door repair services in San Jose","url":"https://fixloapp.com/services/garage-door-repair/san-jose","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"San Jose","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"San Jose"}}}

@@ -7,6 +7,7 @@ export default function JunkRemovalSanDiegoESPage() {
       <Helmet>
         <title>Eliminación de Basura en San Diego — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de eliminación de basura en San Diego. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="eliminación de basura, eliminación de basura San Diego, profesionales eliminación de basura, contratistas San Diego, servicios del hogar San Diego" />
         <link rel="canonical" href="https://fixloapp.com/services/junk-removal/san-diego/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

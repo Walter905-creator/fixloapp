@@ -7,6 +7,7 @@ export default function GeneralContractingPhoenixESPage() {
       <Helmet>
         <title>Contratista General en Phoenix — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de contratista general en Phoenix. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="contratista general, contratista general Phoenix, profesionales contratista general, contratistas Phoenix, servicios del hogar Phoenix" />
         <link rel="canonical" href="https://fixloapp.com/services/general-contracting/phoenix/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

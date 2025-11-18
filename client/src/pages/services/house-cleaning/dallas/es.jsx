@@ -7,6 +7,7 @@ export default function HouseCleaningDallasESPage() {
       <Helmet>
         <title>Limpieza del Hogar en Dallas — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de limpieza del hogar en Dallas. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="limpieza del hogar, limpieza del hogar Dallas, profesionales limpieza del hogar, contratistas Dallas, servicios del hogar Dallas" />
         <link rel="canonical" href="https://fixloapp.com/services/house-cleaning/dallas/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

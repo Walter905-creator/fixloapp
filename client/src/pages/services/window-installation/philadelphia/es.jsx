@@ -7,6 +7,7 @@ export default function WindowInstallationPhiladelphiaESPage() {
       <Helmet>
         <title>Instalación de Ventanas en Philadelphia — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de ventanas en Philadelphia. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de ventanas, instalación de ventanas Philadelphia, profesionales instalación de ventanas, contratistas Philadelphia, servicios del hogar Philadelphia" />
         <link rel="canonical" href="https://fixloapp.com/services/window-installation/philadelphia/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

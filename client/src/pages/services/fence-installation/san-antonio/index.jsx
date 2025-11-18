@@ -7,6 +7,7 @@ export default function FenceInstallationSanAntonioPage() {
       <Helmet>
         <title>Fence Installation in San Antonio — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified fence installation pros in San Antonio. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="fence installation, fence installation San Antonio, fence installation professionals, San Antonio contractors, home services San Antonio" />
         <link rel="canonical" href="https://fixloapp.com/services/fence-installation/san-antonio" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Fence Installation - San Antonio","description":"Professional fence installation services in San Antonio","url":"https://fixloapp.com/services/fence-installation/san-antonio","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"San Antonio","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"San Antonio"}}}

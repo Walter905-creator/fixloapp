@@ -7,6 +7,7 @@ export default function GutterCleaningNewYorkESPage() {
       <Helmet>
         <title>Limpieza de Canalones en New York — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de limpieza de canalones en New York. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="limpieza de canalones, limpieza de canalones New York, profesionales limpieza de canalones, contratistas New York, servicios del hogar New York" />
         <link rel="canonical" href="https://fixloapp.com/services/gutter-cleaning/new-york/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

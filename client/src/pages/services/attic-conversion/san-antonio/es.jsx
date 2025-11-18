@@ -7,6 +7,7 @@ export default function AtticConversionSanAntonioESPage() {
       <Helmet>
         <title>Conversión de Áticos en San Antonio — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de conversión de áticos en San Antonio. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="conversión de áticos, conversión de áticos San Antonio, profesionales conversión de áticos, contratistas San Antonio, servicios del hogar San Antonio" />
         <link rel="canonical" href="https://fixloapp.com/services/attic-conversion/san-antonio/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

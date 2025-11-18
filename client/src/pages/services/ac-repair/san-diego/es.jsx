@@ -7,6 +7,7 @@ export default function AcRepairSanDiegoESPage() {
       <Helmet>
         <title>Ac Repair en San Diego — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de ac repair en San Diego. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="ac repair, ac repair San Diego, profesionales ac repair, contratistas San Diego, servicios del hogar San Diego" />
         <link rel="canonical" href="https://fixloapp.com/services/ac-repair/san-diego/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

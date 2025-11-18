@@ -7,6 +7,7 @@ export default function GutterCleaningPhiladelphiaPage() {
       <Helmet>
         <title>Gutter Cleaning in Philadelphia — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified gutter cleaning pros in Philadelphia. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="gutter cleaning, gutter cleaning Philadelphia, gutter cleaning professionals, Philadelphia contractors, home services Philadelphia" />
         <link rel="canonical" href="https://fixloapp.com/services/gutter-cleaning/philadelphia" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Gutter Cleaning - Philadelphia","description":"Professional gutter cleaning services in Philadelphia","url":"https://fixloapp.com/services/gutter-cleaning/philadelphia","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Philadelphia","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Philadelphia"}}}

@@ -7,6 +7,7 @@ export default function DeckBuildingPhiladelphiaPage() {
       <Helmet>
         <title>Deck Building in Philadelphia — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified deck building pros in Philadelphia. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="deck building, deck building Philadelphia, deck building professionals, Philadelphia contractors, home services Philadelphia" />
         <link rel="canonical" href="https://fixloapp.com/services/deck-building/philadelphia" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Deck Building - Philadelphia","description":"Professional deck building services in Philadelphia","url":"https://fixloapp.com/services/deck-building/philadelphia","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Philadelphia","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Philadelphia"}}}

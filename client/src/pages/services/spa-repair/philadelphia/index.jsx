@@ -7,6 +7,7 @@ export default function SpaRepairPhiladelphiaPage() {
       <Helmet>
         <title>Spa Repair in Philadelphia — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified spa repair pros in Philadelphia. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="spa repair, spa repair Philadelphia, spa repair professionals, Philadelphia contractors, home services Philadelphia" />
         <link rel="canonical" href="https://fixloapp.com/services/spa-repair/philadelphia" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Spa Repair - Philadelphia","description":"Professional spa repair services in Philadelphia","url":"https://fixloapp.com/services/spa-repair/philadelphia","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Philadelphia","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Philadelphia"}}}

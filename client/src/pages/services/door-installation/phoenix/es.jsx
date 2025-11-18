@@ -7,6 +7,7 @@ export default function DoorInstallationPhoenixESPage() {
       <Helmet>
         <title>Instalación de Puertas en Phoenix — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de puertas en Phoenix. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de puertas, instalación de puertas Phoenix, profesionales instalación de puertas, contratistas Phoenix, servicios del hogar Phoenix" />
         <link rel="canonical" href="https://fixloapp.com/services/door-installation/phoenix/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

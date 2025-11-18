@@ -7,6 +7,7 @@ export default function FlooringSanAntonioESPage() {
       <Helmet>
         <title>Pisos en San Antonio — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de pisos en San Antonio. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="pisos, pisos San Antonio, profesionales pisos, contratistas San Antonio, servicios del hogar San Antonio" />
         <link rel="canonical" href="https://fixloapp.com/services/flooring/san-antonio/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

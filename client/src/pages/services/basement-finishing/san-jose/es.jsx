@@ -7,6 +7,7 @@ export default function BasementFinishingSanJoseESPage() {
       <Helmet>
         <title>Acabado de Sótanos en San Jose — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de acabado de sótanos en San Jose. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="acabado de sótanos, acabado de sótanos San Jose, profesionales acabado de sótanos, contratistas San Jose, servicios del hogar San Jose" />
         <link rel="canonical" href="https://fixloapp.com/services/basement-finishing/san-jose/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

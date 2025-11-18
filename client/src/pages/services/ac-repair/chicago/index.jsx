@@ -7,6 +7,7 @@ export default function AcRepairChicagoPage() {
       <Helmet>
         <title>Ac Repair in Chicago — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified ac repair pros in Chicago. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="ac repair, ac repair Chicago, ac repair professionals, Chicago contractors, home services Chicago" />
         <link rel="canonical" href="https://fixloapp.com/services/ac-repair/chicago" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Ac Repair - Chicago","description":"Professional ac repair services in Chicago","url":"https://fixloapp.com/services/ac-repair/chicago","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Chicago","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Chicago"}}}

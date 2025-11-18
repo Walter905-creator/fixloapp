@@ -7,6 +7,7 @@ export default function CarpentryPhiladelphiaESPage() {
       <Helmet>
         <title>Carpintería en Philadelphia — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de carpintería en Philadelphia. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="carpintería, carpintería Philadelphia, profesionales carpintería, contratistas Philadelphia, servicios del hogar Philadelphia" />
         <link rel="canonical" href="https://fixloapp.com/services/carpentry/philadelphia/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

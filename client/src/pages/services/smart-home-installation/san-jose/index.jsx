@@ -7,6 +7,7 @@ export default function SmartHomeInstallationSanJosePage() {
       <Helmet>
         <title>Smart Home Installation in San Jose — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified smart home installation pros in San Jose. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="smart home installation, smart home installation San Jose, smart home installation professionals, San Jose contractors, home services San Jose" />
         <link rel="canonical" href="https://fixloapp.com/services/smart-home-installation/san-jose" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Smart Home Installation - San Jose","description":"Professional smart home installation services in San Jose","url":"https://fixloapp.com/services/smart-home-installation/san-jose","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"San Jose","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"San Jose"}}}

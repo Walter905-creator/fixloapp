@@ -7,6 +7,7 @@ export default function JunkRemovalNewYorkESPage() {
       <Helmet>
         <title>Eliminación de Basura en New York — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de eliminación de basura en New York. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="eliminación de basura, eliminación de basura New York, profesionales eliminación de basura, contratistas New York, servicios del hogar New York" />
         <link rel="canonical" href="https://fixloapp.com/services/junk-removal/new-york/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

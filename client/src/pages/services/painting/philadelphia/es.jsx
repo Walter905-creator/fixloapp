@@ -7,6 +7,7 @@ export default function PaintingPhiladelphiaESPage() {
       <Helmet>
         <title>Pintura en Philadelphia — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de pintura en Philadelphia. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="pintura, pintura Philadelphia, profesionales pintura, contratistas Philadelphia, servicios del hogar Philadelphia" />
         <link rel="canonical" href="https://fixloapp.com/services/painting/philadelphia/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

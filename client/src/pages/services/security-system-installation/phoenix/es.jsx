@@ -7,6 +7,7 @@ export default function SecuritySystemInstallationPhoenixESPage() {
       <Helmet>
         <title>Instalación de Sistemas de Seguridad en Phoenix — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de sistemas de seguridad en Phoenix. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de sistemas de seguridad, instalación de sistemas de seguridad Phoenix, profesionales instalación de sistemas de seguridad, contratistas Phoenix, servicios del hogar Phoenix" />
         <link rel="canonical" href="https://fixloapp.com/services/security-system-installation/phoenix/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

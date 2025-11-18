@@ -7,6 +7,7 @@ export default function FenceInstallationSanDiegoESPage() {
       <Helmet>
         <title>Instalación de Cercas en San Diego — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de instalación de cercas en San Diego. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="instalación de cercas, instalación de cercas San Diego, profesionales instalación de cercas, contratistas San Diego, servicios del hogar San Diego" />
         <link rel="canonical" href="https://fixloapp.com/services/fence-installation/san-diego/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

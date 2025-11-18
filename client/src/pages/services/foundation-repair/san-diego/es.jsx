@@ -7,6 +7,7 @@ export default function FoundationRepairSanDiegoESPage() {
       <Helmet>
         <title>Reparación de Cimientos en San Diego — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de reparación de cimientos en San Diego. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="reparación de cimientos, reparación de cimientos San Diego, profesionales reparación de cimientos, contratistas San Diego, servicios del hogar San Diego" />
         <link rel="canonical" href="https://fixloapp.com/services/foundation-repair/san-diego/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

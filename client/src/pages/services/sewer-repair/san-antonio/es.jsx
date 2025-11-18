@@ -7,6 +7,7 @@ export default function SewerRepairSanAntonioESPage() {
       <Helmet>
         <title>Reparación de Alcantarillado en San Antonio — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de reparación de alcantarillado en San Antonio. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="reparación de alcantarillado, reparación de alcantarillado San Antonio, profesionales reparación de alcantarillado, contratistas San Antonio, servicios del hogar San Antonio" />
         <link rel="canonical" href="https://fixloapp.com/services/sewer-repair/san-antonio/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

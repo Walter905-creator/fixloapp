@@ -7,6 +7,7 @@ export default function PoolCleaningSanJosePage() {
       <Helmet>
         <title>Pool Cleaning in San Jose — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified pool cleaning pros in San Jose. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="pool cleaning, pool cleaning San Jose, pool cleaning professionals, San Jose contractors, home services San Jose" />
         <link rel="canonical" href="https://fixloapp.com/services/pool-cleaning/san-jose" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Pool Cleaning - San Jose","description":"Professional pool cleaning services in San Jose","url":"https://fixloapp.com/services/pool-cleaning/san-jose","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"San Jose","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"San Jose"}}}

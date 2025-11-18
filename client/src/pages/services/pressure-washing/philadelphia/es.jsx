@@ -7,6 +7,7 @@ export default function PressureWashingPhiladelphiaESPage() {
       <Helmet>
         <title>Lavado a Presión en Philadelphia — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de lavado a presión en Philadelphia. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="lavado a presión, lavado a presión Philadelphia, profesionales lavado a presión, contratistas Philadelphia, servicios del hogar Philadelphia" />
         <link rel="canonical" href="https://fixloapp.com/services/pressure-washing/philadelphia/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

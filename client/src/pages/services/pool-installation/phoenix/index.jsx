@@ -7,6 +7,7 @@ export default function PoolInstallationPhoenixPage() {
       <Helmet>
         <title>Pool Installation in Phoenix — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified pool installation pros in Phoenix. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="pool installation, pool installation Phoenix, pool installation professionals, Phoenix contractors, home services Phoenix" />
         <link rel="canonical" href="https://fixloapp.com/services/pool-installation/phoenix" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Pool Installation - Phoenix","description":"Professional pool installation services in Phoenix","url":"https://fixloapp.com/services/pool-installation/phoenix","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Phoenix","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Phoenix"}}}

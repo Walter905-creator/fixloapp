@@ -4,6 +4,7 @@ import PromoBanner from './components/PromoBanner';
 import ProBanner from './components/ProBanner';
 import FreeTrialBanner from './components/FreeTrialBanner';
 import CookieConsent from './components/CookieConsent';
+import ErrorBoundary from './components/ErrorBoundary';
 import Navbar from './components/Navbar';
 import HomePage from './routes/HomePage.jsx';
 import ServicesPage from './routes/ServicesPage.jsx';
@@ -29,29 +30,31 @@ export default function App(){
     <ProBanner />
     <FreeTrialBanner />
     <Navbar/>
-    <Routes>
-      <Route path="/" element={<HomePage/>}/>
-      <Route path="/services" element={<ServicesPage/>}/>
-      <Route path="/services/:service" element={<ServicePage/>}/>
-      <Route path="/services/:service/:city" element={<SEOPageLoader/>}/>
-      <Route path="/services/:service/:city/es" element={<SEOPageLoader lang="es"/>}/>
-      <Route path="/how-it-works" element={<HowItWorksPage/>}/>
-      <Route path="/assistant" element={<AssistantPage/>}/>
-      <Route path="/contact" element={<ContactPage/>}/>
-      <Route path="/pricing" element={<PricingPage/>}/>
-      <Route path="/signup" element={<SignupPage/>}/>
-      <Route path="/pro/signup" element={<ProSignupPage/>}/>
-      <Route path="/pro/sign-in" element={<ProSignInPage/>}/>
-      <Route path="/admin" element={<AdminPage/>}/>
-      <Route path="/pro/dashboard" element={<ProDashboardPage/>}/>
-      <Route path="/join" element={<JoinPage/>}/>
-      <Route path="/terms" element={<Terms/>}/>
-      <Route path="/privacy" element={<Privacy/>}/>
-      <Route path="/privacy-policy" element={<Privacy/>}/>
-      <Route path="/privacy-settings" element={<PrivacySettings/>}/>
-      <Route path="/success" element={<Success/>}/>
-      <Route path="*" element={<Navigate to="/" replace/>}/>
-    </Routes>
+    <ErrorBoundary>
+      <Routes>
+        <Route path="/" element={<HomePage/>}/>
+        <Route path="/services" element={<ServicesPage/>}/>
+        <Route path="/services/:service" element={<ServicePage/>}/>
+        <Route path="/services/:service/:city" element={<SEOPageLoader/>}/>
+        <Route path="/services/:service/:city/es" element={<SEOPageLoader lang="es"/>}/>
+        <Route path="/how-it-works" element={<HowItWorksPage/>}/>
+        <Route path="/assistant" element={<AssistantPage/>}/>
+        <Route path="/contact" element={<ContactPage/>}/>
+        <Route path="/pricing" element={<PricingPage/>}/>
+        <Route path="/signup" element={<SignupPage/>}/>
+        <Route path="/pro/signup" element={<ProSignupPage/>}/>
+        <Route path="/pro/sign-in" element={<ProSignInPage/>}/>
+        <Route path="/admin" element={<AdminPage/>}/>
+        <Route path="/pro/dashboard" element={<ProDashboardPage/>}/>
+        <Route path="/join" element={<JoinPage/>}/>
+        <Route path="/terms" element={<Terms/>}/>
+        <Route path="/privacy" element={<Privacy/>}/>
+        <Route path="/privacy-policy" element={<Privacy/>}/>
+        <Route path="/privacy-settings" element={<PrivacySettings/>}/>
+        <Route path="/success" element={<Success/>}/>
+        <Route path="*" element={<Navigate to="/" replace/>}/>
+      </Routes>
+    </ErrorBoundary>
     <footer className="border-t border-slate-200 mt-8">
       <div className="container-xl py-6 text-sm text-slate-700 flex flex-col md:flex-row items-center justify-between gap-3">
         <div>© {new Date().getFullYear()} Fixlo. All rights reserved.</div>

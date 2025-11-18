@@ -7,6 +7,7 @@ export default function SolarPanelInstallationSanDiegoPage() {
       <Helmet>
         <title>Solar Panel Installation in San Diego — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified solar panel installation pros in San Diego. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="solar panel installation, solar panel installation San Diego, solar panel installation professionals, San Diego contractors, home services San Diego" />
         <link rel="canonical" href="https://fixloapp.com/services/solar-panel-installation/san-diego" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Solar Panel Installation - San Diego","description":"Professional solar panel installation services in San Diego","url":"https://fixloapp.com/services/solar-panel-installation/san-diego","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"San Diego","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"San Diego"}}}

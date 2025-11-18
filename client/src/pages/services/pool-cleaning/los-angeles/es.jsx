@@ -7,6 +7,7 @@ export default function PoolCleaningLosAngelesESPage() {
       <Helmet>
         <title>Limpieza de Piscinas en Los Angeles — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de limpieza de piscinas en Los Angeles. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="limpieza de piscinas, limpieza de piscinas Los Angeles, profesionales limpieza de piscinas, contratistas Los Angeles, servicios del hogar Los Angeles" />
         <link rel="canonical" href="https://fixloapp.com/services/pool-cleaning/los-angeles/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

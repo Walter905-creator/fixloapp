@@ -7,6 +7,7 @@ export default function GeneralContractingNewYorkPage() {
       <Helmet>
         <title>General Contracting in New York — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified general contracting pros in New York. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="general contracting, general contracting New York, general contracting professionals, New York contractors, home services New York" />
         <link rel="canonical" href="https://fixloapp.com/services/general-contracting/new-york" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo General Contracting - New York","description":"Professional general contracting services in New York","url":"https://fixloapp.com/services/general-contracting/new-york","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"New York","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"New York"}}}

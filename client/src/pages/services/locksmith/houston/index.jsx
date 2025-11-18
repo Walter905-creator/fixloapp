@@ -7,6 +7,7 @@ export default function LocksmithHoustonPage() {
       <Helmet>
         <title>Locksmith in Houston — Fast & Trusted — No Cap | Fixlo</title>
         <meta name="description" content="Find verified locksmith pros in Houston. Book in 6-7 minutes. The GOAT of home services. No cap! 🏠✨" />
+        <meta name="keywords" content="locksmith, locksmith Houston, locksmith professionals, Houston contractors, home services Houston" />
         <link rel="canonical" href="https://fixloapp.com/services/locksmith/houston" />
         <script type="application/ld+json">
           {{"@context":"https://schema.org","@type":"LocalBusiness","name":"Fixlo Locksmith - Houston","description":"Professional locksmith services in Houston","url":"https://fixloapp.com/services/locksmith/houston","telephone":"+1-855-FIXLO-GO","priceRange":"$$","address":{"@type":"PostalAddress","addressLocality":"Houston","addressCountry":"US"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"2847"},"areaServed":{"@type":"City","name":"Houston"}}}

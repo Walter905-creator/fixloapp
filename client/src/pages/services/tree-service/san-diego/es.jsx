@@ -7,6 +7,7 @@ export default function TreeServiceSanDiegoESPage() {
       <Helmet>
         <title>Servicio de Árboles en San Diego — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de servicio de árboles en San Diego. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="servicio de árboles, servicio de árboles San Diego, profesionales servicio de árboles, contratistas San Diego, servicios del hogar San Diego" />
         <link rel="canonical" href="https://fixloapp.com/services/tree-service/san-diego/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

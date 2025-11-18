@@ -7,6 +7,7 @@ export default function PoolCleaningSanJoseESPage() {
       <Helmet>
         <title>Limpieza de Piscinas en San Jose — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de limpieza de piscinas en San Jose. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="limpieza de piscinas, limpieza de piscinas San Jose, profesionales limpieza de piscinas, contratistas San Jose, servicios del hogar San Jose" />
         <link rel="canonical" href="https://fixloapp.com/services/pool-cleaning/san-jose/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

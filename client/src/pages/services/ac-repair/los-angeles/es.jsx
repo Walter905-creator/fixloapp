@@ -7,6 +7,7 @@ export default function AcRepairLosAngelesESPage() {
       <Helmet>
         <title>Ac Repair en Los Angeles — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de ac repair en Los Angeles. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="ac repair, ac repair Los Angeles, profesionales ac repair, contratistas Los Angeles, servicios del hogar Los Angeles" />
         <link rel="canonical" href="https://fixloapp.com/services/ac-repair/los-angeles/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

@@ -7,6 +7,7 @@ export default function GeneralContractingSanAntonioESPage() {
       <Helmet>
         <title>Contratista General en San Antonio — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de contratista general en San Antonio. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="contratista general, contratista general San Antonio, profesionales contratista general, contratistas San Antonio, servicios del hogar San Antonio" />
         <link rel="canonical" href="https://fixloapp.com/services/general-contracting/san-antonio/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

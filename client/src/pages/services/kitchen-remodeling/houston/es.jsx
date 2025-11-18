@@ -7,6 +7,7 @@ export default function KitchenRemodelingHoustonESPage() {
       <Helmet>
         <title>Remodelación de Cocinas en Houston — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de remodelación de cocinas en Houston. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="remodelación de cocinas, remodelación de cocinas Houston, profesionales remodelación de cocinas, contratistas Houston, servicios del hogar Houston" />
         <link rel="canonical" href="https://fixloapp.com/services/kitchen-remodeling/houston/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">

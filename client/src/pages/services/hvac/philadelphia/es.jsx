@@ -7,6 +7,7 @@ export default function HvacPhiladelphiaESPage() {
       <Helmet>
         <title>Hvac en Philadelphia — Rápido y Confiable — Sin Mentiras | Fixlo</title>
         <meta name="description" content="Encuentra profesionales verificados de hvac en Philadelphia. Reserva en 6-7 minutos. El GOAT del servicio del hogar. ¡De una! 🏠✨" />
+        <meta name="keywords" content="hvac, hvac Philadelphia, profesionales hvac, contratistas Philadelphia, servicios del hogar Philadelphia" />
         <link rel="canonical" href="https://fixloapp.com/services/hvac/philadelphia/es" />
         <meta name="language" content="es" />
         <script type="application/ld+json">
