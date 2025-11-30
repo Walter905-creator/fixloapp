@@ -65,11 +65,14 @@ export default function ServicePage(){
 }
 
 function ServiceLeadForm({service, city}){
+  // Helper to convert slug to display format (dashes to spaces)
+  const formatSlug = (str) => str ? str.replace(/-/g, ' ').trim() : '';
+  
   const [form, setForm] = React.useState({
-    serviceType: service || '',
+    serviceType: formatSlug(service),
     fullName: '', 
     phone: '', 
-    city: city || '', 
+    city: formatSlug(city), 
     state: '', 
     details: '',
     smsConsent: false
@@ -112,18 +115,21 @@ function ServiceLeadForm({service, city}){
       const url = `${api}/api/requests`;
       console.log('🔗 API URL:', url);
       
+      // Use form values (which may be pre-populated from URL params but can be edited by user)
+      const submissionData = {
+        serviceType: formatSlug(form.serviceType) || formatSlug(service) || '',
+        fullName: form.fullName.trim(),
+        phone: form.phone.trim(),
+        city: formatSlug(form.city),
+        state: form.state.trim().toUpperCase(),
+        details: form.details.trim(),
+        smsConsent: form.smsConsent
+      };
+      
       const res = await fetch(url, { 
         method: 'POST', 
         headers: {'Content-Type': 'application/json'}, 
-        body: JSON.stringify({
-          serviceType: service,
-          fullName: form.fullName,
-          phone: form.phone,
-          description: form.details,
-          city: city ? city.replace(/-/g, ' ') : '',
-          state: form.state,
-          smsConsent: form.smsConsent
-        }) 
+        body: JSON.stringify(submissionData) 
       });
       
       console.log('📡 Response status:', res.status);
@@ -140,10 +146,10 @@ function ServiceLeadForm({service, city}){
       
       // Reset form
       setForm({
-        serviceType: service || '',
+        serviceType: formatSlug(service),
         fullName: '', 
         phone: '', 
-        city: city || '', 
+        city: formatSlug(city), 
         state: '', 
         details: '',
         smsConsent: false
