@@ -66,10 +66,10 @@ export default function ServicePage(){
 
 function ServiceLeadForm({service, city}){
   const [form, setForm] = React.useState({
-    serviceType: service || '',
+    serviceType: service ? service.replace(/-/g, ' ') : '',
     fullName: '', 
     phone: '', 
-    city: city || '', 
+    city: city ? city.replace(/-/g, ' ') : '', 
     state: '', 
     details: '',
     smsConsent: false
@@ -112,18 +112,21 @@ function ServiceLeadForm({service, city}){
       const url = `${api}/api/requests`;
       console.log('🔗 API URL:', url);
       
+      // Use form values (which may be pre-populated from URL params but can be edited by user)
+      const submissionData = {
+        serviceType: form.serviceType.replace(/-/g, ' ') || service?.replace(/-/g, ' ') || '',
+        fullName: form.fullName.trim(),
+        phone: form.phone,
+        city: form.city.replace(/-/g, ' ').trim(),
+        state: form.state.trim().toUpperCase(),
+        details: form.details.trim(),
+        smsConsent: form.smsConsent
+      };
+      
       const res = await fetch(url, { 
         method: 'POST', 
         headers: {'Content-Type': 'application/json'}, 
-        body: JSON.stringify({
-          serviceType: service,
-          fullName: form.fullName,
-          phone: form.phone,
-          description: form.details,
-          city: city ? city.replace(/-/g, ' ') : '',
-          state: form.state,
-          smsConsent: form.smsConsent
-        }) 
+        body: JSON.stringify(submissionData) 
       });
       
       console.log('📡 Response status:', res.status);
@@ -140,10 +143,10 @@ function ServiceLeadForm({service, city}){
       
       // Reset form
       setForm({
-        serviceType: service || '',
+        serviceType: service ? service.replace(/-/g, ' ') : '',
         fullName: '', 
         phone: '', 
-        city: city || '', 
+        city: city ? city.replace(/-/g, ' ') : '', 
         state: '', 
         details: '',
         smsConsent: false
