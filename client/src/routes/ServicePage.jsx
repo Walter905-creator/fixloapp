@@ -65,11 +65,14 @@ export default function ServicePage(){
 }
 
 function ServiceLeadForm({service, city}){
+  // Helper to convert slug to display format (dashes to spaces)
+  const formatSlug = (str) => str ? str.replace(/-/g, ' ').trim() : '';
+  
   const [form, setForm] = React.useState({
-    serviceType: service ? service.replace(/-/g, ' ') : '',
+    serviceType: formatSlug(service),
     fullName: '', 
     phone: '', 
-    city: city ? city.replace(/-/g, ' ') : '', 
+    city: formatSlug(city), 
     state: '', 
     details: '',
     smsConsent: false
@@ -114,10 +117,10 @@ function ServiceLeadForm({service, city}){
       
       // Use form values (which may be pre-populated from URL params but can be edited by user)
       const submissionData = {
-        serviceType: form.serviceType.replace(/-/g, ' ') || service?.replace(/-/g, ' ') || '',
+        serviceType: formatSlug(form.serviceType) || formatSlug(service) || '',
         fullName: form.fullName.trim(),
-        phone: form.phone,
-        city: form.city.replace(/-/g, ' ').trim(),
+        phone: form.phone.trim(),
+        city: formatSlug(form.city),
         state: form.state.trim().toUpperCase(),
         details: form.details.trim(),
         smsConsent: form.smsConsent
@@ -143,10 +146,10 @@ function ServiceLeadForm({service, city}){
       
       // Reset form
       setForm({
-        serviceType: service ? service.replace(/-/g, ' ') : '',
+        serviceType: formatSlug(service),
         fullName: '', 
         phone: '', 
-        city: city ? city.replace(/-/g, ' ') : '', 
+        city: formatSlug(city), 
         state: '', 
         details: '',
         smsConsent: false
