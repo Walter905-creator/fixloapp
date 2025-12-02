@@ -65,6 +65,11 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [initialRoute, setInitialRoute] = useState('Home');
 
+  // Build 26 - Force cache invalidation with updated signup UI
+  if (__DEV__) {
+    console.log('🚀 Fixlo Build 26 ready - Updated signup screens with trade selection and SMS consent');
+  }
+
   useEffect(() => {
     // Initialize all services
     initializeServices();

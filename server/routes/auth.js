@@ -57,7 +57,7 @@ router.post("/login", async (req, res) => {
 router.post('/register', async (req, res) => {
   console.log("📥 Incoming registration request:", req.body);
   try {
-    const { name, email, phone, password, trade, experience, location } = req.body;
+    const { name, email, phone, password, trade, tradeType, experience, location, smsOptIn } = req.body;
 
     if (!name || !email || !phone || !password || !trade || !location) {
       return res.status(400).json({
@@ -89,7 +89,9 @@ router.post('/register', async (req, res) => {
       'handyman', 'hvac', 'painting', 'roofing', 'flooring', 'carpentry', 'appliance_repair'
     ];
 
-    const normalizedTrade = trade.toLowerCase().replace(/[^a-z]/g, '_');
+    // Use tradeType if provided, otherwise fall back to trade
+    const tradeValue = tradeType || trade;
+    const normalizedTrade = tradeValue.toLowerCase().replace(/[^a-z]/g, '_');
     if (!allowedTrades.includes(normalizedTrade)) {
       return res.status(400).json({
         success: false,
@@ -109,6 +111,18 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const coordinates = [-74.006, 40.7128]; // Default to NYC (placeholder)
 
+    // Prepare SMS consent data
+    const smsConsentData = {};
+    if (typeof smsOptIn !== 'undefined') {
+      smsConsentData.given = Boolean(smsOptIn);
+      if (smsOptIn) {
+        smsConsentData.dateGiven = new Date();
+        smsConsentData.ipAddress = req.ip || req.connection.remoteAddress;
+        smsConsentData.userAgent = req.get('User-Agent') || '';
+        smsConsentData.consentText = 'I agree to receive SMS notifications about job leads and account updates. Message and data rates may apply. Reply STOP to opt out.';
+      }
+    }
+
     const newPro = new Pro({
       name: name.trim(),
       email: email.toLowerCase().trim(),
@@ -123,7 +137,8 @@ router.post('/register', async (req, res) => {
       },
       dob: new Date('1990-01-01'), // Replace with actual DOB field if available
       isActive: false,
-      paymentStatus: 'pending'
+      paymentStatus: 'pending',
+      ...(Object.keys(smsConsentData).length > 0 && { smsConsent: smsConsentData })
     });
 
     // Proper MongoDB save with detailed error handling

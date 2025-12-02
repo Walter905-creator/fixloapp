@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Image
 } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import axios from 'axios';
 import { buildApiUrl, API_ENDPOINTS } from '../config/api';
 
@@ -22,13 +23,45 @@ export default function SignupScreen({ navigation, route }) {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [tradeType, setTradeType] = useState('');
+  const [smsOptIn, setSmsOptIn] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Available trades matching backend validation
+  const tradeOptions = [
+    { label: 'Select your trade...', value: '' },
+    { label: 'Plumbing', value: 'plumbing' },
+    { label: 'Electrical', value: 'electrical' },
+    { label: 'Landscaping', value: 'landscaping' },
+    { label: 'House Cleaning', value: 'cleaning' },
+    { label: 'Junk Removal', value: 'junk_removal' },
+    { label: 'Handyman', value: 'handyman' },
+    { label: 'HVAC', value: 'hvac' },
+    { label: 'Painting', value: 'painting' },
+    { label: 'Roofing', value: 'roofing' },
+    { label: 'Flooring', value: 'flooring' },
+    { label: 'Carpentry', value: 'carpentry' },
+    { label: 'Appliance Repair', value: 'appliance_repair' }
+  ];
 
   const handleSignup = async () => {
     // Validate all required fields
     if (!name || !email || !phone || !password || !confirmPassword) {
       Alert.alert('Missing Info', 'Please fill out all fields.');
       return;
+    }
+
+    // For Pro users, validate trade selection and SMS consent
+    if (userType === 'pro') {
+      if (!tradeType) {
+        Alert.alert('Trade Required', 'Please select your trade or specialty.');
+        return;
+      }
+      
+      if (!smsOptIn) {
+        Alert.alert('SMS Consent Required', 'Please agree to receive SMS notifications to continue. This is required for receiving job leads.');
+        return;
+      }
     }
 
     if (password !== confirmPassword) {
@@ -78,7 +111,9 @@ export default function SignupScreen({ navigation, route }) {
         email: email.toLowerCase().trim(),
         phone: phone.trim(),
         password,
-        trade: 'General Contractor', // Default trade
+        trade: tradeType || 'General Contractor', // Use selected trade or default
+        tradeType: tradeType, // Also include as tradeType for compatibility
+        smsOptIn: smsOptIn, // SMS consent status
         experience: 5, // Default experience
         location: 'New York, NY' // Default location
       };
@@ -221,6 +256,49 @@ export default function SignupScreen({ navigation, route }) {
               keyboardType="phone-pad"
             />
           </View>
+
+          {userType === 'pro' && (
+            <>
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Trade/Specialty *</Text>
+                <View style={styles.pickerContainer}>
+                  <Picker
+                    selectedValue={tradeType}
+                    onValueChange={(itemValue) => setTradeType(itemValue)}
+                    style={styles.picker}
+                  >
+                    {tradeOptions.map((option) => (
+                      <Picker.Item 
+                        key={option.value} 
+                        label={option.label} 
+                        value={option.value} 
+                      />
+                    ))}
+                  </Picker>
+                </View>
+                {!tradeType && (
+                  <Text style={styles.errorText}>Please select your trade to continue</Text>
+                )}
+              </View>
+
+              <TouchableOpacity 
+                style={styles.checkboxContainer}
+                onPress={() => setSmsOptIn(!smsOptIn)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.checkbox}>
+                  {smsOptIn && <Text style={styles.checkmark}>✓</Text>}
+                </View>
+                <Text style={styles.checkboxLabel}>
+                  I agree to receive SMS notifications about job leads and account updates. 
+                  Message and data rates may apply. Reply STOP to opt out. *
+                </Text>
+              </TouchableOpacity>
+              {!smsOptIn && (
+                <Text style={styles.errorText}>SMS consent is required for receiving job leads</Text>
+              )}
+            </>
+          )}
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Password</Text>
@@ -384,5 +462,52 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
     fontStyle: 'italic'
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    backgroundColor: '#f9fafb',
+    borderRadius: 10,
+    overflow: 'hidden'
+  },
+  picker: {
+    height: 50,
+    width: '100%'
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginVertical: 20,
+    paddingHorizontal: 5
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderWidth: 2,
+    borderColor: '#2563eb',
+    borderRadius: 4,
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    flexShrink: 0,
+    marginTop: 2
+  },
+  checkmark: {
+    color: '#2563eb',
+    fontSize: 18,
+    fontWeight: 'bold'
+  },
+  checkboxLabel: {
+    flex: 1,
+    fontSize: 13,
+    color: '#475569',
+    lineHeight: 18
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#dc2626',
+    marginTop: 4,
+    marginLeft: 2
   }
 });
