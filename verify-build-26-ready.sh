@@ -36,6 +36,9 @@ log_info() {
     echo -e "${BLUE}  ℹ️  $1${NC}"
 }
 
+# Initialize exit code
+EXIT_CODE=0
+
 echo ""
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${BLUE}  Build 26 Deployment - Readiness Verification${NC}"
@@ -99,16 +102,20 @@ echo ""
 # Check 3: Build configuration
 log_check "Build configuration in app.config.js"
 if [ -f "mobile/app.config.js" ]; then
-    VERSION=$(grep -o 'version: "[^"]*"' mobile/app.config.js | head -1 | grep -o '[0-9.]*')
-    BUILD_NUM=$(grep -o 'buildNumber: "[0-9]*"' mobile/app.config.js | grep -o '[0-9]*')
+    VERSION=$(grep -o 'version: "[^"]*"' mobile/app.config.js | head -1 | grep -o '[0-9.]*' || echo "")
+    BUILD_NUM=$(grep -o 'buildNumber: "[0-9]*"' mobile/app.config.js | grep -o '[0-9]*' || echo "")
     
-    if [ "$VERSION" == "1.0.26" ]; then
+    if [ -z "$VERSION" ]; then
+        log_fail "Could not extract version from app.config.js"
+    elif [ "$VERSION" == "1.0.26" ]; then
         log_pass "Version is 1.0.26"
     else
         log_fail "Version is $VERSION (expected 1.0.26)"
     fi
     
-    if [ "$BUILD_NUM" == "26" ]; then
+    if [ -z "$BUILD_NUM" ]; then
+        log_fail "Could not extract build number from app.config.js"
+    elif [ "$BUILD_NUM" == "26" ]; then
         log_pass "Build number is 26"
     else
         log_fail "Build number is $BUILD_NUM (expected 26)"

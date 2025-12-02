@@ -129,7 +129,7 @@ capture_build_id() {
     
     # Extract the most recent build ID
     # EAS CLI output format typically shows build ID in the first column
-    BUILD_ID=$(echo "$BUILD_LIST" | grep -E "^[a-f0-9-]{36}" | head -1 | awk '{print $1}')
+    BUILD_ID=$(echo "$BUILD_LIST" | grep -E "^[a-fA-F0-9-]{36}" | head -1 | awk '{print $1}')
     
     if [ -z "$BUILD_ID" ]; then
         log_warning "Could not automatically extract build ID"
@@ -196,7 +196,7 @@ output_final_status() {
     if [ -n "$BUILD_ID" ]; then
         log_success "Build ID: $BUILD_ID"
     else
-        log_warning "Build ID: Not captured (check EAS dashboard)"
+        log_warning "Build ID: Not captured automatically - check EAS dashboard and submit manually"
     fi
     
     if [ "$SUBMIT_STATUS" == "success" ]; then

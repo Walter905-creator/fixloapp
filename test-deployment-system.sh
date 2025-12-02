@@ -153,15 +153,10 @@ if [ -f "mobile/eas.json" ]; then
     
     if grep -q '"production"' mobile/eas.json; then
         test_pass "Production profile found in eas.json"
-    else
-        test_fail "Production profile not found in eas.json"
-    fi
-    
-    # Note: autoIncrement can be in root eas.json or configured differently
-    # The important part is that production profile exists
-    if grep -q '"production"' mobile/eas.json; then
+        # Production profile found, configuration is valid
         test_pass "Production build configuration present"
     else
+        test_fail "Production profile not found in eas.json"
         test_fail "Production build configuration missing"
     fi
 else
