@@ -1,3 +1,18 @@
+/**
+ * ⚠️ DEPRECATED - DO NOT USE IN PRODUCTION
+ * 
+ * This is a backup/development version of ProSignup for the web client.
+ * The PRODUCTION mobile signup screens are located at:
+ *   - /mobile/screens/SignupScreen.js (for homeowners and general signup)
+ *   - /mobile/screens/ProSignupScreen.js (for pro subscription)
+ * 
+ * Web client production signup is at:
+ *   - /client/src/routes/ProSignupPage.jsx
+ * 
+ * Last updated: Build 25
+ * DO NOT modify this file - it is not used in mobile builds.
+ */
+
 import React, { useState } from 'react';
 import axios from 'axios';
 

@@ -21,6 +21,7 @@ export const createProSubscription = async (customerData) => {
       email: customerData.email,
       phone: customerData.phone,
       trade: customerData.trade,
+      smsOptIn: customerData.smsOptIn,
       amount: 5999, // $59.99 in cents
       currency: 'usd',
       description: 'Fixlo Pro Monthly Subscription',

@@ -55,6 +55,7 @@ export default function ProSignupScreen({ navigation }) {
         email,
         phone,
         trade,
+        smsOptIn: smsOptIn,
       });
 
       Alert.alert(
