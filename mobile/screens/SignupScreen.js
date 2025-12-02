@@ -111,8 +111,7 @@ export default function SignupScreen({ navigation, route }) {
         email: email.toLowerCase().trim(),
         phone: phone.trim(),
         password,
-        trade: tradeType || 'General Contractor', // Use selected trade or default
-        tradeType: tradeType, // Also include as tradeType for compatibility
+        tradeType: tradeType, // Selected trade from dropdown
         smsOptIn: smsOptIn, // SMS consent status
         experience: 5, // Default experience
         location: 'New York, NY' // Default location
