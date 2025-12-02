@@ -7,12 +7,12 @@ export default {
     slug: "fixloapp",
     scheme: "fixloapp",
     owner: "fixlo-app",
-    version: "1.0.2",
+    version: "1.0.26",
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "light",
     description: "Fixlo - Connect with trusted home service professionals. Book, manage, and pay for services all in one place.",
-    runtimeVersion: "1.0.2",
+    runtimeVersion: "1.0.26",
 
     splash: {
       image: "./assets/splash.png",
@@ -25,7 +25,7 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.fixloapp.mobile",
-      buildNumber: "22",
+      buildNumber: "26",
       icon: "./assets/icon.png",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
@@ -40,7 +40,7 @@ export default {
 
     android: {
       package: "com.fixloapp.mobile",
-      versionCode: 22,
+      versionCode: 26,
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#ffffff"
