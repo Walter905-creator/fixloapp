@@ -42,8 +42,8 @@ if [ "$CURRENT_DIR" != "mobile" ]; then
     echo -e "${RED}❌ This script must be run from the /mobile directory${NC}"
     echo -e "${YELLOW}Current directory: $(pwd)${NC}"
     echo ""
-    echo "Please run:"
-    echo "  cd /home/runner/work/fixloapp/fixloapp/mobile"
+    echo "Please run from the mobile directory:"
+    echo "  cd <repository-root>/mobile"
     echo "  ./execute-build-27.sh"
     echo ""
     exit 1
