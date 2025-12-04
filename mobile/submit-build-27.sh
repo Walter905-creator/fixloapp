@@ -80,7 +80,8 @@ echo -e "${CYAN}Build ID:${NC} $BUILD_ID"
 echo ""
 
 # Validate Build ID format (UUID)
-if ! echo "$BUILD_ID" | grep -qE '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'; then
+UUID_PATTERN='^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+if ! echo "$BUILD_ID" | grep -qE "$UUID_PATTERN"; then
     echo -e "${RED}❌ Invalid Build ID format${NC}"
     echo ""
     echo "Build ID should be a UUID (36 characters)"

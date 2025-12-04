@@ -60,14 +60,15 @@ if command -v gh &> /dev/null; then
         echo -e "${BLUE}Triggering workflow with gh CLI...${NC}"
         echo ""
         
-        WORKFLOW_URL=$(gh workflow run "$WORKFLOW_FILE" \
+        GH_RUN_OUTPUT=$(gh workflow run "$WORKFLOW_FILE" \
             --repo "$REPO_OWNER/$REPO_NAME" \
             --ref "$BRANCH" \
             --field platform="$PLATFORM" \
             --field profile="$PROFILE" \
-            --field branch="$BRANCH" 2>&1 || echo "")
+            --field branch="$BRANCH" 2>&1)
+        GH_EXIT_CODE=$?
         
-        if [ $? -eq 0 ]; then
+        if [ $GH_EXIT_CODE -eq 0 ]; then
             echo -e "${GREEN}✅ Workflow triggered successfully!${NC}"
             echo ""
             
@@ -142,10 +143,17 @@ if [ -n "$GITHUB_TOKEN" ]; then
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/actions/workflows/$WORKFLOW_FILE/runs?per_page=1")
         
-        # Parse and display run info
-        RUN_ID=$(echo "$RUNS" | grep -o '"id":[0-9]*' | head -1 | grep -o '[0-9]*')
-        RUN_STATUS=$(echo "$RUNS" | grep -o '"status":"[^"]*"' | head -1 | cut -d'"' -f4)
-        RUN_URL=$(echo "$RUNS" | grep -o '"html_url":"[^"]*"' | head -1 | cut -d'"' -f4)
+        # Parse and display run info using jq for reliable JSON parsing
+        if command -v jq &> /dev/null; then
+            RUN_ID=$(echo "$RUNS" | jq -r '.workflow_runs[0].id // ""')
+            RUN_STATUS=$(echo "$RUNS" | jq -r '.workflow_runs[0].status // ""')
+            RUN_URL=$(echo "$RUNS" | jq -r '.workflow_runs[0].html_url // ""')
+        else
+            # Fallback to grep if jq not available
+            RUN_ID=$(echo "$RUNS" | grep -o '"id":[0-9]*' | head -1 | grep -o '[0-9]*')
+            RUN_STATUS=$(echo "$RUNS" | grep -o '"status":"[^"]*"' | head -1 | cut -d'"' -f4)
+            RUN_URL=$(echo "$RUNS" | grep -o '"html_url":"[^"]*"' | head -1 | cut -d'"' -f4)
+        fi
         
         echo ""
         echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
