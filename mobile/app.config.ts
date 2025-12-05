@@ -15,7 +15,7 @@ export default {
     assetBundlePatterns: ["**/*"],
     ios: {
       bundleIdentifier: "com.fixloapp.mobile",
-      buildNumber: "28",
+      buildNumber: "29",
       supportsTablet: true,
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false
