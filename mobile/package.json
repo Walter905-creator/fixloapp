@@ -8,8 +8,6 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "postinstall": "patch-package",
-    "eas-build-pre-install": "echo '✅ Updating CocoaPods repo (full update)...'; sudo gem install cocoapods --no-document && pod repo update",
-    "eas-build-post-install": "cd ios && pod install --repo-update || true && cd ..",
     "bump": "node scripts/bumpVersion.js"
   },
   "dependencies": {
