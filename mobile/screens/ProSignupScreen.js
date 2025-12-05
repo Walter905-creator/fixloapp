@@ -10,13 +10,22 @@ import {
   ActivityIndicator,
   Linking
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useIAP } from '../context/IAPContext';
+import { PRODUCT_IDS } from '../utils/iapService';
 
 export default function ProSignupScreen({ navigation }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [trade, setTrade] = useState('');
+  const [smsOptIn, setSmsOptIn] = useState(false);
+  const [showSmsError, setShowSmsError] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Get IAP functions and product info
+  const { purchaseProduct, getProduct, verifying } = useIAP();
+  const proProduct = getProduct(PRODUCT_IDS.PRO_MONTHLY);
 
   const handleSubscribe = async () => {
     if (!name || !email || !phone || !trade) {
@@ -24,30 +33,85 @@ export default function ProSignupScreen({ navigation }) {
       return;
     }
 
+    // Validate SMS consent
+    if (!smsOptIn) {
+      setShowSmsError(true);
+      Alert.alert(
+        "SMS Consent Required", 
+        "You must agree to receive SMS notifications to continue."
+      );
+      return;
+    }
+
+    setShowSmsError(false);
     setLoading(true);
     
-    // Simulate processing
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    Alert.alert(
-      '✅ Information Saved!',
-      'Thank you for your interest in Fixlo Pro. To complete your subscription and start receiving job leads, please visit our website to set up billing.\n\nYou will receive an email with next steps.',
-      [
-        {
-          text: 'Visit Website',
-          onPress: () => {
-            Linking.openURL('https://www.fixloapp.com/pro-signup');
+    try {
+      // Save user data to AsyncStorage (will be sent to backend after purchase verification)
+      await AsyncStorage.setItem('pending_pro_signup', JSON.stringify({
+        name,
+        email,
+        phone,
+        trade,
+        smsOptIn: true,
+      }));
+      
+      // Also set user email for IAP verification
+      await AsyncStorage.setItem('userEmail', email);
+      
+      console.log('[ProSignupScreen] User data saved, initiating purchase...');
+      
+      // Initiate Apple IAP purchase (opens native iOS payment sheet)
+      const result = await purchaseProduct(PRODUCT_IDS.PRO_MONTHLY);
+      
+      if (result.success) {
+        Alert.alert(
+          '🎉 Welcome to Fixlo Pro!',
+          'Your subscription has been activated! You now have access to unlimited job leads and all Pro features.',
+          [
+            {
+              text: 'Get Started',
+              onPress: () => {
+                // Navigate to Pro Dashboard or Home
+                navigation.replace('ProScreen');
+              }
+            }
+          ]
+        );
+      } else {
+        // Purchase failed or cancelled
+        Alert.alert(
+          'Purchase Not Completed',
+          result.error || 'Unable to complete purchase. Your information has been saved. You can try subscribing again from the subscription screen.',
+          [
+            {
+              text: 'Try Again',
+              onPress: () => setLoading(false)
+            },
+            {
+              text: 'Go Back',
+              style: 'cancel',
+              onPress: () => navigation.goBack()
+            }
+          ]
+        );
+      }
+      
+      setLoading(false);
+    } catch (error) {
+      console.error('[ProSignupScreen] Error during signup:', error);
+      Alert.alert(
+        'Error',
+        'An unexpected error occurred. Please try again.',
+        [
+          {
+            text: 'OK',
+            onPress: () => setLoading(false)
           }
-        },
-        {
-          text: 'Maybe Later',
-          style: 'cancel',
-          onPress: () => navigation.goBack()
-        }
-      ]
-    );
-    
-    setLoading(false);
+        ]
+      );
+      setLoading(false);
+    }
   };
 
   return (
@@ -58,8 +122,12 @@ export default function ProSignupScreen({ navigation }) {
 
         <View style={styles.pricingCard}>
           <Text style={styles.pricingTitle}>Pro Subscription</Text>
-          <Text style={styles.pricingAmount}>$59.99/month</Text>
-          <Text style={styles.pricingNote}>Subscribe online to get started</Text>
+          <Text style={styles.pricingAmount}>
+            {proProduct ? proProduct.priceString : '$59.99'}/month
+          </Text>
+          <Text style={styles.pricingNote}>
+            Subscribe via Apple In-App Purchase
+          </Text>
           
           <View style={styles.benefitsContainer}>
             <Text style={styles.benefitItem}>✅ Unlimited job leads</Text>
@@ -121,22 +189,53 @@ export default function ProSignupScreen({ navigation }) {
           </View>
         </View>
 
+        {/* SMS Consent Checkbox */}
         <TouchableOpacity
-          style={[styles.subscribeButton, loading && styles.buttonDisabled]}
-          onPress={handleSubscribe}
-          disabled={loading}
+          style={styles.checkboxContainer}
+          onPress={() => {
+            setSmsOptIn(!smsOptIn);
+            if (showSmsError) setShowSmsError(false);
+          }}
+          accessible={true}
+          accessibilityLabel="SMS notifications consent checkbox"
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: smsOptIn }}
         >
-          {loading ? (
+          <View style={[styles.checkbox, smsOptIn && styles.checkboxChecked]}>
+            {smsOptIn && <Text style={styles.checkmark}>✓</Text>}
+          </View>
+          <Text style={styles.checkboxLabel}>
+            I agree to receive SMS updates related to job leads, appointments, and Fixlo service notifications. Reply STOP to unsubscribe.
+          </Text>
+        </TouchableOpacity>
+
+        {showSmsError && (
+          <Text style={styles.errorText}>
+            You must agree to SMS notifications to continue.
+          </Text>
+        )}
+
+        <TouchableOpacity
+          style={[
+            styles.subscribeButton, 
+            (loading || verifying || !smsOptIn) && styles.buttonDisabled
+          ]}
+          onPress={handleSubscribe}
+          disabled={loading || verifying || !smsOptIn}
+        >
+          {loading || verifying ? (
             <ActivityIndicator color="white" />
           ) : (
             <Text style={styles.subscribeButtonText}>
-              Continue to Subscribe - $59.99/month
+              {proProduct 
+                ? `Subscribe Now - ${proProduct.priceString}/month`
+                : 'Continue to Subscribe - $59.99/month'}
             </Text>
           )}
         </TouchableOpacity>
 
         <Text style={styles.disclaimer}>
-          You'll be directed to our website to complete your subscription setup and billing. 
+          Payment will be charged to your Apple ID account. Subscription automatically renews unless cancelled at least 24 hours before the end of the current period.
           By subscribing, you agree to our Terms of Service and Privacy Policy.
         </Text>
 
@@ -246,6 +345,47 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 12,
     fontSize: 16
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+    paddingHorizontal: 4
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#d1d5db',
+    backgroundColor: '#ffffff',
+    marginRight: 12,
+    marginTop: 2,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  checkboxChecked: {
+    backgroundColor: '#2563eb',
+    borderColor: '#2563eb'
+  },
+  checkmark: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold'
+  },
+  checkboxLabel: {
+    flex: 1,
+    fontSize: 14,
+    color: '#374151',
+    lineHeight: 20
+  },
+  errorText: {
+    color: '#ef4444',
+    fontSize: 14,
+    marginBottom: 16,
+    marginTop: -8,
+    paddingHorizontal: 4,
+    fontWeight: '500'
   },
   subscribeButton: {
     backgroundColor: '#2563eb',

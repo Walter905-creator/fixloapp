@@ -11,6 +11,8 @@ import SignupScreen from './screens/SignupScreen';
 import JobDetailScreen from './screens/JobDetailScreen';
 import MessagesScreen from './screens/MessagesScreen';
 import ChatScreen from './screens/ChatScreen';
+import SubscriptionScreen from './screens/SubscriptionScreen';
+import { IAPProvider } from './context/IAPContext';
 import { getSession } from './utils/authStorage';
 import { initializeSocket, disconnectSocket } from './utils/socketService';
 import { offlineQueue } from './utils/offlineQueue';
@@ -124,28 +126,68 @@ export default function App() {
 
   const initializeServices = async () => {
     try {
-      // Initialize Socket.io connection
-      initializeSocket();
+      // Set a maximum initialization timeout to prevent infinite loading
+      const INIT_TIMEOUT = 10000; // 10 seconds max
+      
+      const initPromise = (async () => {
+        // Initialize services with individual error handling
+        try {
+          initializeSocket();
+          console.log('✅ Socket initialization started');
+        } catch (error) {
+          console.error('❌ Socket initialization failed (non-blocking):', error);
+        }
 
-      // Initialize offline queue manager
-      await offlineQueue.initialize();
+        try {
+          await offlineQueue.initialize();
+          console.log('✅ Offline queue initialized');
+        } catch (error) {
+          console.error('❌ Offline queue initialization failed (non-blocking):', error);
+        }
 
-      // Initialize messaging service
-      await messagingService.initialize();
+        try {
+          await messagingService.initialize();
+          console.log('✅ Messaging service initialized');
+        } catch (error) {
+          console.error('❌ Messaging service initialization failed (non-blocking):', error);
+        }
 
-      // Check for saved session and auto-login
-      await checkSession();
+        // Check for saved session and auto-login
+        try {
+          await checkSession();
+        } catch (error) {
+          console.error('❌ Session check failed (non-blocking):', error);
+        }
 
-      // Register background fetch for pro users
-      const session = await getSession();
-      if (session.userType === 'pro') {
-        await registerBackgroundFetch();
-        console.log('✅ Background fetch registered for pro user');
-      }
+        // Register background fetch for pro users (non-blocking)
+        try {
+          const session = await getSession();
+          if (session.userType === 'pro') {
+            registerBackgroundFetch().catch(err => 
+              console.error('❌ Background fetch registration failed (non-critical):', err)
+            );
+            console.log('✅ Background fetch registration initiated');
+          }
+        } catch (error) {
+          console.error('❌ Background fetch check failed (non-blocking):', error);
+        }
+      })();
+
+      // Race between initialization and timeout
+      await Promise.race([
+        initPromise,
+        new Promise((resolve) => setTimeout(() => {
+          console.warn('⚠️ Service initialization timeout - proceeding anyway');
+          resolve();
+        }, INIT_TIMEOUT))
+      ]);
+
     } catch (error) {
       console.error('❌ Error initializing services:', error);
     } finally {
+      // Always allow the app to render, even if initialization fails
       setIsLoading(false);
+      console.log('✅ App initialization complete - rendering navigation');
     }
   };
 
@@ -154,7 +196,7 @@ export default function App() {
       const session = await getSession();
       console.log('📱 Session check:', session);
 
-      if (session.isAuthenticated) {
+      if (session && session.isAuthenticated) {
         // Auto-login based on user type
         if (session.userType === 'homeowner') {
           setInitialRoute('Homeowner');
@@ -163,10 +205,12 @@ export default function App() {
         }
         console.log('✅ Auto-login successful:', session.userType);
       } else {
-        console.log('ℹ️ No saved session found');
+        console.log('ℹ️ No saved session found - showing welcome screen');
       }
     } catch (error) {
       console.error('❌ Error checking session:', error);
+      // Fallback to welcome screen on error
+      setInitialRoute('Fixlo');
     }
   };
 
@@ -186,71 +230,83 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <NavigationContainer>
-        <Stack.Navigator
-          initialRouteName={initialRoute}
-          screenOptions={{
-            headerStyle: {
-              backgroundColor: '#f97316',
-            },
-            headerTintColor: '#fff',
-            headerTitleStyle: {
-              fontWeight: 'bold',
-            },
-          }}
-        >
-          <Stack.Screen 
-            name="Fixlo" 
-            component={HomeScreen} 
-            options={{ title: 'Fixlo - Home Services' }}
-          />
-          <Stack.Screen 
-            name="Login" 
-            component={LoginScreen} 
-            options={{ title: 'Sign In' }}
-          />
-          <Stack.Screen 
-            name="Signup" 
-            component={SignupScreen} 
-            options={{ title: 'Create Account' }}
-          />
-          <Stack.Screen 
-            name="Homeowner" 
-            component={HomeownerScreen} 
-            options={{ title: 'Homeowner Dashboard' }}
-          />
-          <Stack.Screen 
-            name="Pro" 
-            component={ProScreen} 
-            options={{ title: 'Pro Dashboard' }}
-          />
-          <Stack.Screen 
-            name="Pro Signup" 
-            component={ProSignupScreen} 
-            options={{ title: 'Join as Pro - $59.99/month' }}
-          />
-          <Stack.Screen 
-            name="Post a Job" 
-            component={HomeownerJobRequestScreen} 
-            options={{ title: 'Submit Job Request' }}
-          />
-          <Stack.Screen 
-            name="Job Detail" 
-            component={JobDetailScreen} 
-            options={{ title: 'Job Details' }}
-          />
-          <Stack.Screen 
-            name="Messages" 
-            component={MessagesScreen} 
-            options={{ title: 'Messages' }}
-          />
-          <Stack.Screen 
-            name="Chat" 
-            component={ChatScreen} 
-            options={{ title: 'Chat' }}
-          />
-        </Stack.Navigator>
-      </NavigationContainer>
+      <IAPProvider>
+        <NavigationContainer>
+          <Stack.Navigator
+            initialRouteName={initialRoute}
+            screenOptions={{
+              headerStyle: {
+                backgroundColor: '#f97316',
+              },
+              headerTintColor: '#fff',
+              headerTitleStyle: {
+                fontWeight: 'bold',
+              },
+            }}
+          >
+            <Stack.Screen 
+              name="Fixlo" 
+              component={HomeScreen} 
+              options={{ title: 'Fixlo - Home Services' }}
+            />
+            <Stack.Screen 
+              name="Login" 
+              component={LoginScreen} 
+              options={{ title: 'Sign In' }}
+            />
+            <Stack.Screen 
+              name="Signup" 
+              component={SignupScreen} 
+              options={{ title: 'Create Account' }}
+            />
+            <Stack.Screen 
+              name="Homeowner" 
+              component={HomeownerScreen} 
+              options={{ title: 'Homeowner Dashboard' }}
+            />
+            <Stack.Screen 
+              name="Pro" 
+              component={ProScreen} 
+              options={{ title: 'Pro Dashboard' }}
+            />
+            <Stack.Screen 
+              name="ProScreen" 
+              component={ProScreen} 
+              options={{ title: 'Pro Dashboard' }}
+            />
+            <Stack.Screen 
+              name="Pro Signup" 
+              component={ProSignupScreen} 
+              options={{ title: 'Join Fixlo Pro' }}
+            />
+            <Stack.Screen 
+              name="Subscription" 
+              component={SubscriptionScreen} 
+              options={{ title: 'Fixlo Pro Subscription' }}
+            />
+            <Stack.Screen 
+              name="Post a Job" 
+              component={HomeownerJobRequestScreen} 
+              options={{ title: 'Submit Job Request' }}
+            />
+            <Stack.Screen 
+              name="Job Detail" 
+              component={JobDetailScreen} 
+              options={{ title: 'Job Details' }}
+            />
+            <Stack.Screen 
+              name="Messages" 
+              component={MessagesScreen} 
+              options={{ title: 'Messages' }}
+            />
+            <Stack.Screen 
+              name="Chat" 
+              component={ChatScreen} 
+              options={{ title: 'Chat' }}
+            />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </IAPProvider>
     </ErrorBoundary>
   );
 }
@@ -377,3 +433,5 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
 });
+// Force bundle refresh - 1764643649
+// Build 26 - 1764686937

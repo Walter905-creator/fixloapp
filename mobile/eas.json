@@ -13,5 +13,13 @@
         "buildType": "app-bundle"
       }
     }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "6754519765",
+        "appleId": "fixlo.app.ios@gmail.com"
+      }
+    }
   }
 }
