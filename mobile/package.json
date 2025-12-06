@@ -30,7 +30,8 @@
     "socket.io-client": "4.7.5"
   },
   "devDependencies": {
-    "@babel/core": "7.25.2"
+    "@babel/core": "7.25.2",
+    "expo-build-properties": "^1.0.10"
   },
   "private": true
 }
