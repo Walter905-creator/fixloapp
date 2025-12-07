@@ -19,6 +19,7 @@
     "expo-background-fetch": "~14.0.8",
     "expo-device": "8.0.9",
     "expo-in-app-purchases": "14.5.0",
+    "expo-location": "~19.0.7",
     "expo-notifications": "0.28.19",
     "expo-secure-store": "15.0.7",
     "expo-splash-screen": "0.27.7",
