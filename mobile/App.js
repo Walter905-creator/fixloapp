@@ -12,6 +12,26 @@ import JobDetailScreen from './screens/JobDetailScreen';
 import MessagesScreen from './screens/MessagesScreen';
 import ChatScreen from './screens/ChatScreen';
 import SubscriptionScreen from './screens/SubscriptionScreen';
+// Informational Screens
+import HowItWorksScreen from './screens/HowItWorksScreen';
+import AboutScreen from './screens/AboutScreen';
+import ContactScreen from './screens/ContactScreen';
+import FAQScreen from './screens/FAQScreen';
+import TrustSafetyScreen from './screens/TrustSafetyScreen';
+import PricingScreen from './screens/PricingScreen';
+import HomeownerBenefitsScreen from './screens/HomeownerBenefitsScreen';
+// Legal Screens
+import TermsScreen from './screens/TermsScreen';
+import PrivacyScreen from './screens/PrivacyScreen';
+import CookieScreen from './screens/CookieScreen';
+// Account & Settings Screens
+import SettingsScreen from './screens/SettingsScreen';
+import EditProfileScreen from './screens/EditProfileScreen';
+import NotificationSettingsScreen from './screens/NotificationSettingsScreen';
+import ReferralScreen from './screens/ReferralScreen';
+// Misc Screens
+import AppInfoScreen from './screens/AppInfoScreen';
+import HelpCenterScreen from './screens/HelpCenterScreen';
 import { IAPProvider } from './context/IAPContext';
 import { getSession } from './utils/authStorage';
 import { initializeSocket, disconnectSocket } from './utils/socketService';
@@ -101,6 +121,34 @@ function HomeScreen({ navigation }) {
             onPress={() => navigation.navigate('Login', { userType: 'pro' })}
           >
             <Text style={styles.authLinkText}>👷 Pro Login</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* More Info Links */}
+        <View style={styles.infoLinksContainer}>
+          <TouchableOpacity
+            style={styles.infoLink}
+            onPress={() => navigation.navigate('How It Works')}
+          >
+            <Text style={styles.infoLinkText}>How It Works</Text>
+          </TouchableOpacity>
+          
+          <Text style={styles.authDivider}>•</Text>
+          
+          <TouchableOpacity
+            style={styles.infoLink}
+            onPress={() => navigation.navigate('About')}
+          >
+            <Text style={styles.infoLinkText}>About</Text>
+          </TouchableOpacity>
+          
+          <Text style={styles.authDivider}>•</Text>
+          
+          <TouchableOpacity
+            style={styles.infoLink}
+            onPress={() => navigation.navigate('Contact')}
+          >
+            <Text style={styles.infoLinkText}>Contact</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -304,6 +352,94 @@ export default function App() {
               component={ChatScreen} 
               options={{ title: 'Chat' }}
             />
+            
+            {/* Informational Screens */}
+            <Stack.Screen 
+              name="How It Works" 
+              component={HowItWorksScreen} 
+              options={{ title: 'How Fixlo Works' }}
+            />
+            <Stack.Screen 
+              name="About" 
+              component={AboutScreen} 
+              options={{ title: 'About Fixlo' }}
+            />
+            <Stack.Screen 
+              name="Contact" 
+              component={ContactScreen} 
+              options={{ title: 'Contact & Support' }}
+            />
+            <Stack.Screen 
+              name="FAQ" 
+              component={FAQScreen} 
+              options={{ title: 'FAQ' }}
+            />
+            <Stack.Screen 
+              name="Trust & Safety" 
+              component={TrustSafetyScreen} 
+              options={{ title: 'Trust & Safety' }}
+            />
+            <Stack.Screen 
+              name="Pricing" 
+              component={PricingScreen} 
+              options={{ title: 'Pro Pricing' }}
+            />
+            <Stack.Screen 
+              name="Homeowner Benefits" 
+              component={HomeownerBenefitsScreen} 
+              options={{ title: 'Homeowner Benefits' }}
+            />
+            
+            {/* Legal Screens */}
+            <Stack.Screen 
+              name="Terms" 
+              component={TermsScreen} 
+              options={{ title: 'Terms of Service' }}
+            />
+            <Stack.Screen 
+              name="Privacy" 
+              component={PrivacyScreen} 
+              options={{ title: 'Privacy Policy' }}
+            />
+            <Stack.Screen 
+              name="Cookie Policy" 
+              component={CookieScreen} 
+              options={{ title: 'Cookie Policy' }}
+            />
+            
+            {/* Account & Settings Screens */}
+            <Stack.Screen 
+              name="Settings" 
+              component={SettingsScreen} 
+              options={{ title: 'Settings' }}
+            />
+            <Stack.Screen 
+              name="Edit Profile" 
+              component={EditProfileScreen} 
+              options={{ title: 'Edit Profile' }}
+            />
+            <Stack.Screen 
+              name="Notification Settings" 
+              component={NotificationSettingsScreen} 
+              options={{ title: 'Notifications' }}
+            />
+            <Stack.Screen 
+              name="Referral" 
+              component={ReferralScreen} 
+              options={{ title: 'Referral Program' }}
+            />
+            
+            {/* Misc Screens */}
+            <Stack.Screen 
+              name="App Info" 
+              component={AppInfoScreen} 
+              options={{ title: 'App Information' }}
+            />
+            <Stack.Screen 
+              name="Help Center" 
+              component={HelpCenterScreen} 
+              options={{ title: 'Help Center' }}
+            />
           </Stack.Navigator>
         </NavigationContainer>
       </IAPProvider>
@@ -388,6 +524,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginHorizontal: 10
   },
+  infoLinksContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+    flexWrap: 'wrap',
+    paddingHorizontal: 20,
+  },
+  infoLink: {
+    padding: 8,
+  },
+  infoLinkText: {
+    color: '#64748b',
+    fontSize: 14,
+    fontWeight: '500',
+  },
   errorContainer: {
     flex: 1,
     backgroundColor: '#fef2f2',
@@ -434,4 +586,4 @@ const styles = StyleSheet.create({
   },
 });
 // Force bundle refresh - 1764643649
-// Build 26 - 1764686937
+// Build 33 - Complete feature set with all informational, legal, and settings pages - 1733653562
