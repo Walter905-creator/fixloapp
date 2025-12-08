@@ -228,13 +228,23 @@ export default function ProScreen({ navigation }) {
           <Text style={styles.buttonText}>🔔 Test Notification</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.button, { backgroundColor: '#dc2626' }]}
-          activeOpacity={0.7}
-          onPress={handleLogout}
-        >
-          <Text style={styles.buttonText}>🚪 Logout</Text>
-        </TouchableOpacity>
+        <View style={styles.dashboardActions}>
+          <TouchableOpacity
+            style={styles.settingsButton}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('Settings', { userType: 'pro' })}
+          >
+            <Text style={styles.buttonText}>⚙️ Settings</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: '#dc2626' }]}
+            activeOpacity={0.7}
+            onPress={handleLogout}
+          >
+            <Text style={styles.buttonText}>🚪 Logout</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Job Filter Modal */}
@@ -335,6 +345,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#b45309',
     marginTop: 4,
+  },
+  dashboardActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
+  },
+  settingsButton: {
+    flex: 1,
+    backgroundColor: '#2563eb',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    minHeight: 50,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   filterSection: {
     marginBottom: 16,
