@@ -123,7 +123,6 @@ export default function ServicePage(){
         </p>
         <ServiceLeadForm service={s} city={c}/>
       </div>
-      </div>
     </div>
   </>);
 }
