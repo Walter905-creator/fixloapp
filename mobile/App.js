@@ -81,7 +81,7 @@ function HomeScreen({ navigation }) {
         <TouchableOpacity
           style={[styles.button, { backgroundColor: '#2563eb' }]}
           activeOpacity={0.7}
-          onPress={() => navigation.navigate('Pro')}
+          onPress={() => navigation.navigate('Pro Signup')}
         >
           <Text style={styles.buttonText}>👷 I am a Pro</Text>
         </TouchableOpacity>
