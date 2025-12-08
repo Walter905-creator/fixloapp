@@ -24,12 +24,16 @@ export const CLOUDINARY_UPLOAD_PRESET = getEnv('VITE_CLOUDINARY_UPLOAD_PRESET');
 // Stripe configuration
 export const STRIPE_CHECKOUT_URL = getEnv('VITE_STRIPE_CHECKOUT_URL');
 
+// Seasonal configuration - set to true during holiday season (Nov-Jan)
+export const IS_HOLIDAY_SEASON = true;
+
 // Log configuration in development
 if (getEnv('NODE_ENV') !== 'production') {
   console.log('🔧 Configuration loaded:', {
     API_BASE,
     CLOUDINARY_CLOUD_NAME: CLOUDINARY_CLOUD_NAME ? '✅ Set' : '❌ Missing',
     CLOUDINARY_UPLOAD_PRESET: CLOUDINARY_UPLOAD_PRESET ? '✅ Set' : '❌ Missing',
-    STRIPE_CHECKOUT_URL: STRIPE_CHECKOUT_URL ? '✅ Set' : '❌ Missing'
+    STRIPE_CHECKOUT_URL: STRIPE_CHECKOUT_URL ? '✅ Set' : '❌ Missing',
+    IS_HOLIDAY_SEASON: IS_HOLIDAY_SEASON ? '🎄 Active' : '❌ Inactive'
   });
 }

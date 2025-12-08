@@ -1,10 +1,15 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { buildCanonical } from '../utils/seo';
+import { IS_HOLIDAY_SEASON } from '../utils/config';
+
+const defaultDescription = IS_HOLIDAY_SEASON 
+  ? 'Fixlo connects homeowners with trusted pros for holiday home services—plumbing, electrical, Christmas light installation, holiday cleaning, seasonal repairs & more. Get your home ready for the holidays!'
+  : 'Fixlo connects homeowners with trusted pros—plumbing, electrical, junk removal & more.';
 
 export default function HelmetSEO({ 
   title, 
-  description = 'Fixlo connects homeowners with trusted pros—plumbing, electrical, junk removal & more.', 
+  description = defaultDescription, 
   canonicalPathname, 
   robots = 'index, follow', 
   image = 'https://www.fixloapp.com/cover.png',

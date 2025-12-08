@@ -1,5 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
+import { IS_HOLIDAY_SEASON } from '../utils/config';
 
 /**
  * Schema component for JSON-LD structured data
@@ -11,6 +12,9 @@ export default function Schema() {
     "@type": "WebSite",
     "name": "Fixlo",
     "url": "https://www.fixloapp.com/",
+    "description": IS_HOLIDAY_SEASON 
+      ? "Book trusted professionals for holiday home services, Christmas repairs, seasonal cleaning, and winter emergency services. Servicios del hogar para Navidad."
+      : "Book trusted home service professionals for all your repair and maintenance needs.",
     "potentialAction": {
       "@type": "SearchAction",
       "target": "https://www.fixloapp.com/search?q={query}",
@@ -23,7 +27,10 @@ export default function Schema() {
     "@type": "Organization",
     "name": "Fixlo",
     "url": "https://www.fixloapp.com/",
-    "logo": "https://www.fixloapp.com/cover.png"
+    "logo": "https://www.fixloapp.com/cover.png",
+    "description": IS_HOLIDAY_SEASON
+      ? "Professional home services marketplace connecting homeowners with vetted contractors for holiday repairs, Christmas preparations, and seasonal maintenance."
+      : "Professional home services marketplace connecting homeowners with vetted contractors."
   };
 
   return (
@@ -50,11 +57,15 @@ export function ServiceSchema({ service, city }) {
   let displayCity = cityName;
   let state = '';
   
+  const serviceDescription = IS_HOLIDAY_SEASON
+    ? `Professional ${serviceName.toLowerCase()} services for the holiday season in ${displayCity}. Christmas home repairs, winter emergency services, and seasonal maintenance. Servicios navideños del hogar.`
+    : `Professional ${serviceName.toLowerCase()} services in ${displayCity}`;
+  
   const localBusinessSchema = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
-    "name": `Fixlo – ${serviceName} in ${displayCity}${state ? ', ' + state : ''}`,
-    "description": `Professional ${serviceName.toLowerCase()} services in ${displayCity}`,
+    "name": `Fixlo – ${serviceName} in ${displayCity}${state ? ', ' + state : ''}${IS_HOLIDAY_SEASON ? ' – Holiday Services' : ''}`,
+    "description": serviceDescription,
     "url": `https://www.fixloapp.com/services/${service}${city ? '/' + city : ''}`,
     "image": "https://www.fixloapp.com/cover.png",
     "priceRange": "$$",
@@ -65,7 +76,8 @@ export function ServiceSchema({ service, city }) {
   const serviceSchema = {
     "@context": "https://schema.org",
     "@type": "Service",
-    "name": serviceName,
+    "name": IS_HOLIDAY_SEASON ? `${serviceName} – Holiday & Seasonal Services` : serviceName,
+    "description": serviceDescription,
     "areaServed": displayCity,
     "provider": {
       "@type": "Organization",
