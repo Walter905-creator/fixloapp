@@ -38,7 +38,7 @@ export default function PricingScreen({ navigation }) {
           <Text style={styles.planName}>Pro Monthly</Text>
           <View style={styles.priceContainer}>
             <Text style={styles.currency}>$</Text>
-            <Text style={styles.price}>29</Text>
+            <Text style={styles.price}>59</Text>
             <Text style={styles.period}>.99/mo</Text>
           </View>
           <Text style={styles.billingNote}>Billed monthly • Cancel anytime</Text>

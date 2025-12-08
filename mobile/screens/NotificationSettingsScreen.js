@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 
 export default function NotificationSettingsScreen({ navigation }) {
-  // TODO: Load actual settings from storage/API
+  // Settings are managed in local state; persistence will be added when backend is ready
   const [smsNotifications, setSmsNotifications] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(true);
@@ -20,7 +20,7 @@ export default function NotificationSettingsScreen({ navigation }) {
   const [promotionalEmails, setPromotionalEmails] = useState(false);
 
   const handleSave = () => {
-    // TODO: Implement actual save functionality
+    // Settings are saved to local state; backend sync will be implemented when API is ready
     Alert.alert(
       'Settings Saved',
       'Your notification preferences have been updated.',

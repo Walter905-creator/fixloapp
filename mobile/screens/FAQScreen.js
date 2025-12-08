@@ -52,7 +52,7 @@ const FAQ_DATA = [
       },
       {
         q: 'How much does it cost?',
-        a: 'Fixlo Pro subscription starts at $29.99/month with unlimited access to job leads in your area.'
+        a: 'Fixlo Pro subscription is $59.99/month with unlimited access to job leads in your area.'
       },
       {
         q: 'How do I get paid?',
