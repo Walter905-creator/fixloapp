@@ -159,16 +159,25 @@ export default function HomeownerScreen({ navigation }) {
             <Text style={styles.buttonText}>+ Post a Job Request</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.logoutButton}
-            onPress={async () => {
-              await clearSession();
-              Alert.alert('Logged Out', 'You have been logged out successfully');
-              navigation.replace('Fixlo');
-            }}
-          >
-            <Text style={styles.logoutButtonText}>🚪 Logout</Text>
-          </TouchableOpacity>
+          <View style={styles.dashboardActions}>
+            <TouchableOpacity 
+              style={styles.settingsButton}
+              onPress={() => navigation.navigate('Settings', { userType: 'homeowner' })}
+            >
+              <Text style={styles.settingsButtonText}>⚙️ Settings</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.logoutButton}
+              onPress={async () => {
+                await clearSession();
+                Alert.alert('Logged Out', 'You have been logged out successfully');
+                navigation.replace('Fixlo');
+              }}
+            >
+              <Text style={styles.logoutButtonText}>🚪 Logout</Text>
+            </TouchableOpacity>
+          </View>
 
           {/* Job Requests Section */}
           <View style={styles.requestsSection}>
@@ -267,6 +276,49 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600'
+  },
+  dashboardActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginVertical: 8,
+  },
+  settingsButton: {
+    flex: 1,
+    backgroundColor: '#2563eb',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    minHeight: 50,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  settingsButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600'
+  },
+  logoutButton: {
+    flex: 1,
+    backgroundColor: '#dc2626',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    minHeight: 50,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  logoutButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: '600'
@@ -422,20 +474,4 @@ const styles = StyleSheet.create({
     color: '#059669',
     fontWeight: '600'
   },
-  logoutButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#dc2626',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    marginVertical: 8,
-    alignItems: 'center',
-    minHeight: 50,
-  },
-  logoutButtonText: {
-    color: '#dc2626',
-    fontSize: 16,
-    fontWeight: '600'
-  }
 });

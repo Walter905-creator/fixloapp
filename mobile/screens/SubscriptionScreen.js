@@ -1,391 +1,246 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator,
+import React from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
   ScrollView,
-  Alert,
-  Linking,
+  SafeAreaView,
+  TouchableOpacity,
+  Alert
 } from 'react-native';
 import { useIAP } from '../context/IAPContext';
 import { PRODUCT_IDS } from '../utils/iapService';
 
 export default function SubscriptionScreen({ navigation }) {
-  const {
-    products,
-    isSubscribed,
-    subscriptionStatus,
-    loading,
-    verifying,
-    purchaseProduct,
-    restorePurchases,
-    getProduct,
-  } = useIAP();
-
-  const [purchasing, setPurchasing] = useState(false);
-  const [restoring, setRestoring] = useState(false);
-
-  // Get Pro Monthly product
+  const { purchaseProduct, getProduct, verifying, restorePurchases } = useIAP();
   const proProduct = getProduct(PRODUCT_IDS.PRO_MONTHLY);
 
-  /**
-   * Handle purchase button press
-   */
-  const handlePurchase = async () => {
+  const handleSubscribe = async () => {
     try {
-      setPurchasing(true);
-      
-      console.log('[SubscriptionScreen] Starting purchase flow...');
       const result = await purchaseProduct(PRODUCT_IDS.PRO_MONTHLY);
       
       if (result.success) {
         Alert.alert(
-          '🎉 Welcome to Fixlo Pro!',
-          'Your subscription has been activated. You now have access to unlimited job leads and all Pro features.',
+          '🎉 Success!',
+          'Your Fixlo Pro subscription is now active!',
           [
             {
-              text: 'Get Started',
-              onPress: () => navigation.goBack(),
-            },
+              text: 'Go to Dashboard',
+              onPress: () => navigation.replace('Pro')
+            }
           ]
         );
       } else {
         Alert.alert('Purchase Failed', result.error || 'Unable to complete purchase. Please try again.');
       }
-      
-      setPurchasing(false);
     } catch (error) {
-      console.error('[SubscriptionScreen] Purchase error:', error);
-      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
-      setPurchasing(false);
+      console.error('Purchase error:', error);
+      Alert.alert('Error', 'An error occurred. Please try again.');
     }
   };
 
-  /**
-   * Handle restore purchases button press
-   */
   const handleRestore = async () => {
     try {
-      setRestoring(true);
-      
-      console.log('[SubscriptionScreen] Restoring purchases...');
-      const result = await restorePurchases();
-      
-      if (result.success) {
-        Alert.alert(
-          '✅ Subscription Restored',
-          result.message,
-          [
-            {
-              text: 'Continue',
-              onPress: () => navigation.goBack(),
-            },
-          ]
-        );
-      } else {
-        Alert.alert('No Purchases Found', result.message);
-      }
-      
-      setRestoring(false);
+      await restorePurchases();
+      Alert.alert('Success', 'Purchases restored successfully!');
     } catch (error) {
-      console.error('[SubscriptionScreen] Restore error:', error);
-      Alert.alert('Error', 'Unable to restore purchases. Please try again.');
-      setRestoring(false);
+      Alert.alert('Restore Failed', 'Unable to restore purchases. Please contact support if you believe you have an active subscription.');
     }
   };
 
-  /**
-   * Open Apple subscription management
-   */
-  const handleManageSubscription = () => {
-    Linking.openURL('https://apps.apple.com/account/subscriptions');
-  };
-
-  /**
-   * Open privacy policy
-   */
-  const handlePrivacyPolicy = () => {
-    Linking.openURL('https://fixloapp.com/privacy-policy.html');
-  };
-
-  /**
-   * Open terms of service
-   */
-  const handleTerms = () => {
-    Linking.openURL('https://fixloapp.com/terms.html');
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading subscription info...</Text>
-      </View>
-    );
-  }
-
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Fixlo Pro</Text>
-        <Text style={styles.subtitle}>Grow Your Business</Text>
-      </View>
-
-      {/* Subscription Status */}
-      {isSubscribed ? (
-        <View style={styles.subscribedBanner}>
-          <Text style={styles.subscribedIcon}>✅</Text>
-          <Text style={styles.subscribedText}>You're a Fixlo Pro!</Text>
-          <Text style={styles.subscribedSubtext}>
-            {subscriptionStatus?.expiresDate
-              ? `Active until ${new Date(subscriptionStatus.expiresDate).toLocaleDateString()}`
-              : 'Your subscription is active'}
-          </Text>
-        </View>
-      ) : (
-        <View style={styles.unsubscribedBanner}>
-          <Text style={styles.unsubscribedIcon}>🔒</Text>
-          <Text style={styles.unsubscribedText}>Not Subscribed</Text>
-          <Text style={styles.unsubscribedSubtext}>Subscribe to unlock all Pro features</Text>
-        </View>
-      )}
-
-      {/* Features List */}
-      <View style={styles.featuresContainer}>
-        <Text style={styles.featuresTitle}>What's Included:</Text>
-        
-        <View style={styles.feature}>
-          <Text style={styles.featureIcon}>📋</Text>
-          <Text style={styles.featureText}>Unlimited Job Leads</Text>
-        </View>
-        
-        <View style={styles.feature}>
-          <Text style={styles.featureIcon}>📞</Text>
-          <Text style={styles.featureText}>Direct Client Contact</Text>
-        </View>
-        
-        <View style={styles.feature}>
-          <Text style={styles.featureIcon}>🔔</Text>
-          <Text style={styles.featureText}>Instant SMS Notifications</Text>
-        </View>
-        
-        <View style={styles.feature}>
-          <Text style={styles.featureIcon}>⭐</Text>
-          <Text style={styles.featureText}>Professional Profile</Text>
-        </View>
-        
-        <View style={styles.feature}>
-          <Text style={styles.featureIcon}>💬</Text>
-          <Text style={styles.featureText}>In-App Messaging</Text>
-        </View>
-        
-        <View style={styles.feature}>
-          <Text style={styles.featureIcon}>📊</Text>
-          <Text style={styles.featureText}>Job Analytics</Text>
-        </View>
-      </View>
-
-      {/* Pricing */}
-      {proProduct && !isSubscribed && (
-        <View style={styles.pricingContainer}>
-          <Text style={styles.priceLabel}>Monthly Subscription</Text>
-          <Text style={styles.price}>{proProduct.priceString}/month</Text>
-          <Text style={styles.priceSubtext}>
-            Billed monthly • Cancel anytime
-          </Text>
-        </View>
-      )}
-
-      {/* Subscribe Button */}
-      {!isSubscribed && (
-        <TouchableOpacity
-          style={[styles.subscribeButton, (purchasing || verifying) && styles.disabledButton]}
-          onPress={handlePurchase}
-          disabled={purchasing || verifying || !proProduct}
-        >
-          {purchasing || verifying ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <>
-              <Text style={styles.subscribeButtonText}>
-                {proProduct ? 'Subscribe Now' : 'Loading...'}
-              </Text>
-              {proProduct && (
-                <Text style={styles.subscribeButtonSubtext}>
-                  {proProduct.priceString}/month
-                </Text>
-              )}
-            </>
-          )}
-        </TouchableOpacity>
-      )}
-
-      {/* Restore Purchases Button */}
-      <TouchableOpacity
-        style={styles.restoreButton}
-        onPress={handleRestore}
-        disabled={restoring || verifying}
+    <SafeAreaView style={styles.container}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
       >
-        {restoring ? (
-          <ActivityIndicator color="#007AFF" />
-        ) : (
-          <Text style={styles.restoreButtonText}>Restore Purchases</Text>
-        )}
-      </TouchableOpacity>
-
-      {/* Manage Subscription (for subscribed users) */}
-      {isSubscribed && (
-        <TouchableOpacity
-          style={styles.manageButton}
-          onPress={handleManageSubscription}
-        >
-          <Text style={styles.manageButtonText}>Manage Subscription</Text>
-        </TouchableOpacity>
-      )}
-
-      {/* Legal Links */}
-      <View style={styles.legalContainer}>
-        <Text style={styles.legalText}>
-          By subscribing, you agree to our{' '}
-          <Text style={styles.legalLink} onPress={handleTerms}>
-            Terms of Service
-          </Text>
-          {' '}and{' '}
-          <Text style={styles.legalLink} onPress={handlePrivacyPolicy}>
-            Privacy Policy
-          </Text>
-          .
-        </Text>
-        
-        <Text style={styles.legalText}>
-          Subscription automatically renews unless cancelled at least 24 hours before the end of the current period.
-          Your account will be charged for renewal within 24 hours prior to the end of the current period.
-        </Text>
-      </View>
-
-      {/* Debug Info (only in development) */}
-      {__DEV__ && (
-        <View style={styles.debugContainer}>
-          <Text style={styles.debugTitle}>Debug Info:</Text>
-          <Text style={styles.debugText}>Product ID: {PRODUCT_IDS.PRO_MONTHLY}</Text>
-          <Text style={styles.debugText}>Products loaded: {products.length}</Text>
-          <Text style={styles.debugText}>
-            Is Subscribed: {isSubscribed ? 'Yes' : 'No'}
-          </Text>
-          {subscriptionStatus && (
-            <>
-              <Text style={styles.debugText}>Status: {subscriptionStatus.status}</Text>
-              <Text style={styles.debugText}>
-                Transaction ID: {subscriptionStatus.transactionId}
-              </Text>
-            </>
-          )}
+        <View style={styles.header}>
+          <Text style={styles.title}>Fixlo Pro</Text>
+          <Text style={styles.subtitle}>Unlimited job leads for your business</Text>
         </View>
-      )}
-    </ScrollView>
+
+        <View style={styles.pricingCard}>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>POPULAR</Text>
+          </View>
+          
+          <Text style={styles.planName}>Pro Monthly</Text>
+          
+          <View style={styles.priceContainer}>
+            <Text style={styles.currency}>$</Text>
+            <Text style={styles.price}>{proProduct?.price || '29.99'}</Text>
+            <Text style={styles.period}>/mo</Text>
+          </View>
+          
+          <Text style={styles.billingNote}>Cancel anytime • No commitments</Text>
+        </View>
+
+        <View style={styles.featuresSection}>
+          <Text style={styles.featuresTitle}>What's Included:</Text>
+          
+          {[
+            'Unlimited job leads in your area',
+            'Direct messaging with homeowners',
+            'Profile highlighting in search',
+            'Background check verification badge',
+            'Customer reviews and ratings',
+            'SMS notifications for new leads',
+            'Priority customer support',
+            'Mobile and web dashboard access'
+          ].map((feature, idx) => (
+            <View key={idx} style={styles.feature}>
+              <Text style={styles.featureIcon}>✅</Text>
+              <Text style={styles.featureText}>{feature}</Text>
+            </View>
+          ))}
+        </View>
+
+        <TouchableOpacity 
+          style={styles.subscribeButton}
+          onPress={handleSubscribe}
+          disabled={verifying}
+        >
+          <Text style={styles.subscribeButtonText}>
+            {verifying ? 'Processing...' : 'Subscribe Now'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.restoreButton}
+          onPress={handleRestore}
+          disabled={verifying}
+        >
+          <Text style={styles.restoreButtonText}>Restore Purchases</Text>
+        </TouchableOpacity>
+
+        <View style={styles.guaranteeBox}>
+          <Text style={styles.guaranteeTitle}>💯 30-Day Money-Back Guarantee</Text>
+          <Text style={styles.guaranteeText}>
+            Not satisfied? Cancel within 30 days for a full refund, no questions asked.
+          </Text>
+        </View>
+
+        <View style={styles.termsBox}>
+          <Text style={styles.termsText}>
+            By subscribing, you agree to our Terms of Service and Privacy Policy. 
+            Subscription automatically renews unless cancelled at least 24 hours before the 
+            end of the current period.
+          </Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f1f5f9',
   },
-  contentContainer: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  loadingContainer: {
+  scrollView: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
   },
-  loadingText: {
-    marginTop: 15,
-    fontSize: 16,
-    color: '#666',
+  scrollContent: {
+    padding: 20,
   },
   header: {
-    alignItems: 'center',
     marginBottom: 30,
-    marginTop: 20,
+    alignItems: 'center',
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 5,
+    color: '#0f172a',
+    marginBottom: 10,
   },
   subtitle: {
     fontSize: 18,
-    color: '#666',
+    color: '#64748b',
+    textAlign: 'center',
   },
-  subscribedBanner: {
-    backgroundColor: '#E8F5E9',
-    borderRadius: 12,
-    padding: 20,
+  pricingCard: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 30,
+    marginBottom: 24,
     alignItems: 'center',
-    marginBottom: 30,
-    borderWidth: 2,
-    borderColor: '#4CAF50',
-  },
-  subscribedIcon: {
-    fontSize: 50,
-    marginBottom: 10,
-  },
-  subscribedText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2E7D32',
-    marginBottom: 5,
-  },
-  subscribedSubtext: {
-    fontSize: 14,
-    color: '#558B2F',
-  },
-  unsubscribedBanner: {
-    backgroundColor: '#FFF3E0',
-    borderRadius: 12,
-    padding: 20,
-    alignItems: 'center',
-    marginBottom: 30,
-    borderWidth: 2,
-    borderColor: '#FF9800',
-  },
-  unsubscribedIcon: {
-    fontSize: 50,
-    marginBottom: 10,
-  },
-  unsubscribedText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#E65100',
-    marginBottom: 5,
-  },
-  unsubscribedSubtext: {
-    fontSize: 14,
-    color: '#F57C00',
-  },
-  featuresContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+    borderWidth: 2,
+    borderColor: '#f97316',
+  },
+  badge: {
+    backgroundColor: '#f97316',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginBottom: 20,
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  planName: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#0f172a',
+    marginBottom: 16,
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+  },
+  currency: {
+    fontSize: 28,
+    fontWeight: '600',
+    color: '#0f172a',
+    marginTop: 10,
+  },
+  price: {
+    fontSize: 64,
+    fontWeight: '700',
+    color: '#0f172a',
+    lineHeight: 64,
+  },
+  period: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#64748b',
+    marginTop: 20,
+  },
+  billingNote: {
+    fontSize: 14,
+    color: '#64748b',
+    textAlign: 'center',
+  },
+  featuresSection: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   featuresTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 15,
+    fontWeight: '600',
+    color: '#0f172a',
+    marginBottom: 16,
   },
   feature: {
     flexDirection: 'row',
@@ -393,129 +248,73 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   featureIcon: {
-    fontSize: 24,
+    fontSize: 20,
     marginRight: 12,
-    width: 30,
   },
   featureText: {
-    fontSize: 16,
-    color: '#555',
     flex: 1,
-  },
-  pricingContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    alignItems: 'center',
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  priceLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 5,
-  },
-  price: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#007AFF',
-    marginBottom: 5,
-  },
-  priceSubtext: {
-    fontSize: 14,
-    color: '#999',
+    fontSize: 15,
+    color: '#475569',
+    lineHeight: 22,
   },
   subscribeButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#f97316',
+    paddingVertical: 18,
     borderRadius: 12,
-    padding: 18,
     alignItems: 'center',
-    marginBottom: 15,
-    shadowColor: '#007AFF',
-    shadowOffset: { width: 0, height: 4 },
+    marginBottom: 16,
+    shadowColor: '#f97316',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 5,
   },
-  disabledButton: {
-    opacity: 0.6,
-  },
   subscribeButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  subscribeButtonSubtext: {
-    color: '#fff',
-    fontSize: 14,
-    marginTop: 4,
-    opacity: 0.9,
+    fontSize: 20,
+    fontWeight: '700',
+    color: 'white',
   },
   restoreButton: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    paddingVertical: 12,
     alignItems: 'center',
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#007AFF',
+    marginBottom: 20,
   },
   restoreButtonText: {
-    color: '#007AFF',
     fontSize: 16,
+    color: '#2563eb',
     fontWeight: '600',
   },
-  manageButton: {
-    backgroundColor: '#fff',
+  guaranteeBox: {
+    backgroundColor: '#dcfce7',
     borderRadius: 12,
-    padding: 16,
+    padding: 20,
+    marginBottom: 16,
     alignItems: 'center',
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#666',
   },
-  manageButtonText: {
-    color: '#666',
-    fontSize: 16,
+  guaranteeTitle: {
+    fontSize: 18,
     fontWeight: '600',
+    color: '#166534',
+    marginBottom: 8,
+    textAlign: 'center',
   },
-  legalContainer: {
-    marginTop: 20,
-    paddingHorizontal: 10,
+  guaranteeText: {
+    fontSize: 14,
+    color: '#166534',
+    textAlign: 'center',
+    lineHeight: 20,
   },
-  legalText: {
+  termsBox: {
+    padding: 16,
+    marginBottom: 20,
+  },
+  termsText: {
     fontSize: 12,
-    color: '#999',
+    color: '#94a3b8',
     textAlign: 'center',
     lineHeight: 18,
-    marginBottom: 10,
-  },
-  legalLink: {
-    color: '#007AFF',
-    textDecorationLine: 'underline',
-  },
-  debugContainer: {
-    marginTop: 30,
-    padding: 15,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ccc',
-  },
-  debugTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#333',
-  },
-  debugText: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
-    fontFamily: 'monospace',
   },
 });
