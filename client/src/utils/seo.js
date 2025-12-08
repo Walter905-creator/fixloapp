@@ -56,9 +56,9 @@ export function makeDescription({ service, city, state }){
   if (IS_HOLIDAY_SEASON) {
     const holidayService = service && holidayKeywordMap[service];
     if (holidayService) {
-      return `Holiday-ready ${what.toLowerCase()} in ${where}. ${holidayService}. Fast quotes, background-checked pros. Servicios navideños.`;
+      return `Get holiday-ready! ${holidayService} & ${what.toLowerCase()} pros in ${where}. Fast quotes, background-checked, easy scheduling. Servicios para Navidad.`;
     }
-    return `Christmas home services in ${where}. Vetted pros for ${what.toLowerCase()}. Holiday repairs & seasonal maintenance. Book now!`;
+    return `Christmas home services in ${where}. Vetted ${what.toLowerCase()} professionals for holiday repairs, seasonal maintenance & winter emergencies.`;
   }
   
   return `Book vetted pros for ${what} in ${where}. Fast quotes, background-checked contractors, easy scheduling.`; 
