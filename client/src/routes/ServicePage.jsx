@@ -3,7 +3,22 @@ import { useParams } from 'react-router-dom';
 import HelmetSEO from '../seo/HelmetSEO';
 import { ServiceSchema } from '../seo/Schema';
 import { makeTitle, makeDescription, slugify } from '../utils/seo';
-import { API_BASE } from '../utils/config';
+import { API_BASE, IS_HOLIDAY_SEASON } from '../utils/config';
+
+// Holiday-specific service benefits
+const holidayBenefits = {
+  'house-cleaning': 'Holiday deep cleaning to impress your guests',
+  'cleaning': 'Holiday deep cleaning to impress your guests',
+  'electrical': 'Christmas light installation and holiday electrical safety',
+  'landscaping': 'Professional holiday decoration setup and winter prep',
+  'plumbing': 'Emergency winter repairs to avoid holiday disasters',
+  'hvac': 'Keep your home warm for holiday gatherings',
+  'handyman': 'Get those repairs done before family arrives',
+  'carpentry': 'Home improvements ready for the holiday season',
+  'painting': 'Fresh paint to make your home shine this Christmas',
+  'roofing': 'Winter roof repairs and ice dam prevention',
+  'junk-removal': 'Clear out clutter before holiday decorating'
+};
 
 export default function ServicePage(){
   const { service, city } = useParams();
@@ -23,19 +38,49 @@ export default function ServicePage(){
     <div className="container-xl py-8">
       <h1 className="text-2xl font-extrabold">{title}</h1>
       
+      {/* Holiday Banner */}
+      {IS_HOLIDAY_SEASON && (
+        <div className="mt-4 p-4 bg-gradient-to-r from-red-50 to-green-50 border-l-4 border-red-500 rounded-lg">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">🎄</span>
+            <div>
+              <h3 className="font-semibold text-slate-900">Holiday Season Special</h3>
+              <p className="text-sm text-slate-700 mt-1">
+                {holidayBenefits[s] || 'Get your home ready for the holidays – book trusted professionals today!'}
+                {' '}¡Prepara tu hogar para Navidad!
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Service Information Section */}
       <div className="card p-6 mt-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Professional {serviceName} Services in {cityName}</h2>
+        <h2 className="text-xl font-semibold mb-4">
+          Professional {serviceName} Services in {cityName}
+          {IS_HOLIDAY_SEASON && ' – Holiday & Seasonal Repairs'}
+        </h2>
         <div className="prose prose-slate max-w-none">
           <p className="text-slate-700 mb-4">
-            Looking for reliable {serviceName.toLowerCase()} professionals in {cityName}? Fixlo connects you with vetted, background-checked contractors who are ready to help with your project. Whether you need emergency repairs, routine maintenance, or a major renovation, our network of trusted professionals has you covered.
+            Looking for reliable {serviceName.toLowerCase()} professionals in {cityName}? Fixlo connects you with vetted, background-checked contractors who are ready to help with your project. 
+            {IS_HOLIDAY_SEASON && (
+              <> Whether you need <strong>emergency holiday repairs</strong>, <strong>Christmas home services</strong>, <strong>winter maintenance</strong>, or preparations for holiday visitors, our network of trusted professionals has you covered. 
+              <span className="text-slate-600 italic"> Servicios del hogar para la temporada navideña.</span></>
+            )}
+            {!IS_HOLIDAY_SEASON && ' Whether you need emergency repairs, routine maintenance, or a major renovation, our network of trusted professionals has you covered.'}
           </p>
           
-          <h3 className="text-lg font-semibold mt-6 mb-3">Why Choose Fixlo for {serviceName}?</h3>
+          <h3 className="text-lg font-semibold mt-6 mb-3">
+            Why Choose Fixlo for {serviceName}?
+            {IS_HOLIDAY_SEASON && ' This Holiday Season'}
+          </h3>
           <ul className="list-disc list-inside space-y-2 text-slate-700">
             <li><strong>Background-Checked Professionals:</strong> Every contractor in our network undergoes thorough background screening to ensure your safety and peace of mind.</li>
-            <li><strong>Fast Response Times:</strong> Get matched with available pros in {cityName} within minutes, not days. Most service requests receive responses within 24 hours.</li>
+            <li><strong>Fast Response Times:</strong> Get matched with available pros in {cityName} within minutes, not days. Most service requests receive responses within 24 hours{IS_HOLIDAY_SEASON ? ' – perfect for urgent holiday preparations' : ''}.</li>
             <li><strong>Competitive Quotes:</strong> Compare quotes from multiple qualified professionals to find the best value for your {serviceName.toLowerCase()} project.</li>
+            {IS_HOLIDAY_SEASON && (
+              <li><strong>Holiday Availability:</strong> Our professionals work around your busy holiday schedule to ensure timely completion before your guests arrive.</li>
+            )}
             <li><strong>Real-Time Updates:</strong> Stay informed throughout the entire process with SMS notifications about your service request status.</li>
             <li><strong>Quality Guarantee:</strong> All professionals maintain high standards of workmanship and customer service to stay in our network.</li>
           </ul>
@@ -43,21 +88,39 @@ export default function ServicePage(){
           <h3 className="text-lg font-semibold mt-6 mb-3">How It Works</h3>
           <ol className="list-decimal list-inside space-y-2 text-slate-700">
             <li><strong>Submit Your Request:</strong> Tell us about your {serviceName.toLowerCase()} needs using the form below. The more details you provide, the better we can match you with the right professional.</li>
-            <li><strong>Get Matched:</strong> We'll connect you with qualified {serviceName.toLowerCase()} professionals in {cityName} who are available to take on your project.</li>
+            <li><strong>Get Matched:</strong> We'll connect you with qualified {serviceName.toLowerCase()} professionals in {cityName} who are available to take on your project{IS_HOLIDAY_SEASON ? ' and can work within your holiday timeline' : ''}.</li>
             <li><strong>Compare & Choose:</strong> Review quotes and profiles from interested contractors, then select the one that best fits your needs and budget.</li>
             <li><strong>Schedule Service:</strong> Work directly with your chosen professional to schedule the service at a time that's convenient for you.</li>
           </ol>
           
           <p className="text-slate-700 mt-6">
-            Ready to get started? Fill out the form below to receive quotes from trusted {serviceName.toLowerCase()} professionals in {cityName}. Our service is free for homeowners, and there's no obligation to hire.
+            {IS_HOLIDAY_SEASON ? (
+              <>
+                <strong>Get your home ready for the holidays!</strong> Fill out the form below to receive quotes from trusted {serviceName.toLowerCase()} professionals in {cityName}. 
+                Our service is free for homeowners, and there's no obligation to hire. 
+                <span className="italic text-slate-600"> ¡Haz que tu casa esté lista para Navidad – reserva ahora!</span>
+              </>
+            ) : (
+              <>Ready to get started? Fill out the form below to receive quotes from trusted {serviceName.toLowerCase()} professionals in {cityName}. Our service is free for homeowners, and there's no obligation to hire.</>
+            )}
           </p>
         </div>
       </div>
       
       {/* Service Request Form */}
       <div className="card p-6 mt-4">
-        <h2 className="text-xl font-semibold mb-4">Request {serviceName} Service in {cityName}</h2>
-        <p className="text-slate-700 mb-4">Describe your job and get matched with vetted pros in {cityName}.</p>
+        <h2 className="text-xl font-semibold mb-4">
+          Request {serviceName} Service in {cityName}
+          {IS_HOLIDAY_SEASON && ' – Holiday Scheduling Available'}
+        </h2>
+        <p className="text-slate-700 mb-4">
+          Describe your job and get matched with vetted pros in {cityName}.
+          {IS_HOLIDAY_SEASON && (
+            <span className="block mt-2 text-sm font-medium text-red-700">
+              🎁 Fast turnaround for holiday projects! Most requests matched within 24 hours.
+            </span>
+          )}
+        </p>
         <ServiceLeadForm service={s} city={c}/>
       </div>
     </div>
@@ -281,7 +344,7 @@ function ServiceLeadForm({service, city}){
           disabled={loading}
           className="btn-primary w-full"
         >
-          {loading ? 'Submitting...' : 'Get Matched with Pros'}
+          {loading ? 'Submitting...' : IS_HOLIDAY_SEASON ? 'Get Holiday-Ready – Match with Pros Now!' : 'Get Matched with Pros'}
         </button>
       </form>
     </div>

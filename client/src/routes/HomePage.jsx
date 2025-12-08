@@ -4,6 +4,7 @@ import Schema from "../seo/Schema";
 import { Link } from "react-router-dom";
 import ProValueBanner from "../components/ProValueBanner";
 import StickyProCTA from "../components/StickyProCTA";
+import { IS_HOLIDAY_SEASON } from "../utils/config";
 
 /**
  * Local images from /public/images
@@ -24,24 +25,57 @@ const SERVICES = [
   { to: "/services/handyman",     title: "Handyman",      desc: "Small jobs, quick fixes",                img: "/images/service-handyman.jpg" }
 ];
 
+const pageTitle = IS_HOLIDAY_SEASON 
+  ? "Fixlo – Book Holiday Home Services & Christmas Repairs Near You"
+  : "Fixlo – Book Trusted Home Services Near You";
+
 export default function HomePage() {
   const [query, setQuery] = useState("");
 
   return (
     <>
-      <HelmetSEO title="Fixlo – Book Trusted Home Services Near You" canonicalPathname="/" />
+      <HelmetSEO title={pageTitle} canonicalPathname="/" />
       <Schema />
       <div className="container-xl">
+        {/* Holiday Banner */}
+        {IS_HOLIDAY_SEASON && (
+          <div className="mt-6 p-6 bg-gradient-to-r from-red-600 to-green-600 text-white rounded-2xl shadow-lg">
+            <div className="text-center">
+              <div className="text-4xl mb-3">🎄 ✨ 🎁</div>
+              <h2 className="text-2xl md:text-3xl font-bold mb-2">Holiday Home Services</h2>
+              <p className="text-lg md:text-xl opacity-95">
+                Get your home ready for Christmas! Professional repairs, cleaning, and decoration services.
+              </p>
+              <p className="text-sm mt-2 opacity-90 italic">
+                Servicios profesionales del hogar para la temporada navideña
+              </p>
+            </div>
+          </div>
+        )}
+        
         {/* Search Header */}
         <section className="py-8 md:py-12">
           <div className="text-center max-w-2xl mx-auto">
             <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-tight">
-              Search services
-              <br />
-              near you
+              {IS_HOLIDAY_SEASON ? (
+                <>
+                  Find holiday services
+                  <br />
+                  near you
+                </>
+              ) : (
+                <>
+                  Search services
+                  <br />
+                  near you
+                </>
+              )}
             </h1>
             <p className="mt-4 text-slate-600">
-              Discover vetted pros, compare quotes, and book with confidence.
+              {IS_HOLIDAY_SEASON 
+                ? "Get your home ready for the holidays – discover vetted pros, compare quotes, and book with confidence."
+                : "Discover vetted pros, compare quotes, and book with confidence."
+              }
             </p>
 
             <div className="mt-6">
@@ -77,7 +111,10 @@ export default function HomePage() {
         {/* Services */}
         <section className="py-6 md:py-8">
           <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-6 text-center">
-            Book trusted home services: plumbing, electrical, junk removal, cleaning & more.
+            {IS_HOLIDAY_SEASON 
+              ? "Holiday home services: Christmas cleaning, light installation, winter repairs & more."
+              : "Book trusted home services: plumbing, electrical, junk removal, cleaning & more."
+            }
           </h2>
           
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
