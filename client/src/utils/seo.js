@@ -30,17 +30,17 @@ export function makeTitle({ service, city, state }){
     const holidayService = holidayKeywordMap[service];
     if (city) {
       return holidayService 
-        ? `${holidayService} & ${baseService} in ${location} | Holiday Services | Fixlo`
-        : `${baseService} in ${location} | Christmas Home Services | Fixlo`;
+        ? `${holidayService} in ${location} | Fixlo`
+        : `${baseService} in ${location} | Holiday Services | Fixlo`;
     }
     if (state) {
       return holidayService 
-        ? `${holidayService} & ${baseService} in ${location} | Fixlo`
+        ? `${holidayService} in ${location} | Fixlo`
         : `${baseService} in ${location} | Holiday Services | Fixlo`;
     }
     return holidayService 
-      ? `${holidayService} & ${baseService} Near You | Fixlo`
-      : `${baseService} | Holiday Home Services | Fixlo`;
+      ? `${holidayService} Near You | Fixlo`
+      : `${baseService} | Holiday Services | Fixlo`;
   }
   
   if(service && city) return `${baseService} in ${location} | Fixlo`; 
@@ -56,9 +56,9 @@ export function makeDescription({ service, city, state }){
   if (IS_HOLIDAY_SEASON) {
     const holidayService = service && holidayKeywordMap[service];
     if (holidayService) {
-      return `Get your home ready for the holidays! Book ${holidayService.toLowerCase()} and ${what.toLowerCase()} in ${where}. Fast quotes, background-checked pros, easy scheduling. Fix before the holidays – servicios para la temporada navideña.`;
+      return `Holiday-ready ${what.toLowerCase()} in ${where}. ${holidayService}. Fast quotes, background-checked pros. Servicios navideños.`;
     }
-    return `Prepare for Christmas visitors! Book vetted pros for ${what.toLowerCase()} in ${where}. Holiday home services, seasonal repairs, and winter emergency assistance. Servicios del hogar para Navidad.`;
+    return `Christmas home services in ${where}. Vetted pros for ${what.toLowerCase()}. Holiday repairs & seasonal maintenance. Book now!`;
   }
   
   return `Book vetted pros for ${what} in ${where}. Fast quotes, background-checked contractors, easy scheduling.`; 

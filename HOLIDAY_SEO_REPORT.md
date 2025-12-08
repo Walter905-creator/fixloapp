@@ -178,8 +178,8 @@ H2: Professional Plumbing Services in Miami
 
 **AFTER (Holiday Season):**
 ```html
-Title: Winter Emergency Repairs & Plumbing in Miami | Holiday Services | Fixlo
-Description: Get your home ready for the holidays! Book Winter emergency repairs and plumbing in Miami. Fast quotes, background-checked pros, easy scheduling. Fix before the holidays – servicios para la temporada navideña.
+Title: Winter Emergency Repairs in Miami | Fixlo
+Description: Holiday-ready plumbing in Miami. Winter Emergency Repairs. Fast quotes, background-checked pros. Servicios navideños.
 H2: Professional Plumbing Services in Miami – Holiday & Seasonal Repairs
 Holiday Banner: "🎄 Holiday Season Special - Winter emergency repairs to avoid holiday disasters ¡Prepara tu hogar para Navidad!"
 ```
@@ -295,7 +295,7 @@ Spanish keywords appear in:
 - Holiday banners
 - Call-to-action sections
 
-Format: Natural English text followed by Italian Spanish translation
+Format: Natural English text followed by italic Spanish translation
 Example: "Fix before the holidays – servicios para la temporada navideña"
 
 ---
