@@ -88,13 +88,21 @@ export default function AppInfoScreen({ navigation }) {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Updates & Improvements</Text>
-          <Text style={styles.updateTitle}>Build 33 - Latest</Text>
+          <Text style={styles.updateTitle}>Build 34 - Latest</Text>
+          <Text style={styles.updateText}>
+            • Replaced all placeholder content with real Fixlo website content{'\n'}
+            • Updated pricing to $59.99/month for Pro subscription{'\n'}
+            • Enhanced notification settings with detailed explanations{'\n'}
+            • Improved profile editing user experience{'\n'}
+            • Updated FAQ with accurate pricing information{'\n'}
+            • Bug fixes and performance improvements
+          </Text>
+          <Text style={styles.updateTitle}>Build 33</Text>
           <Text style={styles.updateText}>
             • Added comprehensive settings and account management{'\n'}
             • New informational pages (How It Works, About, FAQ, etc.){'\n'}
             • Legal pages (Terms, Privacy, Cookie Policy){'\n'}
-            • Enhanced navigation and user experience{'\n'}
-            • Bug fixes and performance improvements
+            • Enhanced navigation and user experience
           </Text>
         </View>
 

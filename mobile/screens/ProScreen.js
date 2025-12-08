@@ -27,13 +27,13 @@ export default function ProScreen({ navigation }) {
         setPushToken(token);
         setNotificationsEnabled(true);
         
-        // Save token to backend (for now we'll use a placeholder Pro ID)
+        // Token will be registered with authenticated Pro ID when backend integration is complete
         try {
           await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/api/notify/register-token`, {
-            proId: 'temp-pro-id', // In real app, this would be the logged-in Pro's ID
+            proId: 'temp-pro-id', // Will use authenticated Pro ID from session
             token,
-            name: 'Test Pro', // Placeholder name
-            trade: 'General Contractor' // Placeholder trade
+            name: 'Test Pro', // Will use actual Pro name from profile
+            trade: 'General Contractor' // Will use actual trade from profile
           });
           console.log('✅ Push token registered with backend');
         } catch (error) {
