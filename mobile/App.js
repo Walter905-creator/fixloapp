@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator, ScrollView } from 'react-native';
+import ServicesGrid from './components/ServicesGrid';
 import HomeownerScreen from './screens/HomeownerScreen';
 import ProScreen from './screens/ProScreen';
 import ProSignupScreen from './screens/ProSignupScreen';
@@ -80,18 +81,24 @@ class ErrorBoundary extends React.Component {
 
 function HomeScreen({ navigation }) {
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
+    <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
+      {/* Hero Section - Content from fixloapp.com */}
+      <View style={styles.heroSection}>
         <Image 
           source={require('./assets/fixlo-logo.png')} 
           style={styles.logo}
           resizeMode="contain"
         />
-        <Text style={styles.title}>Welcome to Fixlo</Text>
-        <Text style={styles.subtitle}>Connect with trusted professionals in your area</Text>
+        <Text style={styles.heroTitle}>
+          Search services{'\n'}near you
+        </Text>
+        <Text style={styles.heroSubtitle}>
+          Discover vetted pros, compare quotes, and book with confidence.
+        </Text>
 
+        {/* Primary CTAs */}
         <TouchableOpacity
-          style={styles.button}
+          style={styles.primaryButton}
           activeOpacity={0.7}
           onPress={() => navigation.navigate('Homeowner')}
         >
@@ -99,60 +106,118 @@ function HomeScreen({ navigation }) {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.button, { backgroundColor: '#2563eb' }]}
+          style={[styles.primaryButton, styles.proButton]}
           activeOpacity={0.7}
           onPress={() => navigation.navigate('Pro Signup')}
         >
           <Text style={styles.buttonText}>👷 I am a Pro</Text>
         </TouchableOpacity>
 
-        <View style={styles.authLinksContainer}>
+        {/* Trust Indicators */}
+        <View style={styles.trustBadges}>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>⭐ Trusted pros</Text>
+          </View>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>🛡️ Background checks</Text>
+          </View>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>💬 Fast quotes</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Services Grid - Content from fixloapp.com */}
+      <ServicesGrid navigation={navigation} />
+
+      {/* Auth Links */}
+      <View style={styles.authLinksContainer}>
+        <TouchableOpacity
+          style={styles.authLink}
+          onPress={() => navigation.navigate('Login', { userType: 'homeowner' })}
+        >
+          <Text style={styles.authLinkText}>🏠 Homeowner Login</Text>
+        </TouchableOpacity>
+        
+        <Text style={styles.authDivider}>•</Text>
+        
+        <TouchableOpacity
+          style={styles.authLink}
+          onPress={() => navigation.navigate('Login', { userType: 'pro' })}
+        >
+          <Text style={styles.authLinkText}>👷 Pro Login</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Footer Info Links - Navigation to existing screens */}
+      <View style={styles.footerSection}>
+        <Text style={styles.footerHeading}>More Information</Text>
+        
+        <View style={styles.footerLinks}>
           <TouchableOpacity
-            style={styles.authLink}
-            onPress={() => navigation.navigate('Login', { userType: 'homeowner' })}
+            style={styles.footerLink}
+            onPress={() => navigation.navigate('How It Works')}
           >
-            <Text style={styles.authLinkText}>🏠 Homeowner Login</Text>
+            <Text style={styles.footerLinkText}>How It Works</Text>
           </TouchableOpacity>
           
-          <Text style={styles.authDivider}>•</Text>
+          <TouchableOpacity
+            style={styles.footerLink}
+            onPress={() => navigation.navigate('About')}
+          >
+            <Text style={styles.footerLinkText}>About Fixlo</Text>
+          </TouchableOpacity>
           
           <TouchableOpacity
-            style={styles.authLink}
-            onPress={() => navigation.navigate('Login', { userType: 'pro' })}
+            style={styles.footerLink}
+            onPress={() => navigation.navigate('Contact')}
           >
-            <Text style={styles.authLinkText}>👷 Pro Login</Text>
+            <Text style={styles.footerLinkText}>Contact & Support</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.footerLink}
+            onPress={() => navigation.navigate('FAQ')}
+          >
+            <Text style={styles.footerLinkText}>FAQ</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.footerLink}
+            onPress={() => navigation.navigate('Trust & Safety')}
+          >
+            <Text style={styles.footerLinkText}>Trust & Safety</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.footerLink}
+            onPress={() => navigation.navigate('Pricing')}
+          >
+            <Text style={styles.footerLinkText}>Pro Pricing</Text>
           </TouchableOpacity>
         </View>
 
-        {/* More Info Links */}
-        <View style={styles.infoLinksContainer}>
+        <View style={styles.legalLinks}>
           <TouchableOpacity
-            style={styles.infoLink}
-            onPress={() => navigation.navigate('How It Works')}
+            style={styles.legalLink}
+            onPress={() => navigation.navigate('Terms')}
           >
-            <Text style={styles.infoLinkText}>How It Works</Text>
+            <Text style={styles.legalLinkText}>Terms of Service</Text>
           </TouchableOpacity>
           
-          <Text style={styles.authDivider}>•</Text>
+          <Text style={styles.legalDivider}>•</Text>
           
           <TouchableOpacity
-            style={styles.infoLink}
-            onPress={() => navigation.navigate('About')}
+            style={styles.legalLink}
+            onPress={() => navigation.navigate('Privacy')}
           >
-            <Text style={styles.infoLinkText}>About</Text>
-          </TouchableOpacity>
-          
-          <Text style={styles.authDivider}>•</Text>
-          
-          <TouchableOpacity
-            style={styles.infoLink}
-            onPress={() => navigation.navigate('Contact')}
-          >
-            <Text style={styles.infoLinkText}>Contact</Text>
+            <Text style={styles.legalLinkText}>Privacy Policy</Text>
           </TouchableOpacity>
         </View>
+
+        <Text style={styles.copyright}>© 2024 Fixlo. All rights reserved.</Text>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -448,6 +513,174 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
+  // HomeScreen Styles - Updated to mirror fixloapp.com
+  scrollContainer: {
+    flex: 1,
+    backgroundColor: '#f1f5f9',
+  },
+  scrollContent: {
+    paddingBottom: 40,
+  },
+  heroSection: {
+    paddingHorizontal: 20,
+    paddingTop: 40,
+    paddingBottom: 20,
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+  },
+  logo: {
+    width: 280,
+    height: 100,
+    marginBottom: 24,
+  },
+  heroTitle: {
+    fontSize: 38,
+    fontWeight: 'bold',
+    color: '#0f172a',
+    textAlign: 'center',
+    marginBottom: 12,
+    lineHeight: 46,
+  },
+  heroSubtitle: {
+    fontSize: 17,
+    color: '#64748b',
+    textAlign: 'center',
+    marginBottom: 32,
+    paddingHorizontal: 10,
+    lineHeight: 24,
+  },
+  primaryButton: {
+    backgroundColor: '#f97316',
+    paddingVertical: 18,
+    paddingHorizontal: 30,
+    borderRadius: 12,
+    marginVertical: 10,
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
+    minHeight: 60,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  proButton: {
+    backgroundColor: '#2563eb',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  trustBadges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginTop: 30,
+    gap: 12,
+  },
+  badge: {
+    backgroundColor: '#f1f5f9',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  badgeText: {
+    fontSize: 14,
+    color: '#0f172a',
+    fontWeight: '500',
+  },
+  authLinksContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 30,
+    marginBottom: 20,
+    paddingTop: 20,
+    paddingBottom: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 20,
+  },
+  authLink: {
+    padding: 10,
+  },
+  authLinkText: {
+    color: '#2563eb',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  authDivider: {
+    color: '#94a3b8',
+    fontSize: 16,
+    marginHorizontal: 10,
+  },
+  footerSection: {
+    backgroundColor: '#ffffff',
+    paddingVertical: 32,
+    paddingHorizontal: 20,
+    marginTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+  },
+  footerHeading: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#0f172a',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  footerLinks: {
+    marginBottom: 24,
+  },
+  footerLink: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  footerLinkText: {
+    fontSize: 16,
+    color: '#2563eb',
+    fontWeight: '500',
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 20,
+    marginTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+  },
+  legalLink: {
+    padding: 8,
+  },
+  legalLinkText: {
+    fontSize: 14,
+    color: '#64748b',
+    fontWeight: '500',
+  },
+  legalDivider: {
+    color: '#cbd5e1',
+    fontSize: 14,
+    marginHorizontal: 8,
+  },
+  copyright: {
+    textAlign: 'center',
+    fontSize: 13,
+    color: '#94a3b8',
+    marginTop: 16,
+  },
+  // Old container styles (kept for compatibility)
   container: {
     flex: 1,
     backgroundColor: '#f1f5f9',
@@ -459,11 +692,6 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 600,
     alignItems: 'center'
-  },
-  logo: {
-    width: 300,
-    height: 120,
-    marginBottom: 30,
   },
   title: {
     fontSize: 36,
@@ -495,34 +723,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 20,
-    fontWeight: '600'
-  },
-  authLinksContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 30,
-    paddingTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
-    width: '100%'
-  },
-  authLink: {
-    padding: 10
-  },
-  authLinkText: {
-    color: '#2563eb',
-    fontSize: 16,
-    fontWeight: '600'
-  },
-  authDivider: {
-    color: '#94a3b8',
-    fontSize: 16,
-    marginHorizontal: 10
   },
   infoLinksContainer: {
     flexDirection: 'row',
@@ -586,4 +786,4 @@ const styles = StyleSheet.create({
   },
 });
 // Force bundle refresh - 1764643649
-// Build 33 - Complete feature set with all informational, legal, and settings pages - 1733653562
+// Build 34 - Home Screen website sync: services grid, hero section, footer links - 1733720000
