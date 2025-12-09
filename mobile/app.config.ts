@@ -15,7 +15,7 @@ export default {
     assetBundlePatterns: ["**/*"],
     ios: {
       bundleIdentifier: "com.fixloapp.mobile",
-      buildNumber: "34",
+      buildNumber: "35",
       supportsTablet: true,
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false
@@ -23,7 +23,7 @@ export default {
     },
     android: {
       package: "com.fixloapp.mobile",
-      versionCode: 10,
+      versionCode: 35,
       adaptiveIcon: {
         foregroundImage: "./assets/icon.png",
         backgroundColor: "#ffffff"
