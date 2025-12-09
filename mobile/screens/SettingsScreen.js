@@ -48,6 +48,7 @@ export default function SettingsScreen({ navigation, route }) {
       items: [
         { label: 'Edit Profile', icon: '👤', screen: 'Edit Profile' },
         { label: 'Notification Settings', icon: '🔔', screen: 'Notification Settings' },
+        { label: 'Delete Account', icon: '🗑️', screen: 'Delete Account', danger: true },
       ]
     },
     {
@@ -105,7 +106,9 @@ export default function SettingsScreen({ navigation, route }) {
                 onPress={() => navigation.navigate(item.screen, { userType })}
               >
                 <Text style={styles.settingIcon}>{item.icon}</Text>
-                <Text style={styles.settingLabel}>{item.label}</Text>
+                <Text style={[styles.settingLabel, item.danger && styles.dangerLabel]}>
+                  {item.label}
+                </Text>
                 <Text style={styles.chevron}>›</Text>
               </TouchableOpacity>
             ))}
@@ -194,6 +197,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#0f172a',
     fontWeight: '500',
+  },
+  dangerLabel: {
+    color: '#dc2626',
   },
   chevron: {
     fontSize: 24,

@@ -83,17 +83,46 @@ class IAPService {
     try {
       console.log(`[IAP] Initiating purchase for: ${productId}`);
       
+      // Ensure IAP is initialized
       if (!this.isInitialized) {
-        await this.initialize();
+        console.log('[IAP] Not initialized, initializing now...');
+        const initialized = await this.initialize();
+        if (!initialized) {
+          throw new Error('INITIALIZATION_FAILED');
+        }
+      }
+
+      // Verify product exists
+      const product = this.getProduct(productId);
+      if (!product) {
+        console.warn('[IAP] Product not found, fetching products...');
+        await this.fetchProducts();
+        const productRetry = this.getProduct(productId);
+        if (!productRetry) {
+          throw new Error('PRODUCT_NOT_FOUND');
+        }
+      }
+
+      // Check if purchases are allowed on this device
+      const canMakePurchases = await InAppPurchases.getIAPItemsAsync([productId]);
+      if (canMakePurchases.responseCode !== InAppPurchases.IAPResponseCode.OK) {
+        console.error('[IAP] Cannot make purchases on this device:', canMakePurchases.responseCode);
+        throw new Error('PURCHASES_DISABLED');
       }
 
       // Start the purchase flow (opens native iOS payment sheet)
+      console.log('[IAP] Opening purchase dialog...');
       await InAppPurchases.purchaseItemAsync(productId);
       
       console.log('[IAP] ✅ Purchase initiated successfully');
       return true;
     } catch (error) {
       console.error('[IAP] ❌ Purchase failed:', error);
+      console.error('[IAP] Error details:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
       
       if (error.code === 'E_USER_CANCELLED') {
         console.log('[IAP] User cancelled the purchase');
@@ -104,6 +133,15 @@ class IAPService {
       } else if (error.code === 'E_NETWORK_ERROR') {
         console.log('[IAP] Network error during purchase');
         throw new Error('NETWORK_ERROR');
+      } else if (error.code === 'E_NOT_AVAILABLE') {
+        console.log('[IAP] In-app purchases not available');
+        throw new Error('NOT_AVAILABLE');
+      } else if (error.message === 'INITIALIZATION_FAILED') {
+        throw error;
+      } else if (error.message === 'PRODUCT_NOT_FOUND') {
+        throw error;
+      } else if (error.message === 'PURCHASES_DISABLED') {
+        throw error;
       } else {
         throw new Error('PURCHASE_FAILED');
       }

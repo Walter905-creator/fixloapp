@@ -17,6 +17,7 @@ export default function SubscriptionScreen({ navigation }) {
 
   const handleSubscribe = async () => {
     try {
+      // Show loading state
       const result = await purchaseProduct(PRODUCT_IDS.PRO_MONTHLY);
       
       if (result.success) {
@@ -31,11 +32,20 @@ export default function SubscriptionScreen({ navigation }) {
           ]
         );
       } else {
-        Alert.alert('Purchase Failed', result.error || 'Unable to complete purchase. Please try again.');
+        // Provide specific error messages based on error type
+        const errorTitle = result.error?.includes('cancelled') ? 'Purchase Cancelled' : 
+                          result.error?.includes('disabled') ? 'Purchases Disabled' :
+                          result.error?.includes('Network') ? 'Network Error' : 
+                          'Purchase Failed';
+        
+        Alert.alert(errorTitle, result.error || 'Unable to complete purchase. Please try again.');
       }
     } catch (error) {
       console.error('Purchase error:', error);
-      Alert.alert('Error', 'An error occurred. Please try again.');
+      Alert.alert(
+        'Error', 
+        'An unexpected error occurred. Please check your connection and try again. If the problem persists, contact support.'
+      );
     }
   };
 

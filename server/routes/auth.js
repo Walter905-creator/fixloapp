@@ -213,4 +213,95 @@ router.post('/refresh', async (req, res) => {
   }
 });
 
+/**
+ * Delete user account (Apple App Store requirement)
+ * DELETE /api/auth/account/:userId
+ */
+router.delete('/account/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { confirmEmail } = req.body;
+
+    console.log(`🗑️ Account deletion request for user: ${userId}`);
+
+    if (!userId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'User ID is required' 
+      });
+    }
+
+    // Verify user exists
+    const user = await Pro.findById(userId);
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'User not found' 
+      });
+    }
+
+    // Optional: Verify email confirmation for additional security
+    if (confirmEmail && user.email !== confirmEmail.toLowerCase()) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Email confirmation does not match' 
+      });
+    }
+
+    // Log the deletion for audit purposes
+    console.log(`🗑️ Deleting account for: ${user.email}`);
+    console.log(`📋 Account details: Name: ${user.name}, Trade: ${user.trade}, Joined: ${user.joinedDate}`);
+
+    // Cancel Stripe subscription if exists
+    if (user.stripeSubscriptionId) {
+      try {
+        const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+        await stripe.subscriptions.cancel(user.stripeSubscriptionId);
+        console.log(`✅ Cancelled Stripe subscription: ${user.stripeSubscriptionId}`);
+      } catch (stripeError) {
+        console.error('⚠️ Failed to cancel Stripe subscription:', stripeError);
+        // Continue with deletion even if Stripe cancellation fails
+      }
+    }
+
+    // Delete related data
+    try {
+      // Delete job requests associated with this pro
+      const JobRequest = require('../models/JobRequest');
+      const deletedRequests = await JobRequest.deleteMany({ proId: userId });
+      console.log(`🗑️ Deleted ${deletedRequests.deletedCount} job requests`);
+
+      // Delete reviews
+      const Review = require('../models/Review');
+      const deletedReviews = await Review.deleteMany({ proId: userId });
+      console.log(`🗑️ Deleted ${deletedReviews.deletedCount} reviews`);
+
+      // Delete share events
+      const ShareEvent = require('../models/ShareEvent');
+      const deletedShares = await ShareEvent.deleteMany({ proId: userId });
+      console.log(`🗑️ Deleted ${deletedShares.deletedCount} share events`);
+    } catch (relatedDataError) {
+      console.error('⚠️ Error deleting related data:', relatedDataError);
+      // Continue with user deletion even if related data deletion fails
+    }
+
+    // Delete the user account
+    await Pro.findByIdAndDelete(userId);
+    
+    console.log(`✅ Successfully deleted account: ${user.email}`);
+
+    res.json({ 
+      success: true, 
+      message: 'Account successfully deleted. We\'re sorry to see you go!' 
+    });
+
+  } catch (error) {
+    console.error('❌ Account deletion error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to delete account. Please try again or contact support.' 
+    });
+  }
+});
+
 module.exports = router;
