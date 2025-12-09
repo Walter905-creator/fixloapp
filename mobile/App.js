@@ -30,6 +30,7 @@ import SettingsScreen from './screens/SettingsScreen';
 import EditProfileScreen from './screens/EditProfileScreen';
 import NotificationSettingsScreen from './screens/NotificationSettingsScreen';
 import ReferralScreen from './screens/ReferralScreen';
+import DeleteAccountScreen from './screens/DeleteAccountScreen';
 // Misc Screens
 import AppInfoScreen from './screens/AppInfoScreen';
 import HelpCenterScreen from './screens/HelpCenterScreen';
@@ -492,6 +493,11 @@ export default function App() {
               name="Referral" 
               component={ReferralScreen} 
               options={{ title: 'Referral Program' }}
+            />
+            <Stack.Screen 
+              name="Delete Account" 
+              component={DeleteAccountScreen} 
+              options={{ title: 'Delete Account' }}
             />
             
             {/* Misc Screens */}

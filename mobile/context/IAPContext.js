@@ -174,6 +174,7 @@ export function IAPProvider({ children }) {
       return { success: true };
     } catch (error) {
       console.error('[IAPContext] ❌ Purchase failed:', error);
+      console.error('[IAPContext] Error message:', error.message);
       
       let errorMessage = 'Purchase failed. Please try again.';
       
@@ -183,6 +184,14 @@ export function IAPProvider({ children }) {
         errorMessage = 'You already own this subscription. Try restoring purchases.';
       } else if (error.message === 'NETWORK_ERROR') {
         errorMessage = 'Network error. Please check your connection.';
+      } else if (error.message === 'INITIALIZATION_FAILED') {
+        errorMessage = 'Unable to connect to App Store. Please try again later.';
+      } else if (error.message === 'PRODUCT_NOT_FOUND') {
+        errorMessage = 'Subscription product not available. Please contact support.';
+      } else if (error.message === 'PURCHASES_DISABLED') {
+        errorMessage = 'In-app purchases are disabled on this device. Please check your device settings.';
+      } else if (error.message === 'NOT_AVAILABLE') {
+        errorMessage = 'In-app purchases are not available. Please try again later.';
       }
       
       return { success: false, error: errorMessage };
