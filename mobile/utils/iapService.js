@@ -104,9 +104,9 @@ class IAPService {
       }
 
       // Check if purchases are allowed on this device
-      const canMakePurchases = await InAppPurchases.getIAPItemsAsync([productId]);
-      if (canMakePurchases.responseCode !== InAppPurchases.IAPResponseCode.OK) {
-        console.error('[IAP] Cannot make purchases on this device:', canMakePurchases.responseCode);
+      const canMakePayments = await InAppPurchases.canMakePaymentsAsync();
+      if (!canMakePayments) {
+        console.error('[IAP] Cannot make purchases on this device');
         throw new Error('PURCHASES_DISABLED');
       }
 

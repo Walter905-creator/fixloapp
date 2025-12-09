@@ -9,6 +9,16 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@fixloapp.com';
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH; // store hash, not raw
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'ChangeThisInProduction123!'; // fallback for backward compatibility
 
+// Initialize Stripe once at module level
+let stripe = null;
+if (process.env.STRIPE_SECRET_KEY) {
+  try {
+    stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+  } catch (error) {
+    console.error('⚠️ Failed to initialize Stripe:', error);
+  }
+}
+
 // ✅ Admin login
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
@@ -253,9 +263,8 @@ router.delete('/account/:userId', async (req, res) => {
     console.log(`📋 Account details: Name: ${user.name}, Trade: ${user.trade}, Joined: ${user.joinedDate}`);
 
     // Cancel Stripe subscription if exists
-    if (user.stripeSubscriptionId) {
+    if (user.stripeSubscriptionId && stripe) {
       try {
-        const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
         await stripe.subscriptions.cancel(user.stripeSubscriptionId);
         console.log(`✅ Cancelled Stripe subscription: ${user.stripeSubscriptionId}`);
       } catch (stripeError) {

@@ -69,6 +69,8 @@ export default function DeleteAccountScreen({ navigation }) {
                 // Clear local session
                 await clearSession();
 
+                setLoading(false);
+
                 // Show success message
                 Alert.alert(
                   'Account Deleted',
@@ -87,10 +89,9 @@ export default function DeleteAccountScreen({ navigation }) {
                   ]
                 );
               } else {
+                setLoading(false);
                 throw new Error(response.data.error || 'Failed to delete account');
               }
-
-              setLoading(false);
             } catch (error) {
               console.error('Account deletion error:', error);
               setLoading(false);
