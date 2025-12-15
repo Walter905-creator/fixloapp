@@ -1,28 +1,48 @@
 import React, { useState } from "react";
 import HelmetSEO from "../seo/HelmetSEO";
 import Schema from "../seo/Schema";
-import { Link } from "react-router-dom";
-import ProValueBanner from "../components/ProValueBanner";
+import { Link, useNavigate } from "react-router-dom";
 import StickyProCTA from "../components/StickyProCTA";
 import { IS_HOLIDAY_SEASON } from "../utils/config";
 
 /**
  * Local images from /public/images
  */
-const HOW_IMG  = "/images/how-it-works.jpg";
+const HERO_IMG = "/images/hero-pro.jpg";
 
 const SERVICES = [
-  { to: "/services/plumbing",     title: "Plumbing",      desc: "Faucets, pipes, drains, and more",       img: "/images/service-plumbing.jpg" },
-  { to: "/services/electrical",   title: "Electrical",    desc: "Lighting, wiring, outlets, and more",    img: "/images/service-electrical.jpg" },
-  { to: "/services/cleaning",     title: "Cleaning",      desc: "Housekeeping, carpets, windows",         img: "/images/service-cleaning.jpg" },
-  { to: "/services/roofing",      title: "Roofing",       desc: "Repairs, replacements, inspections",     img: "/images/service-roofing.jpg" },
-  { to: "/services/hvac",         title: "HVAC",          desc: "Heating, cooling, vents",                img: "/images/service-hvac.jpg" },
-  { to: "/services/carpentry",    title: "Carpentry",     desc: "Framing, trim, installs",                img: "/images/service-carpentry.jpg" },
-  { to: "/services/painting",     title: "Painting",      desc: "Interior and exterior painting",         img: "/images/service-painting.jpg" },
-  { to: "/services/landscaping",  title: "Landscaping",   desc: "Lawn, garden, hardscape",                img: "/images/service-landscaping.jpg" },
-  { to: "/services/junk-removal", title: "Junk Removal",  desc: "Haul away unwanted items",               img: "/images/service-junk-removal.jpg" },
-  { to: "/services/decks",        title: "Decks",         desc: "Build, repair, staining",                img: "/images/service-decks.jpg" },
-  { to: "/services/handyman",     title: "Handyman",      desc: "Small jobs, quick fixes",                img: "/images/service-handyman.jpg" }
+  { to: "/services/plumbing",     title: "Plumbing",      desc: "Faucets, pipes, drains, and more",       benefit: "Fast response from verified local professionals", img: "/images/service-plumbing.jpg" },
+  { to: "/services/electrical",   title: "Electrical",    desc: "Lighting, wiring, outlets, and more",    benefit: "Licensed electricians ready to help you today", img: "/images/service-electrical.jpg" },
+  { to: "/services/cleaning",     title: "Cleaning",      desc: "Housekeeping, carpets, windows",         benefit: "Trusted cleaners for your home or office", img: "/images/service-cleaning.jpg" },
+  { to: "/services/roofing",      title: "Roofing",       desc: "Repairs, replacements, inspections",     benefit: "Expert roofers protecting your investment", img: "/images/service-roofing.jpg" },
+  { to: "/services/hvac",         title: "HVAC",          desc: "Heating, cooling, vents",                benefit: "Keep your home comfortable year-round", img: "/images/service-hvac.jpg" },
+  { to: "/services/carpentry",    title: "Carpentry",     desc: "Framing, trim, installs",                benefit: "Skilled carpenters for quality craftsmanship", img: "/images/service-carpentry.jpg" },
+  { to: "/services/painting",     title: "Painting",      desc: "Interior and exterior painting",         benefit: "Transform your space with professional painters", img: "/images/service-painting.jpg" },
+  { to: "/services/landscaping",  title: "Landscaping",   desc: "Lawn, garden, hardscape",                benefit: "Beautiful outdoor spaces by local experts", img: "/images/service-landscaping.jpg" },
+  { to: "/services/junk-removal", title: "Junk Removal",  desc: "Haul away unwanted items",               benefit: "Quick and easy removal service near you", img: "/images/service-junk-removal.jpg" },
+  { to: "/services/decks",        title: "Decks",         desc: "Build, repair, staining",                benefit: "Quality deck work from experienced builders", img: "/images/service-decks.jpg" },
+  { to: "/services/handyman",     title: "Handyman",      desc: "Small jobs, quick fixes",                benefit: "Reliable handymen for all your home repairs", img: "/images/service-handyman.jpg" }
+];
+
+const TESTIMONIALS = [
+  {
+    quote: "I've been getting consistent leads since day one. No more chasing work or paying crazy fees for each job.",
+    name: "Mike",
+    location: "Denver",
+    role: "Plumber"
+  },
+  {
+    quote: "Found a trusted electrician in minutes. He showed up on time and the price was exactly what we agreed on.",
+    name: "Sarah",
+    location: "Austin",
+    role: "Homeowner"
+  },
+  {
+    quote: "Best decision for my painting business. The flat monthly fee means I can actually plan my budget.",
+    name: "Carlos",
+    location: "Phoenix",
+    role: "Painter"
+  }
 ];
 
 const pageTitle = IS_HOLIDAY_SEASON 
@@ -30,92 +50,128 @@ const pageTitle = IS_HOLIDAY_SEASON
   : "Fixlo – Book Trusted Home Services Near You";
 
 export default function HomePage() {
-  const [query, setQuery] = useState("");
+  const navigate = useNavigate();
 
   return (
     <>
       <HelmetSEO title={pageTitle} canonicalPathname="/" />
       <Schema />
-      <div className="container-xl">
-        {/* Holiday Banner */}
-        {IS_HOLIDAY_SEASON && (
-          <div className="mt-6 p-6 bg-gradient-to-r from-red-600 to-green-600 text-white rounded-2xl shadow-lg">
-            <div className="text-center">
-              <div className="text-4xl mb-3">🎄 ✨ 🎁</div>
-              <h2 className="text-2xl md:text-3xl font-bold mb-2">Holiday Home Services</h2>
-              <p className="text-lg md:text-xl opacity-95">
-                Get your home ready for Christmas! Professional repairs, cleaning, and decoration services.
+      
+      {/* Hero Section */}
+      <section className="relative bg-gradient-to-b from-slate-50 to-white overflow-hidden">
+        <div className="container-xl">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center py-12 md:py-16 lg:py-20">
+            {/* Hero Content */}
+            <div className="text-center lg:text-left order-2 lg:order-1">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight text-slate-900">
+                Trusted Local Pros.
+                <br />
+                Real Jobs.
+                <br />
+                <span className="text-brand">No Lead Fees.</span>
+              </h1>
+              
+              <p className="mt-6 text-lg md:text-xl text-slate-600 max-w-2xl mx-auto lg:mx-0">
+                Fixlo connects homeowners with verified professionals and helps pros get unlimited job leads — all on one simple platform.
               </p>
-              <p className="text-sm mt-2 opacity-90 italic">
-                Servicios profesionales del hogar para la temporada navideña
-              </p>
-            </div>
-          </div>
-        )}
-        
-        {/* Search Header */}
-        <section className="py-8 md:py-12">
-          <div className="text-center max-w-2xl mx-auto">
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-tight">
-              {IS_HOLIDAY_SEASON ? (
-                <>
-                  Find holiday services
-                  <br />
-                  near you
-                </>
-              ) : (
-                <>
-                  Search services
-                  <br />
-                  near you
-                </>
-              )}
-            </h1>
-            <p className="mt-4 text-slate-600">
-              {IS_HOLIDAY_SEASON 
-                ? "Get your home ready for the holidays – discover vetted pros, compare quotes, and book with confidence."
-                : "Discover vetted pros, compare quotes, and book with confidence."
-              }
-            </p>
 
-            <div className="mt-6">
-              <div className="flex items-center gap-3 bg-white rounded-2xl p-2 shadow-md border border-slate-200">
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="What service do you need?"
-                  className="flex-1 bg-transparent px-4 py-3 rounded-xl text-slate-900 placeholder-slate-500 outline-none"
-                />
-                <Link to="/services" className="btn-accent px-5 py-3 rounded-xl">
-                  Search
-                </Link>
+              {/* CTAs */}
+              <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <button
+                  onClick={() => navigate("/join")}
+                  className="btn-primary text-lg px-8 py-4 shadow-lg hover:shadow-xl transform hover:scale-105"
+                >
+                  Get Jobs Near Me
+                </button>
+                <button
+                  onClick={() => navigate("/services")}
+                  className="btn-ghost text-lg px-8 py-4 hover:bg-slate-100"
+                >
+                  Book a Trusted Pro
+                </button>
               </div>
             </div>
 
-            <div className="mt-6 flex items-center justify-center gap-4 text-sm text-slate-600">
-              <span className="inline-flex items-center gap-1">
-                ⭐ <b className="text-slate-900">Trusted pros</b>
-              </span>
-              <span className="inline-flex items-center gap-1">
-                🛡️ <b className="text-slate-900">Background checks</b>
-              </span>
-              <span className="inline-flex items-center gap-1">
-                💬 <b className="text-slate-900">Fast quotes</b>
-              </span>
+            {/* Hero Image */}
+            <div className="order-1 lg:order-2">
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+                <img
+                  src={HERO_IMG}
+                  alt="Professional tradesperson at work"
+                  className="w-full h-auto object-cover"
+                  width="600"
+                  height="600"
+                  loading="eager"
+                  decoding="async"
+                />
+              </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <ProValueBanner />
+      {/* Trust Signal Strip */}
+      <section className="bg-white border-y border-slate-200 py-6">
+        <div className="container-xl">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-2xl">
+                ✓
+              </div>
+              <p className="text-sm font-medium text-slate-700">Background-Checked Professionals</p>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-2xl">
+                💰
+              </div>
+              <p className="text-sm font-medium text-slate-700">No Lead Fees or Commissions</p>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-2xl">
+                🇺🇸
+              </div>
+              <p className="text-sm font-medium text-slate-700">Serving Homeowners Across the U.S.</p>
+            </div>
+          </div>
+        </div>
+      </section>
 
-        {/* Services */}
-        <section className="py-6 md:py-8">
-          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-6 text-center">
-            {IS_HOLIDAY_SEASON 
-              ? "Holiday home services: Christmas cleaning, light installation, winter repairs & more."
-              : "Book trusted home services: plumbing, electrical, junk removal, cleaning & more."
-            }
+      {/* Social Proof Section */}
+      <section className="py-12 md:py-16 bg-slate-50">
+        <div className="container-xl">
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-10 text-center">
+            What people are saying
           </h2>
+          <div className="grid md:grid-cols-3 gap-6">
+            {TESTIMONIALS.map((testimonial, idx) => (
+              <div key={idx} className="card p-6">
+                <p className="text-slate-700 mb-4 leading-relaxed">
+                  "{testimonial.quote}"
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-semibold">
+                    {testimonial.name[0]}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-900">{testimonial.name}</p>
+                    <p className="text-sm text-slate-600">{testimonial.role} • {testimonial.location}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <div className="container-xl">
+        {/* Services Section */}
+        <section className="py-12 md:py-16">
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3 text-center">
+            Book trusted home services
+          </h2>
+          <p className="text-center text-slate-600 mb-10 max-w-2xl mx-auto">
+            Plumbing, electrical, junk removal, cleaning & more
+          </p>
           
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {SERVICES.map((s) => (
@@ -123,7 +179,10 @@ export default function HomePage() {
                 <div className="grid grid-cols-5">
                   <div className="col-span-3 p-5">
                     <h3 className="text-xl font-semibold">{s.title}</h3>
-                    <p className="mt-2 text-slate-600">{s.desc}</p>
+                    <p className="mt-2 text-sm text-slate-600">{s.desc}</p>
+                    <p className="mt-3 text-sm font-medium text-emerald-700">
+                      {s.benefit}
+                    </p>
                     <div className="mt-4 inline-flex items-center gap-2 text-brand group-hover:text-brand-dark transition-colors">
                       <span>Explore</span>
                       <span>→</span>
@@ -178,35 +237,39 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* How it works */}
-        <section className="py-10 md:py-14 bg-white">
-          <div className="grid md:grid-cols-2 gap-8 items-center text-slate-900">
-            <div className="flex justify-center">
-              <figure className="mx-auto w-full max-w-[520px] px-4">
-                <img
-                  src="/fixlo-pro-small.jpg"
-                  alt="Fixlo professional at work"
-                  width="520"
-                  height="520"
-                  loading="lazy"
-                  decoding="async"
-                  style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover', borderRadius: '12px' }}
-                />
-                <figcaption className="sr-only">Fixlo professional at work</figcaption>
-              </figure>
+        {/* Urgency & Momentum Section */}
+        <section className="py-12 md:py-16 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white -mx-4 px-4 md:rounded-2xl">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-3xl md:text-4xl font-bold mb-8">
+              Join thousands of pros and homeowners
+            </h2>
+            <div className="grid md:grid-cols-3 gap-8">
+              <div>
+                <div className="text-5xl mb-3">📋</div>
+                <p className="text-lg font-semibold">New job requests posted daily</p>
+              </div>
+              <div>
+                <div className="text-5xl mb-3">📱</div>
+                <p className="text-lg font-semibold">Pros receive job alerts instantly by SMS</p>
+              </div>
+              <div>
+                <div className="text-5xl mb-3">🗺️</div>
+                <p className="text-lg font-semibold">Available in cities nationwide</p>
+              </div>
             </div>
-            <div>
-              <img
-                src={HOW_IMG}
-                alt="How Fixlo works"
-                className="rounded-3xl shadow-xl border border-slate-200 w-full h-auto object-cover"
-                loading="lazy"
-                decoding="async"
-              />
+            <div className="mt-10">
+              <button
+                onClick={() => navigate("/join")}
+                className="inline-flex items-center rounded-2xl px-8 py-4 text-lg font-semibold bg-white text-emerald-700 shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                Get Started Today
+              </button>
             </div>
           </div>
         </section>
       </div>
+
+      {/* Mobile Sticky CTA */}
       <StickyProCTA />
     </>
   );
