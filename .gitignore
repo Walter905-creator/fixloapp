@@ -84,3 +84,6 @@ signup/index.html
 build/
 *.css.map
 client/public/version.json
+
+# Backup files
+*.backup
