@@ -228,7 +228,8 @@ Reply ACCEPT to take this job first.`;
       data: {
         leadId: savedLead ? savedLead._id : null,
         matchedPros: pros.length,
-        notified: priorityConfig ? 'delayed' : notified,
+        notifiedCount: priorityConfig ? 0 : notified,
+        notificationStatus: priorityConfig ? 'delayed' : 'immediate',
         priorityNotified: !!priorityConfig,
         address: formatted,
         serviceType: leadTrade,

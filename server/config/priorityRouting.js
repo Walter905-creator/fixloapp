@@ -5,6 +5,8 @@
  * To add more cities, add entries to the PRIORITY_ROUTING object.
  */
 
+const { normalizeE164 } = require('../utils/twilio');
+
 const PRIORITY_ROUTING = {
   charlotte: {
     phone: '+15164449953',
@@ -55,7 +57,6 @@ function getDelayMs(city) {
  * @returns {object|null} Priority pro config with city, or null if not found
  */
 function findPriorityProByPhone(phone) {
-  const normalizeE164 = require('../utils/twilio').normalizeE164;
   const normalizedPhone = normalizeE164(phone);
   
   for (const [cityName, config] of Object.entries(PRIORITY_ROUTING)) {

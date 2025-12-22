@@ -290,6 +290,37 @@ The current implementation hardcodes the priority pro for Charlotte. To scale to
    - Adjust delays based on historical acceptance rates
    - Implement urgency-based priority
 
+## Performance Optimization
+
+### Database Indexing
+For optimal query performance as job volume grows, add a compound index:
+
+```javascript
+// In JobRequest model
+JobRequestSchema.index({ 
+  priorityPro: 1, 
+  status: 1, 
+  priorityNotified: 1, 
+  priorityAcceptedAt: 1 
+});
+```
+
+This index optimizes the priority job lookup query in the ACCEPT handler:
+```javascript
+JobRequest.findOne({
+  status: 'pending',
+  priorityNotified: true,
+  priorityPro: priorityProConfig.name,
+  priorityAcceptedAt: null
+}).sort({ priorityNotifiedAt: -1 });
+```
+
+### Memory Considerations
+- setTimeout delays are stored in memory
+- If server restarts before timeout, delayed notifications won't fire
+- For production, consider using a job queue (Redis, Bull) for persistent scheduling
+- Current implementation is acceptable for moderate traffic loads
+
 ## Troubleshooting
 
 ### Issue: Priority pro not receiving SMS
