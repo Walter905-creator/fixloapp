@@ -6,7 +6,7 @@ const twilio = require('twilio');
 const mongoose = require('mongoose');
 const JobRequest = require('./server/models/JobRequest');
 const { sendSms, normalizeE164 } = require('./server/utils/twilio');
-const { getPriorityConfig, PRIORITY_ROUTING } = require('./server/config/priorityRouting');
+const { findPriorityProByPhone } = require('./server/config/priorityRouting');
 const router = express.Router();
 
 // Twilio configuration
@@ -175,16 +175,7 @@ router.post('/sms-webhook', async (req, res) => {
     switch(message) {
         case 'ACCEPT':
             // Handle priority pro job acceptance
-            const normalizedUserPhone = normalizeE164(userPhone);
-            
-            // Check if this phone number is a priority pro for any city
-            let priorityProConfig = null;
-            for (const [cityName, config] of Object.entries(PRIORITY_ROUTING)) {
-                if (normalizeE164(config.phone) === normalizedUserPhone) {
-                    priorityProConfig = { ...config, city: cityName };
-                    break;
-                }
-            }
+            const priorityProConfig = findPriorityProByPhone(userPhone);
             
             if (priorityProConfig) {
                 try {

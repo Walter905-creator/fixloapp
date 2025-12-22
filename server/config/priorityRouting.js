@@ -49,9 +49,27 @@ function getDelayMs(city) {
   return config ? config.delayMinutes * 60 * 1000 : 0;
 }
 
+/**
+ * Find priority pro configuration by phone number
+ * @param {string} phone - Phone number (will be normalized)
+ * @returns {object|null} Priority pro config with city, or null if not found
+ */
+function findPriorityProByPhone(phone) {
+  const normalizeE164 = require('../utils/twilio').normalizeE164;
+  const normalizedPhone = normalizeE164(phone);
+  
+  for (const [cityName, config] of Object.entries(PRIORITY_ROUTING)) {
+    if (normalizeE164(config.phone) === normalizedPhone) {
+      return { ...config, city: cityName };
+    }
+  }
+  return null;
+}
+
 module.exports = {
   PRIORITY_ROUTING,
   getPriorityConfig,
   hasPriorityRouting,
-  getDelayMs
+  getDelayMs,
+  findPriorityProByPhone
 };

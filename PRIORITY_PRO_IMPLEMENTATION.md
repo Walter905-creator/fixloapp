@@ -96,15 +96,15 @@ setTimeout(async () => {
 **ACCEPT Command Enhancement**:
 ```javascript
 case 'ACCEPT':
-  // Check if sender is priority pro
-  const isPriorityPro = normalizedPhone.endsWith('5164449953');
+  // Find priority pro config by phone number (supports multiple cities)
+  const priorityProConfig = findPriorityProByPhone(userPhone);
   
-  if (isPriorityPro) {
-    // Find most recent pending Charlotte job
+  if (priorityProConfig) {
+    // Find most recent pending job for this priority pro
     const pendingJob = await JobRequest.findOne({
       status: 'pending',
       priorityNotified: true,
-      priorityPro: 'Walter Arevalo',
+      priorityPro: priorityProConfig.name,
       priorityAcceptedAt: null
     }).sort({ priorityNotifiedAt: -1 });
     

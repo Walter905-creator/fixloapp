@@ -164,8 +164,7 @@ Reply ACCEPT to take this job first.`;
     // For priority leads, delay other pro notifications to give priority pro time to respond
     if (priorityConfig && savedLead) {
       const delayMs = getDelayMs(city);
-      const delayMinutes = priorityConfig.delayMinutes;
-      console.log(`⏳ ${city} lead detected - scheduling delayed notification for other pros (${delayMinutes} minutes)`);
+      console.log(`⏳ ${city} lead detected - scheduling delayed notification for other pros (${priorityConfig.delayMinutes} minutes)`);
       
       // Schedule delayed notification (non-blocking)
       setTimeout(async () => {
@@ -179,7 +178,7 @@ Reply ACCEPT to take this job first.`;
               
               for (const pro of pros) {
                 // Skip priority pro to avoid duplicate notifications
-                if (normalizeE164(pro.phone) === priorityConfig.phone) {
+                if (normalizeE164(pro.phone) === normalizeE164(priorityConfig.phone)) {
                   continue;
                 }
                 
