@@ -43,7 +43,7 @@ if (getEnv('NODE_ENV') !== 'production') {
     API_BASE,
     CLOUDINARY_CLOUD_NAME: CLOUDINARY_CLOUD_NAME ? '✅ Set' : '❌ Missing',
     CLOUDINARY_UPLOAD_PRESET: CLOUDINARY_UPLOAD_PRESET ? '✅ Set' : '❌ Missing',
-    STRIPE_PUBLISHABLE_KEY: STRIPE_PUBLISHABLE_KEY ? '✅ Set (TEST MODE)' : '❌ Missing',
+    STRIPE_PUBLISHABLE_KEY: STRIPE_PUBLISHABLE_KEY ? (STRIPE_PUBLISHABLE_KEY.startsWith('pk_test_') ? '✅ Set (TEST MODE)' : '✅ Set (LIVE MODE)') : '❌ Missing',
     STRIPE_CHECKOUT_URL: STRIPE_CHECKOUT_URL ? '✅ Set' : '❌ Missing',
     IS_HOLIDAY_SEASON: IS_HOLIDAY_SEASON ? '🎄 Active' : '❌ Inactive'
   });

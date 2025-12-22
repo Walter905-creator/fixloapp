@@ -55,9 +55,13 @@ router.post('/create-setup-intent', async (req, res) => {
     let customer;
     if (customers.data.length > 0) {
       customer = customers.data[0];
-      console.log(`♻️ Using existing customer: ${customer.id}`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`♻️ Using existing customer: ${customer.id}`);
+      }
     } else {
-      console.log('🆕 Creating new Stripe customer');
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('🆕 Creating new Stripe customer');
+      }
       customer = await stripe.customers.create({ 
         email,
         metadata: {
@@ -65,7 +69,9 @@ router.post('/create-setup-intent', async (req, res) => {
           source: 'fixlo-setup-intent'
         }
       });
-      console.log(`✅ Customer created: ${customer.id}`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`✅ Customer created: ${customer.id}`);
+      }
     }
 
     // Create Setup Intent
@@ -78,7 +84,9 @@ router.post('/create-setup-intent', async (req, res) => {
       }
     });
 
-    console.log(`✅ Setup intent created: ${setupIntent.id}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`✅ Setup intent created: ${setupIntent.id}`);
+    }
     
     res.status(200).json({ 
       clientSecret: setupIntent.client_secret,
