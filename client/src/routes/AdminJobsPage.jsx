@@ -210,7 +210,7 @@ export default function AdminJobsPage() {
   };
 
   const handleGenerateInvoice = async () => {
-    if (!confirm('Generate and charge invoice?')) return;
+    const chargeNow = confirm('Generate and charge invoice immediately? (Cancel to generate without charging)');
 
     try {
       setActionLoading(true);
@@ -220,13 +220,14 @@ export default function AdminJobsPage() {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({ chargeNow })
       });
 
       if (!response.ok) throw new Error('Failed to generate invoice');
 
       const data = await response.json();
-      alert(`Invoice generated! Amount: $${data.invoice.amount}`);
+      alert(`Invoice generated! Amount: $${data.invoice.amount}${chargeNow ? ' (Charged)' : ' (Not charged yet)'}`);
       setShowModal(false);
       loadJobs();
     } catch (err) {

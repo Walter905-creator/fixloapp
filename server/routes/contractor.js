@@ -165,7 +165,8 @@ router.post('/jobs/:id/clock-out', async (req, res) => {
 
     // Calculate hours worked
     const clockOutTime = new Date();
-    const totalHours = (clockOutTime - job.clockInTime) / (1000 * 60 * 60);
+    const MILLISECONDS_PER_HOUR = 1000 * 60 * 60;
+    const totalHours = (clockOutTime - job.clockInTime) / MILLISECONDS_PER_HOUR;
 
     // Update job with clock-out
     const updatedJob = await JobRequest.findByIdAndUpdate(

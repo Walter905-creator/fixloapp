@@ -24,9 +24,13 @@ router.get('/jobs', async (req, res) => {
     // Build query
     const query = {};
     if (phone) {
-      // Normalize phone for comparison
+      // Normalize phone for safe comparison (remove non-digits)
       const normalizedPhone = phone.replace(/[^\d]/g, '');
-      query.phone = new RegExp(normalizedPhone);
+      // Use exact match or prefix match for safety
+      query.$or = [
+        { phone: normalizedPhone },
+        { phone: new RegExp('^' + normalizedPhone.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) }
+      ];
     }
     if (email) {
       query.email = email.toLowerCase();

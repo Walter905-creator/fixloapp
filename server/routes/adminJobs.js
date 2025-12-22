@@ -414,9 +414,11 @@ router.post('/jobs/:id/complete', async (req, res) => {
   }
 });
 
-// POST /api/admin/jobs/:id/invoice - Generate and charge invoice
+// POST /api/admin/jobs/:id/invoice - Generate invoice (charge separately)
 router.post('/jobs/:id/invoice', async (req, res) => {
   try {
+    const { chargeNow } = req.body; // Optional flag to charge immediately
+
     const mongoose = require('mongoose');
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({ error: 'Database not connected' });
@@ -480,29 +482,35 @@ router.post('/jobs/:id/invoice', async (req, res) => {
       });
     }
 
-    // Finalize and charge the invoice
+    // Finalize the invoice
     const finalizedInvoice = await stripe.invoices.finalizeInvoice(invoice.id);
-    const paidInvoice = await stripe.invoices.pay(finalizedInvoice.id);
+    
+    // Optionally charge the invoice
+    let paidInvoice = finalizedInvoice;
+    if (chargeNow) {
+      paidInvoice = await stripe.invoices.pay(finalizedInvoice.id);
+    }
 
     // Update job with invoice info
     const updatedJob = await JobRequest.findByIdAndUpdate(
       req.params.id,
       {
         invoiceId: paidInvoice.id,
-        paidAt: new Date()
+        paidAt: chargeNow ? new Date() : null
       },
       { new: true }
     );
 
     res.json({
       success: true,
-      message: 'Invoice generated and charged successfully',
+      message: chargeNow ? 'Invoice generated and charged successfully' : 'Invoice generated successfully',
       job: updatedJob,
       invoice: {
         id: paidInvoice.id,
         amount: paidInvoice.amount_due / 100,
         status: paidInvoice.status,
-        hostedUrl: paidInvoice.hosted_invoice_url
+        hostedUrl: paidInvoice.hosted_invoice_url,
+        charged: !!chargeNow
       }
     });
   } catch (error) {
