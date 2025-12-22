@@ -141,6 +141,7 @@ export default function ServiceIntakeModal({ open, onClose }) {
     email: '',
     phone: '',
     termsAccepted: false,
+    smsConsent: false,
     stripeCustomerId: '',
     stripePaymentMethodId: ''
   });
@@ -274,6 +275,7 @@ export default function ServiceIntakeModal({ open, onClose }) {
       submitData.append('email', data.email);
       submitData.append('phone', data.phone);
       submitData.append('termsAccepted', data.termsAccepted);
+      submitData.append('smsConsent', data.smsConsent || false);
       submitData.append('stripeCustomerId', data.stripeCustomerId);
       submitData.append('stripePaymentMethodId', data.stripePaymentMethodId);
 
@@ -559,6 +561,24 @@ export default function ServiceIntakeModal({ open, onClose }) {
               required
             />
             {errors.phone && <p className="text-red-600 text-sm">{errors.phone}</p>}
+            
+            {/* SMS Consent */}
+            <div className="bg-blue-50 p-4 rounded-lg space-y-3">
+              <label className="flex items-start space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.smsConsent}
+                  onChange={(e) => handleInputChange('smsConsent', e.target.checked)}
+                  className="mt-1 h-5 w-5 text-brand border-slate-300 rounded focus:ring-brand"
+                />
+                <div className="text-sm text-slate-700">
+                  <p className="font-semibold mb-1">Receive SMS updates (optional)</p>
+                  <p className="text-slate-600">
+                    Get text notifications when your service is scheduled, when technician arrives, and when work is complete. Reply STOP to opt out anytime.
+                  </p>
+                </div>
+              </label>
+            </div>
           </div>
         );
 
