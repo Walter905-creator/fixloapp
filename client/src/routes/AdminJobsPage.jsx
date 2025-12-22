@@ -320,9 +320,16 @@ export default function AdminJobsPage() {
                       {job.trade}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(job.status)}`}>
-                        {job.status}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(job.status)}`}>
+                          {job.status}
+                        </span>
+                        {job.priorityNotified && (
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
+                            Priority Pro Notified
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       ${job.totalCost || '0.00'}
@@ -426,6 +433,30 @@ export default function AdminJobsPage() {
                           </li>
                         ))}
                       </ul>
+                    </div>
+                  )}
+
+                  {/* Priority Pro Routing */}
+                  {selectedJob.priorityNotified && (
+                    <div className="md:col-span-2">
+                      <h3 className="text-lg font-semibold mb-3">Priority Pro Routing</h3>
+                      <div className="space-y-2 text-sm">
+                        <p>
+                          <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full font-semibold">
+                            Priority Pro Notified
+                          </span>
+                        </p>
+                        <p><strong>Priority Pro:</strong> {selectedJob.priorityPro || 'N/A'}</p>
+                        <p><strong>Phone:</strong> +1 (516) 444-9953</p>
+                        {selectedJob.priorityNotifiedAt && (
+                          <p><strong>Notified At:</strong> {new Date(selectedJob.priorityNotifiedAt).toLocaleString()}</p>
+                        )}
+                        {selectedJob.priorityAcceptedAt && (
+                          <p className="text-green-600">
+                            <strong>✅ Accepted At:</strong> {new Date(selectedJob.priorityAcceptedAt).toLocaleString()}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   )}
 

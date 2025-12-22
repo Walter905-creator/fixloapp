@@ -182,12 +182,82 @@ router.post('/sms-webhook', async (req, res) => {
     
     switch(message) {
         case 'ACCEPT':
-            // Handle job acceptance - this would typically update database
-            responseTemplate = {
-                message: `✅ Job acceptance received! We'll notify the customer and send you their contact details. LOGIN to view job details: ${BASE_URL}/dashboard`,
-                cta: 'LOGIN to view job details',
-                action: 'job_accepted'
-            };
+            // Handle priority pro job acceptance for Charlotte leads
+            const PRIORITY_PRO_PHONE = '+15164449953';
+            const normalizedPhone = userPhone.replace(/\D/g, '');
+            const isPriorityPro = normalizedPhone.endsWith('5164449953');
+            
+            if (isPriorityPro) {
+                try {
+                    // Find the most recent pending Charlotte job that was priority notified
+                    const mongoose = require('mongoose');
+                    const JobRequest = require('./server/models/JobRequest');
+                    
+                    if (mongoose.connection.readyState === 1) {
+                        const pendingJob = await JobRequest.findOne({
+                            status: 'pending',
+                            priorityNotified: true,
+                            priorityPro: 'Walter Arevalo',
+                            priorityAcceptedAt: null
+                        }).sort({ priorityNotifiedAt: -1 });
+                        
+                        if (pendingJob) {
+                            // Assign job to priority pro
+                            await JobRequest.findByIdAndUpdate(pendingJob._id, {
+                                status: 'assigned',
+                                priorityAcceptedAt: new Date(),
+                                assignedAt: new Date()
+                            });
+                            
+                            // Send confirmation to priority pro
+                            responseTemplate = {
+                                message: `Fixlo: You have been assigned this Charlotte job. Customer will be notified.`,
+                                cta: 'Job assigned',
+                                action: 'priority_job_assigned'
+                            };
+                            
+                            // Notify homeowner (if SMS consent given)
+                            if (pendingJob.smsConsent && pendingJob.phone) {
+                                try {
+                                    await client.messages.create({
+                                        body: 'Fixlo: Your job has been assigned and a technician is on the way.',
+                                        from: fromNumber,
+                                        to: pendingJob.phone
+                                    });
+                                    console.log(`📱 Homeowner notified of assignment for job ${pendingJob._id}`);
+                                } catch (homeownerError) {
+                                    console.error('Failed to notify homeowner:', homeownerError.message);
+                                }
+                            }
+                            
+                            console.log(`✅ Priority pro accepted Charlotte job ${pendingJob._id}`);
+                        } else {
+                            // No pending priority job found
+                            responseTemplate = {
+                                message: `No pending Charlotte jobs available at this time. You'll be notified of new opportunities.`,
+                                cta: 'No jobs available',
+                                action: 'no_priority_job'
+                            };
+                        }
+                    } else {
+                        throw new Error('Database not connected');
+                    }
+                } catch (acceptError) {
+                    console.error('Error processing priority job acceptance:', acceptError.message);
+                    responseTemplate = {
+                        message: `Error processing your acceptance. Please contact support or try again later.`,
+                        cta: 'Error occurred',
+                        action: 'acceptance_error'
+                    };
+                }
+            } else {
+                // Standard job acceptance for non-priority pros
+                responseTemplate = {
+                    message: `✅ Job acceptance received! We'll notify the customer and send you their contact details. LOGIN to view job details: ${BASE_URL}/dashboard`,
+                    cta: 'LOGIN to view job details',
+                    action: 'job_accepted'
+                };
+            }
             break;
             
         case 'HELP':

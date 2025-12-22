@@ -196,6 +196,21 @@ const JobRequestSchema = new mongoose.Schema({
   assignedAt: {
     type: Date
   },
+  // Priority Pro Routing (Charlotte, NC)
+  priorityNotified: {
+    type: Boolean,
+    default: false
+  },
+  priorityPro: {
+    type: String,
+    trim: true
+  },
+  priorityNotifiedAt: {
+    type: Date
+  },
+  priorityAcceptedAt: {
+    type: Date
+  },
   // Customer reference
   customerId: {
     type: String,

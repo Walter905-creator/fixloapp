@@ -95,7 +95,40 @@ router.post('/', async (req, res) => {
       // Continue without failing the request
     }
 
-    // 3) Query nearby pros with configurable radius
+    // 3) PRIORITY PRO ROUTING - Charlotte, NC
+    const PRIORITY_PRO_PHONE = '+15164449953';
+    const PRIORITY_PRO_NAME = 'Walter Arevalo';
+    const isCharlotteLead = city && city.toLowerCase() === 'charlotte';
+    
+    if (isCharlotteLead && savedLead) {
+      try {
+        // Send priority SMS notification
+        const priorityMessage = `Fixlo Priority Lead (Charlotte):
+New homeowner service request received.
+Service: ${leadTrade}
+Location: ${leadAddress}
+Reply ACCEPT to take this job first.`;
+        
+        await sendSms(PRIORITY_PRO_PHONE, priorityMessage);
+        
+        // Mark lead as priority notified
+        const mongoose = require('mongoose');
+        if (mongoose.connection.readyState === 1) {
+          await JobRequest.findByIdAndUpdate(savedLead._id, {
+            priorityNotified: true,
+            priorityPro: PRIORITY_PRO_NAME,
+            priorityNotifiedAt: new Date()
+          });
+        }
+        
+        console.log(`🔔 Priority SMS sent to ${PRIORITY_PRO_NAME} for Charlotte lead`);
+      } catch (priorityError) {
+        console.error('❌ Priority SMS notification failed:', priorityError.message);
+        // Continue with normal flow even if priority notification fails
+      }
+    }
+
+    // 4) Query nearby pros with configurable radius
     let pros = [];
     const radiusMiles = parseInt(process.env.LEAD_RADIUS_MILES) || 30;
     const radiusMeters = milesToMeters(radiusMiles);
@@ -125,26 +158,69 @@ router.post('/', async (req, res) => {
       // Continue with empty pros array
     }
 
-    // 4) Notify matched professionals via SMS
+    // 5) Notify matched professionals via SMS (with delay for Charlotte priority leads)
     let notified = 0;
-    if (pros.length) {
-      for (const pro of pros) {
+    
+    // For Charlotte leads, delay other pro notifications to give priority pro time to respond
+    if (isCharlotteLead && savedLead) {
+      console.log('⏳ Charlotte lead detected - scheduling delayed notification for other pros (3 minutes)');
+      
+      // Schedule delayed notification (non-blocking)
+      setTimeout(async () => {
         try {
-          await sendSms(
-            pro.phone,
-            `[${leadTrade}] ${city || 'Unknown'}, ${state || 'Unknown'} – ${description || 'Service request'}\nContact: ${leadName} ${normalizeE164(phone)}`
-          );
-          notified++;
-        } catch (e) {
-          console.warn('Twilio send failed for', pro._id || pro.phone, e.message);
+          // Check if job is still pending (not accepted by priority pro)
+          const mongoose = require('mongoose');
+          if (mongoose.connection.readyState === 1) {
+            const currentJob = await JobRequest.findById(savedLead._id);
+            
+            if (currentJob && currentJob.status === 'pending' && !currentJob.priorityAcceptedAt) {
+              console.log(`⏰ Delayed notification: Notifying ${pros.length} other pros for Charlotte lead ${savedLead._id}`);
+              
+              for (const pro of pros) {
+                // Skip priority pro to avoid duplicate notifications
+                if (normalizeE164(pro.phone) === PRIORITY_PRO_PHONE) {
+                  continue;
+                }
+                
+                try {
+                  await sendSms(
+                    pro.phone,
+                    `[${leadTrade}] ${city || 'Unknown'}, ${state || 'Unknown'} – ${description || 'Service request'}\nContact: ${leadName} ${normalizeE164(phone)}`
+                  );
+                } catch (e) {
+                  console.warn('Delayed SMS send failed for', pro._id || pro.phone, e.message);
+                }
+              }
+              console.log(`📱 Delayed notification completed for Charlotte lead`);
+            } else {
+              console.log(`✅ Job already accepted by priority pro - skipping delayed notification`);
+            }
+          }
+        } catch (delayedError) {
+          console.error('❌ Delayed notification error:', delayedError.message);
         }
-      }
-      console.log(`📱 Notified ${notified}/${pros.length} professionals`);
+      }, 180000); // 3 minutes = 180000ms
     } else {
-      console.warn('No nearby pros found — skipping SMS');
+      // Normal immediate notification for non-Charlotte leads
+      if (pros.length) {
+        for (const pro of pros) {
+          try {
+            await sendSms(
+              pro.phone,
+              `[${leadTrade}] ${city || 'Unknown'}, ${state || 'Unknown'} – ${description || 'Service request'}\nContact: ${leadName} ${normalizeE164(phone)}`
+            );
+            notified++;
+          } catch (e) {
+            console.warn('Twilio send failed for', pro._id || pro.phone, e.message);
+          }
+        }
+        console.log(`📱 Notified ${notified}/${pros.length} professionals`);
+      } else {
+        console.warn('No nearby pros found — skipping SMS');
+      }
     }
 
-    // 5) Return success response immediately with 201 status
+    // 6) Return success response immediately with 201 status
     return res.status(201).json({
       ok: true,
       success: true,
@@ -152,7 +228,8 @@ router.post('/', async (req, res) => {
       data: {
         leadId: savedLead ? savedLead._id : null,
         matchedPros: pros.length,
-        notified: notified,
+        notified: isCharlotteLead ? 'delayed' : notified,
+        priorityNotified: isCharlotteLead,
         address: formatted,
         serviceType: leadTrade,
         radiusMiles: radiusMiles
