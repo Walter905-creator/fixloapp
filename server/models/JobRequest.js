@@ -5,8 +5,8 @@ const JobRequestSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Trade is required'],
     enum: {
-      values: ['Plumbing', 'Electrical', 'Carpentry', 'Painting', 'HVAC', 'Roofing', 'House Cleaning', 'Junk Removal'],
-      message: 'Trade must be one of: Plumbing, Electrical, Carpentry, Painting, HVAC, Roofing, House Cleaning, Junk Removal'
+      values: ['General Repairs', 'Electrical', 'Plumbing', 'Drywall', 'Painting', 'Flooring', 'Carpentry', 'HVAC', 'Roofing', 'House Cleaning', 'Junk Removal', 'Other'],
+      message: 'Trade must be a valid service type'
     }
   },
   name: {
@@ -32,6 +32,14 @@ const JobRequestSchema = new mongoose.Schema({
     trim: true,
     maxLength: [200, 'Address cannot exceed 200 characters']
   },
+  city: {
+    type: String,
+    trim: true
+  },
+  state: {
+    type: String,
+    trim: true
+  },
   zip: {
     type: String,
     trim: true
@@ -44,12 +52,97 @@ const JobRequestSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Description is required'],
     trim: true,
+    minLength: [20, 'Description must be at least 20 characters'],
     maxLength: [1000, 'Description cannot exceed 1000 characters']
   },
+  urgency: {
+    type: String,
+    enum: ['Same day', 'Within 48 hours', 'This week', 'Flexible'],
+    default: 'Flexible'
+  },
+  photos: [{
+    type: String
+  }],
   status: {
     type: String,
-    enum: ['pending', 'assigned', 'completed', 'cancelled'],
+    enum: ['pending', 'assigned', 'in-progress', 'completed', 'cancelled'],
     default: 'pending'
+  },
+  // Payment & Stripe
+  stripeCustomerId: {
+    type: String,
+    trim: true
+  },
+  stripePaymentMethodId: {
+    type: String,
+    trim: true
+  },
+  stripePaymentIntentId: {
+    type: String,
+    trim: true
+  },
+  visitFeeAuthorized: {
+    type: Boolean,
+    default: false
+  },
+  visitFeeWaived: {
+    type: Boolean,
+    default: false
+  },
+  jobApproved: {
+    type: Boolean,
+    default: false
+  },
+  // Clock in/out tracking
+  clockInTime: {
+    type: Date
+  },
+  clockInLocation: {
+    type: { type: String, enum: ['Point'] },
+    coordinates: { type: [Number] } // [lng, lat]
+  },
+  clockOutTime: {
+    type: Date
+  },
+  totalHours: {
+    type: Number,
+    default: 0
+  },
+  // Billing
+  laborCost: {
+    type: Number,
+    default: 0
+  },
+  materials: [{
+    description: String,
+    cost: Number
+  }],
+  materialsCost: {
+    type: Number,
+    default: 0
+  },
+  visitFee: {
+    type: Number,
+    default: 150
+  },
+  totalCost: {
+    type: Number,
+    default: 0
+  },
+  invoiceId: {
+    type: String,
+    trim: true
+  },
+  paidAt: {
+    type: Date
+  },
+  // Agreement
+  termsAccepted: {
+    type: Boolean,
+    default: false
+  },
+  termsAcceptedAt: {
+    type: Date
   },
   createdAt: {
     type: Date,
