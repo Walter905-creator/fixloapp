@@ -23,9 +23,10 @@ export const CLOUDINARY_UPLOAD_PRESET = getEnv('VITE_CLOUDINARY_UPLOAD_PRESET');
 
 // Stripe configuration with validation
 const stripePublishableKey = getEnv('VITE_STRIPE_PUBLISHABLE_KEY');
+const nodeEnv = getEnv('NODE_ENV');
 
-// Validate Stripe publishable key is in test mode
-if (stripePublishableKey && !stripePublishableKey.startsWith('pk_test_')) {
+// Validate Stripe publishable key is in test mode (except in production)
+if (stripePublishableKey && nodeEnv !== 'production' && !stripePublishableKey.startsWith('pk_test_')) {
   console.error('❌ SECURITY ERROR: Invalid Stripe publishable key for test mode');
   throw new Error('Invalid Stripe publishable key for test mode. Use pk_test_ keys only.');
 }

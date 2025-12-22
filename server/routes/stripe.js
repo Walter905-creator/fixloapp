@@ -25,7 +25,9 @@ try {
 // Create SetupIntent for payment method authorization
 router.post('/create-setup-intent', async (req, res) => {
   try {
-    console.log('🔔 Stripe setup intent requested');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('🔔 Stripe setup intent requested');
+    }
     
     const { email, userId } = req.body;
     
