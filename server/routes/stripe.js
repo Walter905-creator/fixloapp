@@ -2,18 +2,105 @@ const express = require('express');
 const router = express.Router();
 const Pro = require('../models/Pro');
 
-// Initialize Stripe
+// Initialize Stripe with validation
 let stripe;
 try {
   if (process.env.STRIPE_SECRET_KEY) {
+    // Validate Stripe key for test mode in non-production
+    if (process.env.NODE_ENV !== "production" && !process.env.STRIPE_SECRET_KEY.startsWith("sk_test_")) {
+      console.error("❌ SECURITY ERROR: Live Stripe key detected in non-production environment");
+      throw new Error("Stripe live key detected in non-production environment. Use sk_test_ keys only.");
+    }
+    
     stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    console.log('✅ Stripe initialized successfully');
+    console.log('✅ Stripe initialized in', process.env.STRIPE_SECRET_KEY.startsWith("sk_test_") ? "TEST MODE" : "LIVE MODE");
   } else {
     console.log('⚠️ STRIPE_SECRET_KEY not found in environment variables');
   }
 } catch (error) {
   console.error('❌ Error initializing Stripe:', error.message);
+  throw error;
 }
+
+// Create SetupIntent for payment method authorization
+router.post('/create-setup-intent', async (req, res) => {
+  try {
+    console.log('🔔 Stripe setup intent requested');
+    
+    const { email, userId } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({
+        error: 'Missing required parameters',
+        message: 'Email is required'
+      });
+    }
+    
+    if (!stripe) {
+      console.error('❌ Stripe not initialized - missing STRIPE_SECRET_KEY');
+      return res.status(500).json({ 
+        error: 'Payment system not configured',
+        message: 'Stripe integration is not properly set up'
+      });
+    }
+
+    // Get or create Stripe customer
+    const customers = await stripe.customers.list({
+      email: email,
+      limit: 1
+    });
+
+    let customer;
+    if (customers.data.length > 0) {
+      customer = customers.data[0];
+      console.log(`♻️ Using existing customer: ${customer.id}`);
+    } else {
+      console.log('🆕 Creating new Stripe customer');
+      customer = await stripe.customers.create({ 
+        email,
+        metadata: {
+          userId: userId || '',
+          source: 'fixlo-setup-intent'
+        }
+      });
+      console.log(`✅ Customer created: ${customer.id}`);
+    }
+
+    // Create Setup Intent
+    const setupIntent = await stripe.setupIntents.create({
+      customer: customer.id,
+      payment_method_types: ['card'],
+      metadata: {
+        userId: userId || '',
+        source: 'fixlo-setup-intent'
+      }
+    });
+
+    console.log(`✅ Setup intent created: ${setupIntent.id}`);
+    
+    res.status(200).json({ 
+      clientSecret: setupIntent.client_secret,
+      customerId: customer.id
+    });
+
+  } catch (error) {
+    console.error('❌ Error creating setup intent:', error.message);
+    
+    // Enhanced error handling for 401 and authentication issues
+    if (error.statusCode === 401) {
+      return res.status(401).json({ 
+        error: 'Authentication failed',
+        message: 'Invalid Stripe API key. Ensure you are using the correct test mode key (sk_test_).',
+        details: error.message
+      });
+    }
+    
+    res.status(500).json({ 
+      error: 'Failed to create setup intent',
+      message: error.message 
+    });
+  }
+});
 
 // Create checkout session for subscription with 30-day free trial
 router.post('/create-checkout-session', async (req, res) => {

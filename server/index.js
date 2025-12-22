@@ -41,8 +41,15 @@ const geocodingService = require("./utils/geocoding");
 // ----------------------- Stripe (lazy) -----------------------
 let stripe = null;
 if (process.env.STRIPE_SECRET_KEY) {
+  // Validate Stripe key for test mode in non-production
+  if (process.env.NODE_ENV !== "production" && !process.env.STRIPE_SECRET_KEY.startsWith("sk_test_")) {
+    console.error("❌ SECURITY ERROR: Live Stripe key detected in non-production environment");
+    throw new Error("Stripe live key detected in non-production environment. Use sk_test_ keys only.");
+  }
+  
   try {
     stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+    console.log("✅ Stripe initialized in", process.env.STRIPE_SECRET_KEY.startsWith("sk_test_") ? "TEST MODE" : "LIVE MODE");
   } catch (e) {
     console.warn("⚠️ Stripe not initialized:", e?.message || e);
   }

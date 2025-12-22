@@ -21,7 +21,16 @@ export const API_BASE = getEnv('VITE_API_URL') ||
 export const CLOUDINARY_CLOUD_NAME = getEnv('VITE_CLOUDINARY_CLOUD_NAME');
 export const CLOUDINARY_UPLOAD_PRESET = getEnv('VITE_CLOUDINARY_UPLOAD_PRESET');
 
-// Stripe configuration
+// Stripe configuration with validation
+const stripePublishableKey = getEnv('VITE_STRIPE_PUBLISHABLE_KEY');
+
+// Validate Stripe publishable key is in test mode
+if (stripePublishableKey && !stripePublishableKey.startsWith('pk_test_')) {
+  console.error('❌ SECURITY ERROR: Invalid Stripe publishable key for test mode');
+  throw new Error('Invalid Stripe publishable key for test mode. Use pk_test_ keys only.');
+}
+
+export const STRIPE_PUBLISHABLE_KEY = stripePublishableKey;
 export const STRIPE_CHECKOUT_URL = getEnv('VITE_STRIPE_CHECKOUT_URL');
 
 // Seasonal configuration - set to true during holiday season (Nov-Jan)
@@ -33,6 +42,7 @@ if (getEnv('NODE_ENV') !== 'production') {
     API_BASE,
     CLOUDINARY_CLOUD_NAME: CLOUDINARY_CLOUD_NAME ? '✅ Set' : '❌ Missing',
     CLOUDINARY_UPLOAD_PRESET: CLOUDINARY_UPLOAD_PRESET ? '✅ Set' : '❌ Missing',
+    STRIPE_PUBLISHABLE_KEY: STRIPE_PUBLISHABLE_KEY ? '✅ Set (TEST MODE)' : '❌ Missing',
     STRIPE_CHECKOUT_URL: STRIPE_CHECKOUT_URL ? '✅ Set' : '❌ Missing',
     IS_HOLIDAY_SEASON: IS_HOLIDAY_SEASON ? '🎄 Active' : '❌ Inactive'
   });

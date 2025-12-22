@@ -6,17 +6,24 @@ const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
-// Initialize Stripe
+// Initialize Stripe with validation
 let stripe;
 try {
   if (process.env.STRIPE_SECRET_KEY) {
+    // Validate Stripe key for test mode in non-production
+    if (process.env.NODE_ENV !== "production" && !process.env.STRIPE_SECRET_KEY.startsWith("sk_test_")) {
+      console.error("❌ SECURITY ERROR: Live Stripe key detected in non-production environment");
+      throw new Error("Stripe live key detected in non-production environment. Use sk_test_ keys only.");
+    }
+    
     stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    console.log('✅ Stripe initialized for service intake');
+    console.log('✅ Stripe initialized for service intake in', process.env.STRIPE_SECRET_KEY.startsWith("sk_test_") ? "TEST MODE" : "LIVE MODE");
   } else {
     console.log('⚠️ STRIPE_SECRET_KEY not found');
   }
 } catch (error) {
   console.error('❌ Error initializing Stripe:', error.message);
+  throw error;
 }
 
 // Configure Cloudinary
@@ -100,6 +107,16 @@ router.post('/payment-intent', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Error creating payment intent:', error);
+    
+    // Enhanced error handling for 401 and authentication issues
+    if (error.statusCode === 401) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid Stripe API key. Ensure you are using the correct test mode key (sk_test_).',
+        error: error.message
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Error setting up payment authorization',
