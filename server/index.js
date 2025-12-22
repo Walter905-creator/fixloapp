@@ -279,6 +279,7 @@ app.use("/api/leads", require("./routes/leads")); // Lead management with databa
 
 app.use("/api/requests", require("./routes/requests")); // Homeowner service requests
 app.use("/api/service-request", require("./routes/serviceRequest"));
+app.use("/api/service-intake", require("./routes/serviceIntake")); // Charlotte service intake flow
 app.use("/api/notify", require("./routes/notify"));
 
 app.use("/api/stripe", require("./routes/stripe")); // subscription helpers

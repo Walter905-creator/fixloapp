@@ -16,6 +16,7 @@ import AdminPage from './routes/AdminPage.jsx';
 import ProDashboardPage from './routes/ProDashboardPage.jsx';
 import JoinPage from './routes/JoinPage.jsx';
 import ServicePage from './routes/ServicePage.jsx';
+import JobManagementPage from './routes/JobManagementPage.jsx';
 import Terms from './pages/Terms.jsx';
 import Privacy from './pages/Privacy.jsx';
 import PrivacySettings from './pages/PrivacySettings.jsx';
@@ -43,6 +44,7 @@ export default function App(){
       <Route path="/pro/sign-in" element={<ProSignInPage/>}/>
       <Route path="/admin" element={<AdminPage/>}/>
       <Route path="/pro/dashboard" element={<ProDashboardPage/>}/>
+      <Route path="/staff/jobs" element={<JobManagementPage/>}/>
       <Route path="/join" element={<JoinPage/>}/>
       <Route path="/terms" element={<Terms/>}/>
       <Route path="/privacy" element={<Privacy/>}/>

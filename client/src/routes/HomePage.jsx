@@ -3,6 +3,7 @@ import HelmetSEO from "../seo/HelmetSEO";
 import Schema from "../seo/Schema";
 import { Link, useNavigate } from "react-router-dom";
 import StickyProCTA from "../components/StickyProCTA";
+import ServiceIntakeButton from "../components/ServiceIntakeButton";
 import { IS_HOLIDAY_SEASON } from "../utils/config";
 
 /**
@@ -76,19 +77,26 @@ export default function HomePage() {
               </p>
 
               {/* CTAs */}
-              <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <button
-                  onClick={() => navigate("/join")}
-                  className="btn-primary text-lg px-8 py-4 shadow-lg hover:shadow-xl transform hover:scale-105"
-                >
-                  Get Jobs Near Me
-                </button>
-                <button
-                  onClick={() => navigate("/services")}
-                  className="btn-ghost text-lg px-8 py-4 hover:bg-slate-100"
-                >
-                  Book a Trusted Pro
-                </button>
+              <div className="mt-8 flex flex-col gap-4 justify-center lg:justify-start">
+                {/* Charlotte Service Intake Button */}
+                <div className="w-full">
+                  <ServiceIntakeButton />
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <button
+                    onClick={() => navigate("/join")}
+                    className="btn-primary text-lg px-8 py-4 shadow-lg hover:shadow-xl transform hover:scale-105"
+                  >
+                    Get Jobs Near Me
+                  </button>
+                  <button
+                    onClick={() => navigate("/services")}
+                    className="btn-ghost text-lg px-8 py-4 hover:bg-slate-100"
+                  >
+                    Book a Trusted Pro
+                  </button>
+                </div>
               </div>
             </div>
 
