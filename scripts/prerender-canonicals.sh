@@ -21,6 +21,7 @@ ROUTES=(
   "/pro/signup"
   "/ai-assistant"
   "/terms"
+  "/about-walter-arevalo"
 )
 
 TITLES=(
@@ -41,6 +42,7 @@ TITLES=(
   "Professional Sign Up - Join Fixlo Network"
   "AI Assistant - Fixlo Home Services"
   "Terms of Service - Fixlo"
+  "Walter Arevalo | Founder & CEO of Fixlo"
 )
 
 BUILD_DIR="."
