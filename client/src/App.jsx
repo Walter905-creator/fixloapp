@@ -15,6 +15,7 @@ import ProSignInPage from './routes/ProSignInPage.jsx';
 import AdminPage from './routes/AdminPage.jsx';
 import AdminJobsPage from './routes/AdminJobsPage.jsx';
 import ProDashboardPage from './routes/ProDashboardPage.jsx';
+import ContractorDashboardPage from './routes/ContractorDashboardPage.jsx';
 import JoinPage from './routes/JoinPage.jsx';
 import ServicePage from './routes/ServicePage.jsx';
 import JobManagementPage from './routes/JobManagementPage.jsx';
@@ -48,6 +49,7 @@ export default function App(){
       <Route path="/admin/jobs" element={<AdminJobsPage/>}/>
       <Route path="/my-jobs" element={<CustomerPortalPage/>}/>
       <Route path="/pro/dashboard" element={<ProDashboardPage/>}/>
+      <Route path="/contractor/dashboard" element={<ContractorDashboardPage/>}/>
       <Route path="/staff/jobs" element={<JobManagementPage/>}/>
       <Route path="/join" element={<JoinPage/>}/>
       <Route path="/terms" element={<Terms/>}/>

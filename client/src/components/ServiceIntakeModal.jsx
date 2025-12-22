@@ -125,14 +125,14 @@ function PaymentForm({ formData, onSuccess, onError }) {
   );
 }
 
-export default function ServiceIntakeModal({ open, onClose }) {
+export default function ServiceIntakeModal({ open, onClose, defaultCity, defaultService }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
-    serviceType: '',
+    serviceType: defaultService ? defaultService.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '',
     otherServiceType: '',
     description: '',
     address: '',
-    city: '',
+    city: defaultCity ? defaultCity.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '',
     state: 'NC',
     zip: '',
     urgency: 'Flexible',
