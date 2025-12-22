@@ -22,6 +22,7 @@ import PrivacySettings from './pages/PrivacySettings.jsx';
 import Success from './pages/Success.jsx';
 import SignupPage from './routes/SignupPage.jsx';
 import ProSignupPage from './routes/ProSignupPage.jsx';
+import AboutWalterArevaloPage from './routes/AboutWalterArevaloPage.jsx';
 export default function App(){
   return (<>
     <PromoBanner />
@@ -48,6 +49,7 @@ export default function App(){
       <Route path="/privacy-policy" element={<Privacy/>}/>
       <Route path="/privacy-settings" element={<PrivacySettings/>}/>
       <Route path="/success" element={<Success/>}/>
+      <Route path="/about-walter-arevalo" element={<AboutWalterArevaloPage/>}/>
       <Route path="*" element={<Navigate to="/" replace/>}/>
     </Routes>
     <footer className="border-t border-slate-200 mt-8">

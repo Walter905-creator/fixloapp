@@ -118,6 +118,13 @@ function generateSitemap() {
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
+  
+  <url>
+    <loc>${baseUrl}/about-walter-arevalo</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
 
   <!-- Main services page -->
   <url>
@@ -150,7 +157,7 @@ function generateSitemap() {
   fs.writeFileSync(sitemapPath, sitemap);
   
   console.log(`✅ Sitemap generated with ${services.length} services`);
-  console.log(`📍 Total URLs: ${1 + 6 + 1 + services.length}`); // Main + service categories only
+  console.log(`📍 Total URLs: ${1 + 7 + 1 + services.length}`); // Main + 7 static pages + services page + service categories
   console.log(`📝 Sitemap saved to: ${sitemapPath}`);
   
   return sitemap;
