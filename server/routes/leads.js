@@ -116,6 +116,7 @@ Reply ACCEPT to take this job first.`;
           await JobRequest.findByIdAndUpdate(savedLead._id, {
             priorityNotified: true,
             priorityPro: priorityConfig.name,
+            priorityProPhone: priorityConfig.phone,
             priorityNotifiedAt: new Date()
           });
         }

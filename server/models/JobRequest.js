@@ -205,6 +205,10 @@ const JobRequestSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  priorityProPhone: {
+    type: String,
+    trim: true
+  },
   priorityNotifiedAt: {
     type: Date
   },

@@ -10,7 +10,7 @@ const PRIORITY_ROUTING = {
     phone: '+15164449953',
     name: 'Walter Arevalo',
     delayMinutes: 3
-  }
+  },
   // Add more cities here:
   // miami: {
   //   phone: '+1...',

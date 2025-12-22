@@ -447,7 +447,9 @@ export default function AdminJobsPage() {
                           </span>
                         </p>
                         <p><strong>Priority Pro:</strong> {selectedJob.priorityPro || 'N/A'}</p>
-                        <p><strong>Phone:</strong> +1 (516) 444-9953</p>
+                        {selectedJob.priorityProPhone && (
+                          <p><strong>Phone:</strong> {selectedJob.priorityProPhone}</p>
+                        )}
                         {selectedJob.priorityNotifiedAt && (
                           <p><strong>Notified At:</strong> {new Date(selectedJob.priorityNotifiedAt).toLocaleString()}</p>
                         )}
