@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { STRIPE_PUBLISHABLE_KEY, API_BASE } from '../utils/config';
 
-// Initialize Stripe
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_51QcX2DKTCy6Y8pYR5DXvKO3wHZxH0NhJzT0gKL4zlwKnJy9BNE8rGrxLx9xKRglNd7ODVaOiT4WAfIwjj7bVk9BK00B36mXJBL');
+// Initialize Stripe with validated key
+if (!STRIPE_PUBLISHABLE_KEY) {
+  console.error('❌ STRIPE_PUBLISHABLE_KEY is not configured');
+}
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://fixloapp.onrender.com';
+const stripePromise = STRIPE_PUBLISHABLE_KEY ? loadStripe(STRIPE_PUBLISHABLE_KEY) : null;
+
+const API_URL = API_BASE;
 
 const SERVICE_TYPES = [
   'General Repairs',
@@ -53,7 +58,11 @@ function PaymentForm({ formData, onSuccess, onError }) {
 
       const data = await response.json();
 
-      if (!data.success) {
+      if (!response.ok || !data.success) {
+        // Enhanced error handling for 401 and other errors
+        if (response.status === 401) {
+          throw new Error('Payment authentication failed. Please contact support.');
+        }
         throw new Error(data.message || 'Failed to initialize payment');
       }
 
@@ -79,6 +88,7 @@ function PaymentForm({ formData, onSuccess, onError }) {
       );
 
       if (error) {
+        console.error('Stripe confirmCardSetup error:', error);
         throw new Error(error.message);
       }
 
@@ -90,7 +100,7 @@ function PaymentForm({ formData, onSuccess, onError }) {
 
     } catch (err) {
       console.error('Payment setup error:', err);
-      onError(err.message);
+      onError(err.message || 'Payment setup failed');
     } finally {
       setIsProcessing(false);
     }
