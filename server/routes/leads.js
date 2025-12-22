@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const JobRequest = require('../models/JobRequest');
 const Pro = require('../models/Pro');
 const { geocodeAddress } = require('../utils/geocode');
@@ -112,7 +113,6 @@ Reply ACCEPT to take this job first.`;
         await sendSms(PRIORITY_PRO_PHONE, priorityMessage);
         
         // Mark lead as priority notified
-        const mongoose = require('mongoose');
         if (mongoose.connection.readyState === 1) {
           await JobRequest.findByIdAndUpdate(savedLead._id, {
             priorityNotified: true,
@@ -169,7 +169,6 @@ Reply ACCEPT to take this job first.`;
       setTimeout(async () => {
         try {
           // Check if job is still pending (not accepted by priority pro)
-          const mongoose = require('mongoose');
           if (mongoose.connection.readyState === 1) {
             const currentJob = await JobRequest.findById(savedLead._id);
             

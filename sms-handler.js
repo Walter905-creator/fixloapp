@@ -3,6 +3,8 @@
 
 const express = require('express');
 const twilio = require('twilio');
+const mongoose = require('mongoose');
+const JobRequest = require('./server/models/JobRequest');
 const router = express.Router();
 
 // Twilio configuration
@@ -20,6 +22,26 @@ if (accountSid && authToken) {
 
 // Base URL for CTAs - update this with your actual domain
 const BASE_URL = process.env.BASE_URL || 'https://fixlo.com';
+
+// Helper function to send SMS with consistent error handling
+async function sendSmsMessage(to, body) {
+    if (!client || !fromNumber) {
+        console.warn('SMS disabled: missing Twilio configuration');
+        return { disabled: true };
+    }
+    
+    try {
+        const result = await client.messages.create({
+            body,
+            from: fromNumber,
+            to
+        });
+        return result;
+    } catch (error) {
+        console.error(`Failed to send SMS to ${to}:`, error.message);
+        throw error;
+    }
+}
 
 // SMS Templates with Clear CTAs
 const SMS_TEMPLATES = {
@@ -88,13 +110,7 @@ router.post('/sms-optin', async (req, res) => {
         // Send welcome message with clear CTA
         const welcomeTemplate = SMS_TEMPLATES.WELCOME(proName);
         
-        if (client) {
-            await client.messages.create({
-                body: welcomeTemplate.message,
-                from: fromNumber,
-                to: phone
-            });
-        }
+        await sendSmsMessage(phone, welcomeTemplate.message);
         
         // Log the opt-in for compliance
         console.log(`SMS Opt-in: ${proName} (${phone}) - CTA: ${welcomeTemplate.cta}`);
@@ -145,13 +161,7 @@ router.post('/send-job-notification', async (req, res) => {
                 template = SMS_TEMPLATES.JOB_LEAD(customerName, service, location, phone, jobId);
         }
         
-        if (client) {
-            await client.messages.create({
-                body: template.message,
-                from: fromNumber,
-                to: proPhone
-            });
-        }
+        await sendSmsMessage(proPhone, template.message);
         
         // Log for compliance tracking
         console.log(`Job SMS sent to ${proPhone} - Type: ${type} - CTA: ${template.cta}`);
@@ -190,9 +200,6 @@ router.post('/sms-webhook', async (req, res) => {
             if (isPriorityPro) {
                 try {
                     // Find the most recent pending Charlotte job that was priority notified
-                    const mongoose = require('mongoose');
-                    const JobRequest = require('./server/models/JobRequest');
-                    
                     if (mongoose.connection.readyState === 1) {
                         const pendingJob = await JobRequest.findOne({
                             status: 'pending',
@@ -219,11 +226,10 @@ router.post('/sms-webhook', async (req, res) => {
                             // Notify homeowner (if SMS consent given)
                             if (pendingJob.smsConsent && pendingJob.phone) {
                                 try {
-                                    await client.messages.create({
-                                        body: 'Fixlo: Your job has been assigned and a technician is on the way.',
-                                        from: fromNumber,
-                                        to: pendingJob.phone
-                                    });
+                                    await sendSmsMessage(
+                                        pendingJob.phone,
+                                        'Fixlo: Your job has been assigned and a technician is on the way.'
+                                    );
                                     console.log(`📱 Homeowner notified of assignment for job ${pendingJob._id}`);
                                 } catch (homeownerError) {
                                     console.error('Failed to notify homeowner:', homeownerError.message);
@@ -288,13 +294,7 @@ router.post('/sms-webhook', async (req, res) => {
     }
     
     try {
-        if (client) {
-            await client.messages.create({
-                body: responseTemplate.message,
-                from: fromNumber,
-                to: userPhone
-            });
-        }
+        await sendSmsMessage(userPhone, responseTemplate.message);
         
         // Log response for compliance
         console.log(`SMS Response sent to ${userPhone} - Command: ${message} - CTA: ${responseTemplate.cta}`);
