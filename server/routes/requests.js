@@ -89,14 +89,27 @@ router.post('/', async (req, res) => {
           phone: normalizedPhone,
           trade: serviceType,
           address: addressToGeocode.trim(),
+          city: city.trim(),
+          state: state.trim(),
           description: details ? details.trim() : '',
           status: 'pending',
           smsConsent: smsConsent,
+          smsConsentAt: smsConsent ? new Date() : null,
           source: 'website',
           requestId: requestId
         });
         
         console.log('✅ Request saved to database:', savedLead._id);
+        
+        // Send SMS confirmation to customer
+        if (smsConsent && savedLead) {
+          try {
+            const smsService = require('../services/smsService');
+            await smsService.notifyRequestSubmitted(savedLead);
+          } catch (smsError) {
+            console.error('⚠️ SMS notification failed:', smsError.message);
+          }
+        }
       } else {
         console.warn('⚠️ Database not connected, proceeding without persistence');
       }

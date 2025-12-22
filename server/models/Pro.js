@@ -244,7 +244,39 @@ const proSchema = new mongoose.Schema({
   reviews: [{ 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Review' 
-  }]
+  }],
+  
+  // Contractor workflow fields
+  isContractor: {
+    type: Boolean,
+    default: false
+  },
+  contractorRole: {
+    type: String,
+    enum: ['employee', 'independent', null],
+    default: null
+  },
+  assignedJobs: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'JobRequest'
+  }],
+  currentJobId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'JobRequest'
+  },
+  isClockedIn: {
+    type: Boolean,
+    default: false
+  },
+  totalHoursWorked: {
+    type: Number,
+    default: 0
+  },
+  payoutSummary: {
+    totalEarned: { type: Number, default: 0 },
+    totalPaid: { type: Number, default: 0 },
+    pendingPayout: { type: Number, default: 0 }
+  }
 }, {
   timestamps: true
 });

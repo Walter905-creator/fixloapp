@@ -266,6 +266,7 @@ preflight("/api/*", "POST, OPTIONS, GET, PUT, DELETE, HEAD");
 app.use("/api/cloudinary", require("./routes/cloudinary")); // POST /api/cloudinary/sign
 
 app.use("/api/admin", adminRateLimit, require("./routes/admin"));
+app.use("/api/admin", adminRateLimit, require("./routes/adminJobs")); // Admin job management
 app.use("/api/auth", authRateLimit, require("./routes/auth"));
 app.use("/api/pro-auth", authRateLimit, require("./routes/proAuth"));
 
@@ -274,6 +275,8 @@ app.use("/api/pros", generalRateLimit, require("./routes/proRoutes")); // auth &
 app.use("/api/pro", generalRateLimit, require("./routes/proJobs")); // professional jobs
 
 app.use("/api/pro/jobs", generalRateLimit, require("./routes/proJobs")); // professional job management
+app.use("/api/contractor", generalRateLimit, require("./routes/contractor")); // contractor workflow
+app.use("/api/customer", generalRateLimit, require("./routes/customerPortal")); // customer portal
 app.use("/api/homeowner-lead", require("./routes/homeownerLead"));
 app.use("/api/leads", require("./routes/leads")); // Lead management with database storage
 

@@ -13,10 +13,13 @@ import ContactPage from './routes/ContactPage.jsx';
 import PricingPage from './routes/PricingPage.jsx';
 import ProSignInPage from './routes/ProSignInPage.jsx';
 import AdminPage from './routes/AdminPage.jsx';
+import AdminJobsPage from './routes/AdminJobsPage.jsx';
 import ProDashboardPage from './routes/ProDashboardPage.jsx';
+import ContractorDashboardPage from './routes/ContractorDashboardPage.jsx';
 import JoinPage from './routes/JoinPage.jsx';
 import ServicePage from './routes/ServicePage.jsx';
 import JobManagementPage from './routes/JobManagementPage.jsx';
+import CustomerPortalPage from './routes/CustomerPortalPage.jsx';
 import Terms from './pages/Terms.jsx';
 import Privacy from './pages/Privacy.jsx';
 import PrivacySettings from './pages/PrivacySettings.jsx';
@@ -43,7 +46,10 @@ export default function App(){
       <Route path="/pro/signup" element={<ProSignupPage/>}/>
       <Route path="/pro/sign-in" element={<ProSignInPage/>}/>
       <Route path="/admin" element={<AdminPage/>}/>
+      <Route path="/admin/jobs" element={<AdminJobsPage/>}/>
+      <Route path="/my-jobs" element={<CustomerPortalPage/>}/>
       <Route path="/pro/dashboard" element={<ProDashboardPage/>}/>
+      <Route path="/contractor/dashboard" element={<ContractorDashboardPage/>}/>
       <Route path="/staff/jobs" element={<JobManagementPage/>}/>
       <Route path="/join" element={<JoinPage/>}/>
       <Route path="/terms" element={<Terms/>}/>

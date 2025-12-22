@@ -65,7 +65,7 @@ const JobRequestSchema = new mongoose.Schema({
   }],
   status: {
     type: String,
-    enum: ['pending', 'assigned', 'in-progress', 'completed', 'cancelled'],
+    enum: ['pending', 'scheduled', 'assigned', 'in-progress', 'completed', 'cancelled'],
     default: 'pending'
   },
   // Payment & Stripe
@@ -143,6 +143,63 @@ const JobRequestSchema = new mongoose.Schema({
   },
   termsAcceptedAt: {
     type: Date
+  },
+  // SMS & Compliance
+  smsConsent: {
+    type: Boolean,
+    default: false
+  },
+  smsConsentAt: {
+    type: Date
+  },
+  smsOptOut: {
+    type: Boolean,
+    default: false
+  },
+  smsOptOutAt: {
+    type: Date
+  },
+  pricingAcceptance: {
+    type: Boolean,
+    default: false
+  },
+  pricingAcceptanceAt: {
+    type: Date
+  },
+  estimateFeeWaiverAcknowledged: {
+    type: Boolean,
+    default: false
+  },
+  estimateFeeWaiverAt: {
+    type: Date
+  },
+  paymentAuthConsent: {
+    type: Boolean,
+    default: false
+  },
+  paymentAuthConsentAt: {
+    type: Date
+  },
+  // Scheduling
+  scheduledDate: {
+    type: Date
+  },
+  scheduledTime: {
+    type: String,
+    trim: true
+  },
+  // Assignment
+  assignedTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Pro'
+  },
+  assignedAt: {
+    type: Date
+  },
+  // Customer reference
+  customerId: {
+    type: String,
+    trim: true
   },
   createdAt: {
     type: Date,
