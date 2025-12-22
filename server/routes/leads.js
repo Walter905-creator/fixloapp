@@ -5,6 +5,7 @@ const JobRequest = require('../models/JobRequest');
 const Pro = require('../models/Pro');
 const { geocodeAddress } = require('../utils/geocode');
 const { sendSms, normalizeE164 } = require('../utils/twilio');
+const { getPriorityConfig, hasPriorityRouting, getDelayMs } = require('../config/priorityRouting');
 
 function milesToMeters(mi) { return mi * 1609.344; }
 
@@ -96,32 +97,30 @@ router.post('/', async (req, res) => {
       // Continue without failing the request
     }
 
-    // 3) PRIORITY PRO ROUTING - Charlotte, NC
-    const PRIORITY_PRO_PHONE = '+15164449953';
-    const PRIORITY_PRO_NAME = 'Walter Arevalo';
-    const isCharlotteLead = city && city.toLowerCase() === 'charlotte';
+    // 3) PRIORITY PRO ROUTING
+    const priorityConfig = getPriorityConfig(city);
     
-    if (isCharlotteLead && savedLead) {
+    if (priorityConfig && savedLead) {
       try {
         // Send priority SMS notification
-        const priorityMessage = `Fixlo Priority Lead (Charlotte):
+        const priorityMessage = `Fixlo Priority Lead (${city}):
 New homeowner service request received.
 Service: ${leadTrade}
 Location: ${leadAddress}
 Reply ACCEPT to take this job first.`;
         
-        await sendSms(PRIORITY_PRO_PHONE, priorityMessage);
+        await sendSms(priorityConfig.phone, priorityMessage);
         
         // Mark lead as priority notified
         if (mongoose.connection.readyState === 1) {
           await JobRequest.findByIdAndUpdate(savedLead._id, {
             priorityNotified: true,
-            priorityPro: PRIORITY_PRO_NAME,
+            priorityPro: priorityConfig.name,
             priorityNotifiedAt: new Date()
           });
         }
         
-        console.log(`🔔 Priority SMS sent to ${PRIORITY_PRO_NAME} for Charlotte lead`);
+        console.log(`🔔 Priority SMS sent to ${priorityConfig.name} for ${city} lead`);
       } catch (priorityError) {
         console.error('❌ Priority SMS notification failed:', priorityError.message);
         // Continue with normal flow even if priority notification fails
@@ -158,12 +157,14 @@ Reply ACCEPT to take this job first.`;
       // Continue with empty pros array
     }
 
-    // 5) Notify matched professionals via SMS (with delay for Charlotte priority leads)
+    // 5) Notify matched professionals via SMS (with delay for priority leads)
     let notified = 0;
     
-    // For Charlotte leads, delay other pro notifications to give priority pro time to respond
-    if (isCharlotteLead && savedLead) {
-      console.log('⏳ Charlotte lead detected - scheduling delayed notification for other pros (3 minutes)');
+    // For priority leads, delay other pro notifications to give priority pro time to respond
+    if (priorityConfig && savedLead) {
+      const delayMs = getDelayMs(city);
+      const delayMinutes = priorityConfig.delayMinutes;
+      console.log(`⏳ ${city} lead detected - scheduling delayed notification for other pros (${delayMinutes} minutes)`);
       
       // Schedule delayed notification (non-blocking)
       setTimeout(async () => {
@@ -173,11 +174,11 @@ Reply ACCEPT to take this job first.`;
             const currentJob = await JobRequest.findById(savedLead._id);
             
             if (currentJob && currentJob.status === 'pending' && !currentJob.priorityAcceptedAt) {
-              console.log(`⏰ Delayed notification: Notifying ${pros.length} other pros for Charlotte lead ${savedLead._id}`);
+              console.log(`⏰ Delayed notification: Notifying ${pros.length} other pros for ${city} lead ${savedLead._id}`);
               
               for (const pro of pros) {
                 // Skip priority pro to avoid duplicate notifications
-                if (normalizeE164(pro.phone) === PRIORITY_PRO_PHONE) {
+                if (normalizeE164(pro.phone) === priorityConfig.phone) {
                   continue;
                 }
                 
@@ -190,7 +191,7 @@ Reply ACCEPT to take this job first.`;
                   console.warn('Delayed SMS send failed for', pro._id || pro.phone, e.message);
                 }
               }
-              console.log(`📱 Delayed notification completed for Charlotte lead`);
+              console.log(`📱 Delayed notification completed for ${city} lead`);
             } else {
               console.log(`✅ Job already accepted by priority pro - skipping delayed notification`);
             }
@@ -198,9 +199,9 @@ Reply ACCEPT to take this job first.`;
         } catch (delayedError) {
           console.error('❌ Delayed notification error:', delayedError.message);
         }
-      }, 180000); // 3 minutes = 180000ms
+      }, delayMs);
     } else {
-      // Normal immediate notification for non-Charlotte leads
+      // Normal immediate notification for non-priority leads
       if (pros.length) {
         for (const pro of pros) {
           try {
@@ -227,8 +228,8 @@ Reply ACCEPT to take this job first.`;
       data: {
         leadId: savedLead ? savedLead._id : null,
         matchedPros: pros.length,
-        notified: isCharlotteLead ? 'delayed' : notified,
-        priorityNotified: isCharlotteLead,
+        notified: priorityConfig ? 'delayed' : notified,
+        priorityNotified: !!priorityConfig,
         address: formatted,
         serviceType: leadTrade,
         radiusMiles: radiusMiles

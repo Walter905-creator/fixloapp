@@ -5,6 +5,8 @@ const express = require('express');
 const twilio = require('twilio');
 const mongoose = require('mongoose');
 const JobRequest = require('./server/models/JobRequest');
+const { sendSms, normalizeE164 } = require('./server/utils/twilio');
+const { getPriorityConfig } = require('./server/config/priorityRouting');
 const router = express.Router();
 
 // Twilio configuration
@@ -22,26 +24,6 @@ if (accountSid && authToken) {
 
 // Base URL for CTAs - update this with your actual domain
 const BASE_URL = process.env.BASE_URL || 'https://fixlo.com';
-
-// Helper function to send SMS with consistent error handling
-async function sendSmsMessage(to, body) {
-    if (!client || !fromNumber) {
-        console.warn('SMS disabled: missing Twilio configuration');
-        return { disabled: true };
-    }
-    
-    try {
-        const result = await client.messages.create({
-            body,
-            from: fromNumber,
-            to
-        });
-        return result;
-    } catch (error) {
-        console.error(`Failed to send SMS to ${to}:`, error.message);
-        throw error;
-    }
-}
 
 // SMS Templates with Clear CTAs
 const SMS_TEMPLATES = {
@@ -110,7 +92,7 @@ router.post('/sms-optin', async (req, res) => {
         // Send welcome message with clear CTA
         const welcomeTemplate = SMS_TEMPLATES.WELCOME(proName);
         
-        await sendSmsMessage(phone, welcomeTemplate.message);
+        await sendSms(phone, welcomeTemplate.message);
         
         // Log the opt-in for compliance
         console.log(`SMS Opt-in: ${proName} (${phone}) - CTA: ${welcomeTemplate.cta}`);
@@ -161,7 +143,7 @@ router.post('/send-job-notification', async (req, res) => {
                 template = SMS_TEMPLATES.JOB_LEAD(customerName, service, location, phone, jobId);
         }
         
-        await sendSmsMessage(proPhone, template.message);
+        await sendSms(proPhone, template.message);
         
         // Log for compliance tracking
         console.log(`Job SMS sent to ${proPhone} - Type: ${type} - CTA: ${template.cta}`);
@@ -192,19 +174,26 @@ router.post('/sms-webhook', async (req, res) => {
     
     switch(message) {
         case 'ACCEPT':
-            // Handle priority pro job acceptance for Charlotte leads
-            const PRIORITY_PRO_PHONE = '+15164449953';
-            const normalizedPhone = userPhone.replace(/\D/g, '');
-            const isPriorityPro = normalizedPhone.endsWith('5164449953');
+            // Handle priority pro job acceptance
+            const normalizedUserPhone = normalizeE164(userPhone);
             
-            if (isPriorityPro) {
+            // Check if this phone number is a priority pro for any city
+            let priorityProConfig = null;
+            for (const [cityName, config] of Object.entries(require('./server/config/priorityRouting').PRIORITY_ROUTING)) {
+                if (normalizeE164(config.phone) === normalizedUserPhone) {
+                    priorityProConfig = { ...config, city: cityName };
+                    break;
+                }
+            }
+            
+            if (priorityProConfig) {
                 try {
-                    // Find the most recent pending Charlotte job that was priority notified
+                    // Find the most recent pending job that was priority notified to this pro
                     if (mongoose.connection.readyState === 1) {
                         const pendingJob = await JobRequest.findOne({
                             status: 'pending',
                             priorityNotified: true,
-                            priorityPro: 'Walter Arevalo',
+                            priorityPro: priorityProConfig.name,
                             priorityAcceptedAt: null
                         }).sort({ priorityNotifiedAt: -1 });
                         
@@ -218,7 +207,7 @@ router.post('/sms-webhook', async (req, res) => {
                             
                             // Send confirmation to priority pro
                             responseTemplate = {
-                                message: `Fixlo: You have been assigned this Charlotte job. Customer will be notified.`,
+                                message: `Fixlo: You have been assigned this ${priorityProConfig.city} job. Customer will be notified.`,
                                 cta: 'Job assigned',
                                 action: 'priority_job_assigned'
                             };
@@ -226,7 +215,7 @@ router.post('/sms-webhook', async (req, res) => {
                             // Notify homeowner (if SMS consent given)
                             if (pendingJob.smsConsent && pendingJob.phone) {
                                 try {
-                                    await sendSmsMessage(
+                                    await sendSms(
                                         pendingJob.phone,
                                         'Fixlo: Your job has been assigned and a technician is on the way.'
                                     );
@@ -236,11 +225,11 @@ router.post('/sms-webhook', async (req, res) => {
                                 }
                             }
                             
-                            console.log(`✅ Priority pro accepted Charlotte job ${pendingJob._id}`);
+                            console.log(`✅ Priority pro ${priorityProConfig.name} accepted ${priorityProConfig.city} job ${pendingJob._id}`);
                         } else {
                             // No pending priority job found
                             responseTemplate = {
-                                message: `No pending Charlotte jobs available at this time. You'll be notified of new opportunities.`,
+                                message: `No pending jobs available at this time. You'll be notified of new opportunities.`,
                                 cta: 'No jobs available',
                                 action: 'no_priority_job'
                             };
@@ -294,7 +283,7 @@ router.post('/sms-webhook', async (req, res) => {
     }
     
     try {
-        await sendSmsMessage(userPhone, responseTemplate.message);
+        await sendSms(userPhone, responseTemplate.message);
         
         // Log response for compliance
         console.log(`SMS Response sent to ${userPhone} - Command: ${message} - CTA: ${responseTemplate.cta}`);
