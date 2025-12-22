@@ -3,6 +3,10 @@
 
 const express = require('express');
 const twilio = require('twilio');
+const mongoose = require('mongoose');
+const JobRequest = require('./server/models/JobRequest');
+const { sendSms, normalizeE164 } = require('./server/utils/twilio');
+const { findPriorityProByPhone } = require('./server/config/priorityRouting');
 const router = express.Router();
 
 // Twilio configuration
@@ -88,13 +92,7 @@ router.post('/sms-optin', async (req, res) => {
         // Send welcome message with clear CTA
         const welcomeTemplate = SMS_TEMPLATES.WELCOME(proName);
         
-        if (client) {
-            await client.messages.create({
-                body: welcomeTemplate.message,
-                from: fromNumber,
-                to: phone
-            });
-        }
+        await sendSms(phone, welcomeTemplate.message);
         
         // Log the opt-in for compliance
         console.log(`SMS Opt-in: ${proName} (${phone}) - CTA: ${welcomeTemplate.cta}`);
@@ -145,13 +143,7 @@ router.post('/send-job-notification', async (req, res) => {
                 template = SMS_TEMPLATES.JOB_LEAD(customerName, service, location, phone, jobId);
         }
         
-        if (client) {
-            await client.messages.create({
-                body: template.message,
-                from: fromNumber,
-                to: proPhone
-            });
-        }
+        await sendSms(proPhone, template.message);
         
         // Log for compliance tracking
         console.log(`Job SMS sent to ${proPhone} - Type: ${type} - CTA: ${template.cta}`);
@@ -182,12 +174,76 @@ router.post('/sms-webhook', async (req, res) => {
     
     switch(message) {
         case 'ACCEPT':
-            // Handle job acceptance - this would typically update database
-            responseTemplate = {
-                message: `✅ Job acceptance received! We'll notify the customer and send you their contact details. LOGIN to view job details: ${BASE_URL}/dashboard`,
-                cta: 'LOGIN to view job details',
-                action: 'job_accepted'
-            };
+            // Handle priority pro job acceptance
+            const priorityProConfig = findPriorityProByPhone(userPhone);
+            
+            if (priorityProConfig) {
+                try {
+                    // Find the most recent pending job that was priority notified to this pro
+                    if (mongoose.connection.readyState === 1) {
+                        const pendingJob = await JobRequest.findOne({
+                            status: 'pending',
+                            priorityNotified: true,
+                            priorityPro: priorityProConfig.name,
+                            priorityAcceptedAt: null
+                        }).sort({ priorityNotifiedAt: -1 });
+                        
+                        if (pendingJob) {
+                            // Assign job to priority pro
+                            await JobRequest.findByIdAndUpdate(pendingJob._id, {
+                                status: 'assigned',
+                                priorityAcceptedAt: new Date(),
+                                assignedAt: new Date()
+                            });
+                            
+                            // Send confirmation to priority pro
+                            responseTemplate = {
+                                message: `Fixlo: You have been assigned this ${priorityProConfig.city} job. Customer will be notified.`,
+                                cta: 'Job assigned',
+                                action: 'priority_job_assigned'
+                            };
+                            
+                            // Notify homeowner (if SMS consent given)
+                            if (pendingJob.smsConsent && pendingJob.phone) {
+                                try {
+                                    await sendSms(
+                                        pendingJob.phone,
+                                        'Fixlo: Your job has been assigned and a technician is on the way.'
+                                    );
+                                    console.log(`📱 Homeowner notified of assignment for job ${pendingJob._id}`);
+                                } catch (homeownerError) {
+                                    console.error('Failed to notify homeowner:', homeownerError.message);
+                                }
+                            }
+                            
+                            console.log(`✅ Priority pro ${priorityProConfig.name} accepted ${priorityProConfig.city} job ${pendingJob._id}`);
+                        } else {
+                            // No pending priority job found
+                            responseTemplate = {
+                                message: `No pending jobs available at this time. You'll be notified of new opportunities.`,
+                                cta: 'No jobs available',
+                                action: 'no_priority_job'
+                            };
+                        }
+                    } else {
+                        throw new Error('Database not connected');
+                    }
+                } catch (acceptError) {
+                    console.error('Error processing priority job acceptance:', acceptError.message);
+                    responseTemplate = {
+                        message: `Error processing your acceptance. Please contact support or try again later.`,
+                        cta: 'Error occurred',
+                        action: 'acceptance_error'
+                    };
+                }
+            } else {
+                // Standard job acceptance for non-priority pros
+                responseTemplate = {
+                    message: `✅ Job acceptance received! We'll notify the customer and send you their contact details. LOGIN to view job details: ${BASE_URL}/dashboard`,
+                    cta: 'LOGIN to view job details',
+                    action: 'job_accepted'
+                };
+            }
             break;
             
         case 'HELP':
@@ -218,13 +274,7 @@ router.post('/sms-webhook', async (req, res) => {
     }
     
     try {
-        if (client) {
-            await client.messages.create({
-                body: responseTemplate.message,
-                from: fromNumber,
-                to: userPhone
-            });
-        }
+        await sendSms(userPhone, responseTemplate.message);
         
         // Log response for compliance
         console.log(`SMS Response sent to ${userPhone} - Command: ${message} - CTA: ${responseTemplate.cta}`);
