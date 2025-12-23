@@ -352,7 +352,6 @@ router.post('/clock-out/:jobId', async (req, res) => {
     job.visitFeeWaived = visitFeeWaived;
     job.jobApproved = visitFeeWaived;
     job.totalCost = totalCost;
-    job.status = 'completed';
 
     await job.save();
 
@@ -370,6 +369,7 @@ router.post('/clock-out/:jobId', async (req, res) => {
       }
       
       try {
+        // Create and immediately confirm payment (off_session: true, confirm: true)
         const paymentIntent = await stripe.paymentIntents.create({
           amount: Math.round(totalCost * 100), // Convert to cents
           currency: 'usd',
@@ -391,8 +391,6 @@ router.post('/clock-out/:jobId', async (req, res) => {
         chargeId = paymentIntent.id;
         job.stripePaymentIntentId = chargeId;
         job.paidAt = new Date();
-        
-        // Lock job after successful payment
         job.status = 'completed';
         await job.save();
 
@@ -402,8 +400,14 @@ router.post('/clock-out/:jobId', async (req, res) => {
         console.error('❌ Stripe charge failed:', stripeError);
         // Audit log failure
         console.log(`📝 Audit: Payment failed for Job ${jobId} | Customer: ${job.stripeCustomerId} | Error: ${stripeError.message} | Time: ${new Date().toISOString()}`);
-        // Continue to create invoice even if charge fails
+        // Set job status to completed even if payment fails (invoice will be sent)
+        job.status = 'completed';
+        await job.save();
       }
+    } else {
+      // No payment method - just mark as completed
+      job.status = 'completed';
+      await job.save();
     }
 
     // Create invoice

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Pro = require('../models/Pro');
+const JobRequest = require('../models/JobRequest');
 
 // Initialize Stripe with validation
 let stripe;
@@ -74,6 +75,7 @@ router.post('/create-setup-intent', async (req, res) => {
         email,
         metadata: {
           userId: userId || '',
+          jobId: jobId || '',
           city: city || '',
           source: 'fixlo-setup-intent'
         }
@@ -288,8 +290,16 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
         const jobId = paymentIntent.metadata?.jobId;
         if (jobId) {
           try {
-            // Note: Would need to import JobRequest model here
-            console.log(`✅ Payment successful for job ${jobId}`);
+            const job = await JobRequest.findById(jobId);
+            if (job) {
+              job.stripePaymentIntentId = paymentIntent.id;
+              job.paidAt = new Date();
+              job.status = 'completed';
+              await job.save();
+              console.log(`✅ Job ${jobId} marked as completed and paid`);
+            } else {
+              console.warn(`⚠️ No job found with ID: ${jobId}`);
+            }
           } catch (err) {
             console.error(`❌ Failed to update job ${jobId}:`, err.message);
           }
