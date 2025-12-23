@@ -6,6 +6,15 @@ import { STRIPE_PUBLISHABLE_KEY, API_BASE } from '../utils/config';
 // Initialize Stripe with validated key
 if (!STRIPE_PUBLISHABLE_KEY) {
   console.error('❌ STRIPE_PUBLISHABLE_KEY is not configured');
+  throw new Error('Stripe publishable key is required');
+}
+
+// Runtime validation for Live Mode in production
+if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+  if (!STRIPE_PUBLISHABLE_KEY.startsWith('pk_live_')) {
+    console.error('❌ SECURITY ERROR: Stripe LIVE publishable key required');
+    throw new Error('Stripe LIVE publishable key required in production');
+  }
 }
 
 const stripePromise = STRIPE_PUBLISHABLE_KEY ? loadStripe(STRIPE_PUBLISHABLE_KEY) : null;

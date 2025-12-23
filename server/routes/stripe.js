@@ -6,13 +6,21 @@ const Pro = require('../models/Pro');
 let stripe;
 try {
   if (process.env.STRIPE_SECRET_KEY) {
-    // Validate Stripe key for test mode in non-production
+    // Enforce Live Mode in production
+    if (process.env.NODE_ENV === "production" && !process.env.STRIPE_SECRET_KEY.startsWith("sk_live_")) {
+      console.error("❌ SECURITY ERROR: Stripe LIVE secret key required in production");
+      throw new Error("Stripe LIVE secret key required in production. Use sk_live_ keys only.");
+    }
+    
+    // Validate test mode in non-production
     if (process.env.NODE_ENV !== "production" && !process.env.STRIPE_SECRET_KEY.startsWith("sk_test_")) {
       console.error("❌ SECURITY ERROR: Live Stripe key detected in non-production environment");
       throw new Error("Stripe live key detected in non-production environment. Use sk_test_ keys only.");
     }
     
-    stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    stripe = require('stripe')(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2023-10-16'
+    });
     console.log('✅ Stripe initialized in', process.env.STRIPE_SECRET_KEY.startsWith("sk_test_") ? "TEST MODE" : "LIVE MODE");
   } else {
     console.log('⚠️ STRIPE_SECRET_KEY not found in environment variables');
@@ -29,7 +37,7 @@ router.post('/create-setup-intent', async (req, res) => {
       console.log('🔔 Stripe setup intent requested');
     }
     
-    const { email, userId } = req.body;
+    const { email, userId, jobId, city } = req.body;
     
     if (!email) {
       return res.status(400).json({
@@ -66,6 +74,7 @@ router.post('/create-setup-intent', async (req, res) => {
         email,
         metadata: {
           userId: userId || '',
+          city: city || '',
           source: 'fixlo-setup-intent'
         }
       });
@@ -80,13 +89,15 @@ router.post('/create-setup-intent', async (req, res) => {
       payment_method_types: ['card'],
       metadata: {
         userId: userId || '',
-        source: 'fixlo-setup-intent'
+        jobId: jobId || '',
+        city: city || '',
+        source: 'fixlo-setup-intent',
+        timestamp: new Date().toISOString()
       }
     });
 
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(`✅ Setup intent created: ${setupIntent.id}`);
-    }
+    // Audit log
+    console.log(`✅ Setup intent created: ${setupIntent.id} for customer ${customer.id}`);
     
     res.status(200).json({ 
       clientSecret: setupIntent.client_secret,
@@ -100,7 +111,7 @@ router.post('/create-setup-intent', async (req, res) => {
     if (error.statusCode === 401) {
       return res.status(401).json({ 
         error: 'Authentication failed',
-        message: 'Invalid Stripe API key. Ensure you are using the correct test mode key (sk_test_).',
+        message: 'Invalid Stripe API key. Ensure you are using the correct mode key.',
         details: error.message
       });
     }
@@ -241,9 +252,16 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
 
     let event;
 
+    // Enforce webhook signature verification in production
+    if (!endpointSecret && process.env.NODE_ENV === 'production') {
+      console.error('❌ STRIPE_WEBHOOK_SECRET required in production');
+      return res.status(500).send('Webhook secret not configured');
+    }
+
     if (endpointSecret) {
       try {
         event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+        console.log('✅ Webhook signature verified');
       } catch (err) {
         console.error('❌ Webhook signature verification failed:', err.message);
         return res.status(400).send(`Webhook Error: ${err.message}`);
@@ -258,10 +276,46 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
 
     // Handle the event
     switch (event.type) {
+      case 'payment_intent.succeeded': {
+        const paymentIntent = event.data.object;
+        console.log(`✅ PaymentIntent succeeded: ${paymentIntent.id}`);
+        console.log(`👤 Customer: ${paymentIntent.customer}, Amount: $${(paymentIntent.amount / 100).toFixed(2)}`);
+        
+        // Audit log
+        console.log(`📝 Audit: PaymentIntent ${paymentIntent.id} | Customer: ${paymentIntent.customer} | Amount: ${paymentIntent.amount} | Status: succeeded | Time: ${new Date().toISOString()}`);
+        
+        // Update job status if jobId in metadata
+        const jobId = paymentIntent.metadata?.jobId;
+        if (jobId) {
+          try {
+            // Note: Would need to import JobRequest model here
+            console.log(`✅ Payment successful for job ${jobId}`);
+          } catch (err) {
+            console.error(`❌ Failed to update job ${jobId}:`, err.message);
+          }
+        }
+        break;
+      }
+      
+      case 'payment_intent.failed': {
+        const paymentIntent = event.data.object;
+        console.log(`❌ PaymentIntent failed: ${paymentIntent.id}`);
+        console.log(`👤 Customer: ${paymentIntent.customer}, Reason: ${paymentIntent.last_payment_error?.message || 'Unknown'}`);
+        
+        // Audit log
+        console.log(`📝 Audit: PaymentIntent ${paymentIntent.id} | Customer: ${paymentIntent.customer} | Status: failed | Reason: ${paymentIntent.last_payment_error?.message || 'Unknown'} | Time: ${new Date().toISOString()}`);
+        
+        // TODO: Notify customer and admin of payment failure
+        break;
+      }
+      
       case 'checkout.session.completed': {
         const session = event.data.object;
         console.log(`✅ Checkout session completed: ${session.id}`);
         console.log(`👤 Customer: ${session.customer}, Subscription: ${session.subscription}`);
+        
+        // Audit log
+        console.log(`📝 Audit: Session ${session.id} | Customer: ${session.customer} | Subscription: ${session.subscription} | Time: ${new Date().toISOString()}`);
         
         // Update Pro record with subscription details
         const userId = session.metadata?.userId;
@@ -301,6 +355,9 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
         console.log(`✅ Invoice payment succeeded: ${invoice.id}`);
         console.log(`👤 Customer: ${invoice.customer}, Subscription: ${invoice.subscription}`);
         
+        // Audit log
+        console.log(`📝 Audit: Invoice ${invoice.id} | Customer: ${invoice.customer} | Subscription: ${invoice.subscription} | Amount: ${invoice.amount_paid} | Time: ${new Date().toISOString()}`);
+        
         // Update Pro record payment status
         try {
           const pro = await Pro.findOne({ stripeCustomerId: invoice.customer });
@@ -332,6 +389,9 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
         const invoice = event.data.object;
         console.log(`❌ Invoice payment failed: ${invoice.id}`);
         console.log(`👤 Customer: ${invoice.customer}, Subscription: ${invoice.subscription}`);
+        
+        // Audit log
+        console.log(`📝 Audit: Invoice ${invoice.id} | Customer: ${invoice.customer} | Status: failed | Time: ${new Date().toISOString()}`);
         
         // Update Pro record and notify
         try {

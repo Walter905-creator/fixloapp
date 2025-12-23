@@ -10,13 +10,21 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 let stripe;
 try {
   if (process.env.STRIPE_SECRET_KEY) {
-    // Validate Stripe key for test mode in non-production
+    // Enforce Live Mode in production
+    if (process.env.NODE_ENV === "production" && !process.env.STRIPE_SECRET_KEY.startsWith("sk_live_")) {
+      console.error("❌ SECURITY ERROR: Stripe LIVE secret key required in production");
+      throw new Error("Stripe LIVE secret key required in production. Use sk_live_ keys only.");
+    }
+    
+    // Validate test mode in non-production
     if (process.env.NODE_ENV !== "production" && !process.env.STRIPE_SECRET_KEY.startsWith("sk_test_")) {
       console.error("❌ SECURITY ERROR: Live Stripe key detected in non-production environment");
       throw new Error("Stripe live key detected in non-production environment. Use sk_test_ keys only.");
     }
     
-    stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    stripe = require('stripe')(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2023-10-16'
+    });
     console.log('✅ Stripe initialized for service intake in', process.env.STRIPE_SECRET_KEY.startsWith("sk_test_") ? "TEST MODE" : "LIVE MODE");
   } else {
     console.log('⚠️ STRIPE_SECRET_KEY not found');
@@ -95,9 +103,15 @@ router.post('/payment-intent', async (req, res) => {
       payment_method_types: ['card'],
       metadata: {
         type: 'service-visit-authorization',
-        visit_fee: '150'
+        visit_fee: '150',
+        email: email,
+        source: 'fixlo-service-intake',
+        timestamp: new Date().toISOString()
       }
     });
+
+    // Audit log
+    console.log(`✅ Setup intent created: ${setupIntent.id} for customer ${customer.id}`);
 
     res.json({
       success: true,
@@ -345,6 +359,16 @@ router.post('/clock-out/:jobId', async (req, res) => {
     // Charge the customer via Stripe
     let chargeId = null;
     if (stripe && job.stripePaymentMethodId && job.stripeCustomerId) {
+      // Prevent duplicate charges
+      if (job.stripePaymentIntentId && job.paidAt) {
+        console.log(`⚠️ Job ${jobId} already charged: ${job.stripePaymentIntentId}`);
+        return res.status(400).json({
+          success: false,
+          message: 'This job has already been charged',
+          invoiceNumber: job.invoiceId
+        });
+      }
+      
       try {
         const paymentIntent = await stripe.paymentIntents.create({
           amount: Math.round(totalCost * 100), // Convert to cents
@@ -359,18 +383,25 @@ router.post('/clock-out/:jobId', async (req, res) => {
             laborHours: billableHours.toFixed(2),
             laborCost: laborCost.toFixed(2),
             materialsCost: materialsCost.toFixed(2),
-            visitFee: visitFee.toFixed(2)
+            visitFee: visitFee.toFixed(2),
+            timestamp: new Date().toISOString()
           }
         });
 
         chargeId = paymentIntent.id;
         job.stripePaymentIntentId = chargeId;
         job.paidAt = new Date();
+        
+        // Lock job after successful payment
+        job.status = 'completed';
         await job.save();
 
-        console.log(`✅ Payment charged: $${totalCost.toFixed(2)} for job ${jobId}`);
+        // Audit log
+        console.log(`✅ Payment charged: $${totalCost.toFixed(2)} | PaymentIntent: ${chargeId} | Customer: ${job.stripeCustomerId} | Job: ${jobId} | Time: ${new Date().toISOString()}`);
       } catch (stripeError) {
         console.error('❌ Stripe charge failed:', stripeError);
+        // Audit log failure
+        console.log(`📝 Audit: Payment failed for Job ${jobId} | Customer: ${job.stripeCustomerId} | Error: ${stripeError.message} | Time: ${new Date().toISOString()}`);
         // Continue to create invoice even if charge fails
       }
     }
