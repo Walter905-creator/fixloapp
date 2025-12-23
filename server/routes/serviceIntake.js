@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const JobRequest = require('../models/JobRequest');
 const Invoice = require('../models/Invoice');
 const multer = require('multer');
@@ -74,7 +75,6 @@ if (process.env.CLOUDINARY_CLOUD_NAME) {
 router.post('/payment-intent', async (req, res) => {
   try {
     // Check database connection (needed for customer lookup)
-    const mongoose = require('mongoose');
     if (mongoose.connection.readyState !== 1) {
       console.warn('⚠️ Payment intent requested but database not connected - proceeding with Stripe only');
     }
@@ -170,7 +170,6 @@ router.post('/submit', upload.array('photos', 5), async (req, res) => {
     });
     
     // Check database connection first
-    const mongoose = require('mongoose');
     if (mongoose.connection.readyState !== 1) {
       console.error('❌ Service intake submission failed: Database not connected');
       return res.status(503).json({
@@ -297,7 +296,8 @@ router.post('/submit', upload.array('photos', 5), async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error submitting service request. Please try again or contact support at support@fixloapp.com',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      // Only include error details in development
+      ...(process.env.NODE_ENV === 'development' && { error: error.message })
     });
   }
 });
