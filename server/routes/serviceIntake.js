@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const JobRequest = require('../models/JobRequest');
 const Invoice = require('../models/Invoice');
 const multer = require('multer');
@@ -41,26 +42,43 @@ if (process.env.CLOUDINARY_CLOUD_NAME) {
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET
   });
+  console.log('✅ Cloudinary configured for service intake uploads');
+} else {
+  console.warn('⚠️ Cloudinary not configured - photo uploads will not be available');
 }
 
 // Configure multer for photo uploads
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'fixlo-service-requests',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'heic'],
-    transformation: [{ width: 1200, height: 1200, crop: 'limit', quality: 'auto' }]
-  }
-});
+let upload;
+if (process.env.CLOUDINARY_CLOUD_NAME) {
+  const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+      folder: 'fixlo-service-requests',
+      allowed_formats: ['jpg', 'jpeg', 'png', 'heic'],
+      transformation: [{ width: 1200, height: 1200, crop: 'limit', quality: 'auto' }]
+    }
+  });
 
-const upload = multer({ 
-  storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
-});
+  upload = multer({ 
+    storage: storage,
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+  });
+} else {
+  // Fallback to memory storage if Cloudinary is not configured
+  upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+  });
+}
 
 // Create Stripe Payment Intent (authorization only)
 router.post('/payment-intent', async (req, res) => {
   try {
+    // Check database connection (needed for customer lookup)
+    if (mongoose.connection.readyState !== 1) {
+      console.warn('⚠️ Payment intent requested but database not connected - proceeding with Stripe only');
+    }
+    
     const { email, name, phone } = req.body;
 
     if (!email || !name) {
@@ -142,6 +160,24 @@ router.post('/payment-intent', async (req, res) => {
 // Submit service intake request
 router.post('/submit', upload.array('photos', 5), async (req, res) => {
   try {
+    // Log request details for debugging
+    console.log('📝 Service intake submission received:', {
+      serviceType: req.body.serviceType,
+      email: req.body.email,
+      city: req.body.city,
+      photosCount: req.files ? req.files.length : 0,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Check database connection first
+    if (mongoose.connection.readyState !== 1) {
+      console.error('❌ Service intake submission failed: Database not connected');
+      return res.status(503).json({
+        success: false,
+        message: 'Service is temporarily unavailable. Please try again later or contact support at support@fixloapp.com'
+      });
+    }
+
     const {
       serviceType,
       description,
@@ -191,7 +227,18 @@ router.post('/submit', upload.array('photos', 5), async (req, res) => {
     }
 
     // Get photo URLs from uploaded files
-    const photoUrls = req.files ? req.files.map(file => file.path) : [];
+    let photoUrls = [];
+    if (req.files && req.files.length > 0) {
+      if (process.env.CLOUDINARY_CLOUD_NAME) {
+        // Cloudinary configured - photos are already uploaded
+        photoUrls = req.files.map(file => file.path);
+        console.log(`📸 ${photoUrls.length} photo(s) uploaded to Cloudinary`);
+      } else {
+        // Cloudinary not configured - photos are in memory but can't be stored
+        console.warn('⚠️ Photos uploaded but Cloudinary not configured - photos will not be stored');
+        // Don't fail the request, just proceed without photos
+      }
+    }
 
     // Create job request
     const jobRequest = new JobRequest({
@@ -226,10 +273,31 @@ router.post('/submit', upload.array('photos', 5), async (req, res) => {
 
   } catch (error) {
     console.error('❌ Error submitting service request:', error);
+    
+    // Log detailed error information for debugging
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      mongooseError: error.errors ? JSON.stringify(error.errors) : 'N/A'
+    });
+    
+    // Check if it's a validation error
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed: ' + validationErrors.join(', '),
+        errors: validationErrors
+      });
+    }
+    
+    // Generic error response
     res.status(500).json({
       success: false,
-      message: 'Error submitting service request',
-      error: error.message
+      message: 'Error submitting service request. Please try again or contact support at support@fixloapp.com',
+      // Only include error details in development
+      ...(process.env.NODE_ENV === 'development' && { error: error.message })
     });
   }
 });

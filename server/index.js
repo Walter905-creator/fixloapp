@@ -747,14 +747,18 @@ app.use(errorHandler);
 
 // ----------------------- DB Connect & Server Start -----------------------
 async function start() {
+  // Support both MONGODB_URI (standard) and MONGO_URI (legacy) for backwards compatibility
   const MONGO_URI =
-    process.env.MONGO_URI || "mongodb://127.0.0.1:27017/fixloapp";
+    process.env.MONGODB_URI || 
+    process.env.MONGO_URI || 
+    "mongodb://127.0.0.1:27017/fixloapp";
   const PORT = process.env.PORT || 10000;
 
   try {
     mongoose.set("strictQuery", true);
     await mongoose.connect(MONGO_URI, { maxPoolSize: 10 });
     console.log("✅ MongoDB connected");
+    console.log(`📊 Database: ${MONGO_URI.includes('@') ? MONGO_URI.split('@')[1] : 'local'}`);
 
     // (Optional) Index optimization/cleanup
     try {
