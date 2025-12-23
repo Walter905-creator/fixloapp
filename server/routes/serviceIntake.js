@@ -41,22 +41,34 @@ if (process.env.CLOUDINARY_CLOUD_NAME) {
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET
   });
+  console.log('✅ Cloudinary configured for service intake uploads');
+} else {
+  console.warn('⚠️ Cloudinary not configured - photo uploads will not be available');
 }
 
 // Configure multer for photo uploads
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'fixlo-service-requests',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'heic'],
-    transformation: [{ width: 1200, height: 1200, crop: 'limit', quality: 'auto' }]
-  }
-});
+let upload;
+if (process.env.CLOUDINARY_CLOUD_NAME) {
+  const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+      folder: 'fixlo-service-requests',
+      allowed_formats: ['jpg', 'jpeg', 'png', 'heic'],
+      transformation: [{ width: 1200, height: 1200, crop: 'limit', quality: 'auto' }]
+    }
+  });
 
-const upload = multer({ 
-  storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
-});
+  upload = multer({ 
+    storage: storage,
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+  });
+} else {
+  // Fallback to memory storage if Cloudinary is not configured
+  upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+  });
+}
 
 // Create Stripe Payment Intent (authorization only)
 router.post('/payment-intent', async (req, res) => {
@@ -216,11 +228,17 @@ router.post('/submit', upload.array('photos', 5), async (req, res) => {
     }
 
     // Get photo URLs from uploaded files
-    const photoUrls = req.files ? req.files.map(file => file.path) : [];
-    
-    // Warn if photos were attempted but Cloudinary is not configured
-    if (req.files && req.files.length > 0 && !process.env.CLOUDINARY_CLOUD_NAME) {
-      console.warn('⚠️ Photos uploaded but Cloudinary not configured - photos may not be stored properly');
+    let photoUrls = [];
+    if (req.files && req.files.length > 0) {
+      if (process.env.CLOUDINARY_CLOUD_NAME) {
+        // Cloudinary configured - photos are already uploaded
+        photoUrls = req.files.map(file => file.path);
+        console.log(`📸 ${photoUrls.length} photo(s) uploaded to Cloudinary`);
+      } else {
+        // Cloudinary not configured - photos are in memory but can't be stored
+        console.warn('⚠️ Photos uploaded but Cloudinary not configured - photos will not be stored');
+        // Don't fail the request, just proceed without photos
+      }
     }
 
     // Create job request
