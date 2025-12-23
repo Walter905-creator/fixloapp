@@ -37,10 +37,14 @@ if (nodeEnv === 'production') {
   }
 }
 
-// Validate test mode in non-production (warning only, not blocking)
+// Validate test mode in non-production (warning only in development, not blocking)
+// Only show warnings in actual development, not in production builds
 if (stripePublishableKey && nodeEnv !== 'production' && !stripePublishableKey.startsWith('pk_test_')) {
-  console.warn('⚠️ WARNING: Using a non-test Stripe key in non-production environment');
-  console.warn('⚠️ For security, consider using pk_test_ keys in development/test environments');
+  // Only log in true development environment (not during build)
+  if (typeof window !== 'undefined' && nodeEnv === 'development') {
+    console.warn('⚠️ WARNING: Using a non-test Stripe key in non-production environment');
+    console.warn('⚠️ For security, consider using pk_test_ keys in development/test environments');
+  }
   // Note: Not throwing an error to allow the app to run without Stripe in development
 }
 
@@ -49,15 +53,3 @@ export const STRIPE_CHECKOUT_URL = getEnv('VITE_STRIPE_CHECKOUT_URL');
 
 // Seasonal configuration - set to true during holiday season (Nov-Jan)
 export const IS_HOLIDAY_SEASON = true;
-
-// Log configuration in development
-if (getEnv('NODE_ENV') !== 'production') {
-  console.log('🔧 Configuration loaded:', {
-    API_BASE,
-    CLOUDINARY_CLOUD_NAME: CLOUDINARY_CLOUD_NAME ? '✅ Set' : '❌ Missing',
-    CLOUDINARY_UPLOAD_PRESET: CLOUDINARY_UPLOAD_PRESET ? '✅ Set' : '❌ Missing',
-    STRIPE_PUBLISHABLE_KEY: STRIPE_PUBLISHABLE_KEY ? (STRIPE_PUBLISHABLE_KEY.startsWith('pk_test_') ? '✅ Set (TEST MODE)' : '✅ Set (LIVE MODE)') : '❌ Missing',
-    STRIPE_CHECKOUT_URL: STRIPE_CHECKOUT_URL ? '✅ Set' : '❌ Missing',
-    IS_HOLIDAY_SEASON: IS_HOLIDAY_SEASON ? '🎄 Active' : '❌ Inactive'
-  });
-}
