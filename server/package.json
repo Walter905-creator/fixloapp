@@ -13,6 +13,7 @@
     "test": "echo \"No tests specified\" && exit 0"
   },
   "dependencies": {
+    "@sendgrid/mail": "^8.1.6",
     "axios": "^1.10.0",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^1.41.3",

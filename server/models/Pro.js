@@ -276,6 +276,22 @@ const proSchema = new mongoose.Schema({
     totalEarned: { type: Number, default: 0 },
     totalPaid: { type: Number, default: 0 },
     pendingPayout: { type: Number, default: 0 }
+  },
+  
+  // Password reset fields
+  passwordResetToken: {
+    type: String,
+    default: null
+  },
+  passwordResetExpires: {
+    type: Date,
+    default: null
+  },
+  
+  // Free Pro flag for initial user
+  isFreePro: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true
