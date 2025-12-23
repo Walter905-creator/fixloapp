@@ -7,20 +7,15 @@ export default function ProResetPasswordPage() {
   const api = API_BASE;
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  const tokenFromUrl = searchParams.get('token');
 
+  const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [passwordStrength, setPasswordStrength] = useState('');
-
-  useEffect(() => {
-    if (!token) {
-      setError('Invalid or missing reset token');
-    }
-  }, [token]);
 
   // Check password strength
   useEffect(() => {
@@ -63,10 +58,21 @@ export default function ProResetPasswordPage() {
 
     try {
       const url = `${api}/api/pro-auth/reset-password`;
+      const payload = {
+        newPassword: password
+      };
+      
+      // Use token from URL if available, otherwise use the code entered
+      if (tokenFromUrl) {
+        payload.token = tokenFromUrl;
+      } else {
+        payload.code = code;
+      }
+
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, newPassword: password })
+        body: JSON.stringify(payload)
       });
 
       const data = await res.json();
@@ -119,7 +125,9 @@ export default function ProResetPasswordPage() {
         <div className="max-w-md mx-auto">
           <h1 className="text-2xl font-extrabold mb-2">Reset Your Password</h1>
           <p className="text-slate-600 mb-6">
-            Enter your new password below.
+            {tokenFromUrl 
+              ? 'Enter your new password below.' 
+              : 'Enter the code sent to your phone and your new password.'}
           </p>
 
           {message && (
@@ -136,6 +144,27 @@ export default function ProResetPasswordPage() {
 
           <div className="card p-6">
             <form onSubmit={handleSubmit} className="space-y-4">
+              {!tokenFromUrl && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-800 mb-1">
+                    Reset Code
+                  </label>
+                  <input
+                    type="text"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter 6-digit code"
+                    maxLength="6"
+                    required
+                    disabled={loading}
+                  />
+                  <p className="mt-1 text-xs text-slate-500">
+                    Enter the 6-digit code sent to your phone
+                  </p>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-slate-800 mb-1">
                   New Password
@@ -147,7 +176,7 @@ export default function ProResetPasswordPage() {
                   className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter new password"
                   required
-                  disabled={loading || !token}
+                  disabled={loading}
                 />
                 
                 {password && (
@@ -180,14 +209,14 @@ export default function ProResetPasswordPage() {
                   className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Confirm new password"
                   required
-                  disabled={loading || !token}
+                  disabled={loading}
                 />
               </div>
 
               <button
                 type="submit"
                 className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={loading || !token}
+                disabled={loading}
               >
                 {loading ? 'Resetting...' : 'Reset Password'}
               </button>

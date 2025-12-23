@@ -3,15 +3,17 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { sign } = require('../utils/jwt');
 const Pro = require('../models/Pro');
-const { sendPasswordResetEmail, isEmailEnabled } = require('../utils/email');
+const { sendSms, normalizeE164 } = require('../utils/twilio');
 
-// Pro login endpoint
+// Pro login endpoint - uses phone number
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body || {};
-  if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+  const { phone, password } = req.body || {};
+  if (!phone || !password) return res.status(400).json({ error: 'Phone number and password required' });
 
   try {
-    const pro = await Pro.findOne({ email: email.toLowerCase() });
+    // Normalize phone number for lookup
+    const normalizedPhone = normalizeE164(phone);
+    const pro = await Pro.findOne({ phone: normalizedPhone });
     if (!pro) return res.status(401).json({ error: 'Invalid credentials' });
 
     // Check if password is not set (null)
@@ -25,7 +27,7 @@ router.post('/login', async (req, res) => {
     const ok = await bcrypt.compare(password, pro.password);
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
 
-    const token = sign({ role: 'pro', id: pro._id, email: pro.email });
+    const token = sign({ role: 'pro', id: pro._id, phone: pro.phone });
     res.json({ 
       token, 
       pro: { 
@@ -42,53 +44,53 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Request password reset
+// Request password reset via SMS
 router.post('/request-password-reset', async (req, res) => {
-  const { email } = req.body || {};
+  const { phone } = req.body || {};
   
-  if (!email) {
-    return res.status(400).json({ error: 'Email is required' });
+  if (!phone) {
+    return res.status(400).json({ error: 'Phone number is required' });
   }
 
   try {
-    const pro = await Pro.findOne({ email: email.toLowerCase() });
+    // Normalize phone number for lookup
+    const normalizedPhone = normalizeE164(phone);
+    const pro = await Pro.findOne({ phone: normalizedPhone });
     
-    // Always return success to prevent email enumeration
+    // Always return success to prevent phone enumeration
     // Even if user doesn't exist, we return success
     if (!pro) {
-      console.log('Password reset requested for non-existent email:', email);
+      console.log('Password reset requested for non-existent phone:', normalizedPhone);
       return res.json({ 
         success: true,
-        message: 'If this email exists, a reset link was sent.'
+        message: 'If this phone number exists, a reset message was sent.'
       });
     }
 
-    // Generate secure reset token
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    // Generate 6-digit code for SMS (easier for users to enter)
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedCode = crypto.createHash('sha256').update(resetCode).digest('hex');
     
-    // Set token and expiration (1 hour)
-    pro.passwordResetToken = hashedToken;
-    pro.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    // Set code and expiration (15 minutes)
+    pro.passwordResetToken = hashedCode;
+    pro.passwordResetExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
     await pro.save();
 
-    // Send reset email if email service is enabled
-    if (isEmailEnabled()) {
-      await sendPasswordResetEmail(pro.email, resetToken);
-      console.log('✅ Password reset email sent to:', pro.email);
-    } else {
-      // In development, log a safe message without the token
+    // Send SMS with reset code
+    try {
+      await sendSms(normalizedPhone, `Fixlo: Your password reset code is ${resetCode}. Valid for 15 minutes. Reply STOP to opt out.`);
+      console.log('✅ Password reset SMS sent to:', normalizedPhone);
+    } catch (smsError) {
+      console.error('❌ Failed to send SMS:', smsError);
+      // In development, log the code for testing
       if (process.env.NODE_ENV !== 'production') {
-        console.log('📧 Email disabled - Reset token for', pro.email, ':', resetToken);
-        console.log('🔗 Reset URL:', `${process.env.FRONTEND_URL || 'http://localhost:3000'}/pro/reset-password?token=${resetToken}`);
-      } else {
-        console.log('📧 Email disabled - Reset requested for:', pro.email);
+        console.log('📱 SMS disabled - Reset code for', normalizedPhone, ':', resetCode);
       }
     }
 
     res.json({ 
       success: true,
-      message: 'If this email exists, a reset link was sent.'
+      message: 'If this phone number exists, a reset message was sent.'
     });
 
   } catch (error) {
@@ -97,12 +99,15 @@ router.post('/request-password-reset', async (req, res) => {
   }
 });
 
-// Reset password with token
+// Reset password with code or token
 router.post('/reset-password', async (req, res) => {
-  const { token, newPassword } = req.body || {};
+  const { code, token, newPassword } = req.body || {};
   
-  if (!token || !newPassword) {
-    return res.status(400).json({ error: 'Token and new password are required' });
+  // Accept either code or token
+  const resetValue = code || token;
+  
+  if (!resetValue || !newPassword) {
+    return res.status(400).json({ error: 'Reset code and new password are required' });
   }
 
   // Validate password strength
@@ -111,17 +116,17 @@ router.post('/reset-password', async (req, res) => {
   }
 
   try {
-    // Hash the token to compare with stored hash
-    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    // Hash the code/token to compare with stored hash
+    const hashedValue = crypto.createHash('sha256').update(resetValue).digest('hex');
     
-    // Find pro with valid token
+    // Find pro with valid code/token
     const pro = await Pro.findOne({
-      passwordResetToken: hashedToken,
+      passwordResetToken: hashedValue,
       passwordResetExpires: { $gt: Date.now() }
     });
 
     if (!pro) {
-      return res.status(400).json({ error: 'Invalid or expired reset token' });
+      return res.status(400).json({ error: 'Invalid or expired reset code' });
     }
 
     // Hash the new password
@@ -133,7 +138,7 @@ router.post('/reset-password', async (req, res) => {
     pro.passwordResetExpires = null;
     await pro.save();
 
-    console.log('✅ Password reset successful for:', pro.email);
+    console.log('✅ Password reset successful for:', pro.phone);
 
     res.json({ 
       success: true,

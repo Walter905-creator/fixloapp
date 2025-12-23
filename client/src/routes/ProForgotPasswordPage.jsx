@@ -6,7 +6,7 @@ import { API_BASE } from '../utils/config';
 export default function ProForgotPasswordPage() {
   const api = API_BASE;
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -22,14 +22,14 @@ export default function ProForgotPasswordPage() {
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ phone })
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        setMessage('If this email exists, a reset link was sent. Please check your inbox.');
-        setEmail('');
+        setMessage('If this phone number exists, a reset code was sent via SMS. Please check your messages.');
+        setPhone('');
       } else {
         setError(data.error || 'Failed to request password reset');
       }
@@ -52,7 +52,7 @@ export default function ProForgotPasswordPage() {
         <div className="max-w-md mx-auto">
           <h1 className="text-2xl font-extrabold mb-2">Forgot Password</h1>
           <p className="text-slate-600 mb-6">
-            Enter your email address and we'll send you a link to reset your password.
+            Enter your phone number to receive a reset code via SMS.
           </p>
 
           {message && (
@@ -71,14 +71,14 @@ export default function ProForgotPasswordPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-800 mb-1">
-                  Email Address
+                  Phone Number
                 </label>
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                   className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="pro4u.improvements@gmail.com"
+                  placeholder="(555) 123-4567"
                   required
                   disabled={loading}
                 />
@@ -89,7 +89,7 @@ export default function ProForgotPasswordPage() {
                 className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={loading}
               >
-                {loading ? 'Sending...' : 'Send Reset Link'}
+                {loading ? 'Sending...' : 'Send Reset Code'}
               </button>
 
               <div className="text-center mt-4">

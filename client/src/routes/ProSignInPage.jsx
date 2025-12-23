@@ -17,7 +17,7 @@ export default function ProSignInPage(){
     setError('');
     
     const form = new FormData(e.currentTarget);
-    const payload = { email: form.get('email'), password: form.get('password') };
+    const payload = { phone: form.get('phone'), password: form.get('password') };
     
     try{
       const url = `${api}/api/pro-auth/login`;
@@ -48,7 +48,7 @@ export default function ProSignInPage(){
       } else {
         // Check if password reset is required
         if (data.requiresPasswordReset) {
-          setError('Password not set. Please use "Forgot password?" to set up your password.');
+          setError('Password not set. Please use "Forgot password?" to reset your password.');
         } else {
           setError(data.error || 'Login failed. Please check your credentials.');
         }
@@ -76,12 +76,12 @@ export default function ProSignInPage(){
         <div className="card p-6">
           <form onSubmit={submit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-800 mb-1">Email</label>
+              <label className="block text-sm font-medium text-slate-800 mb-1">Phone Number</label>
               <input 
-                name="email" 
+                name="phone" 
                 className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                type="email" 
-                placeholder="pro4u.improvements@gmail.com"
+                type="tel" 
+                placeholder="(555) 123-4567"
                 required
                 disabled={loading}
               />
