@@ -6,6 +6,7 @@ import { STRIPE_PUBLISHABLE_KEY, API_BASE } from '../utils/config';
 // Initialize Stripe with validated key
 if (!STRIPE_PUBLISHABLE_KEY) {
   console.error('❌ STRIPE_PUBLISHABLE_KEY is not configured');
+  throw new Error('Stripe publishable key is required');
 }
 
 const stripePromise = STRIPE_PUBLISHABLE_KEY ? loadStripe(STRIPE_PUBLISHABLE_KEY) : null;

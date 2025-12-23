@@ -25,7 +25,19 @@ export const CLOUDINARY_UPLOAD_PRESET = getEnv('VITE_CLOUDINARY_UPLOAD_PRESET');
 const stripePublishableKey = getEnv('VITE_STRIPE_PUBLISHABLE_KEY');
 const nodeEnv = getEnv('NODE_ENV');
 
-// Validate Stripe publishable key is in test mode (except in production)
+// Enforce Live Mode in production
+if (nodeEnv === 'production') {
+  if (!stripePublishableKey) {
+    console.error('❌ SECURITY ERROR: VITE_STRIPE_PUBLISHABLE_KEY required in production');
+    throw new Error('Stripe LIVE publishable key required in production');
+  }
+  if (!stripePublishableKey.startsWith('pk_live_')) {
+    console.error('❌ SECURITY ERROR: Stripe LIVE publishable key required in production');
+    throw new Error('Stripe LIVE publishable key required in production. Use pk_live_ keys only.');
+  }
+}
+
+// Validate test mode in non-production
 if (stripePublishableKey && nodeEnv !== 'production' && !stripePublishableKey.startsWith('pk_test_')) {
   console.error('❌ SECURITY ERROR: Invalid Stripe publishable key for test mode');
   throw new Error('Invalid Stripe publishable key for test mode. Use pk_test_ keys only.');
