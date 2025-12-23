@@ -768,6 +768,14 @@ async function start() {
       console.warn("⚠️ DB optimizer skipped:", e?.message || e);
     }
 
+    // Initialize Walter Pro user
+    try {
+      const { initializeWalterPro } = require('./scripts/initWalterPro');
+      await initializeWalterPro();
+    } catch (e) {
+      console.warn("⚠️ Walter Pro initialization skipped:", e?.message || e);
+    }
+
     server.listen(PORT, () => {
       console.log(`🚀 Fixlo API listening on port ${PORT}`);
     });

@@ -13,6 +13,8 @@ import AssistantPage from './routes/AssistantPage.jsx';
 import ContactPage from './routes/ContactPage.jsx';
 import PricingPage from './routes/PricingPage.jsx';
 import ProSignInPage from './routes/ProSignInPage.jsx';
+import ProForgotPasswordPage from './routes/ProForgotPasswordPage.jsx';
+import ProResetPasswordPage from './routes/ProResetPasswordPage.jsx';
 import AdminPage from './routes/AdminPage.jsx';
 import AdminJobsPage from './routes/AdminJobsPage.jsx';
 import ProDashboardPage from './routes/ProDashboardPage.jsx';
@@ -46,6 +48,8 @@ export default function App(){
       <Route path="/signup" element={<SignupPage/>}/>
       <Route path="/pro/signup" element={<ProSignupPage/>}/>
       <Route path="/pro/sign-in" element={<ProSignInPage/>}/>
+      <Route path="/pro/forgot-password" element={<ProForgotPasswordPage/>}/>
+      <Route path="/pro/reset-password" element={<ProResetPasswordPage/>}/>
       <Route path="/admin" element={<AdminPage/>}/>
       <Route path="/admin/jobs" element={<AdminJobsPage/>}/>
       <Route path="/my-jobs" element={<CustomerPortalPage/>}/>
