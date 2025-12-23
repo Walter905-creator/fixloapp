@@ -1,21 +1,39 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import HelmetSEO from '../seo/HelmetSEO';
 import { API_BASE } from '../utils/config';
 
 export default function ProSignInPage(){
   const api = API_BASE;
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  
   async function submit(e){
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     const payload = { email: form.get('email'), password: form.get('password') };
     try{
-      const url = `${api}/api/auth/login`;
+      const url = `${api}/api/pro-auth/login`;
       const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload), credentials:'include' });
       if(res.ok){
         const data = await res.json().catch(()=>({}));
-        if(data?.token) localStorage.setItem('fixlo_token', data.token);
-        alert('Signed in. Opening dashboard...');
-        window.location.href = '/pro/dashboard';
+        if(data?.token && data?.pro) {
+          // Store auth data using AuthContext
+          const userData = {
+            role: 'pro',
+            id: data.pro.id,
+            name: data.pro.name,
+            email: data.pro.email,
+            trade: data.pro.trade,
+            phone: data.pro.phone
+          };
+          login(data.token, userData);
+          alert('Signed in successfully!');
+          navigate('/pro/dashboard');
+        } else {
+          alert('Login failed - invalid response format.');
+        }
       }else{
         alert('Login failed (demo). Check backend.');
       }

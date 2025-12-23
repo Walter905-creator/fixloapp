@@ -5,6 +5,7 @@ import ProBanner from './components/ProBanner';
 import FreeTrialBanner from './components/FreeTrialBanner';
 import CookieConsent from './components/CookieConsent';
 import Navbar from './components/Navbar';
+import ProtectedRoute from './components/ProtectedRoute';
 import HomePage from './routes/HomePage.jsx';
 import ServicesPage from './routes/ServicesPage.jsx';
 import HowItWorksPage from './routes/HowItWorksPage.jsx';
@@ -48,7 +49,11 @@ export default function App(){
       <Route path="/admin" element={<AdminPage/>}/>
       <Route path="/admin/jobs" element={<AdminJobsPage/>}/>
       <Route path="/my-jobs" element={<CustomerPortalPage/>}/>
-      <Route path="/pro/dashboard" element={<ProDashboardPage/>}/>
+      <Route path="/pro/dashboard" element={
+        <ProtectedRoute requiredRole="pro">
+          <ProDashboardPage/>
+        </ProtectedRoute>
+      }/>
       <Route path="/contractor/dashboard" element={<ContractorDashboardPage/>}/>
       <Route path="/staff/jobs" element={<JobManagementPage/>}/>
       <Route path="/join" element={<JoinPage/>}/>

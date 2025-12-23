@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import logoUrl from '../assets/fixlo-logo.png';
 
 const items = [
@@ -7,15 +8,23 @@ const items = [
   { to: '/how-it-works', label: 'How It Works' },
   // { to: '/assistant', label: 'AI Assistant' }, // Hidden per requirements
   { to: '/contact', label: 'Contact' },
-  { to: '/pro/sign-in', label: 'Pro Sign In' },
-  { to: '/pro/dashboard', label: 'Pro Dashboard' },
-  { to: '/join', label: 'Join Now' },
   { to: '/admin', label: 'Admin' }
   // Removed duplicate 'Pro Dashboard' and 'Join Now' from regular items to create as separate CTA button
 ];
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    setMobileMenuOpen(false);
+    navigate('/');
+  };
+
+  const isPro = isAuthenticated && user?.role === 'pro';
+  const displayName = user?.name || user?.phone || 'User';
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
@@ -39,6 +48,45 @@ export default function Navbar() {
               {i.label}
             </NavLink>
           ))}
+          
+          {/* Conditional Pro Links */}
+          {isPro ? (
+            <>
+              <span className="px-3 py-1 text-sm font-semibold text-slate-700">
+                Welcome back, {displayName}
+              </span>
+              <NavLink
+                to="/pro/dashboard"
+                className={({ isActive }) =>
+                  `px-3 py-1 rounded-lg text-sm font-semibold hover:text-brand ${
+                    isActive ? 'text-brand' : 'text-slate-700'
+                  }`
+                }
+              >
+                Pro Dashboard
+              </NavLink>
+              <button
+                onClick={handleLogout}
+                className="px-3 py-1 rounded-lg text-sm font-semibold text-slate-700 hover:text-brand"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <NavLink
+                to="/pro/sign-in"
+                className={({ isActive }) =>
+                  `px-3 py-1 rounded-lg text-sm font-semibold hover:text-brand ${
+                    isActive ? 'text-brand' : 'text-slate-700'
+                  }`
+                }
+              >
+                Pro Sign In
+              </NavLink>
+            </>
+          )}
+          
           <div className="ml-auto hidden sm:flex items-center gap-3">
             <Link 
               to="/join"
@@ -86,6 +134,45 @@ export default function Navbar() {
                 {i.label}
               </NavLink>
             ))}
+            
+            {/* Conditional Pro Links */}
+            {isPro ? (
+              <>
+                <div className="px-4 py-3 text-base font-semibold text-slate-700">
+                  Welcome back, {displayName}
+                </div>
+                <NavLink
+                  to="/pro/dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={({ isActive }) =>
+                    `px-4 py-3 rounded-lg text-base font-semibold hover:bg-slate-50 transition ${
+                      isActive ? 'text-brand bg-brand/10' : 'text-slate-700'
+                    }`
+                  }
+                >
+                  Pro Dashboard
+                </NavLink>
+                <button
+                  onClick={handleLogout}
+                  className="px-4 py-3 rounded-lg text-base font-semibold text-slate-700 hover:bg-slate-50 transition text-left"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <NavLink
+                to="/pro/sign-in"
+                onClick={() => setMobileMenuOpen(false)}
+                className={({ isActive }) =>
+                  `px-4 py-3 rounded-lg text-base font-semibold hover:bg-slate-50 transition ${
+                    isActive ? 'text-brand bg-brand/10' : 'text-slate-700'
+                  }`
+                }
+              >
+                Pro Sign In
+              </NavLink>
+            )}
+            
             <div className="mt-4 flex flex-col gap-3 px-4">
               <Link 
                 to="/join"
