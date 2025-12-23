@@ -1,12 +1,17 @@
 import React from 'react';
+import { useAuth } from '../context/AuthContext';
 import HelmetSEO from '../seo/HelmetSEO';
 import CloudinaryUploader from '../components/CloudinaryUploader';
 import { API_BASE } from '../utils/config';
 
 export default function ProDashboardPage(){
+  const { user } = useAuth();
   const api = API_BASE;
   const [leads, setLeads] = React.useState([]);
   const [loaded, setLoaded] = React.useState(false);
+  
+  const displayName = user?.name || user?.phone || 'Pro User';
+  
   React.useEffect(()=>{
     async function load(){
       if(!api) { setLoaded(true); return; }
@@ -21,9 +26,15 @@ export default function ProDashboardPage(){
     }
     load();
   }, [api]);
+  
   return (<>
     <HelmetSEO title="Pro Dashboard | Fixlo" canonicalPathname="/pro/dashboard" robots="noindex, nofollow" />
     <div className="container-xl py-8">
+      <div className="mb-4 p-4 bg-brand/10 rounded-lg">
+        <p className="text-sm font-semibold text-slate-700">
+          Logged in as: <span className="text-brand">{displayName} (Pro)</span>
+        </p>
+      </div>
       <h1 className="text-2xl font-extrabold">Pro Dashboard</h1>
       <div className="grid md:grid-cols-3 gap-4 mt-4">
         <div className="card p-5 md:col-span-2">
