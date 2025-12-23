@@ -1,8 +1,6 @@
-// Email utility for sending transactional emails via Twilio SendGrid
-const twilio = require('twilio');
+// Email utility for sending transactional emails via SendGrid
+const sendgrid = require('@sendgrid/mail');
 
-// Use Twilio SendGrid for email sending (Twilio owns SendGrid)
-// This allows us to use the same account as Twilio SMS
 let sendgridClient = null;
 let isEnabled = false;
 
@@ -12,8 +10,8 @@ const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || 'noreply@fixloapp.com';
 
 if (SENDGRID_API_KEY) {
   try {
-    // SendGrid uses HTTP API, not Twilio client
-    sendgridClient = require('@sendgrid/mail');
+    // SendGrid uses HTTP API
+    sendgridClient = sendgrid;
     sendgridClient.setApiKey(SENDGRID_API_KEY);
     isEnabled = true;
     console.log('✅ SendGrid email client initialized');
@@ -30,6 +28,14 @@ if (SENDGRID_API_KEY) {
  * @param {string} to - Recipient email address
  * @param {string} resetToken - Password reset token
  * @returns {Promise<void>}
+ * 
+ * Security Note: Reset tokens in URLs are exposed in browser history and server logs.
+ * For production, ensure:
+ * 1. HTTPS is enforced to prevent interception
+ * 2. Tokens expire quickly (1 hour)
+ * 3. Tokens are single-use (cleared after reset)
+ * 4. Server logs sanitize URLs with tokens
+ * 5. Rate limiting prevents brute force
  */
 async function sendPasswordResetEmail(to, resetToken) {
   if (!isEnabled) {

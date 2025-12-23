@@ -77,9 +77,13 @@ router.post('/request-password-reset', async (req, res) => {
       await sendPasswordResetEmail(pro.email, resetToken);
       console.log('✅ Password reset email sent to:', pro.email);
     } else {
-      // In development or when email is disabled, log the token
-      console.log('📧 Email disabled - Reset token for', pro.email, ':', resetToken);
-      console.log('🔗 Reset URL:', `${process.env.FRONTEND_URL || 'http://localhost:3000'}/pro/reset-password?token=${resetToken}`);
+      // In development, log a safe message without the token
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('📧 Email disabled - Reset token for', pro.email, ':', resetToken);
+        console.log('🔗 Reset URL:', `${process.env.FRONTEND_URL || 'http://localhost:3000'}/pro/reset-password?token=${resetToken}`);
+      } else {
+        console.log('📧 Email disabled - Reset requested for:', pro.email);
+      }
     }
 
     res.json({ 

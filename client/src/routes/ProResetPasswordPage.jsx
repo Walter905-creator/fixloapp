@@ -148,7 +148,6 @@ export default function ProResetPasswordPage() {
                   placeholder="Enter new password"
                   required
                   disabled={loading || !token}
-                  minLength={8}
                 />
                 
                 {password && (
