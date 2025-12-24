@@ -28,8 +28,8 @@ export default function ProForgotPasswordPage() {
       const data = await res.json();
 
       if (res.ok) {
-        // Redirect to reset password page with phone number preserved
-        navigate(`/pro/reset-password?phone=${encodeURIComponent(phone)}`);
+        // Redirect to reset password page with phone number preserved in state
+        navigate('/pro/reset-password', { state: { phone } });
       } else {
         setError(data.error || 'Failed to request password reset');
       }

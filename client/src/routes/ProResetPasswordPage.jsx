@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import HelmetSEO from '../seo/HelmetSEO';
 import { API_BASE } from '../utils/config';
 
 export default function ProResetPasswordPage() {
   const api = API_BASE;
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const tokenFromUrl = searchParams.get('token');
-  const phoneFromUrl = searchParams.get('phone');
+  const phoneFromUrl = searchParams.get('phone'); // For backward compatibility
+  const phoneFromState = location.state?.phone; // Preferred: from navigation state
 
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
@@ -71,8 +73,9 @@ export default function ProResetPasswordPage() {
       }
       
       // Include phone number if available (for logging/tracking purposes)
-      if (phoneFromUrl) {
-        payload.phone = phoneFromUrl;
+      const phone = phoneFromState || phoneFromUrl;
+      if (phone) {
+        payload.phone = phone;
       }
 
       const res = await fetch(url, {
