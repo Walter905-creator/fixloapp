@@ -231,6 +231,7 @@ const JobRequestSchema = new mongoose.Schema({
 // Create indexes for better performance
 JobRequestSchema.index({ trade: 1, createdAt: -1 });
 JobRequestSchema.index({ status: 1, createdAt: -1 });
+JobRequestSchema.index({ assignedTo: 1, createdAt: -1 }); // For Pro leads query
 
 // Create 2dsphere index for geospatial queries
 JobRequestSchema.index({ location: '2dsphere' });
