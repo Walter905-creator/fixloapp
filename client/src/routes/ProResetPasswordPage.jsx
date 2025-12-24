@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import HelmetSEO from '../seo/HelmetSEO';
 import { API_BASE } from '../utils/config';
 
 export default function ProResetPasswordPage() {
   const api = API_BASE;
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const tokenFromUrl = searchParams.get('token');
+  const phoneFromUrl = searchParams.get('phone'); // For backward compatibility
+  const phoneFromState = location.state?.phone; // Preferred: from navigation state
 
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
@@ -68,6 +71,12 @@ export default function ProResetPasswordPage() {
       } else {
         payload.code = code;
       }
+      
+      // Include phone number if available (for logging/tracking purposes)
+      const phone = phoneFromState || phoneFromUrl;
+      if (phone) {
+        payload.phone = phone;
+      }
 
       const res = await fetch(url, {
         method: 'POST',
@@ -79,6 +88,10 @@ export default function ProResetPasswordPage() {
 
       if (res.ok) {
         setMessage('Password reset successful! Redirecting to sign in...');
+        // Clear form state after success
+        setCode('');
+        setPassword('');
+        setConfirmPassword('');
         setTimeout(() => {
           navigate('/pro/sign-in');
         }, 2000);
@@ -123,11 +136,11 @@ export default function ProResetPasswordPage() {
       />
       <div className="container-xl py-8">
         <div className="max-w-md mx-auto">
-          <h1 className="text-2xl font-extrabold mb-2">Reset Your Password</h1>
+          <h1 className="text-2xl font-extrabold mb-2">Reset your password</h1>
           <p className="text-slate-600 mb-6">
             {tokenFromUrl 
               ? 'Enter your new password below.' 
-              : 'Enter the code sent to your phone and your new password.'}
+              : 'Enter the code sent to your phone and choose a new password.'}
           </p>
 
           {message && (
@@ -218,7 +231,7 @@ export default function ProResetPasswordPage() {
                 className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={loading}
               >
-                {loading ? 'Resetting...' : 'Reset Password'}
+                {loading ? 'Setting Password...' : 'Set New Password'}
               </button>
 
               <div className="text-center mt-4">
