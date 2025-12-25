@@ -7,6 +7,7 @@ const Stripe = require("stripe");
 
 const Pro = require("../models/Pro");
 const Review = require("../models/Review");
+const JobRequest = require("../models/JobRequest");
 const auth = require("../middleware/auth");
 const { geocode } = require("../utils/geocode");
 
@@ -202,6 +203,47 @@ router.get("/dashboard", auth, async (req, res) => {
   } catch (err) {
     console.error("Dashboard error:", err);
     return res.status(500).json({ error: "Server error fetching dashboard" });
+  }
+});
+
+/* ----------------------------- Leads (GET) --------------------------------- */
+/* GET /api/pros/leads - Get leads/jobs assigned to the authenticated Pro      */
+
+router.get("/leads", auth, async (req, res) => {
+  try {
+    // Check if database is connected
+    if (mongoose.connection.readyState !== 1) {
+      console.log("⚠️ Database not connected, returning empty leads array");
+      return res.status(200).json([]);
+    }
+
+    // Find all jobs assigned to this Pro
+    const leads = await JobRequest.find({ assignedTo: req.proId })
+      .sort({ createdAt: -1 })
+      .limit(100);
+
+    // Transform to match frontend expectations
+    const transformedLeads = leads.map((job) => ({
+      _id: job._id,
+      id: job._id,
+      service: job.trade || 'Service',
+      name: job.name || '—',
+      phone: job.phone || '',
+      email: job.email || '',
+      city: job.city || job.address?.split(',').pop()?.trim() || '',
+      address: job.address || '',
+      description: job.description || '',
+      status: job.status || 'pending',
+      createdAt: job.createdAt,
+      scheduledDate: job.scheduledDate,
+    }));
+
+    console.log(`✅ Returned ${transformedLeads.length} leads for Pro ${req.proId}`);
+    return res.status(200).json(transformedLeads);
+  } catch (err) {
+    console.error("Error fetching pro leads:", err);
+    // Return empty array on error to prevent frontend issues
+    return res.status(200).json([]);
   }
 });
 
