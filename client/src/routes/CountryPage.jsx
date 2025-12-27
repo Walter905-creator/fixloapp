@@ -93,14 +93,20 @@ export default function CountryPage() {
           content={`Find trusted home service professionals in ${countryInfo.name}. Connect with plumbers, electricians, handymen, and more. Subscription from ${getProPrice()}/month.`}
         />
         <link rel="canonical" href={`https://www.fixloapp.com/country/${countryCode.toLowerCase()}`} />
+        
+        {/* Hreflang tags for international SEO */}
         <link rel="alternate" hrefLang="x-default" href="https://www.fixloapp.com/" />
-        <link rel="alternate" hrefLang="en" href={`https://www.fixloapp.com/country/${countryCode.toLowerCase()}`} />
-        {countryInfo.language === 'es' && (
-          <link rel="alternate" hrefLang="es" href={`https://www.fixloapp.com/country/${countryCode.toLowerCase()}`} />
-        )}
-        {countryInfo.language === 'pt' && (
-          <link rel="alternate" hrefLang="pt" href={`https://www.fixloapp.com/country/${countryCode.toLowerCase()}`} />
-        )}
+        <link rel="alternate" hrefLang="en-US" href="https://www.fixloapp.com/country/us" />
+        <link rel="alternate" hrefLang="en-CA" href="https://www.fixloapp.com/country/ca" />
+        <link rel="alternate" hrefLang="en-GB" href="https://www.fixloapp.com/country/gb" />
+        <link rel="alternate" hrefLang="en-AU" href="https://www.fixloapp.com/country/au" />
+        <link rel="alternate" hrefLang="en-NZ" href="https://www.fixloapp.com/country/nz" />
+        <link rel="alternate" hrefLang="es-ES" href="https://www.fixloapp.com/country/es" />
+        <link rel="alternate" hrefLang="es-MX" href="https://www.fixloapp.com/country/mx" />
+        <link rel="alternate" hrefLang="pt-BR" href="https://www.fixloapp.com/country/br" />
+        <link rel="alternate" hrefLang="es-CO" href="https://www.fixloapp.com/country/co" />
+        <link rel="alternate" hrefLang="es-CL" href="https://www.fixloapp.com/country/cl" />
+        <link rel="alternate" hrefLang="es-AR" href="https://www.fixloapp.com/country/ar" />
       </Helmet>
 
       {/* Hero Section */}
