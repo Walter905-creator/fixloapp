@@ -23,6 +23,7 @@ import JoinPage from './routes/JoinPage.jsx';
 import ServicePage from './routes/ServicePage.jsx';
 import JobManagementPage from './routes/JobManagementPage.jsx';
 import CustomerPortalPage from './routes/CustomerPortalPage.jsx';
+import CountryPage from './routes/CountryPage.jsx';
 import Terms from './pages/Terms.jsx';
 import Privacy from './pages/Privacy.jsx';
 import PrivacySettings from './pages/PrivacySettings.jsx';
@@ -45,6 +46,7 @@ export default function App(){
       <Route path="/assistant" element={<AssistantPage/>}/>
       <Route path="/contact" element={<ContactPage/>}/>
       <Route path="/pricing" element={<PricingPage/>}/>
+      <Route path="/country/:countryCode" element={<CountryPage/>}/>
       <Route path="/signup" element={<SignupPage/>}/>
       <Route path="/pro/signup" element={<ProSignupPage/>}/>
       <Route path="/pro/sign-in" element={<ProSignInPage/>}/>

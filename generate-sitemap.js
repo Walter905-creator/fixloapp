@@ -24,6 +24,21 @@ const services = [
   'landscaping'
 ];
 
+// Countries for global expansion
+const countries = [
+  { code: 'us', name: 'United States' },
+  { code: 'ca', name: 'Canada' },
+  { code: 'gb', name: 'United Kingdom' },
+  { code: 'au', name: 'Australia' },
+  { code: 'nz', name: 'New Zealand' },
+  { code: 'es', name: 'Spain' },
+  { code: 'mx', name: 'Mexico' },
+  { code: 'br', name: 'Brazil' },
+  { code: 'co', name: 'Colombia' },
+  { code: 'cl', name: 'Chile' },
+  { code: 'ar', name: 'Argentina' }
+];
+
 // Major cities to include in sitemap (limit to avoid too many URLs)
 const majorCities = [
   'miami',
@@ -126,6 +141,21 @@ function generateSitemap() {
     <priority>0.7</priority>
   </url>
 
+  <!-- Country-specific pages (global expansion) -->
+`;
+
+  // Add country pages
+  countries.forEach(country => {
+    sitemap += `  <url>
+    <loc>${baseUrl}/country/${country.code}</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+`;
+  });
+
+  sitemap += `
   <!-- Main services page -->
   <url>
     <loc>${baseUrl}/services</loc>
