@@ -1,70 +1,124 @@
+// services/twilio.js
+
 let client = null;
 
+/**
+ * Lazily initialize Twilio client
+ * Prevents crashes in environments without credentials
+ */
 function getTwilioClient() {
   const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN } = process.env;
-  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) return null;
+
+  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
+    return null;
+  }
+
   if (!client) {
-    // Lazy-init to avoid crashes in local without creds
     // eslint-disable-next-line global-require
     client = require('twilio')(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
   }
+
   return client;
 }
 
+/**
+ * Normalize phone number to E.164 format
+ */
 function normalizeE164(phone) {
-  const digits = String(phone || '').replace(/[^\d]/g, '');
+  if (!phone) return null;
+
+  const digits = String(phone).replace(/[^\d]/g, '');
+
   if (digits.length === 10) return `+1${digits}`;
-  if (digits.startsWith('1') && digits.length === 11) return `+${digits}`;
+  if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
   if (digits.startsWith('+')) return digits;
+
   return `+${digits}`;
 }
 
+/**
+ * Determine if phone number is US-based
+ */
+function isUSPhoneNumber(phone) {
+  const e164 = normalizeE164(phone);
+  return !!e164 && e164.startsWith('+1');
+}
+
+/**
+ * Send SMS (USA ONLY)
+ * COMPLIANCE: Transactional messages only
+ */
 async function sendSms(to, body) {
-  const from = process.env.TWILIO_PHONE;
   const cli = getTwilioClient();
+  const from = process.env.TWILIO_PHONE_NUMBER;
+
   if (!cli || !from) {
-    console.warn('SMS disabled: missing Twilio env vars');
+    console.warn('⚠️ SMS disabled: missing Twilio configuration');
     return { sid: null, disabled: true };
   }
+
   const toE164 = normalizeE164(to);
+  if (!toE164) throw new Error('Invalid phone number');
+
   try {
-    const message = await cli.messages.create({ to: toE164, from, body });
-    console.log(`✅ SMS message sent to ${toE164}: ${message.sid}`);
+    const message = await cli.messages.create({
+      to: toE164,
+      from,
+      body,
+    });
+
+    console.log(`✅ SMS sent to ${toE164}: ${message.sid}`);
     return message;
-  } catch (error) {
-    console.error(`❌ SMS send failed to ${toE164}:`, error.message);
-    throw error;
+  } catch (err) {
+    console.error(`❌ SMS failed to ${toE164}:`, err.message);
+    throw err;
   }
 }
 
 /**
- * Send WhatsApp message via Twilio
- * @param {string} to - Phone number in E.164 format
- * @param {string} body - Message content
- * @returns {Promise<object>} - Twilio message result
+ * Send WhatsApp message (NON-USA ONLY)
+ * Uses approved transactional template format
  */
-async function sendWhatsApp(to, body) {
-  const from = process.env.TWILIO_WHATSAPP_FROM || `whatsapp:${process.env.TWILIO_PHONE}`;
+async function sendWhatsAppMessage(to, templateData = {}) {
   const cli = getTwilioClient();
-  if (!cli || !from) {
-    console.warn('WhatsApp disabled: missing Twilio env vars');
+  const from = `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`;
+
+  if (!cli || !process.env.TWILIO_WHATSAPP_NUMBER) {
+    console.warn('⚠️ WhatsApp disabled: missing Twilio configuration');
     return { sid: null, disabled: true };
   }
+
   const toE164 = normalizeE164(to);
+  if (!toE164) throw new Error('Invalid phone number');
+
   const toWhatsApp = `whatsapp:${toE164}`;
-  
+
+  const body = `🔔 New job lead on Fixlo
+
+Service: ${templateData.service || 'N/A'}
+Location: ${templateData.location || 'N/A'}
+Budget: ${templateData.budget || 'Contact for details'}
+
+Log in to your Fixlo account to view details and contact the customer.`;
+
   try {
     const message = await cli.messages.create({
       to: toWhatsApp,
-      from: from,
-      body: body
+      from,
+      body,
     });
-    console.log(`✅ WhatsApp message sent to ${toE164}: ${message.sid}`);
+
+    console.log(`✅ WhatsApp sent to ${toWhatsApp}: ${message.sid}`);
     return message;
-  } catch (error) {
-    console.error(`❌ WhatsApp send failed to ${toE164}:`, error.message);
-    throw error;
+  } catch (err) {
+    console.error(`❌ WhatsApp failed to ${toWhatsApp}:`, err.message);
+    throw err;
   }
 }
 
-module.exports = { sendSms, sendWhatsApp, normalizeE164 };
+module.exports = {
+  sendSms,
+  sendWhatsAppMessage,
+  normalizeE164,
+  isUSPhoneNumber,
+};
