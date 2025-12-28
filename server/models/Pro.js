@@ -310,6 +310,55 @@ const proSchema = new mongoose.Schema({
   isFreePro: {
     type: Boolean,
     default: false
+  },
+  
+  // Referral system fields
+  referralCode: {
+    type: String,
+    unique: true,
+    sparse: true, // Allow null values while keeping uniqueness
+    uppercase: true,
+    index: true
+  },
+  
+  referralUrl: {
+    type: String
+  },
+  
+  // Referral stats
+  totalReferrals: {
+    type: Number,
+    default: 0
+  },
+  
+  completedReferrals: {
+    type: Number,
+    default: 0
+  },
+  
+  freeMonthsEarned: {
+    type: Number,
+    default: 0
+  },
+  
+  // Anti-fraud tracking for referrals
+  referralSignupIp: {
+    type: String
+  },
+  
+  referralDeviceFingerprint: {
+    type: String
+  },
+  
+  referredBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Pro',
+    default: null
+  },
+  
+  referredByCode: {
+    type: String,
+    default: null
   }
 }, {
   timestamps: true
@@ -340,8 +389,25 @@ proSchema.methods.hasBadge = function (badgeName) {
   return this.badges.some(b => b.name === badgeName);
 };
 
+// Generate unique referral code (FIXLO-XXXXXX format)
+proSchema.methods.generateReferralCode = function() {
+  // Generate 6 random alphanumeric characters
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let randomPart = '';
+  for (let i = 0; i < 6; i++) {
+    randomPart += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return `FIXLO-${randomPart}`;
+};
+
+// Get referral URL
+proSchema.methods.getReferralUrl = function() {
+  const baseUrl = process.env.CLIENT_URL || 'https://www.fixloapp.com';
+  return `${baseUrl}/join?ref=${this.referralCode}`;
+};
+
 // Ensure slug generation
-proSchema.pre('save', function(next) {
+proSchema.pre('save', async function(next) {
   if (!this.slug) {
     const base = this.businessName?.length
       ? `${this.businessName}-${this.city || ''}-${this.state || ''}`
@@ -359,6 +425,34 @@ proSchema.pre('save', function(next) {
   // Auto-populate primaryService from trade if not set
   if (this.trade && !this.primaryService) {
     this.primaryService = this.trade;
+  }
+  
+  // Generate referral code if not exists (only for active pros with payment)
+  if (!this.referralCode && this.isActive && this.stripeCustomerId) {
+    let codeIsUnique = false;
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (!codeIsUnique && attempts < maxAttempts) {
+      const code = this.generateReferralCode();
+      // Check if code already exists
+      const existing = await this.constructor.findOne({ referralCode: code });
+      if (!existing) {
+        this.referralCode = code;
+        this.referralUrl = this.getReferralUrl();
+        codeIsUnique = true;
+      }
+      attempts++;
+    }
+    
+    if (!codeIsUnique) {
+      console.warn(`⚠️ Failed to generate unique referral code for pro ${this._id} after ${maxAttempts} attempts`);
+    }
+  }
+  
+  // Update referral URL if code changed
+  if (this.referralCode && !this.referralUrl) {
+    this.referralUrl = this.getReferralUrl();
   }
   
   next();

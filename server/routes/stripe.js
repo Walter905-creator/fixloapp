@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const axios = require('axios');
 const Pro = require('../models/Pro');
 const JobRequest = require('../models/JobRequest');
 
@@ -349,8 +350,32 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
               }
             }
             
-            await Pro.findByIdAndUpdate(userId, updateData);
+            const pro = await Pro.findByIdAndUpdate(userId, updateData, { new: true });
             console.log(`✅ Pro ${userId} updated with subscription details`);
+            
+            // Check if this pro was referred and complete the referral
+            if (pro && pro.referredByCode && session.subscription) {
+              console.log(`🎁 Checking referral completion for pro ${userId}`);
+              try {
+                const apiUrl = process.env.API_URL || 'http://localhost:3001';
+                
+                // Get country from session metadata or default to US
+                const country = session.metadata?.country || 'US';
+                
+                // Trigger referral completion
+                await axios.post(`${apiUrl}/api/referrals/complete`, {
+                  referralCode: pro.referredByCode,
+                  referredUserId: userId,
+                  referredSubscriptionId: session.subscription,
+                  country: country
+                });
+                
+                console.log(`✅ Referral completion triggered for code ${pro.referredByCode}`);
+              } catch (referralErr) {
+                console.error('❌ Failed to complete referral:', referralErr.message);
+                // Don't fail the webhook if referral completion fails
+              }
+            }
           } catch (err) {
             console.error(`❌ Failed to update Pro ${userId}:`, err.message);
           }

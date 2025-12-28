@@ -1,10 +1,16 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import HelmetSEO from '../seo/HelmetSEO';
-import { STRIPE_CHECKOUT_URL } from '../utils/config';
+import { STRIPE_CHECKOUT_URL, API_BASE } from '../utils/config';
 import ProValueBanner from '../components/ProValueBanner';
 import StickyProCTA from '../components/StickyProCTA';
 
 export default function ProSignupPage(){
+  const [searchParams] = useSearchParams();
+  const [referralCode, setReferralCode] = useState(null);
+  const [referralValid, setReferralValid] = useState(false);
+  const [referrerName, setReferrerName] = useState('');
+  
   const stripeUrlRaw = STRIPE_CHECKOUT_URL;
   const [country, setCountry] = React.useState('US'); // Default to US
 
@@ -28,6 +34,54 @@ export default function ProSignupPage(){
 
   const isUSUser = country === 'US';
 
+  // Check for referral code in URL
+  useEffect(() => {
+    const refCode = searchParams.get('ref');
+    if (refCode) {
+      setReferralCode(refCode.toUpperCase());
+      validateReferralCode(refCode.toUpperCase());
+      
+      // Track referral click
+      trackReferralClick(refCode.toUpperCase());
+    }
+  }, [searchParams]);
+
+  const validateReferralCode = async (code) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/referrals/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ referralCode: code })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.ok && data.valid) {
+          setReferralValid(true);
+          setReferrerName(data.referrerName || 'a Fixlo pro');
+        }
+      }
+    } catch (err) {
+      console.error('Error validating referral code:', err);
+    }
+  };
+
+  const trackReferralClick = async (code) => {
+    try {
+      await fetch(`${API_BASE}/api/referrals/track-click`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          referralCode: code,
+          ip: null, // IP will be captured on backend
+          deviceFingerprint: navigator.userAgent
+        })
+      });
+    } catch (err) {
+      console.error('Error tracking referral click:', err);
+    }
+  };
+
   function resolveCheckoutURL(raw){
     const s = (raw || '').trim();
     if(!s) return null;
@@ -49,6 +103,12 @@ export default function ProSignupPage(){
     try{
       const url = new URL(target);
       if(email) url.searchParams.set('prefilled_email', email);
+      
+      // Add referral code to metadata if present
+      if (referralCode && referralValid) {
+        url.searchParams.set('client_reference_id', referralCode);
+      }
+      
       window.location.href = url.toString();
     }catch(err){
       console.error('Stripe redirect error:', err);
@@ -61,9 +121,32 @@ export default function ProSignupPage(){
     <ProValueBanner dense />
     <div className="container-xl py-8">
       <h1 className="text-2xl font-extrabold">Join Fixlo as a Professional</h1>
+      
+      {/* Referral Banner */}
+      {referralValid && (
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center gap-2">
+            <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+            </svg>
+            <div>
+              <p className="text-sm font-semibold text-green-900">
+                You're joining with a referral from {referrerName}!
+              </p>
+              <p className="text-xs text-green-700">
+                Complete your signup to help them earn a free month.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="card p-6 max-w-lg">
         <p className="text-slate-700 mb-6">Start getting quality leads in your area. Background check and onboarding included.</p>
         <form onSubmit={onSubmit} className="space-y-4">
+          {referralCode && (
+            <input type="hidden" name="referralCode" value={referralCode} />
+          )}
           <div>
             <label className="block text-sm text-slate-800 mb-1">Full Name</label>
             <input name="name" className="mt-1 w-full rounded-xl" required/>
