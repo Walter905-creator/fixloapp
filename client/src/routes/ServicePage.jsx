@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import HelmetSEO from '../seo/HelmetSEO';
 import { ServiceSchema } from '../seo/Schema';
 import { makeTitle, makeDescription, slugify } from '../utils/seo';
@@ -19,6 +19,26 @@ const holidayBenefits = {
   'roofing': 'Winter roof repairs and ice dam prevention',
   'junk-removal': 'Clear out clutter before holiday decorating'
 };
+
+// Related services mapping for internal linking
+const relatedServices = {
+  'plumbing': ['hvac', 'electrical', 'handyman'],
+  'electrical': ['plumbing', 'hvac', 'carpentry'],
+  'hvac': ['plumbing', 'electrical', 'roofing'],
+  'carpentry': ['electrical', 'painting', 'handyman'],
+  'painting': ['carpentry', 'handyman', 'cleaning'],
+  'roofing': ['hvac', 'carpentry', 'handyman'],
+  'house-cleaning': ['junk-removal', 'landscaping', 'handyman'],
+  'cleaning': ['junk-removal', 'landscaping', 'handyman'],
+  'junk-removal': ['cleaning', 'landscaping', 'handyman'],
+  'landscaping': ['junk-removal', 'cleaning', 'handyman'],
+  'handyman': ['plumbing', 'electrical', 'carpentry']
+};
+
+// Format service name for display
+function formatServiceName(slug) {
+  return slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
 
 export default function ServicePage(){
   const { service, city } = useParams();
@@ -122,6 +142,50 @@ export default function ServicePage(){
           )}
         </p>
         <ServiceLeadForm service={s} city={c}/>
+      </div>
+      
+      {/* Related Services */}
+      {relatedServices[s] && (
+        <div className="card p-6 mt-4">
+          <h2 className="text-xl font-semibold mb-4">Related Services</h2>
+          <p className="text-sm text-slate-600 mb-4">
+            Looking for other home services? We can help with these too:
+          </p>
+          <div className="grid sm:grid-cols-3 gap-3">
+            {relatedServices[s].map(relatedService => (
+              <Link
+                key={relatedService}
+                to={c ? `/services/${relatedService}/${c}` : `/services/${relatedService}`}
+                className="text-brand hover:underline font-medium"
+              >
+                {formatServiceName(relatedService)} {c && `in ${cityName}`}
+              </Link>
+            ))}
+          </div>
+          <div className="mt-4 pt-4 border-t border-slate-200">
+            <Link to="/services" className="text-brand hover:underline font-medium">
+              View All Services →
+            </Link>
+          </div>
+        </div>
+      )}
+      
+      {/* Trust & Support Links */}
+      <div className="card p-6 mt-4 bg-slate-50">
+        <div className="grid sm:grid-cols-3 gap-4 text-center">
+          <Link to="/how-it-works" className="text-sm text-slate-700 hover:text-brand">
+            <div className="font-semibold mb-1">How It Works</div>
+            <div className="text-xs">Learn about our process</div>
+          </Link>
+          <Link to="/join" className="text-sm text-slate-700 hover:text-brand">
+            <div className="font-semibold mb-1">For Professionals</div>
+            <div className="text-xs">Join our network</div>
+          </Link>
+          <Link to="/contact" className="text-sm text-slate-700 hover:text-brand">
+            <div className="font-semibold mb-1">Contact Support</div>
+            <div className="text-xs">We're here to help</div>
+          </Link>
+        </div>
       </div>
     </div>
   </>);

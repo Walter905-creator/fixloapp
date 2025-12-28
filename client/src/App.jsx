@@ -69,16 +69,57 @@ export default function App(){
       <Route path="/about-walter-arevalo" element={<AboutWalterArevaloPage/>}/>
       <Route path="*" element={<Navigate to="/" replace/>}/>
     </Routes>
-    <footer className="border-t border-slate-200 mt-8">
-      <div className="container-xl py-6 text-sm text-slate-700 flex flex-col md:flex-row items-center justify-between gap-3">
-        <div>© {new Date().getFullYear()} Fixlo. All rights reserved.</div>
-        <div className="flex items-center gap-4">
-          {false && (
-            <a href="/sitemap.xml">Sitemap</a>
-          )}
-          <a href="/terms">Terms</a>
-          <a href="/privacy-policy">Privacy Policy</a>
-          <a href="/privacy-settings">Privacy Settings</a>
+    <footer className="border-t border-slate-200 mt-8 bg-white">
+      <div className="container-xl py-8">
+        <div className="grid md:grid-cols-4 gap-8 mb-6">
+          {/* About Column */}
+          <div>
+            <h3 className="font-semibold text-slate-900 mb-3">About Fixlo</h3>
+            <ul className="space-y-2 text-sm text-slate-700">
+              <li><a href="/how-it-works" className="hover:text-brand">How It Works</a></li>
+              <li><a href="/about-walter-arevalo" className="hover:text-brand">About Us</a></li>
+              <li><a href="/contact" className="hover:text-brand">Contact</a></li>
+            </ul>
+          </div>
+          
+          {/* For Professionals Column */}
+          <div>
+            <h3 className="font-semibold text-slate-900 mb-3">For Professionals</h3>
+            <ul className="space-y-2 text-sm text-slate-700">
+              <li><a href="/join" className="hover:text-brand">Join as a Pro</a></li>
+              <li><a href="/pro/sign-in" className="hover:text-brand">Pro Sign In</a></li>
+              <li><a href="/how-it-works" className="hover:text-brand">How Fixlo Works</a></li>
+            </ul>
+          </div>
+          
+          {/* Popular Services Column */}
+          <div>
+            <h3 className="font-semibold text-slate-900 mb-3">Popular Services</h3>
+            <ul className="space-y-2 text-sm text-slate-700">
+              <li><a href="/services/plumbing" className="hover:text-brand">Plumbing</a></li>
+              <li><a href="/services/electrical" className="hover:text-brand">Electrical</a></li>
+              <li><a href="/services/hvac" className="hover:text-brand">HVAC</a></li>
+              <li><a href="/services/cleaning" className="hover:text-brand">Cleaning</a></li>
+              <li><a href="/services" className="hover:text-brand">View All Services</a></li>
+            </ul>
+          </div>
+          
+          {/* Legal Column */}
+          <div>
+            <h3 className="font-semibold text-slate-900 mb-3">Legal</h3>
+            <ul className="space-y-2 text-sm text-slate-700">
+              <li><a href="/terms" className="hover:text-brand">Terms of Service</a></li>
+              <li><a href="/privacy-policy" className="hover:text-brand">Privacy Policy</a></li>
+              <li><a href="/privacy-settings" className="hover:text-brand">Privacy Settings</a></li>
+            </ul>
+          </div>
+        </div>
+        
+        <div className="pt-6 border-t border-slate-200 text-sm text-slate-700 flex flex-col md:flex-row items-center justify-between gap-3">
+          <div>© {new Date().getFullYear()} Fixlo. All rights reserved.</div>
+          <div className="text-slate-600">
+            Trusted home services marketplace serving the United States
+          </div>
         </div>
       </div>
     </footer>

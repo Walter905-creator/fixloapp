@@ -87,15 +87,11 @@ export default function HomePage() {
             {/* Hero Content */}
             <div className="text-center lg:text-left order-2 lg:order-1">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight text-slate-900">
-                Trusted Local Pros.
-                <br />
-                Real Jobs.
-                <br />
-                <span className="text-brand">No Lead Fees.</span>
+                Fixlo – Find Trusted Home Service Professionals Near You
               </h1>
               
               <p className="mt-6 text-lg md:text-xl text-slate-600 max-w-2xl mx-auto lg:mx-0">
-                Fixlo connects homeowners with verified professionals and helps pros get unlimited job leads — all on one simple platform.
+                Fixlo is a trusted home services marketplace connecting homeowners across the United States with verified, background-checked professionals for plumbing, electrical, HVAC, cleaning, junk removal, roofing, carpentry, painting, landscaping, and handyman services. Get reliable help for any home project — fast, easy, and with no hidden fees.
               </p>
 
               {/* CTAs */}
@@ -245,7 +241,10 @@ export default function HomePage() {
 
           {/* Popular near you */}
           <div className="mt-10 p-6 bg-white rounded-2xl border border-slate-200">
-            <h3 className="text-xl font-semibold text-slate-900 mb-4">Popular services near you</h3>
+            <h3 className="text-xl font-semibold text-slate-900 mb-4">Popular Services Near You</h3>
+            <p className="text-sm text-slate-600 mb-4">
+              Find trusted professionals in major cities across the United States
+            </p>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 text-sm">
               <Link to="/services/plumbing/new-york" className="text-brand hover:underline">
                 Plumbing in New York
@@ -273,6 +272,33 @@ export default function HomePage() {
               </Link>
               <Link to="/services/landscaping/dallas" className="text-brand hover:underline">
                 Landscaping in Dallas
+              </Link>
+              <Link to="/services/handyman/austin" className="text-brand hover:underline">
+                Handyman in Austin
+              </Link>
+              <Link to="/services/electrical/miami" className="text-brand hover:underline">
+                Electrical in Miami
+              </Link>
+              <Link to="/services/carpentry/seattle" className="text-brand hover:underline">
+                Carpentry in Seattle
+              </Link>
+              <Link to="/services/plumbing/denver" className="text-brand hover:underline">
+                Plumbing in Denver
+              </Link>
+              <Link to="/services/hvac/atlanta" className="text-brand hover:underline">
+                HVAC in Atlanta
+              </Link>
+              <Link to="/services/painting/boston" className="text-brand hover:underline">
+                Painting in Boston
+              </Link>
+              <Link to="/services/roofing/charlotte" className="text-brand hover:underline">
+                Roofing in Charlotte
+              </Link>
+              <Link to="/services/landscaping/portland" className="text-brand hover:underline">
+                Landscaping in Portland
+              </Link>
+              <Link to="/services/cleaning/nashville" className="text-brand hover:underline">
+                Cleaning in Nashville
               </Link>
             </div>
           </div>
@@ -309,6 +335,45 @@ export default function HomePage() {
           </div>
         </section>
       </div>
+
+      {/* Trust & Info Links Section */}
+      <section className="py-12 md:py-16 bg-slate-50">
+        <div className="container-xl">
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-8 text-center">
+            Why Choose Fixlo
+          </h2>
+          <div className="grid md:grid-cols-4 gap-6">
+            <Link to="/how-it-works" className="card p-6 hover:shadow-lg transition-shadow">
+              <div className="text-3xl mb-3">📋</div>
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">How It Works</h3>
+              <p className="text-sm text-slate-600">
+                Learn how Fixlo connects you with trusted professionals in minutes
+              </p>
+            </Link>
+            <Link to="/join" className="card p-6 hover:shadow-lg transition-shadow">
+              <div className="text-3xl mb-3">🔧</div>
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">For Professionals</h3>
+              <p className="text-sm text-slate-600">
+                Join our network and get unlimited job leads with no commission fees
+              </p>
+            </Link>
+            <Link to="/contact" className="card p-6 hover:shadow-lg transition-shadow">
+              <div className="text-3xl mb-3">💬</div>
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">Contact Us</h3>
+              <p className="text-sm text-slate-600">
+                Have questions? Our support team is here to help you
+              </p>
+            </Link>
+            <Link to="/about-walter-arevalo" className="card p-6 hover:shadow-lg transition-shadow">
+              <div className="text-3xl mb-3">👤</div>
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">About Fixlo</h3>
+              <p className="text-sm text-slate-600">
+                Learn about our mission to revolutionize home services
+              </p>
+            </Link>
+          </div>
+        </div>
+      </section>
 
       {/* Mobile Sticky CTA */}
       <StickyProCTA />

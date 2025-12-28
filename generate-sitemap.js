@@ -63,15 +63,27 @@ const majorCities = [
   'denver',
   'washington',
   'boston',
-  'el-paso',
   'nashville',
-  'detroit',
-  'oklahoma-city',
+  'atlanta',
   'portland',
   'las-vegas',
+  'detroit',
+  'baltimore',
   'memphis',
-  'louisville',
-  'baltimore'
+  'louisville'
+];
+
+// Most important service/city combinations for SEO
+const priorityServiceCities = [
+  { service: 'plumbing', cities: ['new-york', 'los-angeles', 'chicago', 'houston', 'phoenix', 'miami'] },
+  { service: 'electrical', cities: ['new-york', 'los-angeles', 'chicago', 'miami', 'denver'] },
+  { service: 'hvac', cities: ['houston', 'phoenix', 'miami', 'atlanta', 'dallas'] },
+  { service: 'cleaning', cities: ['new-york', 'chicago', 'los-angeles', 'san-francisco', 'boston'] },
+  { service: 'landscaping', cities: ['miami', 'phoenix', 'dallas', 'san-diego', 'austin'] },
+  { service: 'roofing', cities: ['houston', 'miami', 'denver', 'seattle', 'portland'] },
+  { service: 'carpentry', cities: ['seattle', 'portland', 'denver', 'austin', 'charlotte'] },
+  { service: 'painting', cities: ['san-diego', 'phoenix', 'austin', 'nashville', 'charlotte'] },
+  { service: 'handyman', cities: ['austin', 'denver', 'nashville', 'charlotte', 'atlanta'] }
 ];
 
 function generateSitemap() {
@@ -177,8 +189,19 @@ function generateSitemap() {
   \n`;
   });
 
-  // Note: Removed city-specific service pages to avoid duplicate content issues
-  // Only include pages that have unique, substantial content
+  // Add priority service/city combinations for SEO
+  sitemap += `  <!-- Priority service/city combinations -->\n`;
+  priorityServiceCities.forEach(({ service, cities }) => {
+    cities.forEach(city => {
+      sitemap += `  <url>
+    <loc>${baseUrl}/services/${service}/${city}</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  \n`;
+    });
+  });
 
   sitemap += `</urlset>`;
 
@@ -186,8 +209,9 @@ function generateSitemap() {
   const sitemapPath = path.join(__dirname, 'sitemap.xml');
   fs.writeFileSync(sitemapPath, sitemap);
   
-  console.log(`✅ Sitemap generated with ${services.length} services`);
-  console.log(`📍 Total URLs: ${1 + 7 + 1 + services.length}`); // Main + 7 static pages + services page + service categories
+  const totalServiceCityCombos = priorityServiceCities.reduce((sum, sc) => sum + sc.cities.length, 0);
+  console.log(`✅ Sitemap generated with ${services.length} services and ${totalServiceCityCombos} service/city combinations`);
+  console.log(`📍 Total URLs: ${1 + 7 + countries.length + 1 + services.length + totalServiceCityCombos}`);
   console.log(`📝 Sitemap saved to: ${sitemapPath}`);
   
   return sitemap;
