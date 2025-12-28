@@ -4,8 +4,8 @@ import { buildCanonical } from '../utils/seo';
 import { IS_HOLIDAY_SEASON } from '../utils/config';
 
 const defaultDescription = IS_HOLIDAY_SEASON 
-  ? 'Fixlo connects homeowners with trusted pros for holiday home services—plumbing, electrical, Christmas light installation, holiday cleaning, seasonal repairs & more. Get your home ready for the holidays!'
-  : 'Fixlo connects homeowners with trusted pros—plumbing, electrical, junk removal & more.';
+  ? 'Fixlo connects homeowners with trusted professionals for holiday home services—plumbing, electrical, Christmas light installation, holiday cleaning, seasonal repairs & more. Get your home ready for the holidays!'
+  : 'Fixlo connects homeowners across the United States with verified, background-checked professionals for plumbing, electrical, HVAC, cleaning, junk removal, roofing, carpentry, painting, landscaping, and handyman services. Free for homeowners, no hidden fees.';
 
 export default function HelmetSEO({ 
   title, 

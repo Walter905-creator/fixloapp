@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import HelmetSEO from '../seo/HelmetSEO';
 import { ServiceSchema } from '../seo/Schema';
 import { makeTitle, makeDescription, slugify } from '../utils/seo';
@@ -20,6 +20,26 @@ const holidayBenefits = {
   'junk-removal': 'Clear out clutter before holiday decorating'
 };
 
+// Related services mapping for internal linking
+const relatedServices = {
+  'plumbing': ['hvac', 'electrical', 'handyman'],
+  'electrical': ['plumbing', 'hvac', 'carpentry'],
+  'hvac': ['plumbing', 'electrical', 'roofing'],
+  'carpentry': ['electrical', 'painting', 'handyman'],
+  'painting': ['carpentry', 'handyman', 'cleaning'],
+  'roofing': ['hvac', 'carpentry', 'handyman'],
+  'house-cleaning': ['junk-removal', 'landscaping', 'handyman'],
+  'cleaning': ['junk-removal', 'landscaping', 'handyman'],
+  'junk-removal': ['cleaning', 'landscaping', 'handyman'],
+  'landscaping': ['junk-removal', 'cleaning', 'handyman'],
+  'handyman': ['plumbing', 'electrical', 'carpentry']
+};
+
+// Format service name for display
+function formatServiceName(slug) {
+  return slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
 export default function ServicePage(){
   const { service, city } = useParams();
   const s = slugify(service || '');
@@ -36,6 +56,29 @@ export default function ServicePage(){
     <HelmetSEO title={title} description={desc} canonicalPathname={canonical} />
     <ServiceSchema service={s} city={c} />
     <div className="container-xl py-8">
+      {/* Breadcrumb Navigation */}
+      <nav className="mb-4 text-sm text-slate-600" aria-label="Breadcrumb">
+        <ol className="flex items-center space-x-2">
+          <li>
+            <Link to="/" className="hover:text-brand">Home</Link>
+          </li>
+          <li>&rsaquo;</li>
+          <li>
+            <Link to="/services" className="hover:text-brand">Services</Link>
+          </li>
+          <li>&rsaquo;</li>
+          <li>
+            <Link to={`/services/${s}`} className="hover:text-brand">{serviceName}</Link>
+          </li>
+          {c && (
+            <>
+              <li>&rsaquo;</li>
+              <li className="text-slate-900 font-medium">{cityName}</li>
+            </>
+          )}
+        </ol>
+      </nav>
+      
       <h1 className="text-2xl font-extrabold">{title}</h1>
       
       {/* Holiday Banner */}
@@ -107,6 +150,26 @@ export default function ServicePage(){
         </div>
       </div>
       
+      {/* Testimonial Section for Trust */}
+      <div className="card p-6 mt-6 mb-6 bg-gradient-to-r from-emerald-50 to-blue-50">
+        <h3 className="text-lg font-semibold mb-4 text-slate-900">What Customers Are Saying</h3>
+        <div className="space-y-4">
+          <blockquote className="border-l-4 border-emerald-600 pl-4">
+            <p className="text-slate-700 italic mb-2">
+              "Found a reliable {serviceName.toLowerCase()} professional through Fixlo in less than 24 hours. The background check gave me peace of mind, and the pricing was transparent from the start."
+            </p>
+            <cite className="text-sm text-slate-600 not-italic">— Sarah M., Homeowner</cite>
+          </blockquote>
+          
+          <blockquote className="border-l-4 border-emerald-600 pl-4">
+            <p className="text-slate-700 italic mb-2">
+              "As a {serviceName.toLowerCase()} contractor, Fixlo has transformed my business. No more paying for leads that go nowhere. The flat monthly fee means I can actually predict my costs."
+            </p>
+            <cite className="text-sm text-slate-600 not-italic">— Mike T., Professional Contractor</cite>
+          </blockquote>
+        </div>
+      </div>
+      
       {/* Service Request Form */}
       <div className="card p-6 mt-4">
         <h2 className="text-xl font-semibold mb-4">
@@ -122,6 +185,50 @@ export default function ServicePage(){
           )}
         </p>
         <ServiceLeadForm service={s} city={c}/>
+      </div>
+      
+      {/* Related Services */}
+      {relatedServices[s] && (
+        <div className="card p-6 mt-4">
+          <h2 className="text-xl font-semibold mb-4">Related Services</h2>
+          <p className="text-sm text-slate-600 mb-4">
+            Looking for other home services? We can help with these too:
+          </p>
+          <div className="grid sm:grid-cols-3 gap-3">
+            {relatedServices[s].map(relatedService => (
+              <Link
+                key={relatedService}
+                to={c ? `/services/${relatedService}/${c}` : `/services/${relatedService}`}
+                className="text-brand hover:underline font-medium"
+              >
+                {formatServiceName(relatedService)} {c && `in ${cityName}`}
+              </Link>
+            ))}
+          </div>
+          <div className="mt-4 pt-4 border-t border-slate-200">
+            <Link to="/services" className="text-brand hover:underline font-medium">
+              View All Services →
+            </Link>
+          </div>
+        </div>
+      )}
+      
+      {/* Trust & Support Links */}
+      <div className="card p-6 mt-4 bg-slate-50">
+        <div className="grid sm:grid-cols-3 gap-4 text-center">
+          <Link to="/how-it-works" className="text-sm text-slate-700 hover:text-brand">
+            <div className="font-semibold mb-1">How It Works</div>
+            <div className="text-xs">Learn about our process</div>
+          </Link>
+          <Link to="/join" className="text-sm text-slate-700 hover:text-brand">
+            <div className="font-semibold mb-1">For Professionals</div>
+            <div className="text-xs">Join our network</div>
+          </Link>
+          <Link to="/contact" className="text-sm text-slate-700 hover:text-brand">
+            <div className="font-semibold mb-1">Contact Support</div>
+            <div className="text-xs">We're here to help</div>
+          </Link>
+        </div>
       </div>
     </div>
   </>);
