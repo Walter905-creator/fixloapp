@@ -30,4 +30,34 @@ async function sendSms(to, body) {
   return cli.messages.create({ to: toE164, from, body });
 }
 
-module.exports = { sendSms, normalizeE164 };
+/**
+ * Send WhatsApp message via Twilio
+ * @param {string} to - Phone number in E.164 format
+ * @param {string} body - Message content
+ * @returns {Promise<object>} - Twilio message result
+ */
+async function sendWhatsApp(to, body) {
+  const from = process.env.TWILIO_WHATSAPP_FROM || `whatsapp:${process.env.TWILIO_PHONE}`;
+  const cli = getTwilioClient();
+  if (!cli || !from) {
+    console.warn('WhatsApp disabled: missing Twilio env vars');
+    return { sid: null, disabled: true };
+  }
+  const toE164 = normalizeE164(to);
+  const toWhatsApp = `whatsapp:${toE164}`;
+  
+  try {
+    const message = await cli.messages.create({
+      to: toWhatsApp,
+      from: from,
+      body: body
+    });
+    console.log(`✅ WhatsApp message sent to ${toE164}: ${message.sid}`);
+    return message;
+  } catch (error) {
+    console.error(`❌ WhatsApp send failed to ${toE164}:`, error.message);
+    throw error;
+  }
+}
+
+module.exports = { sendSms, sendWhatsApp, normalizeE164 };
