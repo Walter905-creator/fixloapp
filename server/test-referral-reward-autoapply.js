@@ -19,8 +19,14 @@ const promoCode1 = generatePromoCode();
 const promoCode2 = generatePromoCode();
 const promoCode3 = generatePromoCode();
 console.log(`Generated codes: ${promoCode1}, ${promoCode2}, ${promoCode3}`);
-console.log(`Format check: ${/^FIXLO-[A-Z0-9]{6}$/.test(promoCode1) ? '✅ PASS' : '❌ FAIL'}`);
-console.log(`Uniqueness check: ${(promoCode1 !== promoCode2 && promoCode2 !== promoCode3) ? '✅ PASS' : '❌ FAIL'}`);
+
+// Helper function for test assertions
+function assertTest(name, condition) {
+  console.log(`${name}: ${condition ? '✅ PASS' : '❌ FAIL'}`);
+}
+
+assertTest('Format check', /^FIXLO-[A-F0-9]{6}$/.test(promoCode1));
+assertTest('Uniqueness check', (promoCode1 !== promoCode2 && promoCode2 !== promoCode3));
 console.log('');
 
 // Test 2: Validate parameters
@@ -32,13 +38,13 @@ async function testParameterValidation() {
   const result1 = await applyReferralFreeMonth({
     referralCode: 'TEST123'
   });
-  console.log(`Missing stripeCustomerId: ${!result1.success && result1.error.includes('stripeCustomerId') ? '✅ PASS' : '❌ FAIL'}`);
+  assertTest('Missing stripeCustomerId', !result1.success && result1.error.includes('stripeCustomerId'));
   
   // Missing referralCode
   const result2 = await applyReferralFreeMonth({
     stripeCustomerId: 'cus_test123'
   });
-  console.log(`Missing referralCode: ${!result2.success && result2.error.includes('referralCode') ? '✅ PASS' : '❌ FAIL'}`);
+  assertTest('Missing referralCode', !result2.success && result2.error.includes('referralCode'));
   
   console.log('');
 }

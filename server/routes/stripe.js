@@ -466,7 +466,6 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
                           {
                             $set: {
                               referrerId: referrer._id,
-                              referredUserId: pro._id,
                               referredSubscriptionId: invoice.subscription,
                               subscriptionStatus: 'completed',
                               rewardStatus: 'issued',

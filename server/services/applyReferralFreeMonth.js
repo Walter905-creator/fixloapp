@@ -13,6 +13,9 @@
 
 const Stripe = require('stripe');
 
+// Configuration constants
+const REWARD_COOLDOWN_DAYS = 35; // Typical billing cycle (30 days) + 5 day buffer
+
 // Initialize Stripe with validation
 let stripe;
 try {
@@ -27,14 +30,19 @@ try {
   console.error('❌ Error initializing Stripe for referral rewards:', error.message);
 }
 
+const crypto = require('crypto');
+
 /**
  * Generate a unique, human-readable promo code
  * Format: FIXLO-XXXXXX (6 random alphanumeric characters)
+ * Uses crypto.randomBytes for better entropy
  * 
  * @returns {string} Generated promo code
  */
 function generatePromoCode() {
-  const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
+  // Use crypto for better randomness
+  const randomBytes = crypto.randomBytes(4);
+  const randomPart = randomBytes.toString('hex').substring(0, 6).toUpperCase();
   return `FIXLO-${randomPart}`;
 }
 
@@ -144,11 +152,15 @@ async function applyReferralFreeMonth({ stripeCustomerId, referralCode, referred
     // Step 3: Auto-apply promotion code to the customer
     // When a promotion code is attached to a customer, Stripe automatically
     // applies it to the next invoice for that customer
+    
+    // First, retrieve the customer to get existing metadata
+    const existingCustomer = await stripe.customers.retrieve(stripeCustomerId);
+    
     const customer = await stripe.customers.update(stripeCustomerId, {
       // Add the promotion code to the customer's default promotion code
       // Note: Stripe will automatically apply this to the next invoice
       metadata: {
-        ...((await stripe.customers.retrieve(stripeCustomerId)).metadata || {}),
+        ...(existingCustomer.metadata || {}),
         referral_promo_code: promotionCode.code,
         referral_promo_code_id: promotionCode.id,
         referral_reward_applied: new Date().toISOString()
@@ -229,9 +241,8 @@ async function hasExistingReward(stripeCustomerId) {
       const appliedDate = new Date(customer.metadata.referral_reward_applied);
       const daysSinceApplied = (Date.now() - appliedDate.getTime()) / (1000 * 60 * 60 * 24);
       
-      // If reward was applied in the last 35 days, consider it as existing
-      // (typical billing cycle is 30 days, add 5 day buffer)
-      if (daysSinceApplied < 35) {
+      // If reward was applied within cooldown period, consider it as existing
+      if (daysSinceApplied < REWARD_COOLDOWN_DAYS) {
         console.log(`⚠️ Customer ${stripeCustomerId} has recent reward (${Math.floor(daysSinceApplied)} days ago)`);
         return true;
       }
