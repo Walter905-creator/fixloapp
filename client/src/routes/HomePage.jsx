@@ -1,9 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import HelmetSEO from "../seo/HelmetSEO";
 import Schema from "../seo/Schema";
 import { Link, useNavigate } from "react-router-dom";
 import StickyProCTA from "../components/StickyProCTA";
 import ServiceIntakeButton from "../components/ServiceIntakeButton";
+import HomeReferralSection from "../components/HomeReferralSection";
+import ReferralSection from "../components/ReferralSection";
+import { useAuth } from "../context/AuthContext";
+import { detectUserCountry } from "../utils/countryDetection";
 import { IS_HOLIDAY_SEASON } from "../utils/config";
 
 /**
@@ -52,6 +56,19 @@ const pageTitle = IS_HOLIDAY_SEASON
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
+  const [countryCode, setCountryCode] = useState('US');
+
+  useEffect(() => {
+    // Detect user country for share button behavior
+    detectUserCountry().then(info => {
+      if (info && info.countryCode) {
+        setCountryCode(info.countryCode);
+      }
+    }).catch(err => {
+      console.error('Failed to detect country:', err);
+    });
+  }, []);
 
   return (
     <>
@@ -117,6 +134,17 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Referral Program Section */}
+      {isAuthenticated && user?.role === 'pro' && user?.id ? (
+        <section className="py-12 md:py-16">
+          <div className="container-xl">
+            <ReferralSection proId={user.id} country={countryCode} />
+          </div>
+        </section>
+      ) : (
+        <HomeReferralSection />
+      )}
 
       {/* Trust Signal Strip */}
       <section className="bg-white border-y border-slate-200 py-6">
