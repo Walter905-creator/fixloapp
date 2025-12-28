@@ -30,6 +30,7 @@ import Success from './pages/Success.jsx';
 import SignupPage from './routes/SignupPage.jsx';
 import ProSignupPage from './routes/ProSignupPage.jsx';
 import AboutWalterArevaloPage from './routes/AboutWalterArevaloPage.jsx';
+import AboutPage from './routes/AboutPage.jsx';
 export default function App(){
   return (<>
     <PromoBanner />
@@ -67,6 +68,7 @@ export default function App(){
       <Route path="/privacy-policy" element={<Privacy/>}/>
       <Route path="/privacy-settings" element={<PrivacySettings/>}/>
       <Route path="/success" element={<Success/>}/>
+      <Route path="/about" element={<AboutPage/>}/>
       <Route path="/about-walter-arevalo" element={<AboutWalterArevaloPage/>}/>
       <Route path="*" element={<Navigate to="/" replace/>}/>
     </Routes>
@@ -77,8 +79,8 @@ export default function App(){
           <div>
             <h3 className="font-semibold text-slate-900 mb-3">About Fixlo</h3>
             <ul className="space-y-2 text-sm text-slate-700">
+              <li><a href="/about" className="hover:text-brand">About Us</a></li>
               <li><a href="/how-it-works" className="hover:text-brand">How It Works</a></li>
-              <li><a href="/about-walter-arevalo" className="hover:text-brand">About Us</a></li>
               <li><a href="/contact" className="hover:text-brand">Contact</a></li>
             </ul>
           </div>
