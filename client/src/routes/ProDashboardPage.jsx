@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import HelmetSEO from '../seo/HelmetSEO';
 import CloudinaryUploader from '../components/CloudinaryUploader';
+import ReferralSection from '../components/ReferralSection';
 import { API_BASE } from '../utils/config';
 
 export default function ProDashboardPage(){
@@ -36,6 +37,14 @@ export default function ProDashboardPage(){
         </p>
       </div>
       <h1 className="text-2xl font-extrabold">Pro Dashboard</h1>
+      
+      {/* Referral Section */}
+      {user?._id && (
+        <div className="mt-6 mb-6">
+          <ReferralSection proId={user._id} country={user.country || 'US'} />
+        </div>
+      )}
+      
       <div className="grid md:grid-cols-3 gap-4 mt-4">
         <div className="card p-5 md:col-span-2">
           <h3 className="font-semibold">Leads</h3>
