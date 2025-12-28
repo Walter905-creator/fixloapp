@@ -73,16 +73,7 @@ function detectLanguage(country) {
  */
 async function sendReferralRewardNotification(referrer, promoCode, country = 'US') {
   try {
-    // Check if user has opted in to notifications
-    if (!referrer.notificationSettings || !referrer.notificationSettings.sms) {
-      console.log(`📱 Notification disabled for pro ${referrer._id}: SMS opt-out`);
-      return {
-        success: false,
-        reason: 'User has opted out of SMS notifications'
-      };
-    }
-    
-    // Check SMS consent
+    // Check if user has SMS consent
     if (!referrer.smsConsent) {
       console.log(`📱 Notification disabled for pro ${referrer._id}: No SMS consent`);
       return {

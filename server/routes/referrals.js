@@ -16,6 +16,12 @@ const { sendReferralRewardNotification } = require('../services/referralNotifica
  * - Rewards issued as promo codes for NEXT billing cycle
  */
 
+// Anti-fraud configuration
+const ANTI_FRAUD_CONFIG = {
+  MAX_REFERRALS_PER_IP_PER_DAY: process.env.MAX_REFERRALS_PER_IP || 3,
+  RATE_LIMIT_WINDOW_HOURS: 24
+};
+
 /**
  * Get referral information for a pro
  * GET /api/referrals/info/:proId
@@ -160,12 +166,13 @@ router.post('/validate', async (req, res) => {
     
     // Check IP-based rate limiting (same IP multiple referrals)
     if (ip) {
+      const windowStart = new Date(Date.now() - ANTI_FRAUD_CONFIG.RATE_LIMIT_WINDOW_HOURS * 60 * 60 * 1000);
       const recentReferralsFromIP = await Referral.countDocuments({
         signupIp: ip,
-        createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } // Last 24 hours
+        createdAt: { $gte: windowStart }
       });
       
-      if (recentReferralsFromIP >= 3) {
+      if (recentReferralsFromIP >= ANTI_FRAUD_CONFIG.MAX_REFERRALS_PER_IP_PER_DAY) {
         fraudChecks.valid = false;
         fraudChecks.warnings.push('Too many referrals from this IP address');
       }

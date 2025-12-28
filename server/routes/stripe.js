@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const axios = require('axios');
 const Pro = require('../models/Pro');
 const JobRequest = require('../models/JobRequest');
 
@@ -356,7 +357,6 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
             if (pro && pro.referredByCode && session.subscription) {
               console.log(`🎁 Checking referral completion for pro ${userId}`);
               try {
-                const axios = require('axios');
                 const apiUrl = process.env.API_URL || 'http://localhost:3001';
                 
                 // Get country from session metadata or default to US

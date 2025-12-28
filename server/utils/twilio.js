@@ -27,7 +27,14 @@ async function sendSms(to, body) {
     return { sid: null, disabled: true };
   }
   const toE164 = normalizeE164(to);
-  return cli.messages.create({ to: toE164, from, body });
+  try {
+    const message = await cli.messages.create({ to: toE164, from, body });
+    console.log(`✅ SMS message sent to ${toE164}: ${message.sid}`);
+    return message;
+  } catch (error) {
+    console.error(`❌ SMS send failed to ${toE164}:`, error.message);
+    throw error;
+  }
 }
 
 /**
