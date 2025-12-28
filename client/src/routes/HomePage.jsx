@@ -60,15 +60,20 @@ export default function HomePage() {
   const [countryCode, setCountryCode] = useState('US');
 
   useEffect(() => {
-    // Detect user country for share button behavior
-    detectUserCountry().then(info => {
-      if (info && info.countryCode) {
-        setCountryCode(info.countryCode);
-      }
-    }).catch(err => {
-      console.error('Failed to detect country:', err);
-    });
-  }, []);
+    // Only detect country if we might need it for the referral section
+    const shouldDetectCountry = !isAuthenticated || (user?.role === 'pro' && user?.id);
+    
+    if (shouldDetectCountry) {
+      // Detect user country for share button behavior
+      detectUserCountry().then(info => {
+        if (info && info.countryCode) {
+          setCountryCode(info.countryCode);
+        }
+      }).catch(err => {
+        console.error('Failed to detect country, using default US settings:', err);
+      });
+    }
+  }, [isAuthenticated, user]);
 
   return (
     <>
