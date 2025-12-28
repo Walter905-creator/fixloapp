@@ -52,7 +52,18 @@ router.options(["/register", "/login", "/dashboard"], (req, res) => {
 
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password, phone, trade, location, dob } = req.body;
+    const { 
+      name, 
+      email, 
+      password, 
+      phone, 
+      trade, 
+      location, 
+      dob, 
+      smsConsent, 
+      whatsappOptIn,
+      country 
+    } = req.body;
 
     if (!name || !email || !password || !phone || !trade || !location || !dob) {
       return res.status(400).json({
@@ -88,6 +99,17 @@ router.post("/register", async (req, res) => {
       console.warn('Geocoding failed for pro location:', geocodeError.message);
     }
 
+    // Detect country from phone or explicit country field
+    const { isUSPhoneNumber } = require('../utils/twilio');
+    let detectedCountry = country || 'US';
+    if (!country) {
+      detectedCountry = isUSPhoneNumber(phone) ? 'US' : 'XX'; // XX for unknown non-US
+    }
+
+    // COMPLIANCE: WhatsApp opt-in only for non-US countries
+    const allowWhatsApp = detectedCountry !== 'US';
+    const finalWhatsAppOptIn = allowWhatsApp && (whatsappOptIn === true || whatsappOptIn === 'true');
+
     const newPro = await Pro.create({
       name,
       email: email.toLowerCase(),
@@ -100,8 +122,12 @@ router.post("/register", async (req, res) => {
       },
       dob: new Date(dob),
       paymentStatus: "pending",
-      smsConsent: false,
+      smsConsent: smsConsent === true || smsConsent === 'true' || false,
+      whatsappOptIn: finalWhatsAppOptIn,
+      country: detectedCountry,
     });
+
+    console.log(`✅ Pro registered: ${newPro.email} (Country: ${detectedCountry}, WhatsApp: ${finalWhatsAppOptIn})`);
 
     const token = jwt.sign(
       { proId: newPro._id, email: newPro.email },
@@ -118,6 +144,9 @@ router.post("/register", async (req, res) => {
         email: newPro.email,
         trade: newPro.trade,
         location: newPro.location,
+        country: newPro.country,
+        whatsappOptIn: newPro.whatsappOptIn,
+        smsConsent: newPro.smsConsent,
       },
     });
   } catch (err) {
