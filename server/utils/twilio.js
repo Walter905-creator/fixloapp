@@ -79,7 +79,7 @@ async function sendSms(to, body) {
  * Send WhatsApp message (NON-USA ONLY)
  * Uses approved transactional template format
  */
-async function sendWhatsAppMessage(to, templateData = {}) {
+async function sendWhatsAppMessage(to, templateDataOrMessage = {}) {
   const cli = getTwilioClient();
   const from = `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`;
 
@@ -93,13 +93,21 @@ async function sendWhatsAppMessage(to, templateData = {}) {
 
   const toWhatsApp = `whatsapp:${toE164}`;
 
-  const body = `🔔 New job lead on Fixlo
+  // If a string is passed, use it as the body directly
+  let body;
+  if (typeof templateDataOrMessage === 'string') {
+    body = templateDataOrMessage;
+  } else {
+    // Otherwise, use template format for job leads
+    const templateData = templateDataOrMessage;
+    body = `🔔 New job lead on Fixlo
 
 Service: ${templateData.service || 'N/A'}
 Location: ${templateData.location || 'N/A'}
 Budget: ${templateData.budget || 'Contact for details'}
 
 Log in to your Fixlo account to view details and contact the customer.`;
+  }
 
   try {
     const message = await cli.messages.create({

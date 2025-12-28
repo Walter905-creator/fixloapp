@@ -1,5 +1,5 @@
 // server/services/referralNotification.js
-const { sendSms, sendWhatsApp } = require('../utils/twilio');
+const { sendSms, sendWhatsAppMessage } = require('../utils/twilio');
 
 /**
  * COMPLIANCE: Referral reward notifications
@@ -112,7 +112,7 @@ async function sendReferralRewardNotification(referrer, promoCode, country = 'US
     } else {
       // Send WhatsApp for non-USA
       console.log(`💬 Sending WhatsApp referral reward to ${phone} (${country})`);
-      result = await sendWhatsApp(phone, message);
+      result = await sendWhatsAppMessage(phone, message);
       notificationType = 'whatsapp';
     }
     
@@ -171,7 +171,7 @@ async function testReferralNotification(phone, country = 'US') {
     if (isUSA) {
       result = await sendSms(phone, message);
     } else {
-      result = await sendWhatsApp(phone, message);
+      result = await sendWhatsAppMessage(phone, message);
     }
     
     return {
