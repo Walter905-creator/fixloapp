@@ -227,11 +227,67 @@ router.get("/dashboard", auth, async (req, res) => {
         reviews: pro.reviews,
         isActive: pro.isActive,
         paymentStatus: pro.paymentStatus,
+        country: pro.country,
+        whatsappOptIn: pro.whatsappOptIn,
+        smsConsent: pro.smsConsent,
+        wantsNotifications: pro.wantsNotifications,
       },
     });
   } catch (err) {
     console.error("Dashboard error:", err);
     return res.status(500).json({ error: "Server error fetching dashboard" });
+  }
+});
+
+/* ---------------------------- Settings (PATCH) ----------------------------- */
+/* PATCH /api/pros/settings - Update notification preferences                */
+
+router.patch("/settings", auth, async (req, res) => {
+  try {
+    const { whatsappOptIn, wantsNotifications } = req.body;
+
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        error: "Settings temporarily unavailable. Please try again later.",
+      });
+    }
+
+    const pro = await Pro.findById(req.proId);
+    if (!pro) return res.status(404).json({ error: "Professional not found" });
+
+    // COMPLIANCE: Only allow WhatsApp opt-in for non-US pros
+    const { isUSPhoneNumber } = require('../utils/twilio');
+    const isUSPro = (pro.country === 'US') || isUSPhoneNumber(pro.phone);
+
+    // Update notification preferences
+    if (typeof wantsNotifications === 'boolean') {
+      pro.wantsNotifications = wantsNotifications;
+    }
+
+    // Only update WhatsApp opt-in for non-US pros
+    if (typeof whatsappOptIn === 'boolean') {
+      if (isUSPro) {
+        console.log(`⚠️ Ignoring WhatsApp opt-in for US pro ${pro._id}`);
+      } else {
+        pro.whatsappOptIn = whatsappOptIn;
+        console.log(`✅ Updated WhatsApp opt-in for pro ${pro._id}: ${whatsappOptIn}`);
+      }
+    }
+
+    await pro.save();
+
+    return res.json({
+      message: "Settings updated successfully",
+      pro: {
+        whatsappOptIn: pro.whatsappOptIn,
+        wantsNotifications: pro.wantsNotifications,
+        smsConsent: pro.smsConsent,
+        country: pro.country,
+      },
+    });
+  } catch (err) {
+    console.error("Settings update error:", err);
+    return res.status(500).json({ error: "Server error updating settings" });
   }
 });
 
