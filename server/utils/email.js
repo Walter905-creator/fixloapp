@@ -75,6 +75,53 @@ async function sendPasswordResetEmail(to, resetToken) {
 }
 
 /**
+ * Send new lead notification email to professional
+ * @param {string} to - Recipient email address
+ * @param {object} leadData - Lead information {service, location, budget, customerName, customerPhone}
+ * @returns {Promise<void>}
+ */
+async function sendLeadNotificationEmail(to, leadData) {
+  if (!isEnabled) {
+    console.log('📧 Email disabled - would send lead notification to:', to);
+    console.log('📧 Lead data:', leadData);
+    return;
+  }
+
+  const { service, location, budget, customerName, customerPhone } = leadData;
+  
+  const msg = {
+    to,
+    from: FROM_EMAIL,
+    subject: `New Job Lead: ${service} in ${location}`,
+    text: `You have a new job lead on Fixlo!\n\nService: ${service}\nLocation: ${location}\nBudget: ${budget || 'Contact for details'}\nCustomer: ${customerName}\nPhone: ${customerPhone}\n\nLog in to your Fixlo dashboard to view full details and contact the customer.\n\nFixlo - Connecting homeowners with trusted professionals`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #2563eb;">🔔 New Job Lead on Fixlo</h2>
+        <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 8px 0;"><strong>Service:</strong> ${service}</p>
+          <p style="margin: 8px 0;"><strong>Location:</strong> ${location}</p>
+          <p style="margin: 8px 0;"><strong>Budget:</strong> ${budget || 'Contact for details'}</p>
+          <p style="margin: 8px 0;"><strong>Customer:</strong> ${customerName}</p>
+          <p style="margin: 8px 0;"><strong>Phone:</strong> ${customerPhone}</p>
+        </div>
+        <p>Log in to your Fixlo dashboard to view full details and contact the customer.</p>
+        <a href="${process.env.FRONTEND_URL || 'https://www.fixloapp.com'}/pro/dashboard" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">View Dashboard</a>
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 24px 0;">
+        <p style="color: #999; font-size: 12px;">Fixlo - Connecting homeowners with trusted professionals</p>
+      </div>
+    `
+  };
+
+  try {
+    await sendgridClient.send(msg);
+    console.log('✅ Lead notification email sent to:', to);
+  } catch (error) {
+    console.error('❌ Failed to send lead notification email:', error);
+    // Don't throw - email is a fallback, shouldn't block the process
+  }
+}
+
+/**
  * Check if email service is enabled
  * @returns {boolean}
  */
@@ -84,5 +131,6 @@ function isEmailEnabled() {
 
 module.exports = {
   sendPasswordResetEmail,
+  sendLeadNotificationEmail,
   isEmailEnabled
 };

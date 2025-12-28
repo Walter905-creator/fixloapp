@@ -6,6 +6,27 @@ import StickyProCTA from '../components/StickyProCTA';
 
 export default function ProSignupPage(){
   const stripeUrlRaw = STRIPE_CHECKOUT_URL;
+  const [country, setCountry] = React.useState('US'); // Default to US
+
+  // Detect user's country on mount
+  React.useEffect(() => {
+    async function detectCountry() {
+      try {
+        const res = await fetch('/api/country/detect');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.countryCode) {
+            setCountry(data.countryCode);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to detect country:', error);
+      }
+    }
+    detectCountry();
+  }, []);
+
+  const isUSUser = country === 'US';
 
   function resolveCheckoutURL(raw){
     const s = (raw || '').trim();
@@ -72,10 +93,25 @@ export default function ProSignupPage(){
             <label className="block text-sm text-slate-800 mb-1">Date of Birth</label>
             <input name="dob" className="mt-1 w-full rounded-xl" type="date" required/>
           </div>
-          <label className="flex items-start gap-2 text-sm text-slate-700">
-            <input id="sms-consent" type="checkbox" className="rounded mt-0.5" required/>
-            I agree to receive SMS notifications about job leads and account updates. Reply STOP to unsubscribe at any time.
-          </label>
+          
+          {/* Conditional opt-in based on country */}
+          {isUSUser ? (
+            <label className="flex items-start gap-2 text-sm text-slate-700">
+              <input id="sms-consent" type="checkbox" className="rounded mt-0.5" required/>
+              I agree to receive SMS notifications about job leads and account updates. Reply STOP to unsubscribe at any time.
+            </label>
+          ) : (
+            <>
+              <label className="flex items-start gap-2 text-sm text-slate-700">
+                <input id="whatsapp-consent" name="whatsappOptIn" type="checkbox" className="rounded mt-0.5"/>
+                I agree to receive WhatsApp notifications about new job leads and service updates from Fixlo. Reply STOP to unsubscribe.
+              </label>
+              <p className="text-xs text-slate-600 italic">
+                You will receive email notifications about job leads. WhatsApp notifications are optional.
+              </p>
+            </>
+          )}
+          
           <button type="submit" className="btn-primary w-full">
             Continue to Payment & Background Check
           </button>

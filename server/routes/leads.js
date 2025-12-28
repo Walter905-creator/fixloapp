@@ -5,6 +5,7 @@ const JobRequest = require('../models/JobRequest');
 const Pro = require('../models/Pro');
 const { geocodeAddress } = require('../utils/geocode');
 const { sendSms, normalizeE164 } = require('../utils/twilio');
+const { notifyProOfLead } = require('../utils/notifications');
 const { getPriorityConfig, hasPriorityRouting, getDelayMs } = require('../config/priorityRouting');
 
 function milesToMeters(mi) { return mi * 1609.344; }
@@ -158,7 +159,7 @@ Reply ACCEPT to take this job first.`;
       // Continue with empty pros array
     }
 
-    // 5) Notify matched professionals via SMS (with delay for priority leads)
+    // 5) Notify matched professionals using new notification service
     let notified = 0;
     
     // For priority leads, delay other pro notifications to give priority pro time to respond
@@ -183,12 +184,11 @@ Reply ACCEPT to take this job first.`;
                 }
                 
                 try {
-                  await sendSms(
-                    pro.phone,
-                    `[${leadTrade}] ${city || 'Unknown'}, ${state || 'Unknown'} – ${description || 'Service request'}\nContact: ${leadName} ${normalizeE164(phone)}`
-                  );
+                  // Use new notification service with channel routing
+                  await notifyProOfLead(pro, currentJob);
+                  notified++;
                 } catch (e) {
-                  console.warn('Delayed SMS send failed for', pro._id || pro.phone, e.message);
+                  console.warn('Notification failed for', pro._id || pro.phone, e.message);
                 }
               }
               console.log(`📱 Delayed notification completed for ${city} lead`);
@@ -201,22 +201,21 @@ Reply ACCEPT to take this job first.`;
         }
       }, delayMs);
     } else {
-      // Normal immediate notification for non-priority leads
-      if (pros.length) {
+      // Normal immediate notification for non-priority leads using new notification service
+      if (pros.length && savedLead) {
+        console.log(`📢 Notifying ${pros.length} professionals using new notification service`);
         for (const pro of pros) {
           try {
-            await sendSms(
-              pro.phone,
-              `[${leadTrade}] ${city || 'Unknown'}, ${state || 'Unknown'} – ${description || 'Service request'}\nContact: ${leadName} ${normalizeE164(phone)}`
-            );
+            // Use new notification service with channel routing (SMS for US, WhatsApp for International)
+            await notifyProOfLead(pro, savedLead);
             notified++;
           } catch (e) {
-            console.warn('Twilio send failed for', pro._id || pro.phone, e.message);
+            console.warn('Notification failed for', pro._id || pro.phone, e.message);
           }
         }
         console.log(`📱 Notified ${notified}/${pros.length} professionals`);
       } else {
-        console.warn('No nearby pros found — skipping SMS');
+        console.warn('No nearby pros found or lead not saved — skipping notifications');
       }
     }
 

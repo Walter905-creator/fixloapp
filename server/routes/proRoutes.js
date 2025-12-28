@@ -52,7 +52,18 @@ router.options(["/register", "/login", "/dashboard"], (req, res) => {
 
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password, phone, trade, location, dob } = req.body;
+    const { 
+      name, 
+      email, 
+      password, 
+      phone, 
+      trade, 
+      location, 
+      dob, 
+      smsConsent, 
+      whatsappOptIn,
+      country 
+    } = req.body;
 
     if (!name || !email || !password || !phone || !trade || !location || !dob) {
       return res.status(400).json({
@@ -88,6 +99,17 @@ router.post("/register", async (req, res) => {
       console.warn('Geocoding failed for pro location:', geocodeError.message);
     }
 
+    // Detect country from phone or explicit country field
+    const { isUSPhoneNumber } = require('../utils/twilio');
+    let detectedCountry = country || 'US';
+    if (!country) {
+      detectedCountry = isUSPhoneNumber(phone) ? 'US' : 'XX'; // XX for unknown non-US
+    }
+
+    // COMPLIANCE: WhatsApp opt-in only for non-US countries
+    const allowWhatsApp = detectedCountry !== 'US';
+    const finalWhatsAppOptIn = allowWhatsApp && (whatsappOptIn === true || whatsappOptIn === 'true');
+
     const newPro = await Pro.create({
       name,
       email: email.toLowerCase(),
@@ -100,8 +122,12 @@ router.post("/register", async (req, res) => {
       },
       dob: new Date(dob),
       paymentStatus: "pending",
-      smsConsent: false,
+      smsConsent: smsConsent === true || smsConsent === 'true' || false,
+      whatsappOptIn: finalWhatsAppOptIn,
+      country: detectedCountry,
     });
+
+    console.log(`✅ Pro registered: ${newPro.email} (Country: ${detectedCountry}, WhatsApp: ${finalWhatsAppOptIn})`);
 
     const token = jwt.sign(
       { proId: newPro._id, email: newPro.email },
@@ -118,6 +144,9 @@ router.post("/register", async (req, res) => {
         email: newPro.email,
         trade: newPro.trade,
         location: newPro.location,
+        country: newPro.country,
+        whatsappOptIn: newPro.whatsappOptIn,
+        smsConsent: newPro.smsConsent,
       },
     });
   } catch (err) {
@@ -198,11 +227,67 @@ router.get("/dashboard", auth, async (req, res) => {
         reviews: pro.reviews,
         isActive: pro.isActive,
         paymentStatus: pro.paymentStatus,
+        country: pro.country,
+        whatsappOptIn: pro.whatsappOptIn,
+        smsConsent: pro.smsConsent,
+        wantsNotifications: pro.wantsNotifications,
       },
     });
   } catch (err) {
     console.error("Dashboard error:", err);
     return res.status(500).json({ error: "Server error fetching dashboard" });
+  }
+});
+
+/* ---------------------------- Settings (PATCH) ----------------------------- */
+/* PATCH /api/pros/settings - Update notification preferences                */
+
+router.patch("/settings", auth, async (req, res) => {
+  try {
+    const { whatsappOptIn, wantsNotifications } = req.body;
+
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        error: "Settings temporarily unavailable. Please try again later.",
+      });
+    }
+
+    const pro = await Pro.findById(req.proId);
+    if (!pro) return res.status(404).json({ error: "Professional not found" });
+
+    // COMPLIANCE: Only allow WhatsApp opt-in for non-US pros
+    const { isUSPhoneNumber } = require('../utils/twilio');
+    const isUSPro = (pro.country === 'US') || isUSPhoneNumber(pro.phone);
+
+    // Update notification preferences
+    if (typeof wantsNotifications === 'boolean') {
+      pro.wantsNotifications = wantsNotifications;
+    }
+
+    // Only update WhatsApp opt-in for non-US pros
+    if (typeof whatsappOptIn === 'boolean') {
+      if (isUSPro) {
+        console.log(`⚠️ Ignoring WhatsApp opt-in for US pro ${pro._id}`);
+      } else {
+        pro.whatsappOptIn = whatsappOptIn;
+        console.log(`✅ Updated WhatsApp opt-in for pro ${pro._id}: ${whatsappOptIn}`);
+      }
+    }
+
+    await pro.save();
+
+    return res.json({
+      message: "Settings updated successfully",
+      pro: {
+        whatsappOptIn: pro.whatsappOptIn,
+        wantsNotifications: pro.wantsNotifications,
+        smsConsent: pro.smsConsent,
+        country: pro.country,
+      },
+    });
+  } catch (err) {
+    console.error("Settings update error:", err);
+    return res.status(500).json({ error: "Server error updating settings" });
   }
 });
 

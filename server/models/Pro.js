@@ -217,6 +217,24 @@ const proSchema = new mongoose.Schema({
     default: false
   },
 
+  // WhatsApp opt-in for international notifications
+  // COMPLIANCE NOTE: WhatsApp notifications are ONLY for non-US countries
+  // USA continues to use SMS notifications exclusively
+  // All WhatsApp messages are transactional only (job leads)
+  whatsappOptIn: {
+    type: Boolean,
+    default: false
+  },
+
+  // Country code for routing notifications (ISO 3166-1 alpha-2)
+  // Used to determine if pro receives SMS (US) or WhatsApp (non-US)
+  country: {
+    type: String,
+    trim: true,
+    uppercase: true,
+    default: 'US'
+  },
+
   // Job notification preferences
   wantsNotifications: { 
     type: Boolean, 
