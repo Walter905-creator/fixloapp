@@ -61,6 +61,7 @@ export default function App(){
       <Route path="/contractor/dashboard" element={<ContractorDashboardPage/>}/>
       <Route path="/staff/jobs" element={<JobManagementPage/>}/>
       <Route path="/join" element={<JoinPage/>}/>
+      <Route path="/for-professionals" element={<Navigate to="/join" replace/>}/>
       <Route path="/terms" element={<Terms/>}/>
       <Route path="/privacy" element={<Privacy/>}/>
       <Route path="/privacy-policy" element={<Privacy/>}/>

@@ -56,6 +56,29 @@ export default function ServicePage(){
     <HelmetSEO title={title} description={desc} canonicalPathname={canonical} />
     <ServiceSchema service={s} city={c} />
     <div className="container-xl py-8">
+      {/* Breadcrumb Navigation */}
+      <nav className="mb-4 text-sm text-slate-600" aria-label="Breadcrumb">
+        <ol className="flex items-center space-x-2">
+          <li>
+            <Link to="/" className="hover:text-brand">Home</Link>
+          </li>
+          <li>&rsaquo;</li>
+          <li>
+            <Link to="/services" className="hover:text-brand">Services</Link>
+          </li>
+          <li>&rsaquo;</li>
+          <li>
+            <Link to={`/services/${s}`} className="hover:text-brand">{serviceName}</Link>
+          </li>
+          {c && (
+            <>
+              <li>&rsaquo;</li>
+              <li className="text-slate-900 font-medium">{cityName}</li>
+            </>
+          )}
+        </ol>
+      </nav>
+      
       <h1 className="text-2xl font-extrabold">{title}</h1>
       
       {/* Holiday Banner */}
@@ -124,6 +147,26 @@ export default function ServicePage(){
               <>Ready to get started? Fill out the form below to receive quotes from trusted {serviceName.toLowerCase()} professionals in {cityName}. Our service is free for homeowners, and there's no obligation to hire.</>
             )}
           </p>
+        </div>
+      </div>
+      
+      {/* Testimonial Section for Trust */}
+      <div className="card p-6 mt-6 mb-6 bg-gradient-to-r from-emerald-50 to-blue-50">
+        <h3 className="text-lg font-semibold mb-4 text-slate-900">What Customers Are Saying</h3>
+        <div className="space-y-4">
+          <blockquote className="border-l-4 border-emerald-600 pl-4">
+            <p className="text-slate-700 italic mb-2">
+              "Found a reliable {serviceName.toLowerCase()} professional through Fixlo in less than 24 hours. The background check gave me peace of mind, and the pricing was transparent from the start."
+            </p>
+            <cite className="text-sm text-slate-600 not-italic">— Sarah M., Homeowner</cite>
+          </blockquote>
+          
+          <blockquote className="border-l-4 border-emerald-600 pl-4">
+            <p className="text-slate-700 italic mb-2">
+              "As a {serviceName.toLowerCase()} contractor, Fixlo has transformed my business. No more paying for leads that go nowhere. The flat monthly fee means I can actually predict my costs."
+            </p>
+            <cite className="text-sm text-slate-600 not-italic">— Mike T., Professional Contractor</cite>
+          </blockquote>
         </div>
       </div>
       

@@ -52,7 +52,7 @@ const TESTIMONIALS = [
 
 const pageTitle = IS_HOLIDAY_SEASON 
   ? "Fixlo – Book Holiday Home Services & Christmas Repairs Near You"
-  : "Fixlo – Book Trusted Home Services Near You";
+  : "Fixlo – Find Trusted Home Service Professionals Near You | Plumbing, Electrical, HVAC & More";
 
 export default function HomePage() {
   const navigate = useNavigate();

@@ -119,6 +119,13 @@ function generateSitemap() {
   </url>
   
   <url>
+    <loc>${baseUrl}/for-professionals</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  
+  <url>
     <loc>${baseUrl}/signup</loc>
     <lastmod>${currentDate}</lastmod>
     <changefreq>monthly</changefreq>
