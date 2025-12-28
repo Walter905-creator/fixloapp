@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-const STORAGE_KEY = "hide_free_trial_banner_v1";
+const STORAGE_KEY = "hide_pro_banner_v2";
 
 export default function FreeTrialBanner({ isSubscriber = false }) {
   const [hidden, setHidden] = useState(true);
@@ -24,22 +24,22 @@ export default function FreeTrialBanner({ isSubscriber = false }) {
       <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white">
         <div className="mx-auto max-w-7xl px-3 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-sm md:text-base font-medium text-center sm:text-left">
-            Try <strong className="font-bold">Fixlo Pro</strong> —{" "}
+            Join <strong className="font-bold">Fixlo Pro</strong> —{" "}
             <span className="font-bold underline decoration-2 underline-offset-2">
-              First month free
+              Start your membership today
             </span>
-            . You won't be charged until after your 30-day trial.
+            . Get instant access to local job leads.
           </p>
           <div className="flex items-center gap-2">
             <Link
               to="/pricing"
               className="inline-block rounded-lg bg-white text-blue-600 px-4 py-2 text-sm font-bold hover:bg-blue-50 transition shadow-sm"
-              onClick={() => window?.gtag?.("event", "click_free_trial_banner_cta")}
+              onClick={() => window?.gtag?.("event", "click_pro_banner_cta")}
             >
               Get Started
             </Link>
             <button
-              aria-label="Dismiss free trial banner"
+              aria-label="Dismiss pro banner"
               className="text-white/90 hover:text-white text-2xl leading-none px-2"
               onClick={dismiss}
             >

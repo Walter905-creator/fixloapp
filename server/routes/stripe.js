@@ -181,7 +181,7 @@ router.post('/create-checkout-session', async (req, res) => {
       console.log(`♻️ Using existing customer: ${customerIdToUse}`);
     }
 
-    // Create Stripe checkout session with 30-day free trial
+    // Create Stripe checkout session (NO FREE TRIAL - PAID SUBSCRIPTION STARTS IMMEDIATELY)
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customerIdToUse,
@@ -192,7 +192,6 @@ router.post('/create-checkout-session', async (req, res) => {
         },
       ],
       subscription_data: {
-        trial_period_days: 30,
         metadata: {
           userId: userId || '',
           service: 'fixlo-pro-subscription',
@@ -210,7 +209,7 @@ router.post('/create-checkout-session', async (req, res) => {
     });
 
     console.log(`✅ Checkout session created: ${session.id}`);
-    console.log(`🎁 30-day free trial included`);
+    console.log(`💳 Paid subscription starts immediately (no trial)`);
     
     res.status(200).json({ 
       sessionUrl: session.url,
