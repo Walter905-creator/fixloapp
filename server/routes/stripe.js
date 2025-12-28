@@ -3,6 +3,8 @@ const router = express.Router();
 const axios = require('axios');
 const Pro = require('../models/Pro');
 const JobRequest = require('../models/JobRequest');
+const Referral = require('../models/Referral');
+const { applyReferralFreeMonth, hasExistingReward } = require('../services/applyReferralFreeMonth');
 
 // Initialize Stripe with validation
 let stripe;
@@ -409,6 +411,123 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
             
             await pro.save();
             console.log(`✅ Pro ${pro._id} payment status updated to active`);
+            
+            // Check if this is a referred user completing their first PAID invoice
+            // Only process if this is NOT a $0 invoice (i.e., after trial period)
+            if (pro.referredByCode && invoice.amount_paid > 0) {
+              console.log(`🎁 Referred user ${pro._id} completed first paid invoice`);
+              console.log(`   Amount paid: $${(invoice.amount_paid / 100).toFixed(2)}`);
+              console.log(`   Referred by code: ${pro.referredByCode}`);
+              
+              try {
+                // Find the referrer who should receive the reward
+                const referrer = await Pro.findOne({ 
+                  referralCode: pro.referredByCode.toUpperCase() 
+                });
+                
+                if (referrer && referrer.stripeCustomerId) {
+                  console.log(`👤 Found referrer: ${referrer.name} (${referrer._id})`);
+                  console.log(`   Referrer Stripe Customer: ${referrer.stripeCustomerId}`);
+                  
+                  // Check if referrer already has a pending reward (prevent stacking)
+                  const hasPendingReward = await hasExistingReward(referrer.stripeCustomerId);
+                  if (hasPendingReward) {
+                    console.log(`⚠️ Referrer already has pending reward - skipping to prevent stacking`);
+                  } else {
+                    // Check if reward was already issued for this specific referral
+                    const existingReferral = await Referral.findOne({
+                      referralCode: pro.referredByCode.toUpperCase(),
+                      referredUserId: pro._id,
+                      rewardStatus: 'issued'
+                    });
+                    
+                    if (existingReferral) {
+                      console.log(`⚠️ Reward already issued for this referral - skipping`);
+                    } else {
+                      // Apply the referral reward to the referrer
+                      console.log(`🚀 Applying referral reward to referrer...`);
+                      const rewardResult = await applyReferralFreeMonth({
+                        stripeCustomerId: referrer.stripeCustomerId,
+                        referralCode: pro.referredByCode,
+                        referredUserId: pro._id.toString()
+                      });
+                      
+                      if (rewardResult.success) {
+                        console.log(`✅ Referral reward applied successfully!`);
+                        console.log(`   Promo Code: ${rewardResult.promoCode}`);
+                        console.log(`   Coupon ID: ${rewardResult.couponId}`);
+                        
+                        // Update or create the referral record with reward details
+                        await Referral.findOneAndUpdate(
+                          {
+                            referralCode: pro.referredByCode.toUpperCase(),
+                            referredUserId: pro._id
+                          },
+                          {
+                            $set: {
+                              referrerId: referrer._id,
+                              referredSubscriptionId: invoice.subscription,
+                              subscriptionStatus: 'completed',
+                              rewardStatus: 'issued',
+                              promoCode: rewardResult.promoCode,
+                              stripeCouponId: rewardResult.couponId,
+                              stripePromoCodeId: rewardResult.promoCodeId,
+                              rewardIssuedAt: new Date(),
+                              subscribedAt: new Date(),
+                              referredUserPhone: pro.phone,
+                              referredUserEmail: pro.email,
+                              metadata: {
+                                firstPaidInvoiceId: invoice.id,
+                                firstPaidAmount: invoice.amount_paid,
+                                rewardAppliedVia: 'webhook_invoice_payment_succeeded'
+                              }
+                            }
+                          },
+                          { upsert: true, new: true }
+                        );
+                        
+                        // Update referrer stats
+                        await Pro.findByIdAndUpdate(referrer._id, {
+                          $inc: {
+                            completedReferrals: 1,
+                            freeMonthsEarned: 1
+                          }
+                        });
+                        
+                        console.log(`📊 Referrer stats updated`);
+                      } else {
+                        console.error(`❌ Failed to apply referral reward: ${rewardResult.error}`);
+                        
+                        // Update referral record with failure
+                        await Referral.findOneAndUpdate(
+                          {
+                            referralCode: pro.referredByCode.toUpperCase(),
+                            referredUserId: pro._id
+                          },
+                          {
+                            $set: {
+                              rewardStatus: 'failed',
+                              metadata: {
+                                errorMessage: rewardResult.error,
+                                failedAt: new Date().toISOString()
+                              }
+                            }
+                          },
+                          { upsert: true }
+                        );
+                      }
+                    }
+                  }
+                } else if (referrer) {
+                  console.warn(`⚠️ Referrer found but no Stripe customer ID - cannot apply reward`);
+                } else {
+                  console.warn(`⚠️ No referrer found with code: ${pro.referredByCode}`);
+                }
+              } catch (referralErr) {
+                console.error('❌ Error processing referral reward:', referralErr.message);
+                // Don't fail the webhook if referral processing fails
+              }
+            }
             
             // TODO: Send confirmation email to pro
           } else {
