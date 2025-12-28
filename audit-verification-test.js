@@ -9,6 +9,11 @@
 const fs = require('fs');
 const path = require('path');
 
+// Get the repository root directory
+const REPO_ROOT = path.resolve(__dirname);
+const SERVER_DIR = path.join(REPO_ROOT, 'server');
+const CLIENT_DIR = path.join(REPO_ROOT, 'client');
+
 // Colors for console output
 const colors = {
   reset: '\x1b[0m',
@@ -147,14 +152,14 @@ log('='.repeat(80) + '\n', 'cyan');
 // SECTION 2: Stripe Subscription Flow
 log('\n📋 SECTION 2: STRIPE SUBSCRIPTION FLOW', 'blue');
 searchInFile(
-  '/home/runner/work/fixloapp/fixloapp/server/routes/stripe.js',
+  path.join(SERVER_DIR, 'routes/stripe.js'),
   ['trial_period_days'],
   'Stripe Subscription',
   'stripe.js'
 );
 
 checkFileContent(
-  '/home/runner/work/fixloapp/fixloapp/server/routes/stripe.js',
+  path.join(SERVER_DIR, 'routes/stripe.js'),
   ['subscription_data: {', 'metadata: {'],
   'Stripe Subscription',
   'Subscription data structure'
@@ -163,13 +168,13 @@ checkFileContent(
 // SECTION 3: Referral Code Generation
 log('\n📋 SECTION 3: REFERRAL CODE GENERATION', 'blue');
 checkFileExists(
-  '/home/runner/work/fixloapp/fixloapp/server/models/Pro.js',
+  path.join(SERVER_DIR, 'models/Pro.js'),
   'Referral System',
   'Pro model'
 );
 
 checkFileContent(
-  '/home/runner/work/fixloapp/fixloapp/server/models/Pro.js',
+  path.join(SERVER_DIR, 'models/Pro.js'),
   [
     'referralCode:',
     'referralUrl:',
@@ -183,13 +188,13 @@ checkFileContent(
 // SECTION 6: Stripe Referral Reward
 log('\n📋 SECTION 6: STRIPE REFERRAL REWARD', 'blue');
 checkFileExists(
-  '/home/runner/work/fixloapp/fixloapp/server/services/applyReferralFreeMonth.js',
+  path.join(SERVER_DIR, 'services/applyReferralFreeMonth.js'),
   'Referral Reward',
   'Referral reward service'
 );
 
 checkFileContent(
-  '/home/runner/work/fixloapp/fixloapp/server/services/applyReferralFreeMonth.js',
+  path.join(SERVER_DIR, 'services/applyReferralFreeMonth.js'),
   [
     'percent_off: 100',
     "duration: 'once'",
@@ -203,7 +208,7 @@ checkFileContent(
 // SECTION 7: Notifications
 log('\n📋 SECTION 7: NOTIFICATIONS', 'blue');
 checkFileContent(
-  '/home/runner/work/fixloapp/fixloapp/server/utils/twilio.js',
+  path.join(SERVER_DIR, 'utils/twilio.js'),
   [
     'sendSms',
     'sendWhatsAppMessage',
@@ -214,7 +219,7 @@ checkFileContent(
 );
 
 checkFileContent(
-  '/home/runner/work/fixloapp/fixloapp/server/services/referralNotification.js',
+  path.join(SERVER_DIR, 'services/referralNotification.js'),
   [
     'sendWhatsAppMessage',
     'sendSms',
@@ -227,20 +232,20 @@ checkFileContent(
 // SECTION 8: Homepage UI
 log('\n📋 SECTION 8: HOMEPAGE UI', 'blue');
 searchInFile(
-  '/home/runner/work/fixloapp/fixloapp/client/src/components/FreeTrialBanner.jsx',
+  path.join(CLIENT_DIR, 'src/components/FreeTrialBanner.jsx'),
   ['first month free', '30-day trial', 'free trial'],
   'Homepage UI',
   'FreeTrialBanner.jsx'
 );
 
 checkFileExists(
-  '/home/runner/work/fixloapp/fixloapp/client/src/components/HomeReferralSection.jsx',
+  path.join(CLIENT_DIR, 'src/components/HomeReferralSection.jsx'),
   'Homepage UI',
   'HomeReferralSection component'
 );
 
 checkFileContent(
-  '/home/runner/work/fixloapp/fixloapp/client/src/components/HomeReferralSection.jsx',
+  path.join(CLIENT_DIR, 'src/components/HomeReferralSection.jsx'),
   [
     'Be Your Own Boss',
     'Support Local Jobs',
@@ -253,7 +258,7 @@ checkFileContent(
 // SECTION 9: Share Buttons
 log('\n📋 SECTION 9: SHARE BUTTONS', 'blue');
 checkFileContent(
-  '/home/runner/work/fixloapp/fixloapp/client/src/components/ReferralSection.jsx',
+  path.join(CLIENT_DIR, 'src/components/ReferralSection.jsx'),
   [
     'copyReferralLink',
     'shareViaWhatsApp',
@@ -267,7 +272,7 @@ checkFileContent(
 // SECTION 10: Edge Cases
 log('\n📋 SECTION 10: EDGE CASES', 'blue');
 checkFileContent(
-  '/home/runner/work/fixloapp/fixloapp/server/routes/referrals.js',
+  path.join(SERVER_DIR, 'routes/referrals.js'),
   [
     'checkDuplicateReferral',
     'Self-referral not allowed',
@@ -278,7 +283,7 @@ checkFileContent(
 );
 
 checkFileContent(
-  '/home/runner/work/fixloapp/fixloapp/server/models/Referral.js',
+  path.join(SERVER_DIR, 'models/Referral.js'),
   [
     'checkDuplicateReferral',
     'signupIp',
@@ -292,7 +297,7 @@ checkFileContent(
 // COMPREHENSIVE SEARCH: No free trials anywhere
 log('\n📋 COMPREHENSIVE SEARCH: FREE TRIAL VERIFICATION', 'blue');
 searchInDirectory(
-  '/home/runner/work/fixloapp/fixloapp/server',
+  SERVER_DIR,
   ['.js'],
   ['trial_period_days'],
   'No Free Trials',
@@ -300,7 +305,7 @@ searchInDirectory(
 );
 
 searchInDirectory(
-  '/home/runner/work/fixloapp/fixloapp/client/src/components',
+  path.join(CLIENT_DIR, 'src/components'),
   ['.jsx', '.js'],
   ['first month free', '30-day trial', 'trial period', 'you won\'t be charged'],
   'No Free Trials',
