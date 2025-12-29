@@ -31,6 +31,8 @@ import SignupPage from './routes/SignupPage.jsx';
 import ProSignupPage from './routes/ProSignupPage.jsx';
 import AboutWalterArevaloPage from './routes/AboutWalterArevaloPage.jsx';
 import AboutPage from './routes/AboutPage.jsx';
+import TrendServicePage from './routes/TrendServicePage.jsx';
+import CompetitorAlternativesPage from './routes/CompetitorAlternativesPage.jsx';
 export default function App(){
   return (<>
     <PromoBanner />
@@ -41,6 +43,16 @@ export default function App(){
       <Route path="/services" element={<ServicesPage/>}/>
       <Route path="/services/:service" element={<ServicePage/>}/>
       <Route path="/services/:service/:city" element={<ServicePage/>}/>
+      
+      {/* Trend-based SEO landing pages */}
+      <Route path="/:trend/:service" element={<TrendServicePage/>}/>
+      
+      {/* Competitor alternatives pages */}
+      <Route path="/alternatives-to-:competitor" element={<CompetitorAlternativesPage/>}/>
+      <Route path="/:competitor-alternatives" element={<CompetitorAlternativesPage/>}/>
+      <Route path="/:competitor-competitors" element={<CompetitorAlternativesPage/>}/>
+      <Route path="/best-:competitor-alternative" element={<CompetitorAlternativesPage/>}/>
+      
       <Route path="/how-it-works" element={<HowItWorksPage/>}/>
       <Route path="/assistant" element={<AssistantPage/>}/>
       <Route path="/contact" element={<ContactPage/>}/>
