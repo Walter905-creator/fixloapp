@@ -279,7 +279,7 @@ function generateSitemap() {
   fs.writeFileSync(sitemapPath, sitemap);
   
   const totalServiceCityCombos = priorityServiceCities.reduce((sum, sc) => sum + sc.cities.length, 0);
-  const trendPageCount = highPriorityTrends.length * 6 * 3; // 7 trends * 6 cities * 3 services
+  const trendPageCount = highPriorityTrends.length * 6 * 3; // Dynamic: trends * 6 cities * 3 services
   const competitorPageCount = competitorPages.length;
   const totalUrls = 1 + 7 + countries.length + 1 + services.length + totalServiceCityCombos + trendPageCount + competitorPageCount;
   
