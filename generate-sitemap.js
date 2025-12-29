@@ -24,6 +24,29 @@ const services = [
   'landscaping'
 ];
 
+// High-priority trends for SEO
+const highPriorityTrends = [
+  'emergency',
+  'same-day',
+  '24-hour',
+  'christmas',
+  'navidad',
+  'near-me',
+  'last-minute'
+];
+
+// Competitor alternatives pages
+const competitorPages = [
+  'alternatives-to-angi',
+  'alternatives-to-homeadvisor',
+  'alternatives-to-thumbtack',
+  'alternatives-to-taskrabbit',
+  'alternatives-to-handy',
+  'angi-alternatives',
+  'homeadvisor-alternatives',
+  'thumbtack-alternatives'
+];
+
 // Countries for global expansion
 const countries = [
   { code: 'us', name: 'United States' },
@@ -217,6 +240,38 @@ function generateSitemap() {
     });
   });
 
+  // Add high-priority trend pages for emergency and urgency
+  sitemap += `  <!-- High-priority trend-based SEO pages -->\n`;
+  highPriorityTrends.forEach(trend => {
+    // Add emergency services for top cities
+    const topCities = ['new-york', 'los-angeles', 'chicago', 'houston', 'miami', 'phoenix'];
+    const trendServices = ['plumbing', 'electrical', 'hvac'];
+    
+    topCities.forEach(city => {
+      trendServices.forEach(service => {
+        sitemap += `  <url>
+    <loc>${baseUrl}/${trend}/${service}-in-${city}</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  \n`;
+      });
+    });
+  });
+
+  // Add competitor alternatives pages
+  sitemap += `  <!-- Competitor alternatives pages -->\n`;
+  competitorPages.forEach(page => {
+    sitemap += `  <url>
+    <loc>${baseUrl}/${page}</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  \n`;
+  });
+
   sitemap += `</urlset>`;
 
   // Write the sitemap to file
@@ -224,8 +279,17 @@ function generateSitemap() {
   fs.writeFileSync(sitemapPath, sitemap);
   
   const totalServiceCityCombos = priorityServiceCities.reduce((sum, sc) => sum + sc.cities.length, 0);
-  console.log(`✅ Sitemap generated with ${services.length} services and ${totalServiceCityCombos} service/city combinations`);
-  console.log(`📍 Total URLs: ${1 + 7 + countries.length + 1 + services.length + totalServiceCityCombos}`);
+  const trendPageCount = highPriorityTrends.length * 6 * 3; // 7 trends * 6 cities * 3 services
+  const competitorPageCount = competitorPages.length;
+  const totalUrls = 1 + 7 + countries.length + 1 + services.length + totalServiceCityCombos + trendPageCount + competitorPageCount;
+  
+  console.log(`✅ Sitemap generated with:`);
+  console.log(`   - ${services.length} service category pages`);
+  console.log(`   - ${totalServiceCityCombos} service/city combinations`);
+  console.log(`   - ${trendPageCount} trend-based SEO pages`);
+  console.log(`   - ${competitorPageCount} competitor alternatives pages`);
+  console.log(`   - ${countries.length} country pages`);
+  console.log(`📍 Total URLs: ${totalUrls}`);
   console.log(`📝 Sitemap saved to: ${sitemapPath}`);
   
   return sitemap;
