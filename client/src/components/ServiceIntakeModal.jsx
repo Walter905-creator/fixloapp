@@ -35,79 +35,96 @@ function PaymentForm({ formData, onSuccess, onError }) {
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  // Single handler for the two-phase submission flow
+  const handleAuthorizeAndSubmit = async () => {
     if (!stripe || !elements) {
+      onError('Payment system not ready. Please try again.');
       return;
     }
 
     setIsProcessing(true);
 
     try {
-      // Get client secret from backend
-      const response = await fetch(`${API_URL}/api/service-intake/payment-intent`, {
+      // PHASE 1: Create service request
+      const payload = {
+        serviceType: formData.serviceType === 'Other' ? formData.otherServiceType : formData.serviceType,
+        fullName: formData.name,
+        phone: formData.phone,
+        email: formData.email,
+        city: formData.city,
+        state: formData.state,
+        smsConsent: formData.smsConsent || false,
+        details: formData.description || ''
+      };
+
+      console.log('🚀 Creating service request:', payload);
+
+      const res = await fetch('https://fixloapp.onrender.com/api/requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: formData.email,
-          name: formData.name,
-          phone: formData.phone
-        })
+        body: JSON.stringify(payload)
       });
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        // Enhanced error handling for 401 and other errors
-        if (response.status === 401) {
-          throw new Error('Payment authentication failed. Please contact support.');
-        }
-        throw new Error(data.message || 'Failed to initialize payment');
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || 'Failed to submit request');
       }
 
-      // Confirm the setup intent with the card
-      const { error, setupIntent } = await stripe.confirmCardSetup(
-        data.clientSecret,
-        {
-          payment_method: {
-            card: elements.getElement(CardElement),
-            billing_details: {
-              name: formData.name,
-              email: formData.email,
-              phone: formData.phone,
-              address: {
-                line1: formData.address,
-                city: formData.city,
-                state: formData.state,
-                postal_code: formData.zip
-              }
+      const responseData = await res.json();
+      const { requestId, clientSecret } = responseData;
+
+      if (!requestId) {
+        throw new Error('Request was not created properly - missing request ID');
+      }
+
+      console.log('✅ Service request created:', requestId);
+
+      // Check if Stripe is configured and clientSecret was returned
+      if (!clientSecret) {
+        console.warn('⚠️ No clientSecret returned - Stripe may not be configured');
+        // Still consider this a success since the request was created
+        onSuccess({ requestId, skipPayment: true });
+        return;
+      }
+
+      // PHASE 2: Stripe authorization (ONLY after requestId exists)
+      console.log('💳 Authorizing payment for request:', requestId);
+
+      const result = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: elements.getElement(CardElement),
+          billing_details: {
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            address: {
+              line1: formData.address,
+              city: formData.city,
+              state: formData.state,
+              postal_code: formData.zip
             }
           }
         }
-      );
-
-      if (error) {
-        console.error('Stripe confirmCardSetup error:', error);
-        throw new Error(error.message);
-      }
-
-      // Success - payment method saved
-      onSuccess({
-        stripeCustomerId: data.customerId,
-        stripePaymentMethodId: setupIntent.payment_method
       });
 
+      if (result.error) {
+        console.error('❌ Stripe authorization failed:', result.error.message);
+        throw new Error(result.error.message);
+      }
+
+      console.log('✅ Payment authorized successfully');
+      onSuccess({ requestId, paymentIntentId: result.paymentIntent.id });
+
     } catch (err) {
-      console.error('Payment setup error:', err);
-      onError(err.message || 'Payment setup failed');
+      console.error('❌ Error in authorize and submit:', err);
+      onError(err.message || 'Failed to submit request');
     } finally {
       setIsProcessing(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="space-y-4">
       <div className="p-4 border border-slate-200 rounded-lg">
         <CardElement
           options={{
@@ -125,13 +142,14 @@ function PaymentForm({ formData, onSuccess, onError }) {
       </div>
       
       <button
-        type="submit"
+        type="button"
         disabled={!stripe || isProcessing}
+        onClick={handleAuthorizeAndSubmit}
         className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {isProcessing ? 'Processing...' : 'Authorize Payment & Submit Request'}
+        {isProcessing ? 'Authorizing...' : 'Authorize Payment & Submit Request'}
       </button>
-    </form>
+    </div>
   );
 }
 
@@ -256,14 +274,15 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
     }));
   };
 
-  const handlePaymentSuccess = async (paymentData) => {
-    setFormData(prev => ({ ...prev, ...paymentData }));
-    
-    // Submit the form
-    await submitForm({ ...formData, ...paymentData });
+  const handlePaymentSuccess = (paymentData) => {
+    // Success! Request was created and payment authorized
+    console.log('✅ Request submitted successfully:', paymentData);
+    setSubmitSuccess(true);
+    setCurrentStep(totalSteps);
   };
 
   const handlePaymentError = (error) => {
+    console.error('❌ Submission error:', error);
     setErrors({ payment: error });
   };
 
@@ -601,13 +620,20 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-slate-900">Request Submitted Successfully!</h3>
+              <h3 className="text-2xl font-bold text-slate-900">Request Submitted and Payment Authorized Successfully!</h3>
               <p className="text-slate-600">
                 Thank you for your service request. We'll contact you shortly to schedule your on-site estimate visit.
               </p>
-              <p className="text-sm text-slate-500">
-                You'll receive a confirmation email at {formData.email}
-              </p>
+              <div className="bg-green-50 p-4 rounded-lg space-y-2 text-sm text-slate-800">
+                <p className="font-semibold text-green-800">✓ Service request created</p>
+                <p className="font-semibold text-green-800">✓ Payment authorization completed</p>
+                <p className="text-slate-600 mt-2">Your card has NOT been charged - only authorized for the visit fee.</p>
+              </div>
+              {formData.email && (
+                <p className="text-sm text-slate-500">
+                  You'll receive a confirmation email at {formData.email}
+                </p>
+              )}
               <button
                 onClick={onClose}
                 className="btn-primary mt-4"

@@ -12,6 +12,34 @@ if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
   twilioClient = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 }
 
+// Initialize Stripe with validation
+let stripe;
+try {
+  if (process.env.STRIPE_SECRET_KEY) {
+    // Enforce Live Mode in production
+    if (process.env.NODE_ENV === "production" && !process.env.STRIPE_SECRET_KEY.startsWith("sk_live_")) {
+      console.error("❌ SECURITY ERROR: Stripe LIVE secret key required in production");
+      throw new Error("Stripe LIVE secret key required in production. Use sk_live_ keys only.");
+    }
+    
+    // Validate test mode in non-production
+    if (process.env.NODE_ENV !== "production" && !process.env.STRIPE_SECRET_KEY.startsWith("sk_test_")) {
+      console.error("❌ SECURITY ERROR: Live Stripe key detected in non-production environment");
+      throw new Error("Stripe live key detected in non-production environment. Use sk_test_ keys only.");
+    }
+    
+    stripe = require('stripe')(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2023-10-16'
+    });
+    console.log('✅ Stripe initialized in requests route:', process.env.STRIPE_SECRET_KEY.startsWith("sk_test_") ? "TEST MODE" : "LIVE MODE");
+  } else {
+    console.log('⚠️ STRIPE_SECRET_KEY not found in environment variables');
+  }
+} catch (error) {
+  console.error('❌ Error initializing Stripe:', error.message);
+  throw error;
+}
+
 function milesToMeters(mi) { return mi * 1609.344; }
 
 // POST /api/requests - Standardized homeowner service request endpoint
@@ -186,17 +214,92 @@ router.post('/', async (req, res) => {
       console.info('📵 SMS consent not given - skipping professional notifications');
     }
 
-    // Return success response immediately
+    // 5) Create Stripe PaymentIntent for payment authorization (linked to request)
+    let clientSecret = null;
+    let stripeCustomerId = null;
+    
+    if (stripe) {
+      try {
+        // Get or create Stripe customer
+        const email = req.body.email || `${normalizedPhone}@fixlo-placeholder.com`; // Fallback email if not provided
+        
+        const customers = await stripe.customers.list({
+          email: email,
+          limit: 1
+        });
+
+        let customer;
+        if (customers.data.length > 0) {
+          customer = customers.data[0];
+          console.log(`♻️ Using existing Stripe customer: ${customer.id}`);
+        } else {
+          customer = await stripe.customers.create({
+            email: email,
+            name: fullName,
+            phone: normalizedPhone,
+            metadata: {
+              source: 'fixlo-service-request',
+              requestId: requestId
+            }
+          });
+          console.log(`✅ Created new Stripe customer: ${customer.id}`);
+        }
+        
+        stripeCustomerId = customer.id;
+
+        // Create PaymentIntent with $150 authorization (will NOT be charged immediately)
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: 15000, // $150 in cents (authorization only)
+          currency: 'usd',
+          customer: customer.id,
+          payment_method_types: ['card'],
+          capture_method: 'manual', // Authorization only - must be captured manually later
+          metadata: {
+            requestId: requestId,
+            serviceType: serviceType,
+            customerName: fullName,
+            customerPhone: normalizedPhone,
+            city: city,
+            state: state,
+            type: 'service-visit-authorization',
+            source: 'fixlo-service-request',
+            timestamp: new Date().toISOString()
+          },
+          description: `Fixlo Service Visit Authorization - ${serviceType} in ${city}, ${state}`
+        });
+
+        clientSecret = paymentIntent.client_secret;
+        
+        // Update saved lead with Stripe info
+        if (savedLead) {
+          savedLead.stripeCustomerId = stripeCustomerId;
+          savedLead.stripePaymentIntentId = paymentIntent.id;
+          await savedLead.save();
+        }
+        
+        console.log(`✅ PaymentIntent created: ${paymentIntent.id} for request ${requestId}`);
+      } catch (stripeError) {
+        console.error('❌ Stripe PaymentIntent creation failed:', stripeError.message);
+        // Don't fail the request if Stripe fails - request is already created
+        // Just log and continue without clientSecret
+      }
+    } else {
+      console.warn('⚠️ Stripe not configured - skipping payment authorization');
+    }
+
+    // Return success response with requestId and clientSecret
     return res.status(201).json({ 
       ok: true, 
       requestId,
+      clientSecret, // May be null if Stripe not configured or failed
       message: 'Request received successfully',
       data: {
         leadId: savedLead ? savedLead._id : null,
         matchedPros: pros.length,
         address: formatted,
         serviceType: serviceType,
-        notificationsSent: smsConsent && twilioClient && pros.length > 0
+        notificationsSent: smsConsent && twilioClient && pros.length > 0,
+        stripeCustomerId: stripeCustomerId
       }
     });
 
