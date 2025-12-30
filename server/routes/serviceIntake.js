@@ -255,7 +255,7 @@ router.post('/submit', upload.array('photos', 5), async (req, res) => {
         } catch (uploadError) {
           console.error('❌ Error uploading photos to Cloudinary:', uploadError);
           // Don't fail the entire request, just log the error and proceed without photos
-          console.warn('⚠️ Proceeding without photos due to upload error');
+          console.warn('⚠️ Photo upload failed but service request will proceed without photos');
           photoUrls = [];
         }
       } else {
