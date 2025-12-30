@@ -5,7 +5,6 @@ const JobRequest = require('../models/JobRequest');
 const Invoice = require('../models/Invoice');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 // Initialize Stripe with validation
 let stripe;
@@ -47,29 +46,20 @@ if (process.env.CLOUDINARY_CLOUD_NAME) {
   console.warn('⚠️ Cloudinary not configured - photo uploads will not be available');
 }
 
-// Configure multer for photo uploads
-let upload;
-if (process.env.CLOUDINARY_CLOUD_NAME) {
-  const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-      folder: 'fixlo-service-requests',
-      allowed_formats: ['jpg', 'jpeg', 'png', 'heic'],
-      transformation: [{ width: 1200, height: 1200, crop: 'limit', quality: 'auto' }]
+// Configure multer with memory storage (avoiding CloudinaryStorage signature issues)
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    // Accept only image files
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
     }
-  });
-
-  upload = multer({ 
-    storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
-  });
-} else {
-  // Fallback to memory storage if Cloudinary is not configured
-  upload = multer({
-    storage: multer.memoryStorage(),
-    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
-  });
-}
+  }
+});
 
 // Create Stripe Payment Intent (authorization only)
 router.post('/payment-intent', async (req, res) => {
@@ -226,13 +216,48 @@ router.post('/submit', upload.array('photos', 5), async (req, res) => {
       });
     }
 
-    // Get photo URLs from uploaded files
+    // Upload photos to Cloudinary manually
     let photoUrls = [];
     if (req.files && req.files.length > 0) {
       if (process.env.CLOUDINARY_CLOUD_NAME) {
-        // Cloudinary configured - photos are already uploaded
-        photoUrls = req.files.map(file => file.path);
-        console.log(`📸 ${photoUrls.length} photo(s) uploaded to Cloudinary`);
+        console.log(`📤 Uploading ${req.files.length} photo(s) to Cloudinary...`);
+        
+        try {
+          // Upload all images to Cloudinary
+          const uploadPromises = req.files.map(file => {
+            return new Promise((resolve, reject) => {
+              cloudinary.uploader.upload_stream(
+                {
+                  resource_type: 'image',
+                  folder: 'fixlo-service-requests',
+                  allowed_formats: ['jpg', 'jpeg', 'png', 'heic'],
+                  transformation: [
+                    { width: 1200, height: 1200, crop: 'limit' },
+                    { quality: 'auto' },
+                    { fetch_format: 'auto' }
+                  ]
+                },
+                (error, result) => {
+                  if (error) {
+                    console.error('❌ Cloudinary upload error:', error);
+                    reject(error);
+                  } else {
+                    console.log('✅ Photo uploaded to Cloudinary:', result.public_id);
+                    resolve(result.secure_url);
+                  }
+                }
+              ).end(file.buffer);
+            });
+          });
+
+          photoUrls = await Promise.all(uploadPromises);
+          console.log(`✅ ${photoUrls.length} photo(s) uploaded to Cloudinary successfully`);
+        } catch (uploadError) {
+          console.error('❌ Error uploading photos to Cloudinary:', uploadError);
+          // Don't fail the entire request, just log the error and proceed without photos
+          console.warn('⚠️ Photo upload failed but service request will proceed without photos');
+          photoUrls = [];
+        }
       } else {
         // Cloudinary not configured - photos are in memory but can't be stored
         console.warn('⚠️ Photos uploaded but Cloudinary not configured - photos will not be stored');
