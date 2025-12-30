@@ -263,9 +263,14 @@ function ServiceLeadForm({service, city}){
     setError('');
     setSuccess(false);
 
-    // Basic validation
-    if (!form.fullName || !form.phone || !form.city || !form.state || !form.smsConsent) {
-      setError('Please complete all required fields and consent to SMS updates.');
+    // Frontend validation guard - match backend requirements exactly
+    if (!service || !form.fullName || !form.phone || !form.city || !form.state) {
+      setError('Please fill out all required fields.');
+      return;
+    }
+    
+    if (!form.smsConsent) {
+      setError('Please consent to SMS updates to continue.');
       return;
     }
     
@@ -276,7 +281,18 @@ function ServiceLeadForm({service, city}){
     
     setLoading(true);
     
-    console.log('📱 Submitting service request:', { ...form, phone: '***-***-' + form.phone.slice(-4) });
+    // Prepare payload matching backend API contract exactly
+    const payload = {
+      serviceType: service,
+      fullName: form.fullName,
+      phone: form.phone,
+      city: form.city || (city ? city.replace(/-/g, ' ') : ''),
+      state: form.state,
+      details: form.details || '',
+      smsConsent: form.smsConsent === true
+    };
+    
+    console.log('🚀 Sending service request payload:', payload);
 
     try {
       const url = `${api}/api/requests`;
@@ -285,15 +301,7 @@ function ServiceLeadForm({service, city}){
       const res = await fetch(url, { 
         method: 'POST', 
         headers: {'Content-Type': 'application/json'}, 
-        body: JSON.stringify({
-          serviceType: service,
-          fullName: form.fullName,
-          phone: form.phone,
-          description: form.details,
-          city: city ? city.replace(/-/g, ' ') : '',
-          state: form.state,
-          smsConsent: form.smsConsent
-        }) 
+        body: JSON.stringify(payload)
       });
       
       console.log('📡 Response status:', res.status);
