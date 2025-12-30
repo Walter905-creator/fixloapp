@@ -59,7 +59,7 @@ function PaymentForm({ formData, onSuccess, onError }) {
 
       console.log('🚀 Creating service request:', payload);
 
-      const res = await fetch('https://fixloapp.onrender.com/api/requests', {
+      const res = await fetch(`${API_URL}/api/requests`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

@@ -6,6 +6,10 @@ const JobRequest = require('../models/JobRequest');
 const Pro = require('../models/Pro');
 const { geocodeAddress } = require('../utils/geocoding');
 
+// Configuration constants
+const VISIT_FEE_AMOUNT = parseInt(process.env.VISIT_FEE_AMOUNT) || 150; // in dollars
+const VISIT_FEE_AMOUNT_CENTS = VISIT_FEE_AMOUNT * 100; // for Stripe (in cents)
+
 // Optional: Twilio SMS
 let twilioClient = null;
 if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
@@ -220,64 +224,69 @@ router.post('/', async (req, res) => {
     
     if (stripe) {
       try {
-        // Get or create Stripe customer
-        const email = req.body.email || `${normalizedPhone}@fixlo-placeholder.com`; // Fallback email if not provided
+        // Email is required for Stripe - use from request body
+        const email = req.body.email;
         
-        const customers = await stripe.customers.list({
-          email: email,
-          limit: 1
-        });
-
-        let customer;
-        if (customers.data.length > 0) {
-          customer = customers.data[0];
-          console.log(`♻️ Using existing Stripe customer: ${customer.id}`);
+        // Validate email exists before creating Stripe customer
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          console.warn('⚠️ Valid email required for Stripe payment authorization - skipping');
         } else {
-          customer = await stripe.customers.create({
+          const customers = await stripe.customers.list({
             email: email,
-            name: fullName,
-            phone: normalizedPhone,
-            metadata: {
-              source: 'fixlo-service-request',
-              requestId: requestId
-            }
+            limit: 1
           });
-          console.log(`✅ Created new Stripe customer: ${customer.id}`);
-        }
-        
-        stripeCustomerId = customer.id;
 
-        // Create PaymentIntent with $150 authorization (will NOT be charged immediately)
-        const paymentIntent = await stripe.paymentIntents.create({
-          amount: 15000, // $150 in cents (authorization only)
-          currency: 'usd',
-          customer: customer.id,
-          payment_method_types: ['card'],
-          capture_method: 'manual', // Authorization only - must be captured manually later
-          metadata: {
-            requestId: requestId,
-            serviceType: serviceType,
-            customerName: fullName,
-            customerPhone: normalizedPhone,
-            city: city,
-            state: state,
-            type: 'service-visit-authorization',
-            source: 'fixlo-service-request',
-            timestamp: new Date().toISOString()
-          },
-          description: `Fixlo Service Visit Authorization - ${serviceType} in ${city}, ${state}`
-        });
+          let customer;
+          if (customers.data.length > 0) {
+            customer = customers.data[0];
+            console.log(`♻️ Using existing Stripe customer: ${customer.id}`);
+          } else {
+            customer = await stripe.customers.create({
+              email: email,
+              name: fullName,
+              phone: normalizedPhone,
+              metadata: {
+                source: 'fixlo-service-request',
+                requestId: requestId
+              }
+            });
+            console.log(`✅ Created new Stripe customer: ${customer.id}`);
+          }
+          
+          stripeCustomerId = customer.id;
 
-        clientSecret = paymentIntent.client_secret;
-        
-        // Update saved lead with Stripe info
-        if (savedLead) {
-          savedLead.stripeCustomerId = stripeCustomerId;
-          savedLead.stripePaymentIntentId = paymentIntent.id;
-          await savedLead.save();
+          // Create PaymentIntent with configurable authorization amount (will NOT be charged immediately)
+          const paymentIntent = await stripe.paymentIntents.create({
+            amount: VISIT_FEE_AMOUNT_CENTS, // Configurable amount in cents (authorization only)
+            currency: 'usd',
+            customer: customer.id,
+            payment_method_types: ['card'],
+            capture_method: 'manual', // Authorization only - must be captured manually later
+            metadata: {
+              requestId: requestId,
+              serviceType: serviceType,
+              customerName: fullName,
+                customerPhone: normalizedPhone,
+              city: city,
+              state: state,
+              type: 'service-visit-authorization',
+              source: 'fixlo-service-request',
+              timestamp: new Date().toISOString()
+            },
+            description: `Fixlo Service Visit Authorization - ${serviceType} in ${city}, ${state}`
+          });
+
+          clientSecret = paymentIntent.client_secret;
+          
+          // Update saved lead with Stripe info
+          if (savedLead) {
+            savedLead.stripeCustomerId = stripeCustomerId;
+            savedLead.stripePaymentIntentId = paymentIntent.id;
+            await savedLead.save();
+          }
+          
+          console.log(`✅ PaymentIntent created: ${paymentIntent.id} for request ${requestId}`);
         }
-        
-        console.log(`✅ PaymentIntent created: ${paymentIntent.id} for request ${requestId}`);
       } catch (stripeError) {
         console.error('❌ Stripe PaymentIntent creation failed:', stripeError.message);
         // Don't fail the request if Stripe fails - request is already created
