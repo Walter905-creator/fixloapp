@@ -90,30 +90,54 @@ function PaymentForm({ formData, onSuccess, onError }) {
       // PHASE 2: Stripe authorization (ONLY after requestId exists)
       console.log('💳 Authorizing payment for request:', requestId);
 
-      const result = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: elements.getElement(CardElement),
-          billing_details: {
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            address: {
-              line1: formData.address,
-              city: formData.city,
-              state: formData.state,
-              postal_code: formData.zip
+      // Wrap Stripe confirmation in explicit try-catch
+      let paymentResult;
+      try {
+        paymentResult = await stripe.confirmCardPayment(clientSecret, {
+          payment_method: {
+            card: elements.getElement(CardElement),
+            billing_details: {
+              name: formData.name,
+              email: formData.email,
+              phone: formData.phone,
+              address: {
+                line1: formData.address,
+                city: formData.city,
+                state: formData.state,
+                postal_code: formData.zip
+              }
             }
           }
-        }
-      });
-
-      if (result.error) {
-        console.error('❌ Stripe authorization failed:', result.error.message);
-        throw new Error(result.error.message);
+        });
+      } catch (err) {
+        console.error('❌ Payment authorization exception:', err);
+        onError('Payment authorization failed. Please try again.');
+        setIsProcessing(false);
+        return;
       }
 
-      console.log('✅ Payment authorized successfully');
-      onSuccess({ requestId, paymentIntentId: result.paymentIntent.id });
+      // Handle Stripe result, not console noise
+      if (paymentResult.error) {
+        console.error('❌ Stripe authorization failed:', paymentResult.error.message);
+        onError(paymentResult.error.message);
+        setIsProcessing(false);
+        return;
+      }
+
+      // Validate payment intent status
+      if (paymentResult.paymentIntent?.status !== 'requires_capture' &&
+          paymentResult.paymentIntent?.status !== 'succeeded') {
+        console.error('❌ Unexpected payment status:', paymentResult.paymentIntent?.status);
+        onError('Payment could not be authorized.');
+        setIsProcessing(false);
+        return;
+      }
+
+      // Final success confirmation
+      console.log('✅ Request submitted and payment authorized');
+      console.log('✅ Payment Intent ID:', paymentResult.paymentIntent.id);
+      console.log('✅ Payment Intent Status:', paymentResult.paymentIntent.status);
+      onSuccess({ requestId, paymentIntentId: paymentResult.paymentIntent.id });
 
     } catch (err) {
       console.error('❌ Error in authorize and submit:', err);
