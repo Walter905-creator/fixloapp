@@ -78,8 +78,11 @@ export default function SettingsScreen({ navigation, route }) {
     }
   ];
 
-  // Add referral for pros
+  // Add billing and referral for pros
   if (userType === 'pro') {
+    settingsSections[0].items.splice(1, 0,
+      { label: 'Billing & Subscription', icon: '💳', screen: 'Billing' }
+    );
     settingsSections[0].items.push(
       { label: 'Referral Program', icon: '🎁', screen: 'Referral' }
     );

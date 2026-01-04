@@ -237,6 +237,64 @@ export default function AdminJobsPage() {
     }
   };
 
+  const handleCapturePayment = async () => {
+    if (!confirm('Capture authorized payment? This action cannot be undone.')) return;
+
+    try {
+      setActionLoading(true);
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${API_BASE}/api/admin/jobs/${selectedJob._id}/capture-payment`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to capture payment');
+      }
+
+      const data = await response.json();
+      alert(`Payment captured successfully! Amount: $${data.paymentIntent.amount}`);
+      viewJobDetails(selectedJob._id);
+    } catch (err) {
+      alert('Failed to capture payment: ' + err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReleaseAuthorization = async () => {
+    if (!confirm('Release payment authorization? The customer will NOT be charged.')) return;
+
+    try {
+      setActionLoading(true);
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${API_BASE}/api/admin/jobs/${selectedJob._id}/release-authorization`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to release authorization');
+      }
+
+      const data = await response.json();
+      alert(`Authorization released successfully! Amount: $${data.paymentIntent.amount}`);
+      viewJobDetails(selectedJob._id);
+    } catch (err) {
+      alert('Failed to release authorization: ' + err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const getStatusColor = (status) => {
     const colors = {
       'pending': 'bg-yellow-100 text-yellow-800',
@@ -419,6 +477,37 @@ export default function AdminJobsPage() {
                       <p><strong>Labor Cost:</strong> ${selectedJob.laborCost || '0.00'}</p>
                       <p><strong>Materials Cost:</strong> ${selectedJob.materialsCost || '0.00'}</p>
                       <p className="text-lg"><strong>Total:</strong> ${selectedJob.totalCost || '0.00'}</p>
+                      {selectedJob.paymentStatus && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <p><strong>Payment Status:</strong> 
+                            <span className={`ml-2 px-2 py-1 rounded text-xs font-semibold ${
+                              selectedJob.paymentStatus === 'authorized' ? 'bg-yellow-100 text-yellow-800' :
+                              selectedJob.paymentStatus === 'captured' ? 'bg-green-100 text-green-800' :
+                              selectedJob.paymentStatus === 'released' ? 'bg-gray-100 text-gray-800' :
+                              'bg-gray-100 text-gray-600'
+                            }`}>
+                              {selectedJob.paymentStatus.toUpperCase()}
+                            </span>
+                          </p>
+                          {selectedJob.paymentAuthorizedAt && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              Authorized: {new Date(selectedJob.paymentAuthorizedAt).toLocaleString()}
+                            </p>
+                          )}
+                          {selectedJob.paymentCapturedAt && (
+                            <p className="text-xs text-gray-500">
+                              Captured: {new Date(selectedJob.paymentCapturedAt).toLocaleString()}
+                              {selectedJob.paymentCapturedBy && ` by ${selectedJob.paymentCapturedBy}`}
+                            </p>
+                          )}
+                          {selectedJob.paymentReleasedAt && (
+                            <p className="text-xs text-gray-500">
+                              Released: {new Date(selectedJob.paymentReleasedAt).toLocaleString()}
+                              {selectedJob.paymentReleasedBy && ` by ${selectedJob.paymentReleasedBy}`}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -474,6 +563,32 @@ export default function AdminJobsPage() {
 
                 {/* Action Buttons */}
                 <div className="mt-6 flex flex-wrap gap-3">
+                  {/* Payment Control Buttons */}
+                  {selectedJob.paymentStatus === 'authorized' && (
+                    <div className="w-full border-t border-gray-200 pt-4 mb-4">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3">💳 Payment Controls</h4>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={handleCapturePayment}
+                          disabled={actionLoading}
+                          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400"
+                        >
+                          Capture Payment
+                        </button>
+                        <button
+                          onClick={handleReleaseAuthorization}
+                          disabled={actionLoading}
+                          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-gray-400"
+                        >
+                          Release Authorization
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        ⚠️ Capture charges the customer. Release cancels the authorization without charge.
+                      </p>
+                    </div>
+                  )}
+
                   {selectedJob.status === 'pending' && (
                     <button
                       onClick={handleSchedule}
