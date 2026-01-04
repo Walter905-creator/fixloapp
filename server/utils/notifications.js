@@ -64,6 +64,7 @@ async function notifyProOfLead(pro, lead) {
     if (pro.smsConsent) {
       results.sms.attempted = true;
       try {
+        console.log(`📲 Sending job SMS to pro: ${pro.phone}`); // LOG PHONE BEFORE SENDING
         const smsBody = `[${leadData.service}] ${leadData.location} – Contact: ${leadData.customerName} ${leadData.customerPhone}`;
         await sendSms(pro.phone, smsBody);
         results.sms.success = true;

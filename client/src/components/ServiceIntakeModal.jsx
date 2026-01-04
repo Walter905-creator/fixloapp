@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { STRIPE_PUBLISHABLE_KEY, API_BASE } from '../utils/config';
+import { normalizeUSPhone } from '../utils/phoneUtils';
 
 // Initialize Stripe with validated key
 if (!STRIPE_PUBLISHABLE_KEY) {
@@ -45,11 +46,20 @@ function PaymentForm({ formData, onSuccess, onError }) {
     setIsProcessing(true);
 
     try {
+      // Normalize phone number to E.164 format before submission
+      const normalizedPhone = normalizeUSPhone(formData.phone);
+      
+      if (!normalizedPhone) {
+        onError('Please enter a valid U.S. phone number (10 digits).');
+        setIsProcessing(false);
+        return;
+      }
+
       // PHASE 1: Create service request
       const payload = {
         serviceType: formData.serviceType === 'Other' ? formData.otherServiceType : formData.serviceType,
         fullName: formData.name,
-        phone: formData.phone,
+        phone: normalizedPhone, // Use normalized E.164 format
         email: formData.email,
         city: formData.city,
         state: formData.state,
@@ -263,8 +273,14 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
       if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
         newErrors.email = 'Valid email is required';
       }
-      if (!formData.phone || !/^\+?[\d\s\-\(\)]+$/.test(formData.phone)) {
-        newErrors.phone = 'Valid phone number is required';
+      // Validate phone can be normalized to E.164
+      if (!formData.phone) {
+        newErrors.phone = 'Phone number is required';
+      } else {
+        const normalized = normalizeUSPhone(formData.phone);
+        if (!normalized) {
+          newErrors.phone = 'Please enter a valid 10-digit U.S. phone number';
+        }
       }
     }
 
@@ -605,14 +621,17 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
             />
             {errors.email && <p className="text-red-600 text-sm">{errors.email}</p>}
             
-            <input
-              type="tel"
-              placeholder="Phone Number"
-              value={formData.phone}
-              onChange={(e) => handleInputChange('phone', e.target.value)}
-              className="input w-full"
-              required
-            />
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">+1</span>
+              <input
+                type="tel"
+                placeholder="(555) 123-4567"
+                value={formData.phone}
+                onChange={(e) => handleInputChange('phone', e.target.value)}
+                className="input w-full pl-10"
+                required
+              />
+            </div>
             {errors.phone && <p className="text-red-600 text-sm">{errors.phone}</p>}
             
             {/* SMS Consent */}

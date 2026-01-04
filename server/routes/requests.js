@@ -10,6 +10,15 @@ const { geocodeAddress } = require('../utils/geocoding');
 const VISIT_FEE_AMOUNT = parseInt(process.env.VISIT_FEE_AMOUNT) || 150; // in dollars
 const VISIT_FEE_AMOUNT_CENTS = VISIT_FEE_AMOUNT * 100; // for Stripe (in cents)
 
+/**
+ * Validate E.164 phone format
+ * @param {string} phone - Phone number to validate
+ * @returns {boolean} - True if valid E.164 format
+ */
+function isValidE164(phone) {
+  return /^\+\d{10,15}$/.test(phone);
+}
+
 // Optional: Twilio SMS
 let twilioClient = null;
 if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
@@ -64,18 +73,23 @@ router.post('/', async (req, res) => {
       return res.status(400).send('Missing required fields: serviceType, fullName, phone, city, and state are required');
     }
 
+    // Validate phone number is in E.164 format (CRITICAL FOR TWILIO)
+    if (!isValidE164(phone)) {
+      console.error(`❌ Invalid phone format received: ${phone}`);
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number must be in E.164 format (+1XXXXXXXXXX)'
+      });
+    }
+
     // Validate SMS consent
     if (typeof smsConsent !== 'boolean') {
       console.info('❌ Validation failed: smsConsent must be boolean');
       return res.status(400).send('SMS consent is required and must be true or false');
     }
 
-    // Normalize phone number
-    const normalizedPhone = phone.replace(/[^\d]/g, '');
-    if (normalizedPhone.length < 10) {
-      console.info('❌ Validation failed: Invalid phone number');
-      return res.status(400).send('Invalid phone number - must be at least 10 digits');
-    }
+    // Phone is already in E.164 format, no need to normalize
+    const normalizedPhone = phone;
 
     // Create a request ID
     const requestId = 'req_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);

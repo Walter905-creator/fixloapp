@@ -10,6 +10,15 @@ const { getPriorityConfig, hasPriorityRouting, getDelayMs } = require('../config
 
 function milesToMeters(mi) { return mi * 1609.344; }
 
+/**
+ * Validate E.164 phone format
+ * @param {string} phone - Phone number to validate
+ * @returns {boolean} - True if valid E.164 format
+ */
+function isValidE164(phone) {
+  return /^\+\d{10,15}$/.test(phone);
+}
+
 // POST /api/leads - Save homeowner leads and notify professionals
 router.post('/', async (req, res) => {
   try {
@@ -41,6 +50,15 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ 
         success: false,
         message: 'Name, phone, and service type are required' 
+      });
+    }
+
+    // Validate phone number is in E.164 format (CRITICAL FOR TWILIO)
+    if (!isValidE164(phone)) {
+      console.error(`❌ Invalid phone format received: ${phone}`);
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number must be in E.164 format (+1XXXXXXXXXX)'
       });
     }
 
