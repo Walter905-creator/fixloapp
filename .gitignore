@@ -88,3 +88,4 @@ client/public/version.json
 # Backup files
 *.backup
 test-stripe-request-flow.js
+server/test-email-phone-fixes.js
