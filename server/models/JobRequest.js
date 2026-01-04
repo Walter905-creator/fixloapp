@@ -106,6 +106,29 @@ const JobRequestSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  // Payment authorization tracking
+  paymentStatus: {
+    type: String,
+    enum: ['none', 'authorized', 'captured', 'released', 'failed'],
+    default: 'none'
+  },
+  paymentAuthorizedAt: {
+    type: Date
+  },
+  paymentCapturedAt: {
+    type: Date
+  },
+  paymentReleasedAt: {
+    type: Date
+  },
+  paymentCapturedBy: {
+    type: String, // Admin user email
+    trim: true
+  },
+  paymentReleasedBy: {
+    type: String, // Admin user email
+    trim: true
+  },
   // Clock in/out tracking
   clockInTime: {
     type: Date

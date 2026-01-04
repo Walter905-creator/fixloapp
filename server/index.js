@@ -285,6 +285,8 @@ app.use("/api/admin", adminRateLimit, require("./routes/adminJobs")); // Admin j
 app.use("/api/auth", authRateLimit, require("./routes/auth"));
 app.use("/api/pro-auth", authRateLimit, require("./routes/proAuth"));
 
+app.use("/api/subscription", generalRateLimit, require("./routes/subscription")); // Subscription pause/resume
+
 app.use("/api/pros", generalRateLimit, require("./routes/proRoutes")); // auth & mgmt
 
 app.use("/api/pro", generalRateLimit, require("./routes/proJobs")); // professional jobs
@@ -777,6 +779,15 @@ async function start() {
       await initializeWalterPro();
     } catch (e) {
       console.warn("⚠️ Walter Pro initialization skipped:", e?.message || e);
+    }
+
+    // Start scheduled tasks for operational safeguards
+    try {
+      const { startScheduledTasks } = require('./services/scheduledTasks');
+      startScheduledTasks();
+      console.log('✅ Scheduled tasks started');
+    } catch (e) {
+      console.warn("⚠️ Scheduled tasks initialization skipped:", e?.message || e);
     }
 
     server.listen(PORT, () => {

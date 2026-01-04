@@ -1,0 +1,85 @@
+const cron = require('node-cron');
+const { releaseStaleAuthorizations } = require('./autoReleaseService');
+
+/**
+ * Scheduled tasks service
+ * Manages cron jobs for operational safeguards
+ */
+
+let scheduledTasks = [];
+
+/**
+ * Start all scheduled tasks
+ */
+function startScheduledTasks() {
+  console.log('🕐 Starting scheduled tasks...');
+
+  // Task 1: Auto-release stale payment authorizations
+  // Runs daily at 3 AM
+  const autoReleaseTask = cron.schedule('0 3 * * *', async () => {
+    console.log('⏰ Running scheduled task: Auto-release stale authorizations');
+    try {
+      const result = await releaseStaleAuthorizations();
+      console.log('✅ Auto-release task completed:', result);
+    } catch (error) {
+      console.error('❌ Auto-release task failed:', error);
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York'
+  });
+
+  scheduledTasks.push({
+    name: 'auto-release-stale-authorizations',
+    task: autoReleaseTask,
+    schedule: '0 3 * * *',
+    description: 'Auto-release payment authorizations older than 7 days'
+  });
+
+  console.log(`✅ Scheduled ${scheduledTasks.length} tasks`);
+  scheduledTasks.forEach(t => {
+    console.log(`  - ${t.name}: ${t.schedule} - ${t.description}`);
+  });
+}
+
+/**
+ * Stop all scheduled tasks
+ */
+function stopScheduledTasks() {
+  console.log('🛑 Stopping scheduled tasks...');
+  scheduledTasks.forEach(t => {
+    t.task.stop();
+  });
+  scheduledTasks = [];
+}
+
+/**
+ * Get status of all scheduled tasks
+ */
+function getTasksStatus() {
+  return scheduledTasks.map(t => ({
+    name: t.name,
+    schedule: t.schedule,
+    description: t.description,
+    running: true
+  }));
+}
+
+/**
+ * Manually trigger a task by name
+ */
+async function triggerTask(taskName) {
+  switch (taskName) {
+    case 'auto-release-stale-authorizations':
+      return await releaseStaleAuthorizations();
+    default:
+      throw new Error(`Unknown task: ${taskName}`);
+  }
+}
+
+module.exports = {
+  startScheduledTasks,
+  stopScheduledTasks,
+  getTasksStatus,
+  triggerTask
+};

@@ -4,6 +4,7 @@ const JobRequest = require('../models/JobRequest');
 const Pro = require('../models/Pro');
 const requireAuth = require('../middleware/requireAuth');
 const smsService = require('../services/smsService');
+const { logPaymentAction, logAdminAction } = require('../services/auditLogger');
 
 // Protect all routes with admin authentication
 router.use(requireAuth);
@@ -517,6 +518,233 @@ router.post('/jobs/:id/invoice', async (req, res) => {
     console.error('❌ Error generating invoice:', error);
     res.status(500).json({ 
       error: 'Failed to generate invoice',
+      message: error.message 
+    });
+  }
+});
+
+// POST /api/admin/jobs/:id/capture-payment - Capture authorized payment
+router.post('/jobs/:id/capture-payment', async (req, res) => {
+  try {
+    const mongoose = require('mongoose');
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ error: 'Database not connected' });
+    }
+
+    const job = await JobRequest.findById(req.params.id);
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+
+    // Validate payment can be captured
+    if (job.paymentStatus !== 'authorized') {
+      return res.status(400).json({ 
+        error: 'Invalid payment status',
+        message: `Payment status is "${job.paymentStatus}". Only "authorized" payments can be captured.`
+      });
+    }
+
+    if (!job.stripePaymentIntentId) {
+      return res.status(400).json({ 
+        error: 'No payment intent found',
+        message: 'This job does not have a Stripe payment intent'
+      });
+    }
+
+    // Initialize Stripe
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+    // Capture the payment intent
+    try {
+      const paymentIntent = await stripe.paymentIntents.capture(job.stripePaymentIntentId);
+      
+      // Update job with captured payment info
+      job.paymentStatus = 'captured';
+      job.paymentCapturedAt = new Date();
+      job.paymentCapturedBy = req.user.email;
+      job.paidAt = new Date();
+      await job.save();
+
+      // Log the action
+      await logPaymentAction({
+        action: 'captured',
+        jobId: job._id.toString(),
+        stripePaymentIntentId: job.stripePaymentIntentId,
+        amount: paymentIntent.amount / 100,
+        actorEmail: req.user.email,
+        actorType: 'admin',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+
+      res.json({
+        success: true,
+        message: 'Payment captured successfully',
+        job,
+        paymentIntent: {
+          id: paymentIntent.id,
+          amount: paymentIntent.amount / 100,
+          status: paymentIntent.status
+        }
+      });
+    } catch (stripeError) {
+      console.error('❌ Stripe capture error:', stripeError.message);
+      
+      // Log the failure
+      await logPaymentAction({
+        action: 'captured',
+        jobId: job._id.toString(),
+        stripePaymentIntentId: job.stripePaymentIntentId,
+        actorEmail: req.user.email,
+        actorType: 'admin',
+        status: 'failure',
+        errorMessage: stripeError.message,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+
+      return res.status(500).json({ 
+        error: 'Failed to capture payment',
+        message: stripeError.message 
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error capturing payment:', error);
+    res.status(500).json({ 
+      error: 'Failed to capture payment',
+      message: error.message 
+    });
+  }
+});
+
+// POST /api/admin/jobs/:id/release-authorization - Release payment authorization
+router.post('/jobs/:id/release-authorization', async (req, res) => {
+  try {
+    const mongoose = require('mongoose');
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ error: 'Database not connected' });
+    }
+
+    const job = await JobRequest.findById(req.params.id);
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+
+    // Validate payment can be released
+    if (job.paymentStatus !== 'authorized') {
+      return res.status(400).json({ 
+        error: 'Invalid payment status',
+        message: `Payment status is "${job.paymentStatus}". Only "authorized" payments can be released.`
+      });
+    }
+
+    if (!job.stripePaymentIntentId) {
+      return res.status(400).json({ 
+        error: 'No payment intent found',
+        message: 'This job does not have a Stripe payment intent'
+      });
+    }
+
+    // Initialize Stripe
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+    // Cancel the payment intent to release authorization
+    try {
+      const paymentIntent = await stripe.paymentIntents.cancel(job.stripePaymentIntentId);
+      
+      // Update job with released payment info
+      job.paymentStatus = 'released';
+      job.paymentReleasedAt = new Date();
+      job.paymentReleasedBy = req.user.email;
+      await job.save();
+
+      // Log the action
+      await logPaymentAction({
+        action: 'released',
+        jobId: job._id.toString(),
+        stripePaymentIntentId: job.stripePaymentIntentId,
+        amount: paymentIntent.amount / 100,
+        actorEmail: req.user.email,
+        actorType: 'admin',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+
+      res.json({
+        success: true,
+        message: 'Payment authorization released successfully',
+        job,
+        paymentIntent: {
+          id: paymentIntent.id,
+          amount: paymentIntent.amount / 100,
+          status: paymentIntent.status
+        }
+      });
+    } catch (stripeError) {
+      console.error('❌ Stripe release error:', stripeError.message);
+      
+      // Log the failure
+      await logPaymentAction({
+        action: 'released',
+        jobId: job._id.toString(),
+        stripePaymentIntentId: job.stripePaymentIntentId,
+        actorEmail: req.user.email,
+        actorType: 'admin',
+        status: 'failure',
+        errorMessage: stripeError.message,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+
+      return res.status(500).json({ 
+        error: 'Failed to release authorization',
+        message: stripeError.message 
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error releasing authorization:', error);
+    res.status(500).json({ 
+      error: 'Failed to release authorization',
+      message: error.message 
+    });
+  }
+});
+
+// GET /api/admin/audit-logs - Get audit logs (admin-only)
+router.get('/audit-logs', async (req, res) => {
+  try {
+    const { getAuditLogs } = require('../services/auditLogger');
+    
+    const {
+      eventType,
+      actorEmail,
+      entityType,
+      entityId,
+      startDate,
+      endDate,
+      limit,
+      page
+    } = req.query;
+
+    const result = await getAuditLogs({
+      eventType,
+      actorEmail,
+      entityType,
+      entityId,
+      startDate,
+      endDate,
+      limit: limit ? parseInt(limit) : 100,
+      page: page ? parseInt(page) : 1
+    });
+
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    console.error('❌ Error fetching audit logs:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch audit logs',
       message: error.message 
     });
   }

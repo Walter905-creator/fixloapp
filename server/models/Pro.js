@@ -139,6 +139,22 @@ const proSchema = new mongoose.Schema({
   subscriptionEndDate: {
     type: Date
   },
+  // Subscription status and pause functionality
+  subscriptionStatus: {
+    type: String,
+    enum: ['active', 'paused', 'cancelled', 'pending'],
+    default: 'pending'
+  },
+  pausedAt: {
+    type: Date
+  },
+  pauseReason: {
+    type: String,
+    trim: true
+  },
+  resumedAt: {
+    type: Date
+  },
   joinedDate: {
     type: Date,
     default: Date.now
