@@ -69,6 +69,11 @@ const JobRequestSchema = new mongoose.Schema({
     default: 'pending'
   },
   // Payment & Stripe
+  paymentProvider: {
+    type: String,
+    enum: ['stripe', 'apple_pay'],
+    default: 'stripe'
+  },
   stripeCustomerId: {
     type: String,
     trim: true
@@ -78,6 +83,14 @@ const JobRequestSchema = new mongoose.Schema({
     trim: true
   },
   stripePaymentIntentId: {
+    type: String,
+    trim: true
+  },
+  applePayToken: {
+    type: String,
+    trim: true
+  },
+  applePayTransactionId: {
     type: String,
     trim: true
   },
