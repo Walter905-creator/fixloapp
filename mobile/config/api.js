@@ -40,6 +40,7 @@ export const API_ENDPOINTS = {
   LEADS_LIST: '/api/leads',
   LEADS_DETAIL: (id) => `/api/leads/${id}`,
   REQUESTS_CREATE: '/api/requests',
+  REQUESTS_APPLE_PAY: (requestId) => `/api/requests/${requestId}/apple-pay`,
   
   // Pro Routes
   PRO_AUTH_LOGIN: '/api/pro-auth/login',
