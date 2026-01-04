@@ -43,7 +43,14 @@ const proSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true,
-    unique: true
+    unique: true,
+    validate: {
+      validator: function(v) {
+        // Validate E.164 format: +[country code][number]
+        return /^\+\d{10,15}$/.test(v);
+      },
+      message: props => `${props.value} is not a valid E.164 phone number format. Must be +1XXXXXXXXXX for US numbers.`
+    }
   },
   password: {
     type: String,

@@ -2,196 +2,186 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 
-// Import models and utilities from existing leads route
+// Models & utils
 const JobRequest = require('../models/JobRequest');
 const Pro = require('../models/Pro');
 const { geocodeAddress } = require('../utils/geocoding');
 
-// Configuration constants
-const VISIT_FEE_AMOUNT = parseInt(process.env.VISIT_FEE_AMOUNT) || 150; // in dollars
-const VISIT_FEE_AMOUNT_CENTS = VISIT_FEE_AMOUNT * 100; // for Stripe (in cents)
+// Constants
+const VISIT_FEE_AMOUNT = parseInt(process.env.VISIT_FEE_AMOUNT || '150', 10);
+const VISIT_FEE_AMOUNT_CENTS = VISIT_FEE_AMOUNT * 100;
 
-// Optional: Twilio SMS
+// ---------- Helpers ----------
+
+function milesToMeters(mi) {
+  return mi * 1609.344;
+}
+
+function isValidE164(phone) {
+  return /^\+\d{10,15}$/.test(phone);
+}
+
+function normalizeUSPhone(phone) {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
+  return null;
+}
+
+// ---------- Twilio ----------
+
 let twilioClient = null;
 if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
-  twilioClient = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+  twilioClient = require('twilio')(
+    process.env.TWILIO_ACCOUNT_SID,
+    process.env.TWILIO_AUTH_TOKEN
+  );
 }
 
-// Initialize Stripe with validation
-let stripe;
-try {
-  if (process.env.STRIPE_SECRET_KEY) {
-    // Enforce Live Mode in production
-    if (process.env.NODE_ENV === "production" && !process.env.STRIPE_SECRET_KEY.startsWith("sk_live_")) {
-      console.error("❌ SECURITY ERROR: Stripe LIVE secret key required in production");
-      throw new Error("Stripe LIVE secret key required in production. Use sk_live_ keys only.");
-    }
-    
-    // Validate test mode in non-production
-    if (process.env.NODE_ENV !== "production" && !process.env.STRIPE_SECRET_KEY.startsWith("sk_test_")) {
-      console.error("❌ SECURITY ERROR: Live Stripe key detected in non-production environment");
-      throw new Error("Stripe live key detected in non-production environment. Use sk_test_ keys only.");
-    }
-    
-    stripe = require('stripe')(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2023-10-16'
-    });
-    console.log('✅ Stripe initialized in requests route:', process.env.STRIPE_SECRET_KEY.startsWith("sk_test_") ? "TEST MODE" : "LIVE MODE");
-  } else {
-    console.log('⚠️ STRIPE_SECRET_KEY not found in environment variables');
+// ---------- Stripe ----------
+
+let stripe = null;
+if (process.env.STRIPE_SECRET_KEY) {
+  if (
+    process.env.NODE_ENV === 'production' &&
+    !process.env.STRIPE_SECRET_KEY.startsWith('sk_live_')
+  ) {
+    throw new Error('Stripe LIVE key required in production');
   }
-} catch (error) {
-  console.error('❌ Error initializing Stripe:', error.message);
-  throw error;
+
+  if (
+    process.env.NODE_ENV !== 'production' &&
+    !process.env.STRIPE_SECRET_KEY.startsWith('sk_test_')
+  ) {
+    throw new Error('Stripe TEST key required in non-production');
+  }
+
+  stripe = require('stripe')(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2023-10-16'
+  });
+
+  console.log(
+    '✅ Stripe initialized:',
+    process.env.STRIPE_SECRET_KEY.startsWith('sk_test_')
+      ? 'TEST MODE'
+      : 'LIVE MODE'
+  );
 }
 
-function milesToMeters(mi) { return mi * 1609.344; }
+// ---------- POST /api/requests ----------
 
-// POST /api/requests - Standardized homeowner service request endpoint
 router.post('/', async (req, res) => {
   try {
-    console.info('📝 Service request received:', {
-      serviceType: req.body.serviceType,
-      city: req.body.city,
-      state: req.body.state,
-      timestamp: new Date().toISOString()
-    });
-
-    const { serviceType, fullName, phone, city, state, smsConsent, details, paymentProvider, applePayToken } = req.body || {};
-    
-    // Validate required fields
-    if (!serviceType || !fullName || !phone || !city || !state) {
-      console.info('❌ Validation failed: Missing required fields');
-      return res.status(400).send('Missing required fields: serviceType, fullName, phone, city, and state are required');
-    }
-
-    // Validate SMS consent
-    if (typeof smsConsent !== 'boolean') {
-      console.info('❌ Validation failed: smsConsent must be boolean');
-      return res.status(400).send('SMS consent is required and must be true or false');
-    }
-
-    // Determine payment provider (default to stripe for backward compatibility)
-    const provider = paymentProvider || 'stripe';
-
-    // Normalize phone number
-    const normalizedPhone = phone.replace(/[^\d]/g, '');
-    if (normalizedPhone.length < 10) {
-      console.info('❌ Validation failed: Invalid phone number');
-      return res.status(400).send('Invalid phone number - must be at least 10 digits');
-    }
-
-    // Create a request ID
-    const requestId = 'req_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-
-    // Log the validated request
-    console.info('✅ Request validated:', {
-      requestId,
+    const {
       serviceType,
       fullName,
-      phone: normalizedPhone,
+      phone,
       city,
       state,
       smsConsent,
-      paymentProvider: provider,
-      details: details ? details.substring(0, 50) + '...' : 'none'
-    });
+      details,
+      email,
+      paymentProvider = 'stripe',
+      applePayToken
+    } = req.body || {};
 
-    // 1) Geocode the homeowner address with fallback
-    let lat, lng, formatted;
-    const addressToGeocode = `${city}, ${state}`;
-    
-    try {
-      const geocodeResult = await geocodeAddress(addressToGeocode);
-      lat = geocodeResult.lat;
-      lng = geocodeResult.lng; 
-      formatted = geocodeResult.formatted;
-      console.log('✅ Address geocoded:', formatted);
-    } catch (geocodeError) {
-      console.warn('⚠️ Geocoding failed, using default coordinates:', geocodeError.message);
-      // Fallback to center of US coordinates when geocoding is unavailable
-      lat = 39.8283;
-      lng = -98.5795;
-      formatted = addressToGeocode;
+    // ---------- Validation ----------
+
+    if (!serviceType || !fullName || !phone || !city || !state) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Missing required fields'
+      });
     }
 
-    // 2) Save lead to database
-    let savedLead = null;
+    const normalizedPhone = normalizeUSPhone(phone);
+    if (!normalizedPhone || !isValidE164(normalizedPhone)) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Phone number must be in E.164 format (+1XXXXXXXXXX)'
+      });
+    }
+
+    if (typeof smsConsent !== 'boolean') {
+      return res.status(400).json({
+        ok: false,
+        error: 'smsConsent must be true or false'
+      });
+    }
+
+    const safeEmail =
+      email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+        ? email
+        : `no-reply+${Date.now()}@fixloapp.com`;
+
+    const requestId =
+      'req_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+
+    // ---------- Geocoding ----------
+
+    let lat = 39.8283;
+    let lng = -98.5795;
+    let formattedAddress = `${city}, ${state}`;
+
     try {
-      if (mongoose.connection.readyState === 1) {
-        savedLead = await JobRequest.create({
-          name: fullName.trim(),
-          email: '', // Not required for this endpoint
-          phone: normalizedPhone,
-          trade: serviceType,
-          address: addressToGeocode.trim(),
-          city: city.trim(),
-          state: state.trim(),
-          description: details ? details.trim() : '',
-          status: 'pending',
-          smsConsent: smsConsent,
-          smsConsentAt: smsConsent ? new Date() : null,
-          source: 'website',
-          requestId: requestId,
-          paymentProvider: provider,
-          applePayToken: applePayToken || null
-        });
-        
-        console.log('✅ Request saved to database:', savedLead._id);
-        
-        // Send SMS confirmation to customer
-        if (smsConsent && savedLead) {
-          try {
-            const smsService = require('../services/smsService');
-            await smsService.notifyRequestSubmitted(savedLead);
-          } catch (smsError) {
-            console.error('⚠️ SMS notification failed:', smsError.message);
+      if (typeof geocodeAddress === 'function') {
+        const geo = await geocodeAddress(formattedAddress);
+        lat = geo.lat;
+        lng = geo.lng;
+        formattedAddress = geo.formatted;
+      }
+    } catch {
+      console.warn('⚠️ Geocoding failed, using fallback coords');
+    }
+
+    // ---------- Save Job ----------
+
+    let savedLead = null;
+
+    if (mongoose.connection.readyState === 1) {
+      savedLead = await JobRequest.create({
+        requestId,
+        name: fullName.trim(),
+        email: safeEmail,
+        phone: normalizedPhone,
+        trade: serviceType.trim(),
+        address: formattedAddress,
+        city: city.trim(),
+        state: state.trim(),
+        description: details?.trim() || '',
+        status: 'pending',
+        smsConsent,
+        smsConsentAt: smsConsent ? new Date() : null,
+        source: 'website',
+        paymentProvider
+      });
+
+      console.log('✅ Job saved:', savedLead._id);
+    }
+
+    // ---------- Notify Pros ----------
+
+    let pros = [];
+    const radiusMeters = milesToMeters(
+      parseInt(process.env.LEAD_RADIUS_MILES || '30', 10)
+    );
+
+    if (smsConsent && mongoose.connection.readyState === 1) {
+      pros = await Pro.find({
+        trade: serviceType.toLowerCase().trim(),
+        wantsNotifications: true,
+        isActive: true,
+        location: {
+          $near: {
+            $geometry: { type: 'Point', coordinates: [lng, lat] },
+            $maxDistance: radiusMeters
           }
         }
-      } else {
-        console.warn('⚠️ Database not connected, proceeding without persistence');
-      }
-    } catch (dbError) {
-      console.error('❌ Database save failed:', dbError.message);
-      // Continue without failing the request
-    }
+      }).limit(50);
 
-    // 3) Query nearby pros (configurable radius) if SMS consent given
-    let pros = [];
-    let notificationsSent = 0;
-    const radiusMiles = parseInt(process.env.LEAD_RADIUS_MILES) || 30;
-    const radiusMeters = milesToMeters(radiusMiles);
-
-    if (smsConsent) {
-      try {
-        if (mongoose.connection.readyState === 1) {
-          // Use MongoDB $near with geospatial index on location
-          pros = await Pro.find({
-            trade: serviceType.toLowerCase().trim(),
-            wantsNotifications: true,
-            isActive: true,
-            location: {
-              $near: {
-                $geometry: { type: 'Point', coordinates: [lng, lat] },
-                $maxDistance: radiusMeters
-              }
-            }
-          }).limit(50); // safety cap
-          
-          console.log(`✅ Found ${pros.length} nearby pros for ${serviceType}`);
-        } else {
-          console.warn('⚠️ Database not connected, cannot query for pros');
-        }
-      } catch (dbError) {
-        console.error('❌ Database query failed:', dbError.message);
-        // Continue with empty pros array
-      }
-
-      // 4) Send SMS notifications to matched pros (fire-and-forget)
       if (twilioClient && pros.length && process.env.TWILIO_PHONE) {
-        const msg = `FIXLO: New ${serviceType} request near ${formatted}. ${fullName} (${normalizedPhone}). "${details || 'No description provided'}"`;
-        
-        // Use async IIFE to not block response
+        const msg = `FIXLO: New ${serviceType} job near ${formattedAddress}. ${fullName} (${normalizedPhone})`;
+
         (async () => {
           for (const pro of pros) {
             try {
@@ -200,193 +190,121 @@ router.post('/', async (req, res) => {
                 from: process.env.TWILIO_PHONE,
                 body: msg
               });
-              console.log(`✅ SMS sent to pro: ${pro.phone}`);
-              notificationsSent++;
+              console.log('📲 SMS sent to:', pro.phone);
             } catch (err) {
-              console.error(`❌ Twilio SMS error to ${pro.phone}:`, err.message);
+              console.error('❌ SMS failed:', err.message);
             }
           }
-          console.info(`📱 SMS notifications completed: ${notificationsSent}/${pros.length} sent`);
-        })().catch(console.error);
-      } else {
-        if (!twilioClient) {
-          console.log('⚠️ Twilio not configured - SMS notifications disabled');
-        }
-        if (!pros.length) {
-          console.log('⚠️ No nearby pros found for notifications');
-        }
-        if (!process.env.TWILIO_PHONE) {
-          console.log('⚠️ TWILIO_PHONE not configured - SMS notifications disabled');
-        }
+        })();
       }
-    } else {
-      console.info('📵 SMS consent not given - skipping professional notifications');
     }
 
-    // 5) Create Stripe PaymentIntent for payment authorization (only for stripe provider)
+    // ---------- Stripe Authorization ----------
+
     let clientSecret = null;
     let stripeCustomerId = null;
-    
-    if (provider === 'stripe' && stripe) {
-      try {
-        // Email is required for Stripe - use from request body
-        const email = req.body.email;
-        
-        // Validate email exists before creating Stripe customer
-        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-          console.warn('⚠️ Valid email required for Stripe payment authorization - skipping');
-        } else {
-          const customers = await stripe.customers.list({
-            email: email,
-            limit: 1
-          });
 
-          let customer;
-          if (customers.data.length > 0) {
-            customer = customers.data[0];
-            console.log(`♻️ Using existing Stripe customer: ${customer.id}`);
-          } else {
-            customer = await stripe.customers.create({
-              email: email,
-              name: fullName,
-              phone: normalizedPhone,
-              metadata: {
-                source: 'fixlo-service-request',
-                requestId: requestId
-              }
-            });
-            console.log(`✅ Created new Stripe customer: ${customer.id}`);
-          }
-          
-          stripeCustomerId = customer.id;
+    if (paymentProvider === 'stripe' && stripe && savedLead) {
+      const customers = await stripe.customers.list({
+        email: safeEmail,
+        limit: 1
+      });
 
-          // Create PaymentIntent with configurable authorization amount (will NOT be charged immediately)
-          const paymentIntent = await stripe.paymentIntents.create({
-            amount: VISIT_FEE_AMOUNT_CENTS, // Configurable amount in cents (authorization only)
-            currency: 'usd',
-            customer: customer.id,
-            payment_method_types: ['card'],
-            capture_method: 'manual', // Authorization only - must be captured manually later
-            metadata: {
-              requestId: requestId,
-              serviceType: serviceType,
-              customerName: fullName,
-                customerPhone: normalizedPhone,
-              city: city,
-              state: state,
-              type: 'service-visit-authorization',
-              source: 'fixlo-service-request',
-              timestamp: new Date().toISOString()
-            },
-            description: `Fixlo Service Visit Authorization - ${serviceType} in ${city}, ${state}`
-          });
+      const customer =
+        customers.data[0] ||
+        (await stripe.customers.create({
+          email: safeEmail,
+          name: fullName,
+          phone: normalizedPhone
+        }));
 
-          clientSecret = paymentIntent.client_secret;
-          
-          // Update saved lead with Stripe info
-          if (savedLead) {
-            savedLead.stripeCustomerId = stripeCustomerId;
-            savedLead.stripePaymentIntentId = paymentIntent.id;
-            await savedLead.save();
-          }
-          
-          console.log(`✅ PaymentIntent created: ${paymentIntent.id} for request ${requestId}`);
+      stripeCustomerId = customer.id;
+
+      const intent = await stripe.paymentIntents.create({
+        amount: VISIT_FEE_AMOUNT_CENTS,
+        currency: 'usd',
+        customer: customer.id,
+        capture_method: 'manual',
+        payment_method_types: ['card'],
+        metadata: {
+          requestId,
+          serviceType,
+          city,
+          state
         }
-      } catch (stripeError) {
-        console.error('❌ Stripe PaymentIntent creation failed:', stripeError.message);
-        // Don't fail the request if Stripe fails - request is already created
-        // Just log and continue without clientSecret
-      }
-    } else {
-      if (provider === 'stripe') {
-        console.warn('⚠️ Stripe not configured - skipping payment authorization');
-      } else if (provider === 'apple_pay') {
-        console.log('✅ Apple Pay selected - payment authorization handled by client');
-        // For Apple Pay, the token will be verified separately
-        if (applePayToken && savedLead) {
-          savedLead.visitFeeAuthorized = true;
-          savedLead.applePayToken = applePayToken;
-          await savedLead.save();
-          console.log('✅ Apple Pay token stored with request');
-        }
-      }
+      });
+
+      clientSecret = intent.client_secret;
+
+      savedLead.stripeCustomerId = customer.id;
+      savedLead.stripePaymentIntentId = intent.id;
+      await savedLead.save();
     }
 
-    // Return success response with requestId and clientSecret
-    return res.status(201).json({ 
-      ok: true, 
+    // ---------- Apple Pay ----------
+
+    if (paymentProvider === 'apple_pay' && applePayToken && savedLead) {
+      savedLead.visitFeeAuthorized = true;
+      savedLead.applePayToken = applePayToken;
+      await savedLead.save();
+    }
+
+    // ---------- Response ----------
+
+    return res.status(201).json({
+      ok: true,
       requestId,
-      clientSecret, // May be null if Stripe not configured or failed
-      message: 'Request received successfully',
+      clientSecret,
+      message: 'Request submitted successfully',
       data: {
-        leadId: savedLead ? savedLead._id : null,
-        matchedPros: pros.length,
-        address: formatted,
-        serviceType: serviceType,
-        notificationsSent: smsConsent && twilioClient && pros.length > 0,
-        stripeCustomerId: stripeCustomerId
+        leadId: savedLead?._id || null,
+        matchedPros: pros.length
       }
     });
-
-  } catch (error) {
-    console.error('❌ Request processing error:', error.message);
-    return res.status(500).send('Server error processing request');
+  } catch (err) {
+    console.error('❌ Request error:', err.message);
+    return res.status(500).json({
+      ok: false,
+      error: 'Server error processing request'
+    });
   }
 });
 
-// POST /api/requests/:requestId/apple-pay - Attach Apple Pay authorization to existing request
+// ---------- Apple Pay Attach Endpoint ----------
+
 router.post('/:requestId/apple-pay', async (req, res) => {
   try {
     const { requestId } = req.params;
     const { applePayToken, applePayTransactionId } = req.body;
 
-    console.info('📱 Apple Pay authorization received for request:', requestId);
-
     if (!applePayToken) {
-      return res.status(400).json({ 
-        ok: false, 
-        error: 'Apple Pay token is required' 
-      });
+      return res.status(400).json({ ok: false, error: 'Missing Apple Pay token' });
     }
 
-    // Find the request
     if (mongoose.connection.readyState !== 1) {
-      return res.status(503).json({ 
-        ok: false, 
-        error: 'Database not available' 
-      });
+      return res.status(503).json({ ok: false, error: 'Database unavailable' });
     }
 
-    const jobRequest = await JobRequest.findOne({ requestId });
-    
-    if (!jobRequest) {
-      return res.status(404).json({ 
-        ok: false, 
-        error: 'Request not found' 
-      });
+    const job = await JobRequest.findOne({ requestId });
+    if (!job) {
+      return res.status(404).json({ ok: false, error: 'Request not found' });
     }
 
-    // Update with Apple Pay details
-    jobRequest.paymentProvider = 'apple_pay';
-    jobRequest.applePayToken = applePayToken;
-    jobRequest.applePayTransactionId = applePayTransactionId;
-    jobRequest.visitFeeAuthorized = true;
-    await jobRequest.save();
+    job.paymentProvider = 'apple_pay';
+    job.applePayToken = applePayToken;
+    job.applePayTransactionId = applePayTransactionId;
+    job.visitFeeAuthorized = true;
 
-    console.log('✅ Apple Pay authorization attached to request:', requestId);
+    await job.save();
 
-    return res.status(200).json({ 
-      ok: true, 
-      message: 'Apple Pay authorization attached successfully',
-      requestId 
+    return res.json({
+      ok: true,
+      message: 'Apple Pay authorization attached',
+      requestId
     });
-
-  } catch (error) {
-    console.error('❌ Error attaching Apple Pay authorization:', error.message);
-    return res.status(500).json({ 
-      ok: false, 
-      error: 'Server error processing Apple Pay authorization' 
-    });
+  } catch (err) {
+    console.error('❌ Apple Pay attach error:', err.message);
+    return res.status(500).json({ ok: false, error: 'Server error' });
   }
 });
 

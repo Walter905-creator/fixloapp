@@ -13,6 +13,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useIAP } from '../context/IAPContext';
 import { PRODUCT_IDS } from '../utils/iapService';
+import { normalizeUSPhone, formatPhoneInput } from '../utils/phoneUtils';
 
 export default function ProSignupScreen({ navigation }) {
   const [name, setName] = useState('');
@@ -30,6 +31,16 @@ export default function ProSignupScreen({ navigation }) {
   const handleSubscribe = async () => {
     if (!name || !email || !phone || !trade) {
       Alert.alert("Missing Info", "Please fill out all fields before continuing.");
+      return;
+    }
+
+    // Normalize phone to E.164 format
+    const normalizedPhone = normalizeUSPhone(phone);
+    if (!normalizedPhone) {
+      Alert.alert(
+        "Invalid Phone Number",
+        "Please enter a valid 10-digit U.S. phone number."
+      );
       return;
     }
 
@@ -51,7 +62,7 @@ export default function ProSignupScreen({ navigation }) {
       await AsyncStorage.setItem('pending_pro_signup', JSON.stringify({
         name,
         email,
-        phone,
+        phone: normalizedPhone, // Store in E.164 format
         trade,
         smsOptIn: true,
       }));
@@ -168,13 +179,17 @@ export default function ProSignupScreen({ navigation }) {
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Phone Number *</Text>
-            <TextInput 
-              placeholder="(555) 123-4567" 
-              style={styles.input} 
-              value={phone} 
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-            />
+            <View style={styles.phoneInputContainer}>
+              <Text style={styles.phonePrefix}>+1</Text>
+              <TextInput 
+                placeholder="(555) 123-4567" 
+                style={[styles.input, styles.phoneInput]} 
+                value={phone} 
+                onChangeText={(text) => setPhone(formatPhoneInput(text))}
+                keyboardType="phone-pad"
+                maxLength={14} // (XXX) XXX-XXXX
+              />
+            </View>
           </View>
 
           <View style={styles.inputContainer}>
@@ -345,6 +360,26 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 12,
     fontSize: 16
+  },
+  phoneInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    paddingLeft: 15
+  },
+  phonePrefix: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    marginRight: 8
+  },
+  phoneInput: {
+    flex: 1,
+    borderWidth: 0,
+    paddingLeft: 0
   },
   checkboxContainer: {
     flexDirection: 'row',

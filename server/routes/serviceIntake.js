@@ -5,6 +5,16 @@ const JobRequest = require('../models/JobRequest');
 const Invoice = require('../models/Invoice');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
+const { normalizeE164 } = require('../utils/twilio');
+
+/**
+ * Validate E.164 phone format
+ * @param {string} phone - Phone number to validate
+ * @returns {boolean} - True if valid E.164 format
+ */
+function isValidE164(phone) {
+  return /^\+\d{10,15}$/.test(phone);
+}
 
 // Initialize Stripe with validation
 let stripe;
@@ -189,6 +199,15 @@ router.post('/submit', upload.array('photos', 5), async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'All required fields must be provided'
+      });
+    }
+
+    // Validate phone number is in E.164 format (CRITICAL FOR TWILIO)
+    if (!isValidE164(phone)) {
+      console.error(`❌ Invalid phone format received: ${phone}`);
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number must be in E.164 format (+1XXXXXXXXXX)'
       });
     }
 

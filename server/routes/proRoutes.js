@@ -10,6 +10,7 @@ const Review = require("../models/Review");
 const JobRequest = require("../models/JobRequest");
 const auth = require("../middleware/auth");
 const { geocode } = require("../utils/geocode");
+const { normalizeE164 } = require("../utils/twilio");
 
 // If your Cloudinary utils export a configured Multer uploader:
 const { upload } = require("../utils/cloudinary");
@@ -22,6 +23,15 @@ function requireEnv(name) {
   const v = process.env[name];
   if (!v) throw new Error(`${name} is not set`);
   return v;
+}
+
+/**
+ * Validate E.164 phone format
+ * @param {string} phone - Phone number to validate
+ * @returns {boolean} - True if valid E.164 format
+ */
+function isValidE164(phone) {
+  return /^\+\d{10,15}$/.test(phone);
 }
 
 /* --------------------------------- /test ---------------------------------- */
@@ -69,6 +79,14 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({
         error:
           "All fields are required: name, email, password, phone, trade, location, dob",
+      });
+    }
+
+    // Validate phone number is in E.164 format (CRITICAL FOR TWILIO)
+    if (!isValidE164(phone)) {
+      console.error(`❌ Invalid phone format received during registration: ${phone}`);
+      return res.status(400).json({
+        error: "Phone number must be in E.164 format (+1XXXXXXXXXX for US numbers)"
       });
     }
 
