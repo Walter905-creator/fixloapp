@@ -53,6 +53,7 @@ router.post('/', async (req, res) => {
       });
     }
 
+    // 3️⃣ NORMALIZE PHONE TO E.164 (MANDATORY)
     // Validate phone number is in E.164 format (CRITICAL FOR TWILIO)
     if (!isValidE164(phone)) {
       console.error(`❌ Invalid phone format received: ${phone}`);
@@ -61,6 +62,11 @@ router.post('/', async (req, res) => {
         message: 'Phone number must be in E.164 format (+1XXXXXXXXXX)'
       });
     }
+
+    // 2️⃣ BACKEND EMAIL SAFETY (ensure email is never undefined)
+    const safeEmail = email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+      ? email.toLowerCase()
+      : `no-reply+${Date.now()}@fixloapp.com`;
 
     // Validate SMS consent if provided
     if (smsConsent === false) {
@@ -74,12 +80,17 @@ router.post('/', async (req, res) => {
     let lat, lng, formatted;
     const addressToGeocode = leadAddress || 'United States'; // Fallback to US if no address provided
     
+    // 5️⃣ GUARD GEOCODING (DO NOT BREAK FLOW)
+    let coords = null;
     try {
-      const geocodeResult = await geocodeAddress(addressToGeocode);
-      lat = geocodeResult.lat;
-      lng = geocodeResult.lng; 
-      formatted = geocodeResult.formatted;
-      console.log('✅ Address geocoded:', formatted);
+      if (typeof geocodeAddress === 'function') {
+        const geocodeResult = await geocodeAddress(addressToGeocode);
+        lat = geocodeResult.lat;
+        lng = geocodeResult.lng; 
+        formatted = geocodeResult.formatted;
+        coords = { lat, lng };
+        console.log('✅ Address geocoded:', formatted);
+      }
     } catch (geocodeError) {
       console.warn('⚠️ Geocoding failed, using default coordinates:', geocodeError.message);
       // Fallback to center of US coordinates when geocoding is unavailable
@@ -96,10 +107,11 @@ router.post('/', async (req, res) => {
         // Normalize trade for consistency
         const normalizedTrade = leadTrade.charAt(0).toUpperCase() + leadTrade.slice(1).toLowerCase();
         
+        // 2️⃣ BACKEND EMAIL SAFETY (ensure email is never undefined)
         savedLead = await JobRequest.create({
           name: leadName.trim(),
-          email: email ? email.toLowerCase() : '',
-          phone: phone.trim(),
+          email: safeEmail, // Always has fallback
+          phone: phone.trim(), // Already validated as E.164
           trade: normalizedTrade,
           address: leadAddress.trim(),
           description: description ? description.trim() : '',
@@ -107,7 +119,8 @@ router.post('/', async (req, res) => {
           location: { type: 'Point', coordinates: [lng, lat] }
         });
         
-        console.log('✅ Lead saved to database:', savedLead._id);
+        // 6️⃣ LOG CRITICAL EVENTS
+        console.log('💾 Job saved:', savedLead._id);
       } else {
         console.warn('⚠️ Database not connected, lead not saved');
       }
@@ -128,7 +141,11 @@ Service: ${leadTrade}
 Location: ${leadAddress}
 Reply ACCEPT to take this job first.`;
         
+        // 4️⃣ FIX PRO NOTIFICATION NUMBER (already E.164 in config)
+        // 6️⃣ LOG CRITICAL EVENTS
+        console.log('📲 Sending SMS to:', priorityConfig.phone);
         await sendSms(priorityConfig.phone, priorityMessage);
+        console.log('✅ Priority SMS sent to:', priorityConfig.phone);
         
         // Mark lead as priority notified
         if (mongoose.connection.readyState === 1) {

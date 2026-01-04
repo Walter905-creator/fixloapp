@@ -109,6 +109,7 @@ router.post('/', async (req, res) => {
       });
     }
 
+    // 1️⃣ SAFETY DEFAULT FOR EMAIL (CRITICAL)
     const safeEmail =
       email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
         ? email
@@ -123,15 +124,18 @@ router.post('/', async (req, res) => {
     let lng = -98.5795;
     let formattedAddress = `${city}, ${state}`;
 
+    // 5️⃣ GUARD GEOCODING (DO NOT BREAK FLOW)
+    let coords = null;
     try {
       if (typeof geocodeAddress === 'function') {
         const geo = await geocodeAddress(formattedAddress);
         lat = geo.lat;
         lng = geo.lng;
         formattedAddress = geo.formatted;
+        coords = { lat, lng };
       }
-    } catch {
-      console.warn('⚠️ Geocoding failed, using fallback coords');
+    } catch (e) {
+      console.warn('⚠️ Geocoding failed, using default coordinates:', e.message);
     }
 
     // ---------- Save Job ----------
@@ -139,11 +143,12 @@ router.post('/', async (req, res) => {
     let savedLead = null;
 
     if (mongoose.connection.readyState === 1) {
-      savedLead = await JobRequest.create({
+      // 2️⃣ BACKEND EMAIL SAFETY (ensure email is never undefined)
+      const jobData = {
         requestId,
         name: fullName.trim(),
-        email: safeEmail,
-        phone: normalizedPhone,
+        email: safeEmail, // Always has fallback
+        phone: normalizedPhone, // Already E.164 normalized
         trade: serviceType.trim(),
         address: formattedAddress,
         city: city.trim(),
@@ -154,9 +159,12 @@ router.post('/', async (req, res) => {
         smsConsentAt: smsConsent ? new Date() : null,
         source: 'website',
         paymentProvider
-      });
+      };
 
-      console.log('✅ Job saved:', savedLead._id);
+      savedLead = await JobRequest.create(jobData);
+
+      // 6️⃣ LOG CRITICAL EVENTS
+      console.log('💾 Job saved:', requestId, '| ID:', savedLead._id);
     }
 
     // ---------- Notify Pros ----------
@@ -185,14 +193,22 @@ router.post('/', async (req, res) => {
         (async () => {
           for (const pro of pros) {
             try {
+              // 4️⃣ ENSURE PRO PHONE IS E.164 (validate before sending)
+              if (!isValidE164(pro.phone)) {
+                console.error('❌ Pro phone not in E.164 format:', pro.phone);
+                continue;
+              }
+              
+              // 6️⃣ LOG CRITICAL EVENTS
+              console.log('📲 Sending SMS to:', pro.phone);
               await twilioClient.messages.create({
                 to: pro.phone,
                 from: process.env.TWILIO_PHONE,
                 body: msg
               });
-              console.log('📲 SMS sent to:', pro.phone);
+              console.log('✅ SMS sent to:', pro.phone);
             } catch (err) {
-              console.error('❌ SMS failed:', err.message);
+              console.error('❌ SMS failed for', pro.phone, ':', err.message);
             }
           }
         })();

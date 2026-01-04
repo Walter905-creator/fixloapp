@@ -56,11 +56,12 @@ function PaymentForm({ formData, onSuccess, onError }) {
       }
 
       // PHASE 1: Create service request
+      // 1️⃣ FRONTEND — ALWAYS SEND EMAIL (with fallback)
       const payload = {
         serviceType: formData.serviceType === 'Other' ? formData.otherServiceType : formData.serviceType,
         fullName: formData.name,
         phone: normalizedPhone, // Use normalized E.164 format
-        email: formData.email,
+        email: formData.email || `no-reply+${Date.now()}@fixloapp.com`, // Email with fallback
         city: formData.city,
         state: formData.state,
         smsConsent: formData.smsConsent || false,
