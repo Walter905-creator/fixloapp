@@ -4,6 +4,7 @@ const JobRequest = require('../models/JobRequest');
 const Pro = require('../models/Pro');
 const requireAuth = require('../middleware/requireAuth');
 const smsService = require('../services/smsService');
+const { sendNotificationWithFallback } = require('../services/emailService');
 const { logPaymentAction, logAdminAction } = require('../services/auditLogger');
 
 // Protect all routes with admin authentication
@@ -122,11 +123,17 @@ router.post('/jobs/:id/schedule', async (req, res) => {
       return res.status(404).json({ error: 'Job not found' });
     }
 
-    // Send SMS notification
+    // Send SMS notification with email fallback
     try {
-      await smsService.notifyVisitScheduled(job, scheduledDate, scheduledTime);
-    } catch (smsError) {
-      console.error('⚠️ SMS notification failed:', smsError.message);
+      const dateStr = new Date(scheduledDate).toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric'
+      });
+      await sendNotificationWithFallback(job, 'scheduled', { date: dateStr, time: scheduledTime });
+    } catch (notificationError) {
+      console.error('⚠️ Notification failed:', notificationError.message);
+      // Don't fail the request if notification fails
     }
 
     res.json({
@@ -185,12 +192,13 @@ router.post('/jobs/:id/assign', async (req, res) => {
       });
     }
 
-    // Send SMS notification
+    // Send SMS notification with email fallback
     try {
       const technicianName = pro.businessName || pro.name;
-      await smsService.notifyJobAssigned(job, technicianName);
-    } catch (smsError) {
-      console.error('⚠️ SMS notification failed:', smsError.message);
+      await sendNotificationWithFallback(job, 'assigned', { technicianName });
+    } catch (notificationError) {
+      console.error('⚠️ Notification failed:', notificationError.message);
+      // Don't fail the request if notification fails
     }
 
     res.json({
@@ -247,11 +255,12 @@ router.post('/jobs/:id/start', async (req, res) => {
       });
     }
 
-    // Send SMS notification
+    // Send SMS notification with email fallback
     try {
-      await smsService.notifyTechnicianArrived(job);
-    } catch (smsError) {
-      console.error('⚠️ SMS notification failed:', smsError.message);
+      await sendNotificationWithFallback(job, 'arrived', {});
+    } catch (notificationError) {
+      console.error('⚠️ Notification failed:', notificationError.message);
+      // Don't fail the request if notification fails
     }
 
     res.json({
@@ -394,11 +403,12 @@ router.post('/jobs/:id/complete', async (req, res) => {
       { new: true }
     ).populate('assignedTo', 'name email phone trade businessName');
 
-    // Send SMS notification
+    // Send SMS notification with email fallback
     try {
-      await smsService.notifyJobCompleted(updatedJob);
-    } catch (smsError) {
-      console.error('⚠️ SMS notification failed:', smsError.message);
+      await sendNotificationWithFallback(updatedJob, 'completed', {});
+    } catch (notificationError) {
+      console.error('⚠️ Notification failed:', notificationError.message);
+      // Don't fail the request if notification fails
     }
 
     res.json({

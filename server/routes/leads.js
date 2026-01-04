@@ -177,6 +177,7 @@ Reply ACCEPT to take this job first.`;
           trade: leadTrade.toLowerCase().trim(),
           wantsNotifications: true,
           isActive: true,
+          subscriptionStatus: { $ne: 'paused' }, // Exclude paused subscriptions
           location: {
             $near: {
               $geometry: { type: 'Point', coordinates: [lng, lat] },
