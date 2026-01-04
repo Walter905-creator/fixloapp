@@ -119,6 +119,7 @@ const proSchema = new mongoose.Schema({
     type: Boolean,
     default: false // Changed to false until payment is confirmed
   },
+  // Payment status: Tracks Stripe subscription payment state
   paymentStatus: {
     type: String,
     enum: ['pending', 'active', 'cancelled', 'failed'],
@@ -139,7 +140,8 @@ const proSchema = new mongoose.Schema({
   subscriptionEndDate: {
     type: Date
   },
-  // Subscription status and pause functionality
+  // Subscription status: Tracks operational state (can be paused without affecting payment)
+  // This allows pros to temporarily stop receiving leads while keeping subscription active
   subscriptionStatus: {
     type: String,
     enum: ['active', 'paused', 'cancelled', 'pending'],

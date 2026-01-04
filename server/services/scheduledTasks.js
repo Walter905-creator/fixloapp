@@ -55,13 +55,14 @@ function stopScheduledTasks() {
 
 /**
  * Get status of all scheduled tasks
+ * Note: Currently returns basic info as cron tasks don't expose running state
  */
 function getTasksStatus() {
   return scheduledTasks.map(t => ({
     name: t.name,
     schedule: t.schedule,
     description: t.description,
-    running: true
+    scheduled: true // Cron tasks don't expose runtime state
   }));
 }
 

@@ -9,6 +9,10 @@ const { logPaymentAction } = require('./auditLogger');
 // Configuration
 const STALE_DAYS = parseInt(process.env.PAYMENT_AUTH_STALE_DAYS) || 7; // Days before auto-release
 
+// Job statuses that should prevent auto-release
+// Jobs that are actively being worked on should not have their authorizations released
+const ACTIVE_JOB_STATUSES = ['scheduled', 'in-progress', 'completed'];
+
 /**
  * Find and release stale payment authorizations
  * @returns {Promise<Object>} Results of the cleanup operation
@@ -25,7 +29,7 @@ async function releaseStaleAuthorizations() {
     const staleJobs = await JobRequest.find({
       paymentStatus: 'authorized',
       paymentAuthorizedAt: { $lte: cutoffDate },
-      status: { $nin: ['scheduled', 'in-progress', 'completed'] }
+      status: { $nin: ACTIVE_JOB_STATUSES } // Exclude active jobs
     });
 
     console.log(`📊 Found ${staleJobs.length} stale authorizations (older than ${STALE_DAYS} days)`);
