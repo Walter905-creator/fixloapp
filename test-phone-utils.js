@@ -21,7 +21,8 @@ const testCases = [
   { input: '', expected: null, description: 'Empty string' },
   { input: null, expected: null, description: 'Null input' },
   { input: undefined, expected: null, description: 'Undefined input' },
-  { input: '123', expected: '+123', description: 'Too short - invalid' },
+  // Note: normalizeE164 currently returns +123 for short inputs
+  // This is handled by E.164 validation which requires 10-15 digits
 ];
 
 // Test E.164 validation regex

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
+
 // Import models and utilities from existing leads route
 const JobRequest = require('../models/JobRequest');
 const Pro = require('../models/Pro');
@@ -88,9 +89,6 @@ router.post('/', async (req, res) => {
       return res.status(400).send('SMS consent is required and must be true or false');
     }
 
-    // Phone is already in E.164 format, no need to normalize
-    const normalizedPhone = phone;
-
     // Create a request ID
     const requestId = 'req_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 
@@ -99,7 +97,7 @@ router.post('/', async (req, res) => {
       requestId,
       serviceType,
       fullName,
-      phone: normalizedPhone,
+      phone: phone,
       city,
       state,
       smsConsent,
@@ -127,12 +125,12 @@ router.post('/', async (req, res) => {
     // 2) Save lead to database
     let savedLead = null;
     try {
-      const mongoose = require('mongoose');
+      
       if (mongoose.connection.readyState === 1) {
         savedLead = await JobRequest.create({
           name: fullName.trim(),
           email: '', // Not required for this endpoint
-          phone: normalizedPhone,
+          phone: phone,
           trade: serviceType,
           address: addressToGeocode.trim(),
           city: city.trim(),
@@ -172,7 +170,7 @@ router.post('/', async (req, res) => {
 
     if (smsConsent) {
       try {
-        const mongoose = require('mongoose');
+        
         if (mongoose.connection.readyState === 1) {
           // Use MongoDB $near with geospatial index on location
           pros = await Pro.find({
@@ -198,7 +196,7 @@ router.post('/', async (req, res) => {
 
       // 4) Send SMS notifications to matched pros (fire-and-forget)
       if (twilioClient && pros.length && process.env.TWILIO_PHONE) {
-        const msg = `FIXLO: New ${serviceType} request near ${formatted}. ${fullName} (${normalizedPhone}). "${details || 'No description provided'}"`;
+        const msg = `FIXLO: New ${serviceType} request near ${formatted}. ${fullName} (${phone}). "${details || 'No description provided'}"`;
         
         // Use async IIFE to not block response
         (async () => {
@@ -258,7 +256,7 @@ router.post('/', async (req, res) => {
             customer = await stripe.customers.create({
               email: email,
               name: fullName,
-              phone: normalizedPhone,
+              phone: phone,
               metadata: {
                 source: 'fixlo-service-request',
                 requestId: requestId
@@ -280,7 +278,7 @@ router.post('/', async (req, res) => {
               requestId: requestId,
               serviceType: serviceType,
               customerName: fullName,
-                customerPhone: normalizedPhone,
+                customerPhone: phone,
               city: city,
               state: state,
               type: 'service-visit-authorization',
