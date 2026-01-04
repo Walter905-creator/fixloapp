@@ -56,7 +56,7 @@ router.post('/', async (req, res) => {
       timestamp: new Date().toISOString()
     });
 
-    const { serviceType, fullName, phone, city, state, smsConsent, details } = req.body || {};
+    const { serviceType, fullName, phone, city, state, smsConsent, details, paymentProvider, applePayToken } = req.body || {};
     
     // Validate required fields
     if (!serviceType || !fullName || !phone || !city || !state) {
@@ -69,6 +69,9 @@ router.post('/', async (req, res) => {
       console.info('❌ Validation failed: smsConsent must be boolean');
       return res.status(400).send('SMS consent is required and must be true or false');
     }
+
+    // Determine payment provider (default to stripe for backward compatibility)
+    const provider = paymentProvider || 'stripe';
 
     // Normalize phone number
     const normalizedPhone = phone.replace(/[^\d]/g, '');
@@ -89,6 +92,7 @@ router.post('/', async (req, res) => {
       city,
       state,
       smsConsent,
+      paymentProvider: provider,
       details: details ? details.substring(0, 50) + '...' : 'none'
     });
 
@@ -128,7 +132,9 @@ router.post('/', async (req, res) => {
           smsConsent: smsConsent,
           smsConsentAt: smsConsent ? new Date() : null,
           source: 'website',
-          requestId: requestId
+          requestId: requestId,
+          paymentProvider: provider,
+          applePayToken: applePayToken || null
         });
         
         console.log('✅ Request saved to database:', savedLead._id);
@@ -218,11 +224,11 @@ router.post('/', async (req, res) => {
       console.info('📵 SMS consent not given - skipping professional notifications');
     }
 
-    // 5) Create Stripe PaymentIntent for payment authorization (linked to request)
+    // 5) Create Stripe PaymentIntent for payment authorization (only for stripe provider)
     let clientSecret = null;
     let stripeCustomerId = null;
     
-    if (stripe) {
+    if (provider === 'stripe' && stripe) {
       try {
         // Email is required for Stripe - use from request body
         const email = req.body.email;
@@ -293,7 +299,18 @@ router.post('/', async (req, res) => {
         // Just log and continue without clientSecret
       }
     } else {
-      console.warn('⚠️ Stripe not configured - skipping payment authorization');
+      if (provider === 'stripe') {
+        console.warn('⚠️ Stripe not configured - skipping payment authorization');
+      } else if (provider === 'apple_pay') {
+        console.log('✅ Apple Pay selected - payment authorization handled by client');
+        // For Apple Pay, the token will be verified separately
+        if (applePayToken && savedLead) {
+          savedLead.visitFeeAuthorized = true;
+          savedLead.applePayToken = applePayToken;
+          await savedLead.save();
+          console.log('✅ Apple Pay token stored with request');
+        }
+      }
     }
 
     // Return success response with requestId and clientSecret
@@ -315,6 +332,63 @@ router.post('/', async (req, res) => {
   } catch (error) {
     console.error('❌ Request processing error:', error.message);
     return res.status(500).send('Server error processing request');
+  }
+});
+
+// POST /api/requests/:requestId/apple-pay - Attach Apple Pay authorization to existing request
+router.post('/:requestId/apple-pay', async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { applePayToken, applePayTransactionId } = req.body;
+
+    console.info('📱 Apple Pay authorization received for request:', requestId);
+
+    if (!applePayToken) {
+      return res.status(400).json({ 
+        ok: false, 
+        error: 'Apple Pay token is required' 
+      });
+    }
+
+    // Find the request
+    const mongoose = require('mongoose');
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ 
+        ok: false, 
+        error: 'Database not available' 
+      });
+    }
+
+    const jobRequest = await JobRequest.findOne({ requestId });
+    
+    if (!jobRequest) {
+      return res.status(404).json({ 
+        ok: false, 
+        error: 'Request not found' 
+      });
+    }
+
+    // Update with Apple Pay details
+    jobRequest.paymentProvider = 'apple_pay';
+    jobRequest.applePayToken = applePayToken;
+    jobRequest.applePayTransactionId = applePayTransactionId;
+    jobRequest.visitFeeAuthorized = true;
+    await jobRequest.save();
+
+    console.log('✅ Apple Pay authorization attached to request:', requestId);
+
+    return res.status(200).json({ 
+      ok: true, 
+      message: 'Apple Pay authorization attached successfully',
+      requestId 
+    });
+
+  } catch (error) {
+    console.error('❌ Error attaching Apple Pay authorization:', error.message);
+    return res.status(500).json({ 
+      ok: false, 
+      error: 'Server error processing Apple Pay authorization' 
+    });
   }
 });
 

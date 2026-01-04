@@ -6,7 +6,7 @@ import ServicesGrid from './components/ServicesGrid';
 import HomeownerScreen from './screens/HomeownerScreen';
 import ProScreen from './screens/ProScreen';
 import ProSignupScreen from './screens/ProSignupScreen';
-import HomeownerJobRequestScreen from './screens/HomeownerJobRequestScreen';
+import ServiceRequestScreen from './screens/ServiceRequestScreen';
 import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
 import JobDetailScreen from './screens/JobDetailScreen';
@@ -400,7 +400,7 @@ export default function App() {
             />
             <Stack.Screen 
               name="Post a Job" 
-              component={HomeownerJobRequestScreen} 
+              component={ServiceRequestScreen} 
               options={{ title: 'Submit Job Request' }}
             />
             <Stack.Screen 
