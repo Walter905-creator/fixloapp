@@ -66,6 +66,8 @@ export default function ServiceRequestScreen({ navigation }) {
       newErrors.fullName = 'Name is required';
     }
     if (!formData.phone || !/^\+?[\d\s\-\(\)]+$/.test(formData.phone)) {
+      // Phone validation allows common formatting (spaces, dashes, parentheses)
+      // These are stripped to digits in the payload (line 92)
       newErrors.phone = 'Valid phone number is required';
     }
     if (!formData.city || formData.city.trim().length < 2) {
@@ -152,7 +154,7 @@ export default function ServiceRequestScreen({ navigation }) {
       console.log('🍎 Apple Pay authorized:', { mockPaymentToken, mockTransactionId });
 
       // Attach Apple Pay authorization to request
-      const apiUrl = buildApiUrl(`/api/requests/${requestId}/apple-pay`);
+      const apiUrl = buildApiUrl(API_ENDPOINTS.REQUESTS_APPLE_PAY(requestId));
       await axios.post(apiUrl, {
         applePayToken: mockPaymentToken,
         applePayTransactionId: mockTransactionId,

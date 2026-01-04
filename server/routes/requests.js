@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 
 // Import models and utilities from existing leads route
 const JobRequest = require('../models/JobRequest');
@@ -117,7 +118,6 @@ router.post('/', async (req, res) => {
     // 2) Save lead to database
     let savedLead = null;
     try {
-      const mongoose = require('mongoose');
       if (mongoose.connection.readyState === 1) {
         savedLead = await JobRequest.create({
           name: fullName.trim(),
@@ -164,7 +164,6 @@ router.post('/', async (req, res) => {
 
     if (smsConsent) {
       try {
-        const mongoose = require('mongoose');
         if (mongoose.connection.readyState === 1) {
           // Use MongoDB $near with geospatial index on location
           pros = await Pro.find({
@@ -351,7 +350,6 @@ router.post('/:requestId/apple-pay', async (req, res) => {
     }
 
     // Find the request
-    const mongoose = require('mongoose');
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({ 
         ok: false, 
