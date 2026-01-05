@@ -135,24 +135,10 @@ function generateSitemap() {
   </url>
   
   <url>
-    <loc>${baseUrl}/about</loc>
-    <lastmod>${currentDate}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  
-  <url>
     <loc>${baseUrl}/contact</loc>
     <lastmod>${currentDate}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
-  </url>
-  
-  <url>
-    <loc>${baseUrl}/for-professionals</loc>
-    <lastmod>${currentDate}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
   </url>
   
   <url>
@@ -190,21 +176,6 @@ function generateSitemap() {
     <priority>0.7</priority>
   </url>
 
-  <!-- Country-specific pages (global expansion) -->
-`;
-
-  // Add country pages
-  countries.forEach(country => {
-    sitemap += `  <url>
-    <loc>${baseUrl}/country/${country.code}</loc>
-    <lastmod>${currentDate}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-`;
-  });
-
-  sitemap += `
   <!-- Main services page -->
   <url>
     <loc>${baseUrl}/services</loc>
@@ -226,51 +197,10 @@ function generateSitemap() {
   \n`;
   });
 
-  // Add priority service/city combinations for SEO
-  sitemap += `  <!-- Priority service/city combinations -->\n`;
-  priorityServiceCities.forEach(({ service, cities }) => {
-    cities.forEach(city => {
-      sitemap += `  <url>
-    <loc>${baseUrl}/services/${service}/${city}</loc>
-    <lastmod>${currentDate}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  \n`;
-    });
-  });
-
-  // Add high-priority trend pages for emergency and urgency
-  sitemap += `  <!-- High-priority trend-based SEO pages -->\n`;
-  highPriorityTrends.forEach(trend => {
-    // Add emergency services for top cities
-    const topCities = ['new-york', 'los-angeles', 'chicago', 'houston', 'miami', 'phoenix'];
-    const trendServices = ['plumbing', 'electrical', 'hvac'];
-    
-    topCities.forEach(city => {
-      trendServices.forEach(service => {
-        sitemap += `  <url>
-    <loc>${baseUrl}/${trend}/${service}-in-${city}</loc>
-    <lastmod>${currentDate}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  \n`;
-      });
-    });
-  });
-
-  // Add competitor alternatives pages
-  sitemap += `  <!-- Competitor alternatives pages -->\n`;
-  competitorPages.forEach(page => {
-    sitemap += `  <url>
-    <loc>${baseUrl}/${page}</loc>
-    <lastmod>${currentDate}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  \n`;
-  });
+  // REMOVED: Priority service/city combinations (these cause Soft 404 as they're not prerendered)
+  // REMOVED: High-priority trend pages (these cause Soft 404 as they're not prerendered)
+  // REMOVED: Competitor alternatives pages (these cause Soft 404 as they're not prerendered)
+  // REMOVED: Country pages (these cause Soft 404 as they're not prerendered)
 
   sitemap += `</urlset>`;
 
@@ -278,19 +208,15 @@ function generateSitemap() {
   const sitemapPath = path.join(__dirname, 'sitemap.xml');
   fs.writeFileSync(sitemapPath, sitemap);
   
-  const totalServiceCityCombos = priorityServiceCities.reduce((sum, sc) => sum + sc.cities.length, 0);
-  const trendPageCount = highPriorityTrends.length * 6 * 3; // Dynamic: trends * 6 cities * 3 services
-  const competitorPageCount = competitorPages.length;
-  const totalUrls = 1 + 7 + countries.length + 1 + services.length + totalServiceCityCombos + trendPageCount + competitorPageCount;
+  const totalUrls = 1 + 7 + 1 + services.length; // homepage + 7 main pages + services page + service categories
   
   console.log(`✅ Sitemap generated with:`);
   console.log(`   - ${services.length} service category pages`);
-  console.log(`   - ${totalServiceCityCombos} service/city combinations`);
-  console.log(`   - ${trendPageCount} trend-based SEO pages`);
-  console.log(`   - ${competitorPageCount} competitor alternatives pages`);
-  console.log(`   - ${countries.length} country pages`);
+  console.log(`   - 7 main pages (how-it-works, contact, signup, etc.)`);
+  console.log(`   - Homepage and services overview`);
   console.log(`📍 Total URLs: ${totalUrls}`);
   console.log(`📝 Sitemap saved to: ${sitemapPath}`);
+  console.log(`⚠️  Removed non-rendered URLs to prevent Soft 404 errors`);
   
   return sitemap;
 }
