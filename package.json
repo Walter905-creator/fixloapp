@@ -16,6 +16,7 @@
     "sitemap:generate": "node generate-sitemap.js",
     "build": "npm run install-client && npm run build-client && npm run deploy-build && npm run prerender-canonicals && npm run add-structured-data && npm run generate-sitemap",
     "add-structured-data": "node scripts/add-structured-data.js",
+    "validate-seo": "node scripts/validate-seo-fixes.js",
     "vercel-build": "./build-vercel.sh || npm run build",
     "start": "node spa-server.js",
     "start-client": "cd client && npm start",
