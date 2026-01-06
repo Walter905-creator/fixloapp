@@ -755,13 +755,15 @@ app.get("/api/version", (req, res) => {
 // are allowed because they don't trigger CORS checks anyway.
 app.get("/api/cors-test", (req, res) => {
   const origin = req.headers.origin;
-  // Allow requests without origin (direct navigation, curl) since they don't need CORS
+  // Requests without origin don't need CORS validation (e.g., direct navigation, server-to-server)
   const isAllowed = origin ? isOriginAllowed(origin) : true;
+  const originInfo = origin || 'no-origin-header';
   
   return res.json({
     message: "Fixlo CORS is working!",
-    origin: origin || 'none',
+    origin: originInfo,
     allowed: isAllowed,
+    note: !origin ? 'Requests without Origin header do not require CORS validation' : undefined,
     allowedOrigins: allowedOrigins,
     supportsVercelPreviews: true,
     corsVersion: "v2.0-vercel-preview-support",
