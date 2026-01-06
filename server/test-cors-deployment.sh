@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e  # Exit immediately if any command fails
 
 # Test script to verify CORS configuration is working in production

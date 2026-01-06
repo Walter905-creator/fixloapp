@@ -750,8 +750,12 @@ app.get("/api/version", (req, res) => {
 });
 
 // CORS configuration test endpoint
+// Note: This is a diagnostic endpoint that shows CORS configuration.
+// Requests without an Origin header (e.g., direct browser navigation, curl)
+// are allowed because they don't trigger CORS checks anyway.
 app.get("/api/cors-test", (req, res) => {
   const origin = req.headers.origin;
+  // Allow requests without origin (direct navigation, curl) since they don't need CORS
   const isAllowed = origin ? isOriginAllowed(origin) : true;
   
   return res.json({
