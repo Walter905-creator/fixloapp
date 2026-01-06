@@ -94,10 +94,12 @@ function isOriginAllowed(origin) {
   if (allowedOrigins.includes(origin)) return true;
   
   // Allow Vercel preview deployments (*.vercel.app)
+  // Security: Only allow HTTPS Vercel domains to prevent spoofing
   if (origin.endsWith('.vercel.app')) {
     try {
       const url = new URL(origin);
-      // Verify it's a valid Vercel preview URL
+      // Double-check hostname after parsing to prevent URL manipulation attacks
+      // (e.g., https://evil.com?fake=.vercel.app)
       if (url.protocol === 'https:' && url.hostname.endsWith('.vercel.app')) {
         return true;
       }

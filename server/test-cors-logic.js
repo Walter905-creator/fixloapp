@@ -16,10 +16,12 @@ function isOriginAllowed(origin) {
   if (allowedOrigins.includes(origin)) return true;
   
   // Allow Vercel preview deployments (*.vercel.app)
+  // Security: Only allow HTTPS Vercel domains to prevent spoofing
   if (origin.endsWith('.vercel.app')) {
     try {
       const url = new URL(origin);
-      // Verify it's a valid Vercel preview URL
+      // Double-check hostname after parsing to prevent URL manipulation attacks
+      // (e.g., https://evil.com?fake=.vercel.app)
       if (url.protocol === 'https:' && url.hostname.endsWith('.vercel.app')) {
         return true;
       }
@@ -50,6 +52,8 @@ const testCases = [
   { origin: 'https://malicious-site.com', expected: false, description: 'Random external domain' },
   { origin: 'http://fixloapp.vercel.app', expected: false, description: 'HTTP Vercel URL (not HTTPS)' },
   { origin: 'https://evil.vercel.app.hacker.com', expected: false, description: 'Vercel domain spoofing' },
+  { origin: 'https://evil.com?url=.vercel.app', expected: false, description: 'URL manipulation attack attempt' },
+  { origin: 'https://evil.com/.vercel.app', expected: false, description: 'Path-based spoofing attempt' },
   
   // No origin - should pass
   { origin: null, expected: true, description: 'No origin header' },
