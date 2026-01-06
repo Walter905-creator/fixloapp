@@ -85,6 +85,7 @@ console.log(
   "🌐 Env CORS_ALLOWED_ORIGINS:",
   process.env.CORS_ALLOWED_ORIGINS || "not set (using defaults)"
 );
+console.log("✅ Vercel Preview Deployments: ENABLED (*.vercel.app)");
 
 // Helper function to check if origin is allowed
 function isOriginAllowed(origin) {
@@ -744,6 +745,22 @@ app.get("/api/version", (req, res) => {
     name: "fixlo-backend",
     mode: "api-only",
     version: "2.4.0",
+    time: new Date().toISOString(),
+  });
+});
+
+// CORS configuration test endpoint
+app.get("/api/cors-test", (req, res) => {
+  const origin = req.headers.origin || req.headers.referer || 'none';
+  const isAllowed = isOriginAllowed(origin);
+  
+  return res.json({
+    message: "Fixlo CORS is working!",
+    origin: origin,
+    allowed: isAllowed,
+    allowedOrigins: allowedOrigins,
+    supportsVercelPreviews: true,
+    corsVersion: "v2.0-vercel-preview-support",
     time: new Date().toISOString(),
   });
 });
