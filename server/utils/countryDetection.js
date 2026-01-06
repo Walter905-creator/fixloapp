@@ -17,7 +17,7 @@ class CountryDetectionService {
     this.providers = [
       {
         name: 'ip-api',
-        url: (ip) => `http://ip-api.com/json/${ip}`,
+        url: (ip) => `https://ip-api.com/json/${ip}`,
         parser: (data) => ({
           country_code: data.countryCode,
           country_name: data.country,
