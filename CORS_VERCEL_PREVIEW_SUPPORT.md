@@ -69,6 +69,13 @@ cd server
 ./test-cors-deployment.sh https://your-api-url.com
 ```
 
+**Note**: The script is already executable. If needed, you can make it executable with:
+```bash
+chmod +x server/test-cors-deployment.sh
+```
+
+The script will work with or without `jq` installed for JSON formatting.
+
 ### Manual Testing
 1. **Check CORS configuration**:
    ```bash
