@@ -86,6 +86,31 @@ console.log(
   process.env.CORS_ALLOWED_ORIGINS || "not set (using defaults)"
 );
 
+// Helper function to check if origin is allowed
+function isOriginAllowed(origin) {
+  if (!origin) return true;
+  
+  // Check exact matches
+  if (allowedOrigins.includes(origin)) return true;
+  
+  // Allow Vercel preview deployments (*.vercel.app)
+  // Security: Only allow HTTPS Vercel domains to prevent spoofing
+  if (origin.endsWith('.vercel.app')) {
+    try {
+      const url = new URL(origin);
+      // Double-check hostname after parsing to prevent URL manipulation attacks
+      // (e.g., https://evil.com?fake=.vercel.app)
+      if (url.protocol === 'https:' && url.hostname.endsWith('.vercel.app')) {
+        return true;
+      }
+    } catch (e) {
+      return false;
+    }
+  }
+  
+  return false;
+}
+
 // Early OPTIONS (preflight) passthrough — avoids any redirect/middleware side effects
 app.use((req, res, next) => {
   if (req.method !== "OPTIONS") return next();
@@ -94,7 +119,7 @@ app.use((req, res, next) => {
   let allowedOrigin = "https://www.fixloapp.com";
   if (!origin) {
     console.log(`🔍 OPTIONS ${req.path} — no origin, using default`);
-  } else if (allowedOrigins.includes(origin)) {
+  } else if (isOriginAllowed(origin)) {
     allowedOrigin = origin;
     console.log(`🔍 OPTIONS ${req.path} — origin allowed: ${origin}`);
   } else {
@@ -121,8 +146,7 @@ app.use((req, res, next) => {
 app.use(
   cors({
     origin(origin, cb) {
-      if (!origin) return cb(null, true);
-      if (allowedOrigins.includes(origin)) return cb(null, true);
+      if (isOriginAllowed(origin)) return cb(null, true);
       return cb(new Error(`CORS policy does not allow origin: ${origin}`));
     },
     credentials: true,
@@ -160,7 +184,16 @@ app.use('/privacy-policy', express.static(path.join(__dirname, '../client/public
 
 // ----------------------- Socket.IO -----------------------
 const io = new Server(server, {
-  cors: { origin: allowedOrigins, methods: ["GET", "POST"] },
+  cors: { 
+    origin: (origin, callback) => {
+      if (isOriginAllowed(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('CORS policy does not allow origin'));
+      }
+    }, 
+    methods: ["GET", "POST"] 
+  },
 });
 
 // Make io accessible to routes
@@ -254,7 +287,7 @@ function preflight(path, methods = "POST, OPTIONS") {
   app.options(path, (req, res) => {
     const origin = req.headers.origin;
     let allowedOrigin = "https://www.fixloapp.com";
-    if (origin && allowedOrigins.includes(origin)) allowedOrigin = origin;
+    if (origin && isOriginAllowed(origin)) allowedOrigin = origin;
     else if (origin) {
       console.log(`❌ Origin "${origin}" not allowed for ${path}`);
       return res.status(403).json({ error: "CORS policy violation" });
