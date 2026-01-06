@@ -23,7 +23,7 @@ fi
 # Test 1: Health check
 echo "Test 1: Health check endpoint"
 if [ "$HAS_JQ" = true ]; then
-    curl -s "${API_URL}/api/health" | jq -r '.'
+    curl -s "${API_URL}/api/health" | jq '.'
 else
     curl -s "${API_URL}/api/health"
 fi
@@ -32,7 +32,7 @@ echo ""
 # Test 2: CORS test endpoint
 echo "Test 2: CORS configuration endpoint"
 if [ "$HAS_JQ" = true ]; then
-    curl -s "${API_URL}/api/cors-test" | jq -r '.'
+    curl -s "${API_URL}/api/cors-test" | jq '.'
 else
     curl -s "${API_URL}/api/cors-test"
 fi

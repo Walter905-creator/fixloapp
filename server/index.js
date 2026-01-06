@@ -751,8 +751,8 @@ app.get("/api/version", (req, res) => {
 
 // CORS configuration test endpoint
 app.get("/api/cors-test", (req, res) => {
-  const origin = req.headers.origin || req.headers.referer || 'none';
-  const isAllowed = isOriginAllowed(origin);
+  const origin = req.headers.origin || 'none';
+  const isAllowed = origin !== 'none' ? isOriginAllowed(origin) : true;
   
   return res.json({
     message: "Fixlo CORS is working!",
