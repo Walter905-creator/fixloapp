@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e  # Exit immediately if any command fails
+
 # Test script to verify CORS configuration is working in production
 # Usage: ./test-cors-deployment.sh [API_URL]
 #
