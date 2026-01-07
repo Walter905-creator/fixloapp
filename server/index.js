@@ -85,6 +85,7 @@ console.log(
   "🌐 Env CORS_ALLOWED_ORIGINS:",
   process.env.CORS_ALLOWED_ORIGINS || "not set (using defaults)"
 );
+console.log("✅ Vercel Preview Deployments: ENABLED (*.vercel.app)");
 
 // Helper function to check if origin is allowed
 function isOriginAllowed(origin) {
@@ -744,6 +745,28 @@ app.get("/api/version", (req, res) => {
     name: "fixlo-backend",
     mode: "api-only",
     version: "2.4.0",
+    time: new Date().toISOString(),
+  });
+});
+
+// CORS configuration test endpoint
+// Note: This is a diagnostic endpoint that shows CORS configuration.
+// Requests without an Origin header (e.g., direct browser navigation, curl)
+// are allowed because they don't trigger CORS checks anyway.
+app.get("/api/cors-test", (req, res) => {
+  const origin = req.headers.origin;
+  // Requests without origin don't need CORS validation (e.g., direct navigation, server-to-server)
+  const isAllowed = origin ? isOriginAllowed(origin) : true;
+  const originInfo = origin || 'no-origin-header';
+  
+  return res.json({
+    message: "Fixlo CORS is working!",
+    origin: originInfo,
+    allowed: isAllowed,
+    note: !origin ? 'Requests without Origin header do not require CORS validation' : undefined,
+    allowedOrigins: allowedOrigins,
+    supportsVercelPreviews: true,
+    corsVersion: "v2.0-vercel-preview-support",
     time: new Date().toISOString(),
   });
 });
