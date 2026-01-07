@@ -176,6 +176,10 @@ app.use(
 app.use("/webhook/stripe", express.raw({ type: "application/json" }));
 app.use(express.json());
 
+// Cookie parser for country detection caching
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
+
 // ----------------------- Static serving (API assets only) -----------------------
 app.use(express.static(__dirname)); // e.g., admin assets, images used by API docs, etc.
 app.use(express.static(path.join(__dirname, ".."))); // safety (no client build served)

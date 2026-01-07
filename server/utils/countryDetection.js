@@ -77,7 +77,7 @@ class CountryDetectionService {
     const lastRequest = this.requestThrottle.get(key);
     
     if (lastRequest && Date.now() - lastRequest < this.throttleWindow) {
-      console.log(`⏱️ Throttling request for IP: ${ip}`);
+      console.debug(`⏱️ Throttling request for IP: ${ip}`);
       return true;
     }
     
@@ -100,7 +100,7 @@ class CountryDetectionService {
     }
 
     if (removedCount > 0) {
-      console.log(`🧹 Removed ${removedCount} expired throttle entries`);
+      console.debug(`🧹 Removed ${removedCount} expired throttle entries`);
     }
   }
 
@@ -112,7 +112,7 @@ class CountryDetectionService {
    */
   async tryProvider(provider, ip) {
     try {
-      console.log(`🌐 Trying ${provider.name} for IP: ${ip}`);
+      console.debug(`🌐 Trying ${provider.name} for IP: ${ip}`);
       
       const response = await axios.get(provider.url(ip), {
         timeout: this.apiTimeout,
@@ -124,7 +124,7 @@ class CountryDetectionService {
 
       // Check for rate limit or error responses
       if (response.status === 429) {
-        console.warn(`⚠️ Rate limited by ${provider.name}`);
+        console.debug(`Rate limited by ${provider.name}`);
         return null;
       }
 
@@ -132,16 +132,17 @@ class CountryDetectionService {
       
       // Some APIs return error in the response body
       if (data.error || data.status === 'fail') {
-        console.warn(`⚠️ ${provider.name} returned error:`, data.message || data.error);
+        console.debug(`${provider.name} returned error:`, data.message || data.error);
         return null;
       }
 
       return provider.parser(data);
     } catch (error) {
-      if (error.response?.status === 429) {
-        console.warn(`⚠️ ${provider.name} rate limit exceeded`);
+      // Downgrade provider failures to debug logs - these are non-critical
+      if (error.response?.status === 429 || error.response?.status === 403) {
+        console.debug(`${provider.name} rate limit or access denied`);
       } else {
-        console.warn(`⚠️ ${provider.name} failed:`, error.message);
+        console.debug(`${provider.name} failed:`, error.message);
       }
       return null;
     }
@@ -162,11 +163,11 @@ class CountryDetectionService {
 
     // Check throttling
     if (this.shouldThrottle(ip)) {
-      console.log(`🎯 Using cached or default for throttled IP: ${ip}`);
+      console.debug(`🎯 Using default for throttled IP: ${ip}`);
       return this.getDefaultCountryInfo();
     }
 
-    console.log(`🌍 Detecting country for IP: ${ip}`);
+    console.debug(`🌍 Detecting country for IP: ${ip}`);
     
     // Try each provider in sequence until one succeeds
     for (const provider of this.providers) {
@@ -193,7 +194,7 @@ class CountryDetectionService {
 
         console.log(`✅ Country detected via ${provider.name}: ${countryInfo.countryName} (${countryCode}), Supported: ${countryInfo.supported}`);
         
-        // Cache the result for longer duration
+        // Cache the result for 60 days
         this.setCacheResult(cacheKey, countryInfo);
         
         return countryInfo;
@@ -201,7 +202,7 @@ class CountryDetectionService {
     }
 
     // All providers failed, return default
-    console.warn(`⚠️ All providers failed for IP: ${ip}, using default`);
+    console.debug(`⚠️ All providers failed for IP: ${ip}, using default`);
     return this.getDefaultCountryInfo();
   }
 
@@ -256,7 +257,7 @@ class CountryDetectionService {
   getCachedResult(key) {
     const cached = this.cache.get(key);
     if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
-      console.log(`🎯 Using cached country detection for: ${key}`);
+      console.debug(`🎯 Using cached country detection for: ${key}`);
       return cached.data;
     }
     return null;
@@ -287,7 +288,7 @@ class CountryDetectionService {
     }
 
     if (removedCount > 0) {
-      console.log(`🧹 Removed ${removedCount} expired country detection cache entries`);
+      console.debug(`🧹 Removed ${removedCount} expired country detection cache entries`);
     }
   }
 
@@ -296,7 +297,7 @@ class CountryDetectionService {
    */
   clearCache() {
     this.cache.clear();
-    console.log('🗑️ Country detection cache cleared');
+    console.debug('🗑️ Country detection cache cleared');
   }
 
   /**
