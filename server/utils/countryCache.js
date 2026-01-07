@@ -11,9 +11,11 @@
  * and never blocks core application flows.
  */
 
+// Import Pro model at module level for better performance
+const Pro = require('../models/Pro');
+
 const COUNTRY_COOKIE_NAME = 'country_code';
-const COUNTRY_COOKIE_MAX_AGE = 60 * 24 * 60 * 60 * 1000; // 60 days in milliseconds
-const COUNTRY_CACHE_TTL = 60 * 24 * 60 * 60 * 1000; // 60 days in milliseconds
+const COUNTRY_CACHE_DURATION = 60 * 24 * 60 * 60 * 1000; // 60 days in milliseconds
 
 // In-memory throttle to prevent multiple detections in same request burst
 const requestThrottle = new Map();
@@ -26,7 +28,7 @@ const THROTTLE_WINDOW = 5000; // 5 seconds - prevent rapid duplicate requests
  */
 function isCacheExpired(timestamp) {
   if (!timestamp) return true;
-  return Date.now() - timestamp > COUNTRY_CACHE_TTL;
+  return Date.now() - timestamp > COUNTRY_CACHE_DURATION;
 }
 
 /**
@@ -35,7 +37,7 @@ function isCacheExpired(timestamp) {
  */
 function getExpirationDate() {
   const expiresAt = new Date();
-  expiresAt.setTime(expiresAt.getTime() + COUNTRY_CACHE_TTL);
+  expiresAt.setTime(expiresAt.getTime() + COUNTRY_CACHE_DURATION);
   return expiresAt.toISOString();
 }
 
@@ -116,7 +118,7 @@ function getCountryFromCookie(req) {
     
     return {
       country: parsed.country,
-      expiresAt: new Date(parsed.timestamp + COUNTRY_CACHE_TTL).toISOString(),
+      expiresAt: new Date(parsed.timestamp + COUNTRY_CACHE_DURATION).toISOString(),
       source: 'cookie'
     };
   } catch (error) {
@@ -136,7 +138,6 @@ async function getCountryFromDatabase(req) {
     const userId = req.user?.id || req.user?._id;
     if (!userId) return null;
     
-    const Pro = require('../models/Pro');
     const pro = await Pro.findById(userId).select('country').lean();
     
     if (pro?.country) {
@@ -166,7 +167,7 @@ function setCountryInCookie(res, countryCode) {
     const cookieValue = createCookieValue(countryCode);
     
     res.cookie(COUNTRY_COOKIE_NAME, cookieValue, {
-      maxAge: COUNTRY_COOKIE_MAX_AGE,
+      maxAge: COUNTRY_CACHE_DURATION,
       httpOnly: true, // Prevent XSS attacks
       secure: process.env.NODE_ENV === 'production', // HTTPS only in production
       sameSite: 'lax', // CSRF protection
@@ -189,7 +190,6 @@ async function updateCountryInDatabase(req, countryCode) {
     const userId = req.user?.id || req.user?._id;
     if (!userId) return;
     
-    const Pro = require('../models/Pro');
     await Pro.findByIdAndUpdate(userId, { country: countryCode });
     
     console.debug(`[CountryCache] Updated database cache for Pro user: ${countryCode}`);
@@ -231,7 +231,7 @@ async function cacheCountry(req, res, countryCode) {
 
 module.exports = {
   COUNTRY_COOKIE_NAME,
-  COUNTRY_CACHE_TTL,
+  COUNTRY_CACHE_DURATION,
   getCachedCountry,
   cacheCountry,
   shouldThrottle,

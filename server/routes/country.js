@@ -39,6 +39,7 @@ router.get('/detect', async (req, res) => {
     // Step 2: Check request throttle to prevent burst detections
     if (countryCache.shouldThrottle(ip)) {
       // Return default country if request is being throttled
+      // Note: This is still treated as "uncached" since no external detection occurred
       const defaultInfo = countryDetectionService.getDefaultCountryInfo();
       const expiresAt = countryCache.getExpirationDate();
       
@@ -46,7 +47,7 @@ router.get('/detect', async (req, res) => {
       
       return res.json({
         country: defaultInfo.countryCode,
-        cached: false,
+        cached: true, // Throttled requests are effectively cached (not re-detected)
         expiresAt: expiresAt
       });
     }
@@ -75,17 +76,20 @@ router.get('/detect', async (req, res) => {
     const defaultInfo = countryDetectionService.getDefaultCountryInfo();
     const expiresAt = countryCache.getExpirationDate();
     
-    // Still cache the default to prevent repeated failures
+    // Attempt to cache the default to prevent repeated failures
+    let wasCached = false;
     try {
       await countryCache.cacheCountry(req, res, defaultInfo.countryCode);
+      wasCached = true;
     } catch (cacheError) {
       console.debug('Could not cache default country:', cacheError.message);
     }
     
     // Return default country with success response
+    // cached=true if we successfully cached it, false otherwise
     res.json({
       country: defaultInfo.countryCode,
-      cached: false,
+      cached: wasCached,
       expiresAt: expiresAt
     });
   }
