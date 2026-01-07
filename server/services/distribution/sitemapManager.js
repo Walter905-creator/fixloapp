@@ -212,10 +212,11 @@ class SitemapManager {
    */
   async pingSearchEngine(engine, url) {
     try {
-      // Use fetch or axios to ping the URL
-      const response = await fetch(url);
+      // Use axios for Node.js compatibility
+      const axios = require('axios');
+      const response = await axios.get(url, { timeout: 10000 });
       
-      if (response.ok) {
+      if (response.status === 200) {
         logger.info(`Sitemap ping successful: ${engine}`, { url });
       } else {
         logger.warn(`Sitemap ping failed: ${engine}`, { 

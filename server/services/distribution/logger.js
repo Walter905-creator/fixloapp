@@ -43,9 +43,9 @@ class DistributionLogger {
   }
   
   /**
-   * Write log to file
+   * Write log to file (async)
    */
-  writeLog(entry) {
+  async writeLog(entry) {
     if (!LOGGING.enabled) return;
     
     const date = new Date().toISOString().split('T')[0];
@@ -53,16 +53,17 @@ class DistributionLogger {
     
     try {
       const logLine = JSON.stringify(entry) + '\n';
-      fs.appendFileSync(logFile, logLine, 'utf8');
+      // Use async append for better performance
+      await fs.promises.appendFile(logFile, logLine, 'utf8');
     } catch (error) {
       console.error('Failed to write distribution log:', error.message);
     }
   }
   
   /**
-   * Write to audit trail
+   * Write to audit trail (async)
    */
-  writeAudit(action, details = {}) {
+  async writeAudit(action, details = {}) {
     if (!this.auditTrail) return;
     
     const date = new Date().toISOString().split('T')[0];
@@ -77,7 +78,8 @@ class DistributionLogger {
     
     try {
       const auditLine = JSON.stringify(auditEntry) + '\n';
-      fs.appendFileSync(auditFile, auditLine, 'utf8');
+      // Use async append for better performance
+      await fs.promises.appendFile(auditFile, auditLine, 'utf8');
     } catch (error) {
       console.error('Failed to write audit trail:', error.message);
     }

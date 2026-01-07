@@ -211,8 +211,9 @@ class RateLimiter {
   getNextFromQueue() {
     if (this.publishQueue.length === 0) return null;
     
-    // Sort queue by priority or randomize
-    const randomIndex = Math.floor(Math.random() * Math.min(this.publishQueue.length, 5));
+    // Sort queue by priority or randomize within configured window
+    const windowSize = RATE_LIMITS.queueRandomWindow || 5;
+    const randomIndex = Math.floor(Math.random() * Math.min(this.publishQueue.length, windowSize));
     const item = this.publishQueue[randomIndex];
     
     // Check if can publish

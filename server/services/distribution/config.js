@@ -15,27 +15,46 @@
 
 require('dotenv').config();
 
+// Helper to validate and parse integer environment variables
+function parseIntEnv(value, defaultValue, min = null, max = null) {
+  const parsed = parseInt(value);
+  if (isNaN(parsed)) return defaultValue;
+  if (min !== null && parsed < min) return defaultValue;
+  if (max !== null && parsed > max) return defaultValue;
+  return parsed;
+}
+
+// Helper to validate and parse float environment variables
+function parseFloatEnv(value, defaultValue, min = null, max = null) {
+  const parsed = parseFloat(value);
+  if (isNaN(parsed)) return defaultValue;
+  if (min !== null && parsed < min) return defaultValue;
+  if (max !== null && parsed > max) return defaultValue;
+  return parsed;
+}
+
 // Core toggle - entire engine can be disabled instantly
 const DISTRIBUTION_ENGINE_ENABLED = process.env.DISTRIBUTION_ENGINE_ENABLED === 'true';
 
 // Publishing rate limits (daily)
 const RATE_LIMITS = {
-  maxPagesPerDay: parseInt(process.env.DISTRIBUTION_MAX_PAGES_PER_DAY) || 50,
-  maxPagesPerHour: parseInt(process.env.DISTRIBUTION_MAX_PAGES_PER_HOUR) || 5,
-  maxPagesPerRoute: parseInt(process.env.DISTRIBUTION_MAX_PAGES_PER_ROUTE) || 10,
-  minPublishIntervalMinutes: parseInt(process.env.DISTRIBUTION_MIN_INTERVAL_MINUTES) || 15,
-  cooldownHours: parseInt(process.env.DISTRIBUTION_COOLDOWN_HOURS) || 24,
+  maxPagesPerDay: parseIntEnv(process.env.DISTRIBUTION_MAX_PAGES_PER_DAY, 50, 1, 1000),
+  maxPagesPerHour: parseIntEnv(process.env.DISTRIBUTION_MAX_PAGES_PER_HOUR, 5, 1, 100),
+  maxPagesPerRoute: parseIntEnv(process.env.DISTRIBUTION_MAX_PAGES_PER_ROUTE, 10, 1, 100),
+  minPublishIntervalMinutes: parseIntEnv(process.env.DISTRIBUTION_MIN_INTERVAL_MINUTES, 15, 1, 1440),
+  cooldownHours: parseIntEnv(process.env.DISTRIBUTION_COOLDOWN_HOURS, 24, 1, 720),
+  queueRandomWindow: parseIntEnv(process.env.DISTRIBUTION_QUEUE_RANDOM_WINDOW, 5, 1, 20), // Number of items to consider for random selection
 };
 
 // Content quality requirements
 const CONTENT_QUALITY = {
-  minWordCount: parseInt(process.env.DISTRIBUTION_MIN_WORD_COUNT) || 300,
-  maxWordCount: parseInt(process.env.DISTRIBUTION_MAX_WORD_COUNT) || 1500,
-  minHeadings: parseInt(process.env.DISTRIBUTION_MIN_HEADINGS) || 3,
-  maxHeadings: parseInt(process.env.DISTRIBUTION_MAX_HEADINGS) || 8,
-  minParagraphs: parseInt(process.env.DISTRIBUTION_MIN_PARAGRAPHS) || 5,
+  minWordCount: parseIntEnv(process.env.DISTRIBUTION_MIN_WORD_COUNT, 300, 100, 10000),
+  maxWordCount: parseIntEnv(process.env.DISTRIBUTION_MAX_WORD_COUNT, 1500, 300, 20000),
+  minHeadings: parseIntEnv(process.env.DISTRIBUTION_MIN_HEADINGS, 3, 1, 20),
+  maxHeadings: parseIntEnv(process.env.DISTRIBUTION_MAX_HEADINGS, 8, 3, 50),
+  minParagraphs: parseIntEnv(process.env.DISTRIBUTION_MIN_PARAGRAPHS, 5, 1, 100),
   requireFAQ: process.env.DISTRIBUTION_REQUIRE_FAQ !== 'false',
-  minFAQItems: parseInt(process.env.DISTRIBUTION_MIN_FAQ_ITEMS) || 3,
+  minFAQItems: parseIntEnv(process.env.DISTRIBUTION_MIN_FAQ_ITEMS, 3, 1, 20),
 };
 
 // Services available for SEO page generation
@@ -84,17 +103,17 @@ const LANGUAGES = ['en', 'es'];
 
 // Sitemap configuration
 const SITEMAP_CONFIG = {
-  maxUrlsPerSitemap: parseInt(process.env.DISTRIBUTION_MAX_URLS_PER_SITEMAP) || 5000,
+  maxUrlsPerSitemap: parseIntEnv(process.env.DISTRIBUTION_MAX_URLS_PER_SITEMAP, 5000, 100, 50000),
   updateFrequency: process.env.DISTRIBUTION_SITEMAP_UPDATE_FREQ || 'daily',
-  defaultPriority: parseFloat(process.env.DISTRIBUTION_SITEMAP_PRIORITY) || 0.7,
+  defaultPriority: parseFloatEnv(process.env.DISTRIBUTION_SITEMAP_PRIORITY, 0.7, 0.0, 1.0),
   autoSubmit: process.env.DISTRIBUTION_AUTO_SUBMIT_SITEMAP !== 'false',
 };
 
 // Monitoring thresholds
 const MONITORING = {
-  maxCrawlErrorRate: parseFloat(process.env.DISTRIBUTION_MAX_CRAWL_ERROR_RATE) || 0.1, // 10%
-  minIndexRate: parseFloat(process.env.DISTRIBUTION_MIN_INDEX_RATE) || 0.5, // 50%
-  indexCheckDelayDays: parseInt(process.env.DISTRIBUTION_INDEX_CHECK_DELAY_DAYS) || 7,
+  maxCrawlErrorRate: parseFloatEnv(process.env.DISTRIBUTION_MAX_CRAWL_ERROR_RATE, 0.1, 0.0, 1.0),
+  minIndexRate: parseFloatEnv(process.env.DISTRIBUTION_MIN_INDEX_RATE, 0.5, 0.0, 1.0),
+  indexCheckDelayDays: parseIntEnv(process.env.DISTRIBUTION_INDEX_CHECK_DELAY_DAYS, 7, 1, 365),
   autoSlowdownEnabled: process.env.DISTRIBUTION_AUTO_SLOWDOWN !== 'false',
   autoPauseEnabled: process.env.DISTRIBUTION_AUTO_PAUSE !== 'false',
 };
@@ -122,8 +141,8 @@ const SOCIAL_ECHO = {
 // Internal linking configuration
 const INTERNAL_LINKING = {
   enabled: process.env.DISTRIBUTION_INTERNAL_LINKING !== 'false',
-  maxLinksPerPage: parseInt(process.env.DISTRIBUTION_MAX_LINKS_PER_PAGE) || 5,
-  linkDensityMax: parseFloat(process.env.DISTRIBUTION_LINK_DENSITY_MAX) || 0.02, // 2% of content
+  maxLinksPerPage: parseIntEnv(process.env.DISTRIBUTION_MAX_LINKS_PER_PAGE, 5, 1, 20),
+  linkDensityMax: parseFloatEnv(process.env.DISTRIBUTION_LINK_DENSITY_MAX, 0.02, 0.0, 0.1),
   onlyRelevantServices: true,
 };
 

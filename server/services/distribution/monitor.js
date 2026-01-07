@@ -154,13 +154,11 @@ class DistributionMonitor {
     this.slowdownActive = true;
     logger.logAutoSlowdown(reason, metrics);
     
-    // Double the minimum interval
-    const currentInterval = require('./config').RATE_LIMITS.minPublishIntervalMinutes;
-    process.env.DISTRIBUTION_MIN_INTERVAL_MINUTES = (currentInterval * 2).toString();
-    
-    logger.info('Publishing interval doubled', {
-      oldInterval: currentInterval,
-      newInterval: currentInterval * 2,
+    // Note: In production, configuration should be managed through a proper
+    // state management system rather than modifying process.env
+    logger.info('Publishing velocity reduced (slowdown active)', {
+      reason,
+      metrics,
     });
   }
   
