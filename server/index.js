@@ -355,6 +355,7 @@ app.use("/api/compliance", require("./routes/compliance")); // Legal & tax compl
 app.use("/api/ai", require("./routes/ai")); // AI assistant
 app.use("/api/contact", require("./routes/contact")); // contact form
 app.use("/api/referrals", require("./routes/referrals")); // referral rewards
+app.use("/api/distribution", adminRateLimit, require("./routes/distribution")); // distribution engine (admin only)
 
 // Direct messaging
 app.use("/api", generalRateLimit, require("./routes/messages")); // messaging API

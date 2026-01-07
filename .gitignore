@@ -48,6 +48,14 @@ test-api-requests.js
 
 # Build artifacts and temp files
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Distribution Engine Output
+distribution-output/
+social-output/
+logs/distribution/
 *.tmp
 .cache
 .env
