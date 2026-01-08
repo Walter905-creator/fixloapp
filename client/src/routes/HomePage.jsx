@@ -147,35 +147,63 @@ export default function HomePage() {
         <HomeReferralSection />
       )}
 
-      {/* Trust Signal Strip */}
-      <section className="bg-white border-y border-slate-200 py-6">
+      {/* System-Based Trust Stack */}
+      <section className="bg-white border-y border-slate-200 py-8">
         <div className="container-xl">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-center">
             <div className="flex flex-col items-center gap-2">
               <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-2xl">
                 ✓
               </div>
-              <p className="text-sm font-medium text-slate-700">Background-Checked Professionals</p>
+              <p className="text-sm font-semibold text-slate-900">Background-checked professionals</p>
+              <p className="text-xs text-slate-600">Every pro undergoes thorough screening</p>
             </div>
             <div className="flex flex-col items-center gap-2">
               <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-2xl">
-                💰
+                📍
               </div>
-              <p className="text-sm font-medium text-slate-700">No Lead Fees or Commissions</p>
+              <p className="text-sm font-semibold text-slate-900">30-mile radius matching</p>
+              <p className="text-xs text-slate-600">Jobs matched by trade and distance</p>
             </div>
             <div className="flex flex-col items-center gap-2">
               <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-2xl">
-                🇺🇸
+                🔒
               </div>
-              <p className="text-sm font-medium text-slate-700">Serving Homeowners Across the U.S.</p>
+              <p className="text-sm font-semibold text-slate-900">No bidding wars, no reselling</p>
+              <p className="text-xs text-slate-600">Requests routed privately to nearby pros</p>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-2xl">
+                💬
+              </div>
+              <p className="text-sm font-semibold text-slate-900">Direct communication</p>
+              <p className="text-xs text-slate-600">Homeowners and pros connect directly</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Social Proof Section */}
+      {/* Real Social Proof Section */}
       <section className="py-12 md:py-16 bg-slate-50">
         <div className="container-xl">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 mb-4">
+              <span className="text-5xl text-amber-500">⭐</span>
+              <span className="text-4xl font-bold text-slate-900">4.9</span>
+            </div>
+            <p className="text-lg text-slate-700 mb-6">
+              Average rating from early users
+            </p>
+            <div className="flex flex-wrap justify-center gap-6 text-center">
+              <div className="px-6 py-3 bg-white rounded-lg border border-slate-200">
+                <p className="text-sm font-medium text-slate-600">🛠 Built for real local service professionals</p>
+              </div>
+              <div className="px-6 py-3 bg-white rounded-lg border border-slate-200">
+                <p className="text-sm font-medium text-slate-600">📈 Expanding city by city</p>
+              </div>
+            </div>
+          </div>
+          
           <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-10 text-center">
             What people are saying
           </h2>
@@ -304,24 +332,185 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Urgency & Momentum Section */}
+        {/* Why Fixlo Is Different */}
+        <section className="py-12 md:py-16">
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3 text-center">
+            Why Fixlo Is Different
+          </h2>
+          <p className="text-center text-slate-600 mb-10 max-w-3xl mx-auto">
+            Fixlo improves on traditional lead marketplaces with a fair, transparent structure designed for both homeowners and professionals.
+          </p>
+          
+          <div className="grid md:grid-cols-2 gap-6 mb-10">
+            <div className="card p-6">
+              <h3 className="text-xl font-semibold text-slate-900 mb-3">No pay-per-lead pressure</h3>
+              <p className="text-slate-700">
+                Fixlo doesn't sell the same job to multiple pros. One flat monthly subscription gives professionals unlimited access to job leads in their area without paying for each individual lead.
+              </p>
+            </div>
+            
+            <div className="card p-6">
+              <h3 className="text-xl font-semibold text-slate-900 mb-3">No public bidding wars</h3>
+              <p className="text-slate-700">
+                Requests are routed privately to nearby professionals based on trade and location. Homeowners aren't flooded with competing quotes, and pros aren't pressured to lowball prices.
+              </p>
+            </div>
+            
+            <div className="card p-6">
+              <h3 className="text-xl font-semibold text-slate-900 mb-3">Local-first matching</h3>
+              <p className="text-slate-700">
+                Jobs are matched by trade and distance within a 30-mile radius, not by who pays more for leads. This ensures homeowners get nearby professionals and pros get relevant work.
+              </p>
+            </div>
+            
+            <div className="card p-6">
+              <h3 className="text-xl font-semibold text-slate-900 mb-3">Built for long-term businesses</h3>
+              <p className="text-slate-700">
+                Designed for professionals who want consistent, sustainable work. Predictable monthly costs help you plan and grow your business without chasing expensive leads.
+              </p>
+            </div>
+            
+            <div className="card p-6">
+              <h3 className="text-xl font-semibold text-slate-900 mb-3">Fair to homeowners</h3>
+              <p className="text-slate-700">
+                Homeowners never pay to submit a request. Our platform is completely free for homeowners to use. You only pay the professional directly for completed work.
+              </p>
+            </div>
+            
+            <div className="card p-6">
+              <h3 className="text-xl font-semibold text-slate-900 mb-3">Quality through capacity limits</h3>
+              <p className="text-slate-700">
+                To protect response times and service quality, we limit the number of active professionals per area. This ensures every job gets attention without overwhelming anyone.
+              </p>
+            </div>
+          </div>
+          
+          {/* Comparison Table */}
+          <div className="card p-8 bg-slate-50">
+            <h3 className="text-2xl font-bold text-slate-900 mb-6 text-center">
+              How Fixlo Compares
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b-2 border-slate-300">
+                    <th className="py-3 px-4 text-slate-900 font-semibold">Feature</th>
+                    <th className="py-3 px-4 text-slate-900 font-semibold text-center">Traditional Lead Sites</th>
+                    <th className="py-3 px-4 text-emerald-700 font-semibold text-center">Fixlo</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm">
+                  <tr className="border-b border-slate-200">
+                    <td className="py-3 px-4 text-slate-900">Pay per lead</td>
+                    <td className="py-3 px-4 text-center text-slate-600">Yes</td>
+                    <td className="py-3 px-4 text-center font-semibold text-emerald-700">No</td>
+                  </tr>
+                  <tr className="border-b border-slate-200">
+                    <td className="py-3 px-4 text-slate-900">Public bidding</td>
+                    <td className="py-3 px-4 text-center text-slate-600">Yes</td>
+                    <td className="py-3 px-4 text-center font-semibold text-emerald-700">No</td>
+                  </tr>
+                  <tr className="border-b border-slate-200">
+                    <td className="py-3 px-4 text-slate-900">Lead reselling</td>
+                    <td className="py-3 px-4 text-center text-slate-600">Common</td>
+                    <td className="py-3 px-4 text-center font-semibold text-emerald-700">Never</td>
+                  </tr>
+                  <tr className="border-b border-slate-200">
+                    <td className="py-3 px-4 text-slate-900">Local radius matching</td>
+                    <td className="py-3 px-4 text-center text-slate-600">Limited</td>
+                    <td className="py-3 px-4 text-center font-semibold text-emerald-700">Yes (30 miles)</td>
+                  </tr>
+                  <tr className="border-b border-slate-200">
+                    <td className="py-3 px-4 text-slate-900">Background checks</td>
+                    <td className="py-3 px-4 text-center text-slate-600">Sometimes</td>
+                    <td className="py-3 px-4 text-center font-semibold text-emerald-700">Always</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 px-4 text-slate-900">Capacity controls</td>
+                    <td className="py-3 px-4 text-center text-slate-600">Unlimited</td>
+                    <td className="py-3 px-4 text-center font-semibold text-emerald-700">Quality-focused</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        {/* How Fixlo Works - 3 Steps */}
+        <section className="py-12 md:py-16 bg-slate-50 -mx-4 px-4 md:rounded-2xl">
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-10 text-center">
+            How Fixlo Works
+          </h2>
+          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-3xl font-bold text-emerald-700 mx-auto mb-4">
+                1
+              </div>
+              <h3 className="text-xl font-semibold text-slate-900 mb-3">Homeowner submits a request</h3>
+              <p className="text-slate-700">
+                Tell us what you need, where you are, and when you need help. Takes just a few minutes.
+              </p>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-3xl font-bold text-emerald-700 mx-auto mb-4">
+                2
+              </div>
+              <h3 className="text-xl font-semibold text-slate-900 mb-3">Request matched by trade + distance</h3>
+              <p className="text-slate-700">
+                We match your request to qualified professionals within 30 miles who specialize in your needed service.
+              </p>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-3xl font-bold text-emerald-700 mx-auto mb-4">
+                3
+              </div>
+              <h3 className="text-xl font-semibold text-slate-900 mb-3">Local pro contacts homeowner directly</h3>
+              <p className="text-slate-700">
+                Matched professionals reach out to discuss your project, provide quotes, and schedule service.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Founder-Led Trust Section */}
+        <section className="py-12 md:py-16">
+          <div className="card p-8 bg-gradient-to-r from-blue-50 to-indigo-50 max-w-4xl mx-auto">
+            <h2 className="text-2xl font-bold text-slate-900 mb-4 text-center">Built to Fix a Broken System</h2>
+            <p className="text-slate-700 mb-4">
+              Fixlo was created to solve the problems that plague traditional lead marketplaces: expensive pay-per-lead models that pressure professionals to compete on price alone, lead reselling that sends the same job to dozens of contractors, and bidding systems that create a race to the bottom.
+            </p>
+            <p className="text-slate-700 mb-4">
+              We believe home service professionals deserve a sustainable business model with predictable costs and quality leads. We believe homeowners deserve transparent pricing and access to qualified, background-checked professionals without getting overwhelmed by aggressive sales tactics.
+            </p>
+            <p className="text-slate-700">
+              Fixlo is designed to create fair, lasting relationships between homeowners and professionals—not extract maximum fees from every transaction.
+            </p>
+          </div>
+        </section>
+
+        {/* Community Growth Section */}
         <section className="py-12 md:py-16 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white -mx-4 px-4 md:rounded-2xl">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-bold mb-8">
-              Join thousands of pros and homeowners
+              Growing a better home services community
             </h2>
             <div className="grid md:grid-cols-3 gap-8">
               <div>
                 <div className="text-5xl mb-3">📋</div>
-                <p className="text-lg font-semibold">New job requests posted daily</p>
+                <p className="text-lg font-semibold">Daily service requests</p>
+                <p className="text-sm text-white/80 mt-2">Homeowners submit requests every day</p>
               </div>
               <div>
                 <div className="text-5xl mb-3">📱</div>
-                <p className="text-lg font-semibold">Pros receive job alerts instantly by SMS</p>
+                <p className="text-lg font-semibold">Instant job alerts via SMS</p>
+                <p className="text-sm text-white/80 mt-2">Pros notified immediately when matched</p>
               </div>
               <div>
                 <div className="text-5xl mb-3">🗺️</div>
-                <p className="text-lg font-semibold">Available in cities nationwide</p>
+                <p className="text-lg font-semibold">Expanding nationwide</p>
+                <p className="text-sm text-white/80 mt-2">Adding new cities and professionals regularly</p>
               </div>
             </div>
             <div className="mt-10">
@@ -329,7 +518,7 @@ export default function HomePage() {
                 onClick={() => navigate("/join")}
                 className="inline-flex items-center rounded-2xl px-8 py-4 text-lg font-semibold bg-white text-emerald-700 shadow-lg hover:shadow-xl transform hover:scale-105"
               >
-                Get Started Today
+                Join as a Professional
               </button>
             </div>
           </div>

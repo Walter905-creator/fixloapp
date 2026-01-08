@@ -18,6 +18,42 @@ export default function HowItWorksPage(){
         </p>
       </div>
       
+      {/* How Fixlo Works Process */}
+      <section className="mb-12">
+        <h2 className="text-2xl font-bold text-slate-900 mb-6 text-center">Simple, Transparent Process</h2>
+        <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          <div className="text-center">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-3xl font-bold text-emerald-700 mx-auto mb-4">
+              1
+            </div>
+            <h3 className="text-xl font-semibold text-slate-900 mb-3">Homeowner submits a request</h3>
+            <p className="text-slate-700">
+              Tell us what you need, where you are, and when you need help. Takes just a few minutes.
+            </p>
+          </div>
+          
+          <div className="text-center">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-3xl font-bold text-emerald-700 mx-auto mb-4">
+              2
+            </div>
+            <h3 className="text-xl font-semibold text-slate-900 mb-3">Request matched by trade + distance</h3>
+            <p className="text-slate-700">
+              We match your request to qualified professionals within 30 miles who specialize in your needed service.
+            </p>
+          </div>
+          
+          <div className="text-center">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-3xl font-bold text-emerald-700 mx-auto mb-4">
+              3
+            </div>
+            <h3 className="text-xl font-semibold text-slate-900 mb-3">Local pro contacts homeowner directly</h3>
+            <p className="text-slate-700">
+              Matched professionals reach out to discuss your project, provide quotes, and schedule service.
+            </p>
+          </div>
+        </div>
+      </section>
+      
       {/* For Homeowners */}
       <section className="mb-12">
         <h2 className="text-2xl font-bold text-slate-900 mb-6">For Homeowners</h2>
@@ -76,6 +112,40 @@ export default function HowItWorksPage(){
           <Link to="/join" className="btn-primary inline-block">
             Join as a Professional
           </Link>
+        </div>
+      </section>
+      
+      {/* Why Fixlo Is Different */}
+      <section className="mb-12">
+        <h2 className="text-2xl font-bold text-slate-900 mb-6 text-center">Why Fixlo Is Different</h2>
+        <p className="text-center text-slate-600 mb-8 max-w-3xl mx-auto">
+          Fixlo improves on traditional lead marketplaces with a fair, transparent structure.
+        </p>
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="card p-6">
+            <h3 className="font-semibold text-lg mb-3 text-emerald-700">✓ No pay-per-lead pressure</h3>
+            <p className="text-sm text-slate-700">
+              One flat monthly subscription gives professionals unlimited access to job leads. We don't sell the same job to multiple pros.
+            </p>
+          </div>
+          <div className="card p-6">
+            <h3 className="font-semibold text-lg mb-3 text-emerald-700">✓ No public bidding wars</h3>
+            <p className="text-sm text-slate-700">
+              Requests are routed privately to nearby professionals based on trade and location, not who pays more.
+            </p>
+          </div>
+          <div className="card p-6">
+            <h3 className="font-semibold text-lg mb-3 text-emerald-700">✓ 30-mile radius matching</h3>
+            <p className="text-sm text-slate-700">
+              Jobs are matched by trade and distance to ensure homeowners get nearby professionals and pros get relevant work.
+            </p>
+          </div>
+          <div className="card p-6">
+            <h3 className="font-semibold text-lg mb-3 text-emerald-700">✓ Quality through capacity limits</h3>
+            <p className="text-sm text-slate-700">
+              We limit the number of active professionals per area to protect response times and service quality for everyone.
+            </p>
+          </div>
         </div>
       </section>
       
