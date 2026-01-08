@@ -36,6 +36,18 @@ export default function JoinPage(){
     <HelmetSEO title="Join Fixlo – Pros" canonicalPathname="/join" />
     <div className="container-xl py-8">
       <h1 className="text-2xl font-extrabold">Join as a Professional</h1>
+      
+      {/* Capacity-Based Scarcity Message */}
+      <div className="card p-6 bg-blue-50 border border-blue-200 mb-6">
+        <h2 className="text-lg font-semibold text-slate-900 mb-2">Quality-Focused Network</h2>
+        <p className="text-sm text-slate-700 mb-2">
+          To protect response times and ensure quality service for homeowners, we limit the number of active professionals per area.
+        </p>
+        <p className="text-sm text-slate-700">
+          Some locations may require approval or waitlisting based on current capacity.
+        </p>
+      </div>
+      
       <div className="card p-6">
         <form onSubmit={onSubmit} className="space-y-3">
           <div><label className="block text-sm text-slate-800">Full Name</label><input name="name" className="mt-1 w-full rounded-xl" required/></div>
