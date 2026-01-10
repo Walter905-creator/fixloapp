@@ -323,6 +323,16 @@ app.use("/api/admin", adminRateLimit, require("./routes/adminJobs")); // Admin j
 app.use("/api/auth", authRateLimit, require("./routes/auth"));
 app.use("/api/pro-auth", authRateLimit, require("./routes/proAuth"));
 
+// Social Media Manager (admin only)
+// TODO: Add auth middleware to restrict to admin users only
+try {
+  const socialManagerRoutes = require("./modules/social-manager/routes");
+  app.use("/api/social", adminRateLimit, socialManagerRoutes);
+  console.log("✅ Social Media Manager routes loaded");
+} catch (e) {
+  console.warn("⚠️ Social Media Manager routes not loaded:", e.message);
+}
+
 app.use("/api/subscription", generalRateLimit, require("./routes/subscription")); // Subscription pause/resume
 
 app.use("/api/pros", generalRateLimit, require("./routes/proRoutes")); // auth & mgmt
@@ -849,6 +859,23 @@ async function start() {
       console.log('✅ Scheduled tasks started');
     } catch (e) {
       console.warn("⚠️ Scheduled tasks initialization skipped:", e?.message || e);
+    }
+
+    // Initialize Social Media Manager
+    try {
+      const socialManager = require('./modules/social-manager');
+      // Only start if encryption key is configured
+      if (process.env.SOCIAL_ENCRYPTION_KEY) {
+        await socialManager.initialize({
+          startScheduler: true,
+          requireApproval: true // Safe default: require manual approval
+        });
+        console.log('✅ Social Media Manager initialized');
+      } else {
+        console.log('ℹ️ Social Media Manager not initialized (SOCIAL_ENCRYPTION_KEY not set)');
+      }
+    } catch (e) {
+      console.warn("⚠️ Social Media Manager initialization skipped:", e?.message || e);
     }
 
     server.listen(PORT, () => {
