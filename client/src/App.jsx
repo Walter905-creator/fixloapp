@@ -16,6 +16,7 @@ import ProForgotPasswordPage from './routes/ProForgotPasswordPage.jsx';
 import ProResetPasswordPage from './routes/ProResetPasswordPage.jsx';
 import AdminPage from './routes/AdminPage.jsx';
 import AdminJobsPage from './routes/AdminJobsPage.jsx';
+import AdminSocialMediaPage from './routes/AdminSocialMediaPage.jsx';
 import ProDashboardPage from './routes/ProDashboardPage.jsx';
 import ContractorDashboardPage from './routes/ContractorDashboardPage.jsx';
 import JoinPage from './routes/JoinPage.jsx';
@@ -65,6 +66,7 @@ export default function App(){
       <Route path="/pro/reset-password" element={<ProResetPasswordPage/>}/>
       <Route path="/admin" element={<AdminPage/>}/>
       <Route path="/admin/jobs" element={<AdminJobsPage/>}/>
+      <Route path="/admin/social-media" element={<AdminSocialMediaPage/>}/>
       <Route path="/my-jobs" element={<CustomerPortalPage/>}/>
       <Route path="/pro/dashboard" element={
         <ProtectedRoute requiredRole="pro">
