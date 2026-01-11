@@ -37,10 +37,7 @@ export default function AdminSocialMediaPage() {
 
       const response = await fetch(`${API_BASE}/api/social/status`, {
         method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -78,10 +75,7 @@ export default function AdminSocialMediaPage() {
       const url = `${API_BASE}/api/social/connect/${platform}/url?accountType=${accountType}`;
       const response = await fetch(url, {
         method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -217,27 +211,30 @@ export default function AdminSocialMediaPage() {
                 {renderStatusBadge('meta_instagram')}
               </div>
 
-              {getPlatformStatus('meta_instagram') && getPlatformStatus('meta_instagram').isActive ? (
-                <div className="bg-gray-50 rounded p-4 mb-4">
-                  <p className="text-sm font-medium text-gray-900 mb-1">
-                    @{getPlatformStatus('meta_instagram').platformUsername}
-                  </p>
-                  <p className="text-xs text-gray-600">
-                    Connected: {new Date(getPlatformStatus('meta_instagram').connectedAt).toLocaleDateString()}
-                  </p>
-                </div>
-              ) : (
-                <div className="bg-blue-50 border border-blue-200 rounded p-4 mb-4">
-                  <p className="text-sm text-blue-900">
-                    <strong>Requirements:</strong>
-                  </p>
-                  <ul className="text-sm text-blue-800 mt-2 space-y-1 list-disc list-inside">
-                    <li>Instagram Business or Creator account</li>
-                    <li>Account must be connected to a Facebook Page</li>
-                    <li>You must be an admin of the Facebook Page</li>
-                  </ul>
-                </div>
-              )}
+              {(() => {
+                const instagramAccount = getPlatformStatus('meta_instagram');
+                return instagramAccount && instagramAccount.isActive ? (
+                  <div className="bg-gray-50 rounded p-4 mb-4">
+                    <p className="text-sm font-medium text-gray-900 mb-1">
+                      @{instagramAccount.platformUsername}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      Connected: {new Date(instagramAccount.connectedAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-blue-50 border border-blue-200 rounded p-4 mb-4">
+                    <p className="text-sm text-blue-900">
+                      <strong>Requirements:</strong>
+                    </p>
+                    <ul className="text-sm text-blue-800 mt-2 space-y-1 list-disc list-inside">
+                      <li>Instagram Business or Creator account</li>
+                      <li>Account must be connected to a Facebook Page</li>
+                      <li>You must be an admin of the Facebook Page</li>
+                    </ul>
+                  </div>
+                );
+              })()}
 
               <button
                 onClick={() => handleConnect('meta_instagram', 'instagram')}
@@ -273,27 +270,30 @@ export default function AdminSocialMediaPage() {
                 {renderStatusBadge('meta_facebook')}
               </div>
 
-              {getPlatformStatus('meta_facebook') && getPlatformStatus('meta_facebook').isActive ? (
-                <div className="bg-gray-50 rounded p-4 mb-4">
-                  <p className="text-sm font-medium text-gray-900 mb-1">
-                    {getPlatformStatus('meta_facebook').accountName}
-                  </p>
-                  <p className="text-xs text-gray-600">
-                    Connected: {new Date(getPlatformStatus('meta_facebook').connectedAt).toLocaleDateString()}
-                  </p>
-                </div>
-              ) : (
-                <div className="bg-blue-50 border border-blue-200 rounded p-4 mb-4">
-                  <p className="text-sm text-blue-900">
-                    <strong>Requirements:</strong>
-                  </p>
-                  <ul className="text-sm text-blue-800 mt-2 space-y-1 list-disc list-inside">
-                    <li>Facebook Business Page (not personal profile)</li>
-                    <li>You must be an admin of the page</li>
-                    <li>Page must be published and active</li>
-                  </ul>
-                </div>
-              )}
+              {(() => {
+                const facebookAccount = getPlatformStatus('meta_facebook');
+                return facebookAccount && facebookAccount.isActive ? (
+                  <div className="bg-gray-50 rounded p-4 mb-4">
+                    <p className="text-sm font-medium text-gray-900 mb-1">
+                      {facebookAccount.accountName}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      Connected: {new Date(facebookAccount.connectedAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-blue-50 border border-blue-200 rounded p-4 mb-4">
+                    <p className="text-sm text-blue-900">
+                      <strong>Requirements:</strong>
+                    </p>
+                    <ul className="text-sm text-blue-800 mt-2 space-y-1 list-disc list-inside">
+                      <li>Facebook Business Page (not personal profile)</li>
+                      <li>You must be an admin of the page</li>
+                      <li>Page must be published and active</li>
+                    </ul>
+                  </div>
+                );
+              })()}
 
               <button
                 onClick={() => handleConnect('meta_facebook', 'facebook')}
