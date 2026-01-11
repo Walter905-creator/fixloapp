@@ -51,12 +51,16 @@ class MetaOAuthHandler {
   /**
    * Generate OAuth authorization URL
    * @param {string} ownerId - Admin/org ID initiating connection
-   * @param {string} accountType - 'instagram' or 'facebook'
+   * @param {string} accountType - 'instagram' or 'facebook' (used for post-OAuth processing)
    * @returns {string} - Authorization URL
    * 
    * IMPORTANT: Facebook Login does NOT support instagram_* scopes.
    * Instagram access is derived from the connected Facebook Page.
    * Only request Facebook Page permissions in the OAuth URL.
+   * 
+   * NOTE: The accountType parameter doesn't affect OAuth scopes (both use the same
+   * Facebook Page permissions). It's passed through state for post-OAuth processing
+   * to determine which account type to retrieve and save.
    */
   getAuthorizationUrl(ownerId, accountType = 'instagram') {
     if (!this.isConfigured()) {
