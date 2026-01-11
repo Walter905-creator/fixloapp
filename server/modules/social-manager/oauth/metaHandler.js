@@ -6,14 +6,19 @@ const { SocialAuditLog } = require('../models');
 /**
  * Meta OAuth Handler (Instagram + Facebook Pages)
  * 
+ * OAUTH FLOW:
+ * 1. Facebook Login requests ONLY Facebook Page permissions
+ * 2. User selects a Facebook Page during OAuth
+ * 3. Instagram Business Account is discovered from the connected Page
+ * 4. Instagram publishing works via Instagram Graph API
+ * 
  * TODO: Before production:
  * 1. Register app at https://developers.facebook.com/
  * 2. Add Instagram Graph API and Pages API permissions
  * 3. Submit app for review with required permissions:
- *    - instagram_basic
- *    - instagram_content_publish
+ *    - pages_show_list
  *    - pages_read_engagement
- *    - pages_manage_posts
+ *    Note: Instagram permissions are NOT requested in OAuth URL
  * 4. Configure OAuth redirect URI in app settings
  * 5. Obtain App ID and App Secret
  * 
@@ -46,18 +51,25 @@ class MetaOAuthHandler {
   /**
    * Generate OAuth authorization URL
    * @param {string} ownerId - Admin/org ID initiating connection
-   * @param {string} accountType - 'instagram' or 'facebook'
+   * @param {string} accountType - 'instagram' or 'facebook' (used for post-OAuth processing)
    * @returns {string} - Authorization URL
+   * 
+   * IMPORTANT: Facebook Login does NOT support instagram_* scopes.
+   * Instagram access is derived from the connected Facebook Page.
+   * Only request Facebook Page permissions in the OAuth URL.
+   * 
+   * NOTE: The accountType parameter doesn't affect OAuth scopes (both use the same
+   * Facebook Page permissions). It's passed through state for post-OAuth processing
+   * to determine which account type to retrieve and save.
    */
   getAuthorizationUrl(ownerId, accountType = 'instagram') {
     if (!this.isConfigured()) {
       throw new Error('Meta OAuth not configured. Set SOCIAL_META_CLIENT_ID and SOCIAL_META_CLIENT_SECRET');
     }
     
-    // Define scopes based on account type
-    const scopes = accountType === 'instagram'
-      ? ['instagram_basic', 'instagram_content_publish', 'pages_show_list']
-      : ['pages_read_engagement', 'pages_manage_posts', 'pages_show_list'];
+    // Use ONLY Facebook Page permissions (Instagram access comes from connected Page)
+    // Do NOT include instagram_basic or instagram_content_publish - they are invalid for Facebook Login
+    const scopes = ['pages_show_list', 'pages_read_engagement'];
     
     const params = new URLSearchParams({
       client_id: this.clientId,
@@ -253,7 +265,7 @@ class MetaOAuthHandler {
           pageId: accountInfo.pageId,
           pageName: accountInfo.pageName
         },
-        grantedScopes: ['instagram_basic', 'instagram_content_publish', 'pages_manage_posts']
+        grantedScopes: ['pages_show_list', 'pages_read_engagement']
       });
       
       await socialAccount.save();
