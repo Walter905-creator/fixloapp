@@ -19,6 +19,87 @@ const postingService = require('../posting');
 // ==================== OAuth & Connection Routes ====================
 
 /**
+ * GET /api/social/oauth/meta/callback
+ * OAuth callback handler for Meta (Facebook/Instagram)
+ * This receives the authorization code from Meta and completes the connection
+ */
+router.get('/oauth/meta/callback', async (req, res) => {
+  try {
+    const { code, state, error, error_description } = req.query;
+    
+    // Get client URL with secure default
+    const clientUrl = process.env.CLIENT_URL || (process.env.NODE_ENV === 'production' 
+      ? 'https://www.fixloapp.com' 
+      : 'http://localhost:3000');
+    
+    // Check for OAuth errors - sanitize error messages
+    if (error) {
+      console.error('[Meta OAuth] OAuth error from Meta:', { error, error_description });
+      // Use safe, generic error message for redirect
+      const safeError = error === 'access_denied' ? 'access_denied' : 'oauth_error';
+      return res.redirect(`${clientUrl}/admin/social-media?error=${safeError}`);
+    }
+    
+    if (!code) {
+      console.error('[Meta OAuth] No authorization code received');
+      return res.redirect(`${clientUrl}/admin/social-media?error=no_code`);
+    }
+    
+    // Parse state to get ownerId and accountType
+    let ownerId = 'admin';
+    let accountType = 'instagram';
+    
+    if (state) {
+      try {
+        const stateData = JSON.parse(state);
+        ownerId = stateData.ownerId || 'admin';
+        accountType = stateData.accountType || 'instagram';
+      } catch (e) {
+        console.warn('[Meta OAuth] Failed to parse state:', e);
+      }
+    }
+    
+    console.info('[Meta OAuth] Callback received, processing connection...', {
+      accountType,
+      ownerId,
+      hasCode: !!code
+    });
+    
+    // Get the Meta handler and complete connection
+    const handler = getHandler('meta_instagram'); // Both Instagram and Facebook use same handler
+    
+    try {
+      const account = await handler.connect({
+        code,
+        ownerId,
+        accountType
+      });
+      
+      console.info('[Meta OAuth] Connection successful, redirecting to admin page');
+      // Redirect back to admin page with success
+      return res.redirect(`${clientUrl}/admin/social-media?connected=true&platform=${account.platform}`);
+      
+    } catch (connectError) {
+      console.error('[Meta OAuth] Connection failed:', connectError);
+      
+      // Get failure reason if available - use only predefined safe reason codes
+      const safeReasons = ['NO_PAGES', 'NO_PAGE_TOKEN', 'NO_IG_BUSINESS', 'APP_NOT_LIVE', 'UNKNOWN'];
+      const reason = safeReasons.includes(connectError.reason) ? connectError.reason : 'UNKNOWN';
+      
+      // Redirect back to admin page with safe error code only (no message)
+      return res.redirect(`${clientUrl}/admin/social-media?reason=${reason}`);
+    }
+    
+  } catch (error) {
+    console.error('[Meta OAuth] Callback handler error:', error);
+    const clientUrl = process.env.CLIENT_URL || (process.env.NODE_ENV === 'production' 
+      ? 'https://www.fixloapp.com' 
+      : 'http://localhost:3000');
+    return res.redirect(`${clientUrl}/admin/social-media?error=internal_error`);
+  }
+});
+
+/**
  * GET /api/social/platforms
  * Get list of configured platforms
  */
@@ -139,10 +220,18 @@ router.post('/connect/:platform', async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({
+    // Return structured error with reason code for Meta platforms
+    const errorResponse = {
       success: false,
       error: error.message
-    });
+    };
+    
+    // Add reason code if available (for Meta OAuth)
+    if (error.reason) {
+      errorResponse.reason = error.reason;
+    }
+    
+    res.status(500).json(errorResponse);
   }
 });
 
@@ -388,14 +477,39 @@ router.get('/status', async (req, res) => {
         id: a._id,
         platform: a.platform,
         platformUsername: a.platformUsername,
+        accountName: a.accountName,
         isActive: a.isActive,
         isTokenValid: a.isTokenValid,
         requiresReauth: a.requiresReauth,
         lastPostAt: a.lastPostAt,
-        tokenExpiresAt: a.tokenExpiresAt
+        tokenExpiresAt: a.tokenExpiresAt,
+        connectedAt: a.connectedAt
       })),
       reauthAlerts,
       schedule: scheduleAnalytics
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/social/debug/meta
+ * Get Meta OAuth debug information
+ */
+router.get('/debug/meta', async (req, res) => {
+  try {
+    const ownerId = req.user?.id || 'admin';
+    
+    const metaHandler = getHandler('meta_instagram'); // Both use same handler
+    const debugInfo = await metaHandler.getDebugInfo(ownerId);
+    
+    res.json({
+      success: true,
+      ...debugInfo
     });
   } catch (error) {
     res.status(500).json({

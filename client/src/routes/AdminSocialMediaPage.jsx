@@ -22,9 +22,43 @@ export default function AdminSocialMediaPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [connectingPlatform, setConnectingPlatform] = useState(null);
+  const [metaDebugInfo, setMetaDebugInfo] = useState(null);
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
 
   useEffect(() => {
     loadStatus();
+    
+    // Check for OAuth callback parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const oauthError = urlParams.get('error');
+    const reason = urlParams.get('reason');
+    const connected = urlParams.get('connected');
+    const platform = urlParams.get('platform');
+    
+    if (oauthError || reason) {
+      if (oauthError) {
+        // Map safe error codes to user-friendly messages
+        const errorMessages = {
+          'access_denied': 'OAuth access was denied',
+          'oauth_error': 'OAuth authentication error',
+          'no_code': 'No authorization code received',
+          'internal_error': 'Internal server error'
+        };
+        setError(errorMessages[oauthError] || 'OAuth connection failed');
+      }
+      
+      // Load debug info for any error or reason
+      loadMetaDebugInfo();
+      setShowDebugPanel(true);
+      
+      // Clean URL without page reload
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (connected === 'true' && platform) {
+      // Success! Refresh status
+      loadStatus();
+      // Clean URL without page reload
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   }, []);
 
   /**
@@ -51,6 +85,30 @@ export default function AdminSocialMediaPage() {
       setError('Failed to load connection status. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+  
+  /**
+   * Load Meta OAuth debug information
+   */
+  const loadMetaDebugInfo = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/social/debug/meta`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        console.error('Failed to load Meta debug info:', response.status);
+        return;
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setMetaDebugInfo(data);
+      }
+    } catch (err) {
+      console.error('Error loading Meta debug info:', err);
     }
   };
 
@@ -217,6 +275,55 @@ export default function AdminSocialMediaPage() {
             {error}
           </div>
         )}
+        
+        {/* Meta OAuth Diagnostic Panel */}
+        {showDebugPanel && metaDebugInfo && metaDebugInfo.lastErrorReason && (
+          <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6 mb-6">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-red-900 mb-2">
+                  Meta Connection Failed: {metaDebugInfo.lastErrorReason}
+                </h3>
+                <p className="text-sm text-red-800 mb-3">
+                  {metaDebugInfo.helpText || 'An error occurred during OAuth connection.'}
+                </p>
+                
+                <div className="bg-white rounded p-4 text-sm space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="font-medium text-gray-700">Error Code:</span>
+                      <span className="ml-2 text-gray-900">{metaDebugInfo.lastErrorReason}</span>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Timestamp:</span>
+                      <span className="ml-2 text-gray-900">
+                        {metaDebugInfo.lastErrorTimestamp 
+                          ? new Date(metaDebugInfo.lastErrorTimestamp).toLocaleString()
+                          : 'N/A'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Node Env:</span>
+                      <span className="ml-2 text-gray-900">{metaDebugInfo.nodeEnv || 'unknown'}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => setShowDebugPanel(false)}
+                  className="mt-3 text-sm text-red-700 hover:text-red-900 font-medium"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="text-center py-12">
@@ -380,6 +487,107 @@ export default function AdminSocialMediaPage() {
                 <strong>Security:</strong> We use OAuth 2.0 - we never see or store your password.
                 You can revoke access anytime from your platform's security settings.
               </p>
+            </div>
+            
+            {/* Meta Debug Info Section (Admin Only) */}
+            <div className="bg-gray-50 border border-gray-300 rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Meta OAuth Debug Info
+                </h3>
+                <button
+                  onClick={loadMetaDebugInfo}
+                  className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium text-gray-700 transition-colors"
+                >
+                  Refresh
+                </button>
+              </div>
+              
+              {metaDebugInfo ? (
+                <div className="space-y-3 text-sm">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <span className="font-medium text-gray-700">App Configured:</span>
+                      <span className={`ml-2 ${metaDebugInfo.isConfigured ? 'text-green-600' : 'text-red-600'}`}>
+                        {metaDebugInfo.isConfigured ? '✓ Yes' : '✗ No'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Node Env:</span>
+                      <span className="ml-2 text-gray-900">{metaDebugInfo.nodeEnv || 'unknown'}</span>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Instagram Connected:</span>
+                      <span className={`ml-2 ${metaDebugInfo.hasActiveInstagram ? 'text-green-600' : 'text-gray-500'}`}>
+                        {metaDebugInfo.hasActiveInstagram ? '✓ Yes' : '✗ No'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Facebook Connected:</span>
+                      <span className={`ml-2 ${metaDebugInfo.hasActiveFacebook ? 'text-green-600' : 'text-gray-500'}`}>
+                        {metaDebugInfo.hasActiveFacebook ? '✓ Yes' : '✗ No'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {metaDebugInfo.lastOAuthAttempt && (
+                    <div className="mt-4 pt-4 border-t border-gray-300">
+                      <p className="font-medium text-gray-700 mb-2">Last OAuth Attempt:</p>
+                      <div className="bg-white rounded p-3 space-y-1">
+                        <div>
+                          <span className="font-medium text-gray-600">Status:</span>
+                          <span className={`ml-2 ${metaDebugInfo.lastOAuthAttempt.success ? 'text-green-600' : 'text-red-600'}`}>
+                            {metaDebugInfo.lastOAuthAttempt.success ? '✓ Success' : '✗ Failed'}
+                          </span>
+                        </div>
+                        {metaDebugInfo.lastOAuthAttempt.reason && (
+                          <div>
+                            <span className="font-medium text-gray-600">Reason:</span>
+                            <span className="ml-2 text-gray-900">{metaDebugInfo.lastOAuthAttempt.reason}</span>
+                          </div>
+                        )}
+                        {metaDebugInfo.lastOAuthAttempt.accountType && (
+                          <div>
+                            <span className="font-medium text-gray-600">Account Type:</span>
+                            <span className="ml-2 text-gray-900">{metaDebugInfo.lastOAuthAttempt.accountType}</span>
+                          </div>
+                        )}
+                        <div>
+                          <span className="font-medium text-gray-600">Timestamp:</span>
+                          <span className="ml-2 text-gray-900">
+                            {new Date(metaDebugInfo.lastOAuthAttempt.timestamp).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {metaDebugInfo.connectedAccounts && metaDebugInfo.connectedAccounts.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-gray-300">
+                      <p className="font-medium text-gray-700 mb-2">Connected Accounts:</p>
+                      <div className="space-y-2">
+                        {metaDebugInfo.connectedAccounts.map((acc, idx) => (
+                          <div key={idx} className="bg-white rounded p-3">
+                            <div className="font-medium text-gray-900">@{acc.username}</div>
+                            <div className="text-xs text-gray-600">
+                              Platform: {acc.platform} | Token Valid: {acc.isTokenValid ? '✓' : '✗'}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <button
+                    onClick={loadMetaDebugInfo}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium transition-colors"
+                  >
+                    Load Debug Info
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
