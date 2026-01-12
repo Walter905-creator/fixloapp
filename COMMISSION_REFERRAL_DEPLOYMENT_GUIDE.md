@@ -262,7 +262,7 @@ curl -X POST https://fixloapp.onrender.com/api/admin/commission-referrals/verify
 **Check:**
 1. Is social verification approved?
 2. Is available balance sufficient?
-3. Is Stripe Connect or PayPal configured?
+3. Is Stripe Connect configured?
 4. Check admin approval status
 
 ### Issue: High fraud detection

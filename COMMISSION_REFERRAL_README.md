@@ -49,7 +49,7 @@ Visit: **https://www.fixloapp.com/earn**
 - ✅ Multi-currency support (USD, CAD, GBP, AUD, NZD)
 - ✅ 30-day verification with automatic cron job
 - ✅ Social media verification requirement
-- ✅ Stripe Connect + PayPal payouts
+- ✅ Stripe Connect payouts
 - ✅ Comprehensive fraud detection
 - ✅ Full admin control panel
 
@@ -94,7 +94,7 @@ VITE_REFERRALS_ENABLED=false
 4. **Submit social verification** (required for payouts)
 5. **Earn commissions** when referred Pros subscribe
 6. **Wait 30 days** for automatic verification
-7. **Request payout** via Stripe or PayPal
+7. **Request payout** via Stripe Connect
 
 ### For Admins
 

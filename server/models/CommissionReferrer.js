@@ -87,10 +87,10 @@ const commissionReferrerSchema = new mongoose.Schema({
     default: null
   },
   
-  // Payout method
+  // Payout method (Stripe Connect only)
   payoutMethod: {
     type: String,
-    enum: ['stripe_connect', 'paypal', null],
+    enum: ['stripe_connect', null],
     default: null
   },
   
@@ -100,14 +100,6 @@ const commissionReferrerSchema = new mongoose.Schema({
     default: null,
     sparse: true,
     index: true
-  },
-  
-  // PayPal email
-  paypalEmail: {
-    type: String,
-    lowercase: true,
-    trim: true,
-    default: null
   },
   
   // Statistics

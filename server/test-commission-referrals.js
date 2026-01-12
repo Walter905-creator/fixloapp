@@ -150,24 +150,8 @@ try {
     throw new Error(`Expected $99.75 net, got $${stripePayout.netAmount}`);
   }
   
-  // Test PayPal fees (US = $0)
-  const paypalPayout = new CommissionPayout({
-    referrerId: '507f1f77bcf86cd799439011',
-    amount: 100,
-    currency: 'USD',
-    payoutMethod: 'paypal',
-    country: 'US'
-  });
-  
-  paypalPayout.calculateFees();
-  
-  if (paypalPayout.platformFee !== 0) {
-    throw new Error(`Expected $0 PayPal fee for US, got $${paypalPayout.platformFee}`);
-  }
-  
   console.log(`✅ Payout fee calculation works`);
-  console.log(`   Stripe: $100.00 - $0.25 = $99.75`);
-  console.log(`   PayPal (US): $100.00 - $0.00 = $100.00\n`);
+  console.log(`   Stripe: $100.00 - $0.25 = $99.75\n`);
 } catch (err) {
   console.error('❌ Payout fee calculation failed:', err.message);
   process.exit(1);
@@ -248,7 +232,7 @@ console.log('  ✓ Model loading (4 models)');
 console.log('  ✓ Referral code generation');
 console.log('  ✓ Commission calculation (multiple countries)');
 console.log('  ✓ 30-day verification date');
-console.log('  ✓ Payout fee calculation (Stripe + PayPal)');
+console.log('  ✓ Payout fee calculation (Stripe)');
 console.log('  ✓ Service loading');
 console.log('  ✓ Route loading');
 console.log('  ✓ Feature flag logic');

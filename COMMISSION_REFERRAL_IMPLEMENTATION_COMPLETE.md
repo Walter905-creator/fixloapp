@@ -38,7 +38,6 @@
 
 5. **Payout System**
    - Stripe Connect (Express accounts)
-   - PayPal fallback
    - Manual admin approval required
    - Referrer pays all fees
    - Comprehensive tracking
@@ -211,7 +210,7 @@ CommissionPayout
 - ✓ Referral code generation
 - ✓ Commission calculation (multiple countries)
 - ✓ 30-day verification date calculation
-- ✓ Payout fee calculation (Stripe + PayPal)
+- ✓ Payout fee calculation (Stripe)
 - ✓ Service loading
 - ✓ Route loading
 - ✓ Feature flag logic

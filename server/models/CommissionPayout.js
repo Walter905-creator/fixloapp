@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 /**
  * Commission Payout Model
  * 
- * Tracks cash payouts to referrers via Stripe Connect or PayPal.
+ * Tracks cash payouts to referrers via Stripe Connect.
  * Requires manual admin approval before processing.
  * 
  * COMPLIANCE:
@@ -65,10 +65,10 @@ const commissionPayoutSchema = new mongoose.Schema({
     min: 0
   },
   
-  // Payout method
+  // Payout method (Stripe Connect only)
   payoutMethod: {
     type: String,
-    enum: ['stripe_connect', 'paypal'],
+    enum: ['stripe_connect'],
     required: true
   },
   
@@ -81,19 +81,6 @@ const commissionPayoutSchema = new mongoose.Schema({
   },
   
   stripeTransferId: {
-    type: String,
-    default: null
-  },
-  
-  // PayPal details
-  paypalPayoutBatchId: {
-    type: String,
-    default: null,
-    sparse: true,
-    index: true
-  },
-  
-  paypalPayoutItemId: {
     type: String,
     default: null
   },
@@ -191,22 +178,10 @@ commissionPayoutSchema.index({ createdAt: -1 });
 
 // Calculate fees based on payout method
 commissionPayoutSchema.methods.calculateFees = function() {
-  if (this.payoutMethod === 'stripe_connect') {
-    // Stripe Connect: 0.25% per payout (min $0.25, max $2)
-    const stripeFee = Math.max(0.25, Math.min(2.00, this.amount * 0.0025));
-    this.platformFee = Math.round(stripeFee * 100) / 100;
-    this.processingFee = 0;
-  } else if (this.payoutMethod === 'paypal') {
-    // PayPal: $0 for payouts over $1 in US, varies internationally
-    // Simplified: 2% fee for international, $0 for US
-    if (this.country === 'US') {
-      this.platformFee = 0;
-      this.processingFee = 0;
-    } else {
-      this.platformFee = Math.round(this.amount * 0.02 * 100) / 100;
-      this.processingFee = 0;
-    }
-  }
+  // Stripe Connect: 0.25% per payout (min $0.25, max $2)
+  const stripeFee = Math.max(0.25, Math.min(2.00, this.amount * 0.0025));
+  this.platformFee = Math.round(stripeFee * 100) / 100;
+  this.processingFee = 0;
   
   this.totalFees = this.platformFee + this.processingFee;
   this.netAmount = Math.round((this.amount - this.totalFees) * 100) / 100;

@@ -48,7 +48,7 @@ Tracks anyone who registers to earn commissions.
 - `currency` - For payouts (USD, CAD, GBP, etc.)
 - `status` - pending, active, suspended, banned
 - `socialVerified` - Boolean, required for payouts
-- `payoutMethod` - stripe_connect or paypal
+- `payoutMethod` - stripe_connect only
 - Stats: `totalReferrals`, `approvedReferrals`, `totalEarned`, `availableBalance`
 
 #### 2. CommissionReferral
@@ -89,9 +89,9 @@ Tracks payout requests and transactions.
 - `referralIds` - Array of included referrals
 - `amount` - Total payout amount
 - `netAmount` - After fees
-- `payoutMethod` - stripe_connect or paypal
+- `payoutMethod` - stripe_connect only
 - `status` - pending, approved, processing, completed, failed, cancelled
-- Stripe/PayPal transaction IDs
+- Stripe transaction IDs
 
 ## 🔌 API Endpoints
 
@@ -244,11 +244,6 @@ Get system-wide statistics.
 - Fee: 0.25% per payout (min $0.25, max $2.00)
 - Referrer pays all fees
 
-### PayPal (Fallback)
-- PayPal email required
-- Fee: $0 for US, 2% for international
-- Referrer pays all fees
-
 ## 🛡️ Fraud Protection
 
 ### Detection Flags
@@ -319,7 +314,7 @@ Future implementation will include:
 ### Prerequisites
 1. Set `REFERRALS_ENABLED=false` in production initially
 2. Ensure MongoDB indexes are created (automatic on first run)
-3. Configure Stripe Connect or PayPal credentials
+3. Configure Stripe Connect credentials
 4. Set up admin user accounts
 
 ### Rollout Steps

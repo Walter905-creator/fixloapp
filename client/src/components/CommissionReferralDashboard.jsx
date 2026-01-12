@@ -557,7 +557,6 @@ export default function CommissionReferralDashboard() {
                   className="w-full px-4 py-2 border border-slate-300 rounded-lg"
                 >
                   <option value="stripe_connect">Stripe (Bank Transfer)</option>
-                  <option value="paypal">PayPal</option>
                 </select>
               </div>
               

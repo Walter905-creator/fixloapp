@@ -310,7 +310,7 @@ router.post('/payout/:id/review', async (req, res) => {
       payout.approvedAt = new Date();
       payout.approvedBy = adminEmail || 'admin';
       
-      // Note: Actual payout processing (Stripe/PayPal) should be done separately
+      // Note: Actual payout processing (Stripe Connect) should be done separately
       // This just approves it for processing
       
     } else {
