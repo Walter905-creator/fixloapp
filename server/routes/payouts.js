@@ -1,4 +1,3 @@
-// server/routes/payouts.js
 const express = require('express');
 const router = express.Router();
 const Payout = require('../models/Payout');
@@ -17,7 +16,8 @@ const adminAuth = require('../middleware/adminAuth');
  * - Processing fees deducted from payout
  */
 
-const MIN_PAYOUT_AMOUNT = 25; // $25 USD
+// Import minimum payout amount from model to avoid duplication
+const MIN_PAYOUT_AMOUNT = Payout.MIN_PAYOUT_AMOUNT;
 
 // Feature flag middleware
 const checkFeatureFlag = (req, res, next) => {
@@ -109,7 +109,10 @@ router.post('/request', async (req, res) => {
     }
     
     // Calculate processing fee (Stripe Connect fee: ~2.9% + $0.30)
-    const processingFee = Math.round((requestedAmount * 0.029) + 30);
+    // Note: These values should be reviewed periodically as Stripe fees may change
+    const STRIPE_PERCENTAGE_FEE = parseFloat(process.env.STRIPE_PERCENTAGE_FEE || '0.029'); // 2.9%
+    const STRIPE_FIXED_FEE = parseFloat(process.env.STRIPE_FIXED_FEE_CENTS || '30'); // $0.30 in cents
+    const processingFee = Math.round((requestedAmount * STRIPE_PERCENTAGE_FEE) + STRIPE_FIXED_FEE);
     const netAmount = requestedAmount - processingFee;
     
     // Create payout request

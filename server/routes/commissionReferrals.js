@@ -258,8 +258,9 @@ router.post('/track', async (req, res) => {
       });
     }
     
-    // Calculate commission
-    const commissionAmount = Math.round(subscriptionAmount * referrer.commissionRate);
+    // Calculate commission using precise rounding for financial calculations
+    // Ensures no precision loss in commission amounts
+    const commissionAmount = Math.round(subscriptionAmount * referrer.commissionRate * 100) / 100;
     
     // Calculate 30-day mark date
     const thirtyDayMarkDate = new Date();

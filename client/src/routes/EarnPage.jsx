@@ -28,6 +28,16 @@ export default function EarnPage() {
   // Check feature flag
   useEffect(() => {
     const checkFeature = async () => {
+      // First check environment variable (client-side feature flag)
+      const clientEnabled = import.meta.env.VITE_REFERRALS_ENABLED === 'true';
+      
+      if (!clientEnabled) {
+        setFeatureEnabled(false);
+        setLoading(false);
+        return;
+      }
+      
+      // If client flag is enabled, verify server-side feature flag
       try {
         const response = await fetch(`${API_BASE}/api/commission-referrals/health`);
         const data = await response.json();
