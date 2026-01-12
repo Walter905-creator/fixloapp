@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const Payout = require('../models/Payout');
 const CommissionReferral = require('../models/CommissionReferral');
-const { isAdmin } = require('../middleware/auth');
+const adminAuth = require('../middleware/adminAuth');
 
 /**
  * COMPLIANCE: Payout System for Commission Referrals
@@ -199,7 +199,7 @@ router.get('/status/:email', async (req, res) => {
  * ADMIN: Get all pending payouts
  * GET /api/payouts/admin/pending
  */
-router.get('/admin/pending', isAdmin, async (req, res) => {
+router.get('/admin/pending', adminAuth, async (req, res) => {
   try {
     const pendingPayouts = await Payout.find({
       status: 'pending'
@@ -223,7 +223,7 @@ router.get('/admin/pending', isAdmin, async (req, res) => {
  * ADMIN: Approve payout
  * POST /api/payouts/admin/approve/:payoutId
  */
-router.post('/admin/approve/:payoutId', isAdmin, async (req, res) => {
+router.post('/admin/approve/:payoutId', adminAuth, async (req, res) => {
   try {
     const { payoutId } = req.params;
     const { adminEmail, notes } = req.body;
@@ -281,7 +281,7 @@ router.post('/admin/approve/:payoutId', isAdmin, async (req, res) => {
  * ADMIN: Reject payout
  * POST /api/payouts/admin/reject/:payoutId
  */
-router.post('/admin/reject/:payoutId', isAdmin, async (req, res) => {
+router.post('/admin/reject/:payoutId', adminAuth, async (req, res) => {
   try {
     const { payoutId } = req.params;
     const { adminEmail, reason } = req.body;
