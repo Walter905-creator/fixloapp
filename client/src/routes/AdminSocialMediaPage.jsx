@@ -73,14 +73,18 @@ export default function AdminSocialMediaPage() {
 
       // Get authorization URL from backend
       const url = `${API_BASE}/api/social/connect/${platform}/url?accountType=${accountType}`;
-      console.log('[OAuth] Requesting authorization URL:', url);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[OAuth] Requesting authorization URL:', url);
+      }
       
       const response = await fetch(url, {
         method: 'GET',
         credentials: 'include'
       });
 
-      console.log('[OAuth] Response status:', response.status, response.ok);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[OAuth] Response status:', response.status, response.ok);
+      }
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -88,7 +92,9 @@ export default function AdminSocialMediaPage() {
       }
 
       const data = await response.json();
-      console.log('[OAuth] Received response:', data);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[OAuth] Received response:', data);
+      }
       
       // Validate response structure
       if (!data || typeof data !== 'object') {
@@ -105,11 +111,20 @@ export default function AdminSocialMediaPage() {
 
       // Validate URL format
       const authUrl = String(data.authUrl).trim();
-      if (!authUrl.startsWith('http://') && !authUrl.startsWith('https://')) {
-        throw new Error(`Invalid OAuth URL format: ${authUrl}`);
+      try {
+        // Validate that it's a proper URL
+        const urlObj = new URL(authUrl);
+        // Ensure it's using http or https protocol
+        if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
+          throw new Error(`Invalid OAuth URL protocol: ${urlObj.protocol}`);
+        }
+      } catch (urlError) {
+        throw new Error(`Invalid OAuth URL: ${authUrl}`);
       }
 
-      console.log('[OAuth] Redirecting to:', authUrl);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[OAuth] Redirecting to:', authUrl);
+      }
 
       // Redirect to OAuth provider
       // The OAuth provider will redirect back to our callback URL
