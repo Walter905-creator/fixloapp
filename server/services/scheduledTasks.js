@@ -1,5 +1,6 @@
 const cron = require('node-cron');
 const { releaseStaleAuthorizations } = require('./autoReleaseService');
+const { runDailyVerification } = require('./commissionVerification');
 
 /**
  * Scheduled tasks service
@@ -35,6 +36,30 @@ function startScheduledTasks() {
     schedule: '0 3 * * *',
     description: 'Auto-release payment authorizations older than 7 days'
   });
+
+  // Task 2: Commission referral 30-day verification (if enabled)
+  // Runs daily at 2 AM UTC
+  if (process.env.REFERRALS_ENABLED === 'true') {
+    const verificationTask = cron.schedule('0 2 * * *', async () => {
+      console.log('⏰ Running scheduled task: Commission referral verification');
+      try {
+        await runDailyVerification();
+        console.log('✅ Commission verification task completed');
+      } catch (error) {
+        console.error('❌ Commission verification task failed:', error);
+      }
+    }, {
+      scheduled: true,
+      timezone: 'UTC'
+    });
+
+    scheduledTasks.push({
+      name: 'commission-referral-verification',
+      task: verificationTask,
+      schedule: '0 2 * * *',
+      description: '30-day verification for commission referrals'
+    });
+  }
 
   console.log(`✅ Scheduled ${scheduledTasks.length} tasks`);
   scheduledTasks.forEach(t => {
@@ -73,6 +98,8 @@ async function triggerTask(taskName) {
   switch (taskName) {
     case 'auto-release-stale-authorizations':
       return await releaseStaleAuthorizations();
+    case 'commission-referral-verification':
+      return await runDailyVerification();
     default:
       throw new Error(`Unknown task: ${taskName}`);
   }
