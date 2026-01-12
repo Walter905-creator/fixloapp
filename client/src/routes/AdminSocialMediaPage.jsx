@@ -35,21 +35,22 @@ export default function AdminSocialMediaPage() {
     const connected = urlParams.get('connected');
     const platform = urlParams.get('platform');
     
-    if (oauthError) {
-      // Map safe error codes to user-friendly messages
-      const errorMessages = {
-        'access_denied': 'OAuth access was denied',
-        'oauth_error': 'OAuth authentication error',
-        'no_code': 'No authorization code received',
-        'internal_error': 'Internal server error'
-      };
-      setError(errorMessages[oauthError] || 'OAuth connection failed');
-      
-      if (reason) {
-        // Load debug info for Meta platforms
-        loadMetaDebugInfo();
-        setShowDebugPanel(true);
+    if (oauthError || reason) {
+      if (oauthError) {
+        // Map safe error codes to user-friendly messages
+        const errorMessages = {
+          'access_denied': 'OAuth access was denied',
+          'oauth_error': 'OAuth authentication error',
+          'no_code': 'No authorization code received',
+          'internal_error': 'Internal server error'
+        };
+        setError(errorMessages[oauthError] || 'OAuth connection failed');
       }
+      
+      // Load debug info for any error or reason
+      loadMetaDebugInfo();
+      setShowDebugPanel(true);
+      
       // Clean URL without page reload
       window.history.replaceState({}, '', window.location.pathname);
     } else if (connected === 'true' && platform) {

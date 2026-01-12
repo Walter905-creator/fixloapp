@@ -28,6 +28,23 @@ const { SocialAuditLog } = require('../models');
  * - NEVER stores user passwords
  */
 
+// Error reason constants
+const ERROR_REASONS = {
+  NO_PAGES: 'NO_PAGES',
+  NO_PAGE_TOKEN: 'NO_PAGE_TOKEN',
+  NO_IG_BUSINESS: 'NO_IG_BUSINESS',
+  APP_NOT_LIVE: 'APP_NOT_LIVE',
+  UNKNOWN: 'UNKNOWN'
+};
+
+// Error messages
+const ERROR_MESSAGES = {
+  [ERROR_REASONS.NO_PAGES]: 'No Facebook Pages found. Please create or connect a Facebook Page.',
+  [ERROR_REASONS.NO_PAGE_TOKEN]: 'Page access token not available. The app may not be in Live mode or missing required permissions.',
+  [ERROR_REASONS.NO_IG_BUSINESS]: 'No Instagram Business Account found. Please connect an Instagram Business Account to your Facebook Page.',
+  [ERROR_REASONS.APP_NOT_LIVE]: 'App permissions error. Ensure your Meta app is approved and in Live mode.'
+};
+
 class MetaOAuthHandler {
   constructor() {
     this.clientId = process.env.SOCIAL_META_CLIENT_ID;
@@ -154,6 +171,11 @@ class MetaOAuthHandler {
       
       const pages = pagesResponse.data.data;
       
+      // Check if any pages exist
+      if (!pages || pages.length === 0) {
+        throw new Error(ERROR_MESSAGES[ERROR_REASONS.NO_PAGES]);
+      }
+      
       // Find first page with Instagram Business Account
       for (const page of pages) {
         if (page.instagram_business_account) {
@@ -176,8 +198,12 @@ class MetaOAuthHandler {
         }
       }
       
-      throw new Error('No Instagram Business Account found. Please connect an Instagram Business Account to your Facebook Page.');
+      throw new Error(ERROR_MESSAGES[ERROR_REASONS.NO_IG_BUSINESS]);
     } catch (error) {
+      // Preserve original error message if it's one of our constants
+      if (Object.values(ERROR_MESSAGES).includes(error.message)) {
+        throw error;
+      }
       throw new Error(`Failed to get Instagram account: ${error.response?.data?.error?.message || error.message}`);
     }
   }
@@ -209,7 +235,7 @@ class MetaOAuthHandler {
         });
         
         if (!response.data.data || response.data.data.length === 0) {
-          throw new Error('No Facebook Pages found. Please create or connect a Facebook Page.');
+          throw new Error(ERROR_MESSAGES[ERROR_REASONS.NO_PAGES]);
         }
         
         return response.data.data[0]; // Return first page
@@ -260,99 +286,37 @@ class MetaOAuthHandler {
       if (accountType === 'instagram') {
         console.info('[Meta OAuth] Looking up Instagram Business Account via Pages API...');
         try {
-          // Get user's Facebook Pages
-          const pagesResponse = await axios.get(`${this.graphApiUrl}/me/accounts`, {
-            params: {
-              access_token: longTokenData.access_token,
-              fields: 'id,name,instagram_business_account,access_token'
-            }
-          });
-          
-          const pages = pagesResponse.data.data;
-          console.info('[Meta OAuth] Pages API response:', {
-            pageCount: pages.length,
-            // Only log page details in development
-            ...(process.env.NODE_ENV !== 'production' && {
-              pages: pages.map(p => ({ id: p.id, name: p.name, hasIgAccount: !!p.instagram_business_account, hasPageToken: !!p.access_token }))
-            })
-          });
-          
-          if (!pages || pages.length === 0) {
-            failureReason = 'NO_PAGES';
-            console.info('[Meta OAuth] Final decision: REJECTED', { reason: failureReason });
-            throw new Error('No Facebook Pages found. Please create or connect a Facebook Page.');
-          }
-          
-          // Find first page with Instagram Business Account
-          let foundPage = null;
-          for (const page of pages) {
-            if (page.instagram_business_account) {
-              console.info('[Meta OAuth] Selected Page token presence:', {
-                pageId: page.id,
-                pageName: page.name,
-                hasPageToken: !!page.access_token
-              });
-              
-              if (!page.access_token) {
-                failureReason = 'NO_PAGE_TOKEN';
-                console.info('[Meta OAuth] Final decision: REJECTED', { reason: failureReason });
-                throw new Error('Page access token not available. The app may not be in Live mode or missing required permissions.');
-              }
-              
-              foundPage = page;
-              break;
-            }
-          }
-          
-          if (!foundPage) {
-            failureReason = 'NO_IG_BUSINESS';
-            console.info('[Meta OAuth] Final decision: REJECTED', { reason: failureReason });
-            throw new Error('No Instagram Business Account found. Please connect an Instagram Business Account to your Facebook Page.');
-          }
-          
-          // Get Instagram account details
-          console.info('[Meta OAuth] Fetching Instagram Business Account details...');
-          const igResponse = await axios.get(
-            `${this.graphApiUrl}/${foundPage.instagram_business_account.id}`,
-            {
-              params: {
-                access_token: longTokenData.access_token,
-                fields: 'id,username,name,profile_picture_url'
-              }
-            }
-          );
-          
+          accountInfo = await this.getInstagramAccount(longTokenData.access_token);
           console.info('[Meta OAuth] Instagram Business Account lookup: SUCCESS', {
-            hasUsername: !!igResponse.data.username,
+            hasUsername: !!accountInfo.username,
             // Only log identifiers in development
             ...(process.env.NODE_ENV !== 'production' && {
-              instagramId: igResponse.data.id,
-              username: igResponse.data.username,
-              pageId: foundPage.id
+              instagramId: accountInfo.id,
+              username: accountInfo.username,
+              pageId: accountInfo.pageId
             })
           });
-          
-          accountInfo = {
-            ...igResponse.data,
-            pageId: foundPage.id,
-            pageName: foundPage.name
-          };
           platform = 'meta_instagram';
         } catch (error) {
-          // Set failure reason if not already set
-          if (!failureReason) {
-            if (error.response?.data?.error?.code === 190) {
-              failureReason = 'APP_NOT_LIVE';
-            } else {
-              failureReason = 'UNKNOWN';
-            }
+          // Extract failure reason from error message
+          let failureReason = ERROR_REASONS.UNKNOWN;
+          if (error.message.includes(ERROR_MESSAGES[ERROR_REASONS.NO_PAGES])) {
+            failureReason = ERROR_REASONS.NO_PAGES;
+          } else if (error.message.includes(ERROR_MESSAGES[ERROR_REASONS.NO_IG_BUSINESS])) {
+            failureReason = ERROR_REASONS.NO_IG_BUSINESS;
+          } else if (error.response?.data?.error?.code === 190) {
+            failureReason = ERROR_REASONS.APP_NOT_LIVE;
           }
+          
           console.error('[Meta OAuth] Instagram account lookup failed:', {
             reason: failureReason,
             error: error.message,
             apiError: error.response?.data?.error
           });
-          throw error;
+          
+          const structuredError = new Error(error.message);
+          structuredError.reason = failureReason;
+          throw structuredError;
         }
       } else {
         console.info('[Meta OAuth] Looking up Facebook Page...');
@@ -425,17 +389,8 @@ class MetaOAuthHandler {
       
       return socialAccount;
     } catch (error) {
-      // Determine failure reason from error message
-      let failureReason = 'UNKNOWN';
-      if (error.message.includes('No Facebook Pages found')) {
-        failureReason = 'NO_PAGES';
-      } else if (error.message.includes('Page access token not available')) {
-        failureReason = 'NO_PAGE_TOKEN';
-      } else if (error.message.includes('No Instagram Business Account found')) {
-        failureReason = 'NO_IG_BUSINESS';
-      } else if (error.message.includes('not in Live mode') || error.response?.data?.error?.code === 190) {
-        failureReason = 'APP_NOT_LIVE';
-      }
+      // Use the reason from the error if available
+      const failureReason = error.reason || ERROR_REASONS.UNKNOWN;
       
       console.error('[Meta OAuth] Connection failed:', {
         reason: failureReason,
@@ -463,10 +418,11 @@ class MetaOAuthHandler {
         errorMessage: error.message
       });
       
-      // Return structured error
-      const structuredError = new Error(error.message);
-      structuredError.reason = failureReason;
-      throw structuredError;
+      // Ensure error has reason attached
+      if (!error.reason) {
+        error.reason = failureReason;
+      }
+      throw error;
     }
   }
   
