@@ -89,20 +89,32 @@ const handleConnect = async (platform, accountType = 'instagram') => {
 
 3. **Error handling**:
    ```javascript
-   if (popup && !popup.closed) {
-     popup.close();
-   }
+   // Note: With _self target, popup refers to current window
+   // If fetch fails, we're still on the admin page
    ```
-   - Cleans up popup if OAuth URL fetch fails
+   - Simplified error handling since window isn't actually a separate popup
+   - Error stays on admin page with error message displayed
 
 ## Technical Details
 
 ### Why `window.open('', '_self')` Works
 
-- **Empty URL `''`**: Opens blank page immediately
-- **Target `_self`**: Replaces current page (OAuth standard pattern)
+- **Empty URL `''`**: Opens blank page immediately  
+- **Target `_self`**: Replaces current page (OAuth standard pattern for full-page redirects)
 - **Synchronous execution**: Happens in click event stack
 - **Reference persistence**: The `popup` reference remains valid after async operations
+
+**Important**: Using `_self` is correct for this OAuth flow because:
+1. The user SHOULD be navigated away from the admin page to facebook.com
+2. After authorization, Facebook redirects to backend callback URL
+3. Backend processes OAuth and redirects back to admin page  
+4. This is the standard OAuth 2.0 authorization code flow pattern
+
+Alternative `_blank` (new tab/window) would require:
+- Managing the popup window reference
+- Communication between windows (postMessage)
+- More complex error handling
+- Worse UX (user has to manage multiple windows)
 
 ### Browser Popup Blocking Rules
 

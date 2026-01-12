@@ -145,10 +145,8 @@ export default function AdminSocialMediaPage() {
       setError(err.message || 'Failed to connect. Please try again.');
       setConnectingPlatform(null);
       
-      // Close the popup if there was an error
-      if (popup && !popup.closed) {
-        popup.close();
-      }
+      // Note: With _self target, popup refers to current window
+      // If fetch fails, we're still on the admin page, so no cleanup needed
     }
   };
 
