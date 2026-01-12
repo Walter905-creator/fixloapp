@@ -271,7 +271,10 @@ class MetaOAuthHandler {
           const pages = pagesResponse.data.data;
           console.info('[Meta OAuth] Pages API response:', {
             pageCount: pages.length,
-            pages: pages.map(p => ({ id: p.id, name: p.name, hasIgAccount: !!p.instagram_business_account, hasPageToken: !!p.access_token }))
+            // Only log page details in development
+            ...(process.env.NODE_ENV !== 'production' && {
+              pages: pages.map(p => ({ id: p.id, name: p.name, hasIgAccount: !!p.instagram_business_account, hasPageToken: !!p.access_token }))
+            })
           });
           
           if (!pages || pages.length === 0) {
@@ -320,9 +323,13 @@ class MetaOAuthHandler {
           );
           
           console.info('[Meta OAuth] Instagram Business Account lookup: SUCCESS', {
-            instagramId: igResponse.data.id,
-            username: igResponse.data.username,
-            pageId: foundPage.id
+            hasUsername: !!igResponse.data.username,
+            // Only log identifiers in development
+            ...(process.env.NODE_ENV !== 'production' && {
+              instagramId: igResponse.data.id,
+              username: igResponse.data.username,
+              pageId: foundPage.id
+            })
           });
           
           accountInfo = {
@@ -576,13 +583,15 @@ class MetaOAuthHandler {
         isActive: true
       });
       
-      // Determine app mode (test vs live)
-      // In test mode, page tokens may not be available
-      const appMode = process.env.NODE_ENV === 'production' ? 'live' : 'development';
+      // Determine app mode
+      // Note: Meta app mode (development/live) is separate from Node.js environment
+      // We can't detect actual Meta app mode without making an API call
+      // This just reports the Node.js environment for context
+      const nodeEnv = process.env.NODE_ENV || 'development';
       
       const debugInfo = {
         isConfigured,
-        appMode,
+        nodeEnv, // Renamed from appMode to be more accurate
         hasActiveInstagram: accounts.some(a => a.platform === 'meta_instagram'),
         hasActiveFacebook: accounts.some(a => a.platform === 'meta_facebook'),
         lastOAuthAttempt: this.lastOAuthAttempt || null,

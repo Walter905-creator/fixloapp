@@ -27,16 +27,17 @@ router.get('/oauth/meta/callback', async (req, res) => {
   try {
     const { code, state, error, error_description } = req.query;
     
-    // Check for OAuth errors
+    // Check for OAuth errors - sanitize error messages
     if (error) {
       console.error('[Meta OAuth] OAuth error from Meta:', { error, error_description });
-      // Redirect back to admin page with error
-      return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/admin/social-media?error=${encodeURIComponent(error_description || error)}`);
+      // Use safe, generic error message for redirect
+      const safeError = error === 'access_denied' ? 'access_denied' : 'oauth_error';
+      return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/admin/social-media?error=${safeError}`);
     }
     
     if (!code) {
       console.error('[Meta OAuth] No authorization code received');
-      return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/admin/social-media?error=${encodeURIComponent('No authorization code received')}`);
+      return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/admin/social-media?error=no_code`);
     }
     
     // Parse state to get ownerId and accountType
@@ -76,17 +77,17 @@ router.get('/oauth/meta/callback', async (req, res) => {
     } catch (connectError) {
       console.error('[Meta OAuth] Connection failed:', connectError);
       
-      // Get failure reason if available
-      const reason = connectError.reason || 'UNKNOWN';
-      const errorMsg = encodeURIComponent(connectError.message);
+      // Get failure reason if available - use only predefined safe reason codes
+      const safeReasons = ['NO_PAGES', 'NO_PAGE_TOKEN', 'NO_IG_BUSINESS', 'APP_NOT_LIVE', 'UNKNOWN'];
+      const reason = safeReasons.includes(connectError.reason) ? connectError.reason : 'UNKNOWN';
       
-      // Redirect back to admin page with error details
-      return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/admin/social-media?error=${errorMsg}&reason=${reason}`);
+      // Redirect back to admin page with safe error code only (no message)
+      return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/admin/social-media?reason=${reason}`);
     }
     
   } catch (error) {
     console.error('[Meta OAuth] Callback handler error:', error);
-    return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/admin/social-media?error=${encodeURIComponent('Internal server error')}`);
+    return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/admin/social-media?error=internal_error`);
   }
 });
 

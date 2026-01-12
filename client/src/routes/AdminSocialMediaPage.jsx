@@ -36,7 +36,15 @@ export default function AdminSocialMediaPage() {
     const platform = urlParams.get('platform');
     
     if (oauthError) {
-      setError(`OAuth Connection Failed: ${oauthError}`);
+      // Map safe error codes to user-friendly messages
+      const errorMessages = {
+        'access_denied': 'OAuth access was denied',
+        'oauth_error': 'OAuth authentication error',
+        'no_code': 'No authorization code received',
+        'internal_error': 'Internal server error'
+      };
+      setError(errorMessages[oauthError] || 'OAuth connection failed');
+      
       if (reason) {
         // Load debug info for Meta platforms
         loadMetaDebugInfo();
@@ -299,8 +307,8 @@ export default function AdminSocialMediaPage() {
                       </span>
                     </div>
                     <div>
-                      <span className="font-medium text-gray-700">App Mode:</span>
-                      <span className="ml-2 text-gray-900">{metaDebugInfo.appMode || 'unknown'}</span>
+                      <span className="font-medium text-gray-700">Node Env:</span>
+                      <span className="ml-2 text-gray-900">{metaDebugInfo.nodeEnv || 'unknown'}</span>
                     </div>
                   </div>
                 </div>
@@ -504,8 +512,8 @@ export default function AdminSocialMediaPage() {
                       </span>
                     </div>
                     <div>
-                      <span className="font-medium text-gray-700">App Mode:</span>
-                      <span className="ml-2 text-gray-900">{metaDebugInfo.appMode || 'unknown'}</span>
+                      <span className="font-medium text-gray-700">Node Env:</span>
+                      <span className="ml-2 text-gray-900">{metaDebugInfo.nodeEnv || 'unknown'}</span>
                     </div>
                     <div>
                       <span className="font-medium text-gray-700">Instagram Connected:</span>
