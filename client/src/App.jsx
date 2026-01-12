@@ -34,6 +34,7 @@ import AboutWalterArevaloPage from './routes/AboutWalterArevaloPage.jsx';
 import AboutPage from './routes/AboutPage.jsx';
 import TrendServicePage from './routes/TrendServicePage.jsx';
 import CompetitorAlternativesPage from './routes/CompetitorAlternativesPage.jsx';
+import CommissionReferralPage from './routes/CommissionReferralPage.jsx';
 export default function App(){
   return (<>
     <PromoBanner />
@@ -84,6 +85,7 @@ export default function App(){
       <Route path="/success" element={<Success/>}/>
       <Route path="/about" element={<AboutPage/>}/>
       <Route path="/about-walter-arevalo" element={<AboutWalterArevaloPage/>}/>
+      <Route path="/earn" element={<CommissionReferralPage/>}/>
       <Route path="*" element={<Navigate to="/" replace/>}/>
     </Routes>
     <footer className="border-t border-slate-200 mt-8 bg-white">
