@@ -73,29 +73,66 @@ export default function AdminSocialMediaPage() {
 
       // Get authorization URL from backend
       const url = `${API_BASE}/api/social/connect/${platform}/url?accountType=${accountType}`;
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[OAuth] Requesting authorization URL:', url);
+      }
+      
       const response = await fetch(url, {
         method: 'GET',
         credentials: 'include'
       });
 
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[OAuth] Response status:', response.status, response.ok);
+      }
+
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || `Failed to get authorization URL: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to get authorization URL: ${response.status}`);
       }
 
       const data = await response.json();
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[OAuth] Received response:', data);
+      }
       
-      if (!data.success || !data.authUrl) {
-        throw new Error('Invalid response from server');
+      // Validate response structure
+      if (!data || typeof data !== 'object') {
+        throw new Error('Invalid response format from server');
+      }
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Server returned unsuccessful response');
+      }
+      
+      if (!data.authUrl) {
+        throw new Error('Authorization URL missing from server response');
+      }
+
+      // Validate URL format
+      const authUrl = String(data.authUrl).trim();
+      try {
+        // Validate that it's a proper URL
+        const urlObj = new URL(authUrl);
+        // Ensure it's using http or https protocol
+        if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
+          throw new Error(`Invalid OAuth URL protocol: ${urlObj.protocol}`);
+        }
+      } catch (urlError) {
+        throw new Error(`Invalid OAuth URL: ${authUrl}`);
+      }
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[OAuth] Redirecting to:', authUrl);
       }
 
       // Redirect to OAuth provider
       // The OAuth provider will redirect back to our callback URL
       // which will complete the connection
-      window.location.href = data.authUrl;
+      window.location.href = authUrl;
 
     } catch (err) {
-      console.error('Error initiating OAuth:', err);
+      console.error('[OAuth] Error initiating OAuth:', err);
       setError(err.message || 'Failed to connect. Please try again.');
       setConnectingPlatform(null);
     }
