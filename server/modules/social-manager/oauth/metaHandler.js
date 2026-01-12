@@ -15,10 +15,10 @@ const { SocialAuditLog } = require('../models');
  * TODO: Before production:
  * 1. Register app at https://developers.facebook.com/
  * 2. Add Instagram Graph API and Pages API permissions
- * 3. Submit app for review with required permissions:
- *    - pages_show_list
- *    - pages_read_engagement
+ * 3. Request ONLY pages_show_list permission (no App Review needed)
+ *    Note: pages_read_engagement requires Advanced Access/App Review
  *    Note: Instagram permissions are NOT requested in OAuth URL
+ *    Note: Engagement data accessed later via Page access token
  * 4. Configure OAuth redirect URI in app settings
  * 5. Obtain App ID and App Secret
  * 
@@ -61,15 +61,19 @@ class MetaOAuthHandler {
    * NOTE: The accountType parameter doesn't affect OAuth scopes (both use the same
    * Facebook Page permissions). It's passed through state for post-OAuth processing
    * to determine which account type to retrieve and save.
+   * 
+   * SCOPE RESTRICTION: Only pages_show_list is used because pages_read_engagement
+   * requires App Review/Advanced Access. Engagement data will be accessed later
+   * using the Page access token after OAuth completion.
    */
   getAuthorizationUrl(ownerId, accountType = 'instagram') {
     if (!this.isConfigured()) {
       throw new Error('Meta OAuth not configured. Set SOCIAL_META_CLIENT_ID and SOCIAL_META_CLIENT_SECRET');
     }
     
-    // Use ONLY Facebook Page permissions (Instagram access comes from connected Page)
-    // Do NOT include instagram_basic or instagram_content_publish - they are invalid for Facebook Login
-    const scopes = ['pages_show_list', 'pages_read_engagement'];
+    // Use ONLY pages_show_list (pages_read_engagement requires App Review/Advanced Access)
+    // Engagement data will be accessed later using Page access token
+    const scopes = ['pages_show_list'];
     
     const params = new URLSearchParams({
       client_id: this.clientId,
@@ -265,7 +269,7 @@ class MetaOAuthHandler {
           pageId: accountInfo.pageId,
           pageName: accountInfo.pageName
         },
-        grantedScopes: ['pages_show_list', 'pages_read_engagement']
+        grantedScopes: ['pages_show_list']
       });
       
       await socialAccount.save();

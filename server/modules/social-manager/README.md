@@ -135,14 +135,13 @@ process.on('SIGTERM', async () => {
 2. Create a new app (Business type)
 3. Add **Instagram Graph API** and **Pages API** products
 4. Configure OAuth redirect: `https://fixloapp.com/api/social/oauth/meta/callback`
-5. Request permissions:
-   - `instagram_basic`
-   - `instagram_content_publish`
-   - `pages_read_engagement`
-   - `pages_manage_posts`
-6. Submit app for review
-7. Copy **App ID** → `SOCIAL_META_CLIENT_ID`
-8. Copy **App Secret** → `SOCIAL_META_CLIENT_SECRET`
+5. Request ONLY the following permission (no App Review needed):
+   - `pages_show_list`
+   
+   **Note:** `pages_read_engagement` requires Advanced Access/App Review
+   **Note:** Engagement data will be accessed via Page access token after OAuth
+6. Copy **App ID** → `SOCIAL_META_CLIENT_ID`
+7. Copy **App Secret** → `SOCIAL_META_CLIENT_SECRET`
 
 **Note:** Requires Instagram Business Account connected to Facebook Page
 
