@@ -34,6 +34,7 @@ import AboutWalterArevaloPage from './routes/AboutWalterArevaloPage.jsx';
 import AboutPage from './routes/AboutPage.jsx';
 import TrendServicePage from './routes/TrendServicePage.jsx';
 import CompetitorAlternativesPage from './routes/CompetitorAlternativesPage.jsx';
+import EarnPage from './routes/EarnPage.jsx';
 export default function App(){
   return (<>
     <PromoBanner />
@@ -76,6 +77,7 @@ export default function App(){
       <Route path="/contractor/dashboard" element={<ContractorDashboardPage/>}/>
       <Route path="/staff/jobs" element={<JobManagementPage/>}/>
       <Route path="/join" element={<JoinPage/>}/>
+      <Route path="/earn" element={<EarnPage/>}/>
       <Route path="/for-professionals" element={<Navigate to="/join" replace/>}/>
       <Route path="/terms" element={<Terms/>}/>
       <Route path="/privacy" element={<Privacy/>}/>
