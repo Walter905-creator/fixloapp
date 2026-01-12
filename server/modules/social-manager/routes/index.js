@@ -19,6 +19,78 @@ const postingService = require('../posting');
 // ==================== OAuth & Connection Routes ====================
 
 /**
+ * GET /api/social/oauth/meta/callback
+ * OAuth callback handler for Meta (Facebook/Instagram)
+ * This receives the authorization code from Meta and completes the connection
+ */
+router.get('/oauth/meta/callback', async (req, res) => {
+  try {
+    const { code, state, error, error_description } = req.query;
+    
+    // Check for OAuth errors
+    if (error) {
+      console.error('[Meta OAuth] OAuth error from Meta:', { error, error_description });
+      // Redirect back to admin page with error
+      return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/admin/social-media?error=${encodeURIComponent(error_description || error)}`);
+    }
+    
+    if (!code) {
+      console.error('[Meta OAuth] No authorization code received');
+      return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/admin/social-media?error=${encodeURIComponent('No authorization code received')}`);
+    }
+    
+    // Parse state to get ownerId and accountType
+    let ownerId = 'admin';
+    let accountType = 'instagram';
+    
+    if (state) {
+      try {
+        const stateData = JSON.parse(state);
+        ownerId = stateData.ownerId || 'admin';
+        accountType = stateData.accountType || 'instagram';
+      } catch (e) {
+        console.warn('[Meta OAuth] Failed to parse state:', e);
+      }
+    }
+    
+    console.info('[Meta OAuth] Callback received, processing connection...', {
+      accountType,
+      ownerId,
+      hasCode: !!code
+    });
+    
+    // Get the Meta handler and complete connection
+    const handler = getHandler('meta_instagram'); // Both Instagram and Facebook use same handler
+    
+    try {
+      const account = await handler.connect({
+        code,
+        ownerId,
+        accountType
+      });
+      
+      console.info('[Meta OAuth] Connection successful, redirecting to admin page');
+      // Redirect back to admin page with success
+      return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/admin/social-media?connected=true&platform=${account.platform}`);
+      
+    } catch (connectError) {
+      console.error('[Meta OAuth] Connection failed:', connectError);
+      
+      // Get failure reason if available
+      const reason = connectError.reason || 'UNKNOWN';
+      const errorMsg = encodeURIComponent(connectError.message);
+      
+      // Redirect back to admin page with error details
+      return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/admin/social-media?error=${errorMsg}&reason=${reason}`);
+    }
+    
+  } catch (error) {
+    console.error('[Meta OAuth] Callback handler error:', error);
+    return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/admin/social-media?error=${encodeURIComponent('Internal server error')}`);
+  }
+});
+
+/**
  * GET /api/social/platforms
  * Get list of configured platforms
  */
@@ -139,10 +211,18 @@ router.post('/connect/:platform', async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({
+    // Return structured error with reason code for Meta platforms
+    const errorResponse = {
       success: false,
       error: error.message
-    });
+    };
+    
+    // Add reason code if available (for Meta OAuth)
+    if (error.reason) {
+      errorResponse.reason = error.reason;
+    }
+    
+    res.status(500).json(errorResponse);
   }
 });
 
@@ -388,14 +468,39 @@ router.get('/status', async (req, res) => {
         id: a._id,
         platform: a.platform,
         platformUsername: a.platformUsername,
+        accountName: a.accountName,
         isActive: a.isActive,
         isTokenValid: a.isTokenValid,
         requiresReauth: a.requiresReauth,
         lastPostAt: a.lastPostAt,
-        tokenExpiresAt: a.tokenExpiresAt
+        tokenExpiresAt: a.tokenExpiresAt,
+        connectedAt: a.connectedAt
       })),
       reauthAlerts,
       schedule: scheduleAnalytics
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/social/debug/meta
+ * Get Meta OAuth debug information
+ */
+router.get('/debug/meta', async (req, res) => {
+  try {
+    const ownerId = req.user?.id || 'admin';
+    
+    const metaHandler = getHandler('meta_instagram'); // Both use same handler
+    const debugInfo = await metaHandler.getDebugInfo(ownerId);
+    
+    res.json({
+      success: true,
+      ...debugInfo
     });
   } catch (error) {
     res.status(500).json({
