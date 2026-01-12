@@ -281,7 +281,6 @@ class MetaOAuthHandler {
       // Step 3: Get account details
       let accountInfo;
       let platform;
-      let failureReason = null;
       
       if (accountType === 'instagram') {
         console.info('[Meta OAuth] Looking up Instagram Business Account via Pages API...');
@@ -299,23 +298,22 @@ class MetaOAuthHandler {
           platform = 'meta_instagram';
         } catch (error) {
           // Extract failure reason from error message
-          let failureReason = ERROR_REASONS.UNKNOWN;
-          if (error.message.includes(ERROR_MESSAGES[ERROR_REASONS.NO_PAGES])) {
-            failureReason = ERROR_REASONS.NO_PAGES;
-          } else if (error.message.includes(ERROR_MESSAGES[ERROR_REASONS.NO_IG_BUSINESS])) {
-            failureReason = ERROR_REASONS.NO_IG_BUSINESS;
-          } else if (error.response?.data?.error?.code === 190) {
-            failureReason = ERROR_REASONS.APP_NOT_LIVE;
-          }
+          const errorReason = error.message.includes(ERROR_MESSAGES[ERROR_REASONS.NO_PAGES])
+            ? ERROR_REASONS.NO_PAGES
+            : error.message.includes(ERROR_MESSAGES[ERROR_REASONS.NO_IG_BUSINESS])
+            ? ERROR_REASONS.NO_IG_BUSINESS
+            : error.response?.data?.error?.code === 190
+            ? ERROR_REASONS.APP_NOT_LIVE
+            : ERROR_REASONS.UNKNOWN;
           
           console.error('[Meta OAuth] Instagram account lookup failed:', {
-            reason: failureReason,
+            reason: errorReason,
             error: error.message,
             apiError: error.response?.data?.error
           });
           
           const structuredError = new Error(error.message);
-          structuredError.reason = failureReason;
+          structuredError.reason = errorReason;
           throw structuredError;
         }
       } else {
