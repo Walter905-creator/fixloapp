@@ -58,20 +58,30 @@ export default function AdminSocialMediaPage() {
    * Initiate OAuth flow for a platform
    * 
    * This function:
-   * 1. Calls GET /api/social/connect/:platform/url to get authUrl
-   * 2. Redirects browser to the OAuth provider
-   * 3. After user authorizes, OAuth provider redirects back with code
-   * 4. Backend callback handler completes the connection
+   * 1. Opens a blank window synchronously (prevents popup blocking)
+   * 2. Calls GET /api/social/connect/:platform/url to get authUrl
+   * 3. Assigns authUrl to the pre-opened window
+   * 4. After user authorizes, OAuth provider redirects back with code
+   * 5. Backend callback handler completes the connection
+   * 
+   * IMPORTANT: The window must be opened synchronously in the click event
+   * stack to prevent browser popup blocking. Navigating after an async
+   * operation would be blocked as non-user-initiated.
    * 
    * @param {string} platform - Platform key (meta_instagram, meta_facebook)
    * @param {string} accountType - Account type for Meta (instagram, facebook)
    */
   const handleConnect = async (platform, accountType = 'instagram') => {
+    // Step 1: Open window synchronously inside click event stack
+    // This prevents browser from blocking the navigation
+    // Using _self means we're getting a reference to the current window
+    const currentWindow = window.open('', '_self');
+    
     try {
       setConnectingPlatform(platform);
       setError('');
 
-      // Get authorization URL from backend
+      // Step 2: Get authorization URL from backend
       const url = `${API_BASE}/api/social/connect/${platform}/url?accountType=${accountType}`;
       if (process.env.NODE_ENV === 'development') {
         console.log('[OAuth] Requesting authorization URL:', url);
@@ -126,15 +136,18 @@ export default function AdminSocialMediaPage() {
         console.log('[OAuth] Redirecting to:', authUrl);
       }
 
-      // Redirect to OAuth provider
-      // The OAuth provider will redirect back to our callback URL
-      // which will complete the connection
-      window.location.href = authUrl;
+      // Step 3: Navigate the pre-opened window to OAuth provider
+      // This works because the window was opened synchronously
+      // in the click event stack, maintaining user-initiated context
+      currentWindow.location.href = authUrl;
 
     } catch (err) {
       console.error('[OAuth] Error initiating OAuth:', err);
       setError(err.message || 'Failed to connect. Please try again.');
       setConnectingPlatform(null);
+      
+      // Note: With _self target, currentWindow refers to current window
+      // If fetch fails, we're still on the admin page, so no cleanup needed
     }
   };
 
