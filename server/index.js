@@ -364,7 +364,9 @@ app.use("/api/pricing", require("./routes/pricing")); // International pricing e
 app.use("/api/compliance", require("./routes/compliance")); // Legal & tax compliance
 app.use("/api/ai", require("./routes/ai")); // AI assistant
 app.use("/api/contact", require("./routes/contact")); // contact form
-app.use("/api/referrals", require("./routes/referrals")); // referral rewards
+app.use("/api/referrals", require("./routes/referrals")); // referral rewards (Pro-to-Pro)
+app.use("/api/commission-referrals", generalRateLimit, require("./routes/commissionReferrals")); // commission-based referrals (feature-flagged)
+app.use("/api/admin/commission-referrals", adminRateLimit, require("./routes/commissionReferralsAdmin")); // commission admin
 app.use("/api/distribution", adminRateLimit, require("./routes/distribution")); // distribution engine (admin only)
 
 // Direct messaging
