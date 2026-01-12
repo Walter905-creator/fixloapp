@@ -74,7 +74,8 @@ export default function AdminSocialMediaPage() {
   const handleConnect = async (platform, accountType = 'instagram') => {
     // Step 1: Open window synchronously inside click event stack
     // This prevents browser from blocking the navigation
-    const popup = window.open('', '_self');
+    // Using _self means we're getting a reference to the current window
+    const currentWindow = window.open('', '_self');
     
     try {
       setConnectingPlatform(platform);
@@ -138,14 +139,14 @@ export default function AdminSocialMediaPage() {
       // Step 3: Navigate the pre-opened window to OAuth provider
       // This works because the window was opened synchronously
       // in the click event stack, maintaining user-initiated context
-      popup.location.href = authUrl;
+      currentWindow.location.href = authUrl;
 
     } catch (err) {
       console.error('[OAuth] Error initiating OAuth:', err);
       setError(err.message || 'Failed to connect. Please try again.');
       setConnectingPlatform(null);
       
-      // Note: With _self target, popup refers to current window
+      // Note: With _self target, currentWindow refers to current window
       // If fetch fails, we're still on the admin page, so no cleanup needed
     }
   };

@@ -40,29 +40,27 @@ Open a blank window **synchronously** at the start of the click handler, then as
 ```javascript
 const handleConnect = async (platform, accountType = 'instagram') => {
   // Step 1: Open window synchronously BEFORE any async operations
-  const popup = window.open('', '_self');  // ✓ Inside click stack
+  // With _self, this returns a reference to the current window
+  const currentWindow = window.open('', '_self');  // ✓ Inside click stack
   
   try {
     // Step 2: Fetch OAuth URL (async)
     const response = await fetch(`${API_BASE}/api/social/connect/${platform}/url`);
     const data = await response.json();
     
-    // Step 3: Navigate the pre-opened window
-    popup.location.href = data.authUrl;  // ✓ Window reference maintained
+    // Step 3: Navigate the current window
+    currentWindow.location.href = data.authUrl;  // ✓ Window reference maintained
   } catch (err) {
-    // Close popup on error
-    if (popup && !popup.closed) {
-      popup.close();
-    }
+    // Error stays on admin page
   }
 };
 ```
 
 **Flow:**
 1. User clicks "Connect Instagram" button → Click event fires
-2. `window.open('', '_self')` → Opens blank window/tab → Inside click stack ✓
+2. `window.open('', '_self')` → Gets reference to current window → Inside click stack ✓
 3. `await fetch()` operation → Async boundary
-4. `popup.location.href = authUrl` → Assigns URL to already-opened window ✓
+4. `currentWindow.location.href = authUrl` → Navigates using maintained reference ✓
 5. Browser navigates to OAuth provider → **ALLOWED** ✅
 
 ## Key Changes
@@ -74,25 +72,25 @@ const handleConnect = async (platform, accountType = 'instagram') => {
 
 1. **Open window synchronously**:
    ```javascript
-   const popup = window.open('', '_self');
+   const currentWindow = window.open('', '_self');
    ```
-   - Uses `_self` target to replace current page (standard OAuth flow)
+   - Uses `_self` target to get reference to current window
    - Called immediately at function start, before any async operations
    - Creates window reference that survives async boundaries
 
-2. **Navigate pre-opened window**:
+2. **Navigate current window**:
    ```javascript
-   popup.location.href = authUrl;
+   currentWindow.location.href = authUrl;
    ```
-   - Assigns OAuth URL to already-opened window
-   - Works because window was created in click stack
+   - Assigns OAuth URL to window reference
+   - Works because reference was created in click stack
 
 3. **Error handling**:
    ```javascript
-   // Note: With _self target, popup refers to current window
+   // Note: With _self target, currentWindow refers to current window
    // If fetch fails, we're still on the admin page
    ```
-   - Simplified error handling since window isn't actually a separate popup
+   - Simplified error handling since window reference is to current page
    - Error stays on admin page with error message displayed
 
 ## Technical Details
