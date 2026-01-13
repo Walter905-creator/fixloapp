@@ -33,6 +33,7 @@ export default function EarnPage() {
   useEffect(() => {
     const checkFeature = async () => {
       try {
+        console.log('[EarnPage] Fetching health check from:', `${API_BASE}/api/commission-referrals/health`);
         const response = await fetch(`${API_BASE}/api/commission-referrals/health`, {
           cache: 'no-store',
           headers: {
@@ -42,16 +43,23 @@ export default function EarnPage() {
           }
         });
         
+        console.log('[EarnPage] Health check response status:', response.status, response.ok);
+        
         if (!response.ok) {
+          console.error('[EarnPage] Health check failed with status:', response.status);
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         
         const data = await response.json();
+        console.log('[EarnPage] Health check data:', data);
+        console.log('[EarnPage] Setting featureEnabled to:', data.enabled === true);
         setFeatureEnabled(data.enabled === true);
       } catch (err) {
+        console.error('[EarnPage] Health check error:', err);
         // On network error, assume disabled for safety
         setFeatureEnabled(false);
       } finally {
+        console.log('[EarnPage] Health check complete, setting loading to false');
         setLoading(false);
       }
     };
