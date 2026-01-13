@@ -119,21 +119,17 @@ export default function ReferralSection({ proId, country = 'US' }) {
       {/* Headline */}
       <div className="text-center mb-6">
         <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-3">
-          Be Your Own Boss. Support Local Jobs.
+          Share Fixlo With Your Network
         </h2>
         <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-          Invite friends to join Fixlo and earn a FREE month for every pro who signs up. 
-          Help your community grow by supporting local work.
+          Invite other professionals to join Fixlo and help them discover a better way to grow their business.
+          Looking to earn cash? <a href="/earn" className="text-brand font-semibold hover:underline">Check out our commission program</a>.
         </p>
       </div>
 
       {/* Stats Card */}
       <div className="bg-white rounded-xl p-6 mb-6 shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-          <div className="p-4 bg-slate-50 rounded-lg">
-            <div className="text-3xl font-bold text-brand">{freeMonths}</div>
-            <div className="text-sm text-slate-600 mt-1">Free Months Earned</div>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
           <div className="p-4 bg-slate-50 rounded-lg">
             <div className="text-3xl font-bold text-brand">
               {referralData.stats?.completedReferrals || 0}
@@ -219,8 +215,8 @@ export default function ReferralSection({ proId, country = 'US' }) {
 
       {/* Compliance Disclaimer */}
       <div className="mt-6 text-xs text-slate-500 text-center">
-        Referral rewards are issued after your friend completes their paid subscription. 
-        Each successful referral earns you one free month to apply on your next billing cycle.
+        Share your referral link to help other professionals discover Fixlo. 
+        Want to earn cash commissions? <a href="/earn" className="text-brand hover:underline">Visit our commission referral program</a>.
       </div>
     </div>
   );
