@@ -87,7 +87,28 @@ export default function ReferralSection({ proId, country = 'US' }) {
   }
 
   if (error || !referralData) {
-    return null; // Don't show if there's an error or no data
+    // Render visible error state instead of returning null
+    return (
+      <div className="w-full bg-red-50 border-2 border-red-200 rounded-2xl p-8 shadow-sm">
+        <div className="text-center">
+          <h3 className="text-xl font-bold text-red-900 mb-2">
+            ⚠️ Referral Section Error
+          </h3>
+          <p className="text-red-700 mb-2">
+            {error || 'Unable to load referral information'}
+          </p>
+          <p className="text-sm text-red-600">
+            Component: ReferralSection | ProId: {proId || 'Not provided'}
+          </p>
+          <button
+            onClick={fetchReferralData}
+            className="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const isUSA = country.toUpperCase() === 'US';
