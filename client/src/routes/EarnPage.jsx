@@ -24,6 +24,10 @@ export default function EarnPage() {
   const [expandedFaq, setExpandedFaq] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [stripeConnected, setStripeConnected] = useState(false);
+  const [checkingStripeStatus, setCheckingStripeStatus] = useState(false);
+  const [socialMediaUrl, setSocialMediaUrl] = useState('');
+  const [payoutProcessing, setPayoutProcessing] = useState(false);
 
   // Check feature flag
   useEffect(() => {
@@ -52,6 +56,31 @@ export default function EarnPage() {
     
     checkFeature();
   }, []);
+
+  // Check Stripe Connect status when dashboard is loaded
+  useEffect(() => {
+    if (registered && referrerData?.email) {
+      checkStripeConnectStatus();
+    }
+  }, [registered, referrerData]);
+
+  const checkStripeConnectStatus = async () => {
+    if (!referrerData?.email) return;
+    
+    setCheckingStripeStatus(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/payouts/stripe-connect/status/${encodeURIComponent(referrerData.email)}`);
+      const data = await response.json();
+      
+      if (data.ok) {
+        setStripeConnected(data.connected);
+      }
+    } catch (err) {
+      console.error('Error checking Stripe status:', err);
+    } finally {
+      setCheckingStripeStatus(false);
+    }
+  };
 
   // If feature is disabled, show nothing
   if (loading) {
@@ -116,6 +145,79 @@ export default function EarnPage() {
       navigator.clipboard.writeText(referrerData.referralUrl);
       setSuccess('Referral link copied!');
       setTimeout(() => setSuccess(''), 2000);
+    }
+  };
+
+  const handleStripeConnect = async () => {
+    if (!referrerData?.email) return;
+    
+    setError('');
+    try {
+      const clientUrl = window.location.origin;
+      const response = await fetch(`${API_BASE}/api/payouts/stripe-connect/onboard`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          referrerEmail: referrerData.email,
+          refreshUrl: `${clientUrl}/earn?refresh=true`,
+          returnUrl: `${clientUrl}/earn?connected=true`
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.ok && data.onboardingUrl) {
+        // Redirect to Stripe onboarding
+        window.location.href = data.onboardingUrl;
+      } else {
+        setError(data.error || 'Failed to start Stripe Connect onboarding');
+      }
+    } catch (err) {
+      setError('Failed to connect Stripe account. Please try again.');
+      console.error('Stripe Connect error:', err);
+    }
+  };
+
+  const handleRequestPayout = async () => {
+    if (!referrerData?.email || !stripeConnected || !socialMediaUrl) {
+      return;
+    }
+    
+    setError('');
+    setSuccess('');
+    setPayoutProcessing(true);
+    
+    try {
+      const availableBalance = dashboardData?.availableBalance || 0;
+      
+      const response = await fetch(`${API_BASE}/api/payouts/request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          referrerEmail: referrerData.email,
+          requestedAmount: availableBalance,
+          socialMediaPostUrl: socialMediaUrl,
+          stripeConnectAccountId: referrerData.stripeConnectAccountId
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.ok) {
+        setSuccess('Payout request submitted! We will review and process it within 2-3 business days.');
+        setSocialMediaUrl('');
+        // Refresh dashboard data
+        setTimeout(() => {
+          handleLoadDashboard({ preventDefault: () => {} });
+        }, 1000);
+      } else {
+        setError(data.error || 'Failed to request payout');
+      }
+    } catch (err) {
+      setError('Failed to request payout. Please try again.');
+      console.error('Payout request error:', err);
+    } finally {
+      setPayoutProcessing(false);
     }
   };
 
@@ -353,9 +455,45 @@ export default function EarnPage() {
               
               {/* Payout Section */}
               <div className="border-t border-slate-200 pt-6">
-                <h3 className="text-xl font-bold text-slate-900 mb-4">Request Payout</h3>
+                <h3 className="text-xl font-bold text-slate-900 mb-4">Stripe Connect & Payouts</h3>
+                
+                {/* Stripe Connect Status */}
+                <div className="mb-6 p-4 bg-slate-50 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-semibold text-slate-700">Stripe Connect Status:</span>
+                    {checkingStripeStatus ? (
+                      <span className="text-slate-600 text-sm">Checking...</span>
+                    ) : stripeConnected ? (
+                      <span className="text-green-600 font-semibold flex items-center gap-2">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Connected
+                      </span>
+                    ) : (
+                      <span className="text-amber-600 font-semibold">Not Connected</span>
+                    )}
+                  </div>
+                  
+                  {!stripeConnected && (
+                    <div>
+                      <p className="text-sm text-slate-600 mb-3">
+                        Connect your bank account via Stripe to receive payouts securely.
+                        Fixlo never sees your banking information.
+                      </p>
+                      <button
+                        onClick={handleStripeConnect}
+                        className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-all"
+                      >
+                        Connect Stripe Account
+                      </button>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Payout Request */}
                 <p className="text-sm text-slate-600 mb-4">
-                  <strong>Minimum payout: $25</strong>
+                  <strong>Minimum payout: $25</strong> • Payouts are reviewed and processed within 2-3 business days.
                 </p>
                 
                 {(dashboardData?.availableBalance || 0) < 2500 ? (
@@ -365,13 +503,43 @@ export default function EarnPage() {
                       Current balance: ${((dashboardData?.availableBalance || 0) / 100).toFixed(2)}
                     </p>
                   </div>
+                ) : !stripeConnected ? (
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-blue-900 text-sm">
+                      Please connect your Stripe account above before requesting a payout.
+                    </p>
+                  </div>
                 ) : (
-                  <button
-                    disabled
-                    className="px-6 py-3 bg-slate-300 text-slate-600 font-semibold rounded-lg cursor-not-allowed"
-                  >
-                    Payout Request (Coming Soon)
-                  </button>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        Social Media Post URL *
+                      </label>
+                      <input
+                        type="url"
+                        value={socialMediaUrl}
+                        onChange={(e) => setSocialMediaUrl(e.target.value)}
+                        placeholder="https://instagram.com/p/..."
+                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-brand"
+                        required
+                      />
+                      <p className="text-xs text-slate-500 mt-1">
+                        Link to a public social media post where you shared your Fixlo referral link
+                      </p>
+                    </div>
+                    
+                    <button
+                      onClick={handleRequestPayout}
+                      disabled={payoutProcessing || !socialMediaUrl.trim()}
+                      className={`w-full px-6 py-3 font-semibold rounded-lg transition-all ${
+                        payoutProcessing || !socialMediaUrl.trim()
+                          ? 'bg-slate-300 text-slate-600 cursor-not-allowed'
+                          : 'bg-brand hover:bg-brand-dark text-white'
+                      }`}
+                    >
+                      {payoutProcessing ? 'Processing...' : `Request Payout ($${((dashboardData?.availableBalance || 0) / 100).toFixed(2)})`}
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
