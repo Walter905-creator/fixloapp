@@ -18,6 +18,20 @@ const Payout = require('../models/Payout');
  * - This is NOT employment
  */
 
+/**
+ * Health check - MUST be defined before feature flag middleware
+ * GET /api/commission-referrals/health
+ */
+router.get('/health', (req, res) => {
+  const enabled = process.env.REFERRALS_ENABLED === 'true';
+  res.json({
+    ok: true,
+    service: 'commission-referrals',
+    enabled,
+    message: enabled ? 'Commission referral service is operational' : 'Commission referral service is disabled'
+  });
+});
+
 // Feature flag middleware
 const checkFeatureFlag = (req, res, next) => {
   const enabled = process.env.REFERRALS_ENABLED === 'true';
@@ -30,7 +44,7 @@ const checkFeatureFlag = (req, res, next) => {
   next();
 };
 
-// Apply feature flag to all routes
+// Apply feature flag to all routes EXCEPT /health (which is already defined above)
 router.use(checkFeatureFlag);
 
 /**
@@ -305,20 +319,6 @@ router.post('/track', async (req, res) => {
       error: err.message
     });
   }
-});
-
-/**
- * Health check
- * GET /api/commission-referrals/health
- */
-router.get('/health', (req, res) => {
-  const enabled = process.env.REFERRALS_ENABLED === 'true';
-  res.json({
-    ok: true,
-    service: 'commission-referrals',
-    enabled,
-    message: enabled ? 'Commission referral service is operational' : 'Commission referral service is disabled'
-  });
 });
 
 module.exports = router;
