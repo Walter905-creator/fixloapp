@@ -196,8 +196,7 @@ export default function EarnPage() {
         body: JSON.stringify({
           referrerEmail: referrerData.email,
           requestedAmount: availableBalance,
-          socialMediaPostUrl: socialMediaUrl,
-          stripeConnectAccountId: referrerData.stripeConnectAccountId
+          socialMediaPostUrl: socialMediaUrl
         })
       });
       

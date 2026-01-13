@@ -16,6 +16,11 @@ const adminAuth = require('../middleware/adminAuth');
  * - Processing fees deducted from payout
  */
 
+// Initialize Stripe once at module level
+const stripe = process.env.STRIPE_SECRET_KEY 
+  ? require('stripe')(process.env.STRIPE_SECRET_KEY)
+  : null;
+
 // Import minimum payout amount from model to avoid duplication
 const MIN_PAYOUT_AMOUNT = Payout.MIN_PAYOUT_AMOUNT;
 
@@ -43,14 +48,13 @@ router.post('/request', async (req, res) => {
     const { 
       referrerEmail, 
       requestedAmount, // In cents
-      socialMediaPostUrl,
-      stripeConnectAccountId 
+      socialMediaPostUrl
     } = req.body;
     
-    if (!referrerEmail || !requestedAmount || !stripeConnectAccountId) {
+    if (!referrerEmail || !requestedAmount) {
       return res.status(400).json({
         ok: false,
-        error: 'referrerEmail, requestedAmount, and stripeConnectAccountId are required'
+        error: 'referrerEmail and requestedAmount are required'
       });
     }
     
@@ -81,6 +85,14 @@ router.post('/request', async (req, res) => {
       return res.status(404).json({
         ok: false,
         error: 'Referrer not found'
+      });
+    }
+    
+    // Verify Stripe Connect account is set up
+    if (!referrer.stripeConnectAccountId) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Please complete Stripe Connect onboarding before requesting a payout'
       });
     }
     
@@ -125,7 +137,7 @@ router.post('/request', async (req, res) => {
       processingFee,
       netAmount,
       commissionReferralIds: eligibleReferrals.map(r => r._id),
-      stripeConnectAccountId,
+      stripeConnectAccountId: referrer.stripeConnectAccountId,
       socialMediaVerified: true, // Will be manually verified by admin
       socialMediaPostUrl,
       status: 'pending'
@@ -370,8 +382,13 @@ router.post('/admin/execute/:payoutId', adminAuth, async (req, res) => {
       });
     }
     
-    // Get Stripe instance
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    // Verify Stripe is initialized
+    if (!stripe) {
+      return res.status(500).json({
+        ok: false,
+        error: 'Stripe is not configured. Please set STRIPE_SECRET_KEY.'
+      });
+    }
     
     // Update status to processing
     payout.status = 'processing';
@@ -481,7 +498,14 @@ router.post('/stripe-connect/onboard', async (req, res) => {
       });
     }
     
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    // Verify Stripe is initialized
+    if (!stripe) {
+      return res.status(500).json({
+        ok: false,
+        error: 'Stripe is not configured. Please set STRIPE_SECRET_KEY.'
+      });
+    }
+    
     let accountId = referrer.stripeConnectAccountId;
     
     // Create Stripe Connect Express account if not exists
@@ -556,7 +580,14 @@ router.get('/stripe-connect/status/:email', async (req, res) => {
       });
     }
     
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    // Verify Stripe is initialized
+    if (!stripe) {
+      return res.status(500).json({
+        ok: false,
+        error: 'Stripe is not configured. Please set STRIPE_SECRET_KEY.'
+      });
+    }
+    
     const account = await stripe.accounts.retrieve(referrer.stripeConnectAccountId);
     
     return res.json({

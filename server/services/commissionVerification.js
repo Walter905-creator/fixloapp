@@ -63,10 +63,9 @@ async function verify30DayReferrals() {
         }
 
         // Check if Pro's subscription is active
-        // Assuming Pro model has subscriptionStatus or similar field
-        const isActive = pro.subscriptionStatus === 'active' || 
-                        pro.subscriptionStatus === 'trialing' ||
-                        (pro.stripeSubscriptionId && !pro.subscriptionCancelled);
+        // Pro model has subscriptionStatus and paymentStatus fields
+        const isActive = (pro.subscriptionStatus === 'active' || pro.paymentStatus === 'active') && 
+                        pro.stripeSubscriptionId;
 
         if (isActive) {
           // Pro is still active after 30 days - mark as eligible
