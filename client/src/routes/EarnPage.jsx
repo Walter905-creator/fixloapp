@@ -36,8 +36,8 @@ export default function EarnPage() {
         console.log('[/earn] Checking commission referral health endpoint...');
         console.log('[/earn] API_BASE:', API_BASE);
         
-        // Fetch backend health check with no caching - use absolute URL
-        const healthUrl = 'https://fixloapp.onrender.com/api/commission-referrals/health';
+        // Fetch backend health check with no caching
+        const healthUrl = `${API_BASE}/api/commission-referrals/health`;
         console.log('[/earn] Fetching:', healthUrl);
         
         const response = await fetch(healthUrl, {
@@ -267,7 +267,11 @@ export default function EarnPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* DEBUG BANNER - Shows route is mounted */}
+      {/* 
+        TEMPORARY DEBUG BANNER - Required by issue for production diagnosis
+        TODO: Remove this banner after confirming production visibility
+        Shows route is mounted and feature flag state
+      */}
       <div className="bg-blue-600 text-white py-2 px-4 text-center text-sm font-semibold">
         🔍 DEBUG: /earn route mounted | Feature Enabled: {featureEnabled ? 'YES' : 'NO'} | Loading: {loading ? 'YES' : 'NO'}
       </div>
