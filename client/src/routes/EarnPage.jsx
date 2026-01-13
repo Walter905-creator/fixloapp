@@ -286,26 +286,6 @@ export default function EarnPage() {
           </div>
         )}
 
-        {/* Disabled State Message */}
-        {!loading && !featureEnabled && (
-          <div className="max-w-2xl mx-auto mb-12 bg-amber-50 border-2 border-amber-500 rounded-2xl shadow-lg p-8">
-            <h2 className="text-2xl font-bold text-amber-900 mb-4">
-              ⚠️ Referral Program Status
-            </h2>
-            <div className="space-y-3 text-left">
-              <p className="text-amber-900">
-                <strong>Status:</strong> Currently Disabled
-              </p>
-              <p className="text-amber-800">
-                The Fixlo commission referral program is not available at this time.
-              </p>
-              <p className="text-amber-700 text-sm">
-                We're working on bringing you an exciting opportunity to earn money by referring professionals to Fixlo. Check back soon!
-              </p>
-            </div>
-          </div>
-        )}
-
         {/* Active Program Content */}
         {!loading && featureEnabled && (
           <>
