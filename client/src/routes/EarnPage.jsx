@@ -33,14 +33,7 @@ export default function EarnPage() {
   useEffect(() => {
     const checkFeature = async () => {
       try {
-        console.log('[/earn] Checking commission referral health endpoint...');
-        console.log('[/earn] API_BASE:', API_BASE);
-        
-        // Fetch backend health check with no caching
-        const healthUrl = `${API_BASE}/api/commission-referrals/health`;
-        console.log('[/earn] Fetching:', healthUrl);
-        
-        const response = await fetch(healthUrl, {
+        const response = await fetch(`${API_BASE}/api/commission-referrals/health`, {
           cache: 'no-store',
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -49,25 +42,13 @@ export default function EarnPage() {
           }
         });
         
-        console.log('[/earn] Response status:', response.status);
         const data = await response.json();
-        console.log('[/earn] Response data:', data);
-        
         setFeatureEnabled(data.enabled === true);
-        console.log('[/earn] Feature enabled:', data.enabled === true);
       } catch (err) {
-        console.error('[/earn] Error checking feature flag:', err);
-        console.error('[/earn] Error details:', {
-          message: err.message,
-          stack: err.stack,
-          apiBase: API_BASE,
-          timestamp: new Date().toISOString()
-        });
         // On network error, assume disabled for safety
         setFeatureEnabled(false);
       } finally {
         setLoading(false);
-        console.log('[/earn] Loading complete');
       }
     };
     
@@ -273,16 +254,6 @@ export default function EarnPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* 
-        TEMPORARY DEBUG BANNER - Required by issue for production diagnosis
-        Added: January 2026
-        TODO: Remove this banner after confirming production visibility
-        Shows route is mounted and feature flag state
-      */}
-      <div className="bg-blue-600 text-white py-2 px-4 text-center text-sm font-semibold">
-        🔍 DEBUG: /earn route mounted | Feature Enabled: {featureEnabled ? 'YES' : 'NO'} | Loading: {loading ? 'YES' : 'NO'}
-      </div>
-      
       <div className="container-xl py-12 md:py-16">
         {/* Hero Section */}
         <div className="max-w-4xl mx-auto text-center mb-12">
