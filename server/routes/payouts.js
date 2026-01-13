@@ -16,6 +16,11 @@ const adminAuth = require('../middleware/adminAuth');
  * - Processing fees deducted from payout
  */
 
+// Initialize Stripe once at module level
+const stripe = process.env.STRIPE_SECRET_KEY 
+  ? require('stripe')(process.env.STRIPE_SECRET_KEY)
+  : null;
+
 // Import minimum payout amount from model to avoid duplication
 const MIN_PAYOUT_AMOUNT = Payout.MIN_PAYOUT_AMOUNT;
 
@@ -43,14 +48,13 @@ router.post('/request', async (req, res) => {
     const { 
       referrerEmail, 
       requestedAmount, // In cents
-      socialMediaPostUrl,
-      stripeConnectAccountId 
+      socialMediaPostUrl
     } = req.body;
     
-    if (!referrerEmail || !requestedAmount || !stripeConnectAccountId) {
+    if (!referrerEmail || !requestedAmount) {
       return res.status(400).json({
         ok: false,
-        error: 'referrerEmail, requestedAmount, and stripeConnectAccountId are required'
+        error: 'referrerEmail and requestedAmount are required'
       });
     }
     
@@ -81,6 +85,14 @@ router.post('/request', async (req, res) => {
       return res.status(404).json({
         ok: false,
         error: 'Referrer not found'
+      });
+    }
+    
+    // Verify Stripe Connect account is set up
+    if (!referrer.stripeConnectAccountId) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Please complete Stripe Connect onboarding before requesting a payout'
       });
     }
     
@@ -125,7 +137,7 @@ router.post('/request', async (req, res) => {
       processingFee,
       netAmount,
       commissionReferralIds: eligibleReferrals.map(r => r._id),
-      stripeConnectAccountId,
+      stripeConnectAccountId: referrer.stripeConnectAccountId,
       socialMediaVerified: true, // Will be manually verified by admin
       socialMediaPostUrl,
       status: 'pending'
@@ -328,6 +340,267 @@ router.post('/admin/reject/:payoutId', adminAuth, async (req, res) => {
     
   } catch (err) {
     console.error('❌ Error rejecting payout:', err);
+    return res.status(500).json({
+      ok: false,
+      error: err.message
+    });
+  }
+});
+
+/**
+ * ADMIN: Execute approved payout via Stripe Connect
+ * POST /api/payouts/admin/execute/:payoutId
+ */
+router.post('/admin/execute/:payoutId', adminAuth, async (req, res) => {
+  try {
+    const { payoutId } = req.params;
+    const { adminEmail } = req.body;
+    
+    const payout = await Payout.findById(payoutId);
+    
+    if (!payout) {
+      return res.status(404).json({
+        ok: false,
+        error: 'Payout not found'
+      });
+    }
+    
+    if (payout.status !== 'approved') {
+      return res.status(400).json({
+        ok: false,
+        error: `Can only execute approved payouts. Current status: ${payout.status}`
+      });
+    }
+    
+    // Check for idempotency - don't execute twice
+    if (payout.stripePayoutId || payout.stripeTransferId) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Payout has already been executed',
+        stripePayoutId: payout.stripePayoutId,
+        stripeTransferId: payout.stripeTransferId
+      });
+    }
+    
+    // Verify Stripe is initialized
+    if (!stripe) {
+      return res.status(500).json({
+        ok: false,
+        error: 'Stripe is not configured. Please set STRIPE_SECRET_KEY.'
+      });
+    }
+    
+    // Update status to processing
+    payout.status = 'processing';
+    payout.processingStartedAt = new Date();
+    await payout.save();
+    
+    try {
+      // Create transfer to Stripe Connect account
+      const transfer = await stripe.transfers.create({
+        amount: payout.netAmount,
+        currency: payout.currency.toLowerCase(),
+        destination: payout.stripeConnectAccountId,
+        description: `Commission payout for ${payout.referrerEmail}`,
+        metadata: {
+          payoutId: payout._id.toString(),
+          referrerId: payout.referrerId,
+          referrerEmail: payout.referrerEmail,
+          executedBy: adminEmail
+        }
+      });
+      
+      // Update payout with Stripe transfer info
+      payout.stripeTransferId = transfer.id;
+      payout.status = 'completed';
+      payout.completedAt = new Date();
+      await payout.save();
+      
+      // Mark commission referrals as paid
+      await CommissionReferral.updateMany(
+        { _id: { $in: payout.commissionReferralIds } },
+        {
+          $set: {
+            status: 'paid',
+            paidAt: new Date()
+          }
+        }
+      );
+      
+      console.log(`✅ Payout executed successfully: ${payoutId}`);
+      console.log(`   Transfer ID: ${transfer.id}`);
+      console.log(`   Amount: $${(payout.netAmount / 100).toFixed(2)}`);
+      console.log(`   Recipient: ${payout.referrerEmail}`);
+      
+      return res.json({
+        ok: true,
+        message: 'Payout executed successfully',
+        payout: {
+          id: payout._id,
+          status: payout.status,
+          stripeTransferId: payout.stripeTransferId,
+          netAmount: payout.netAmount,
+          completedAt: payout.completedAt
+        }
+      });
+      
+    } catch (stripeErr) {
+      // Stripe error - mark payout as failed
+      payout.status = 'failed';
+      payout.failureReason = stripeErr.message;
+      payout.failureCode = stripeErr.code;
+      payout.retryCount += 1;
+      await payout.save();
+      
+      console.error(`❌ Stripe payout failed: ${payoutId}`, stripeErr.message);
+      
+      return res.status(500).json({
+        ok: false,
+        error: 'Payout execution failed',
+        stripeError: stripeErr.message,
+        code: stripeErr.code
+      });
+    }
+    
+  } catch (err) {
+    console.error('❌ Error executing payout:', err);
+    return res.status(500).json({
+      ok: false,
+      error: err.message
+    });
+  }
+});
+
+/**
+ * Create Stripe Connect Express account onboarding link
+ * POST /api/payouts/stripe-connect/onboard
+ */
+router.post('/stripe-connect/onboard', async (req, res) => {
+  try {
+    const { referrerEmail, refreshUrl, returnUrl } = req.body;
+    
+    if (!referrerEmail) {
+      return res.status(400).json({
+        ok: false,
+        error: 'referrerEmail is required'
+      });
+    }
+    
+    // Find referrer
+    const referrer = await CommissionReferral.findOne({ 
+      referrerEmail: referrerEmail.toLowerCase() 
+    }).sort({ createdAt: -1 });
+    
+    if (!referrer) {
+      return res.status(404).json({
+        ok: false,
+        error: 'Referrer not found'
+      });
+    }
+    
+    // Verify Stripe is initialized
+    if (!stripe) {
+      return res.status(500).json({
+        ok: false,
+        error: 'Stripe is not configured. Please set STRIPE_SECRET_KEY.'
+      });
+    }
+    
+    let accountId = referrer.stripeConnectAccountId;
+    
+    // Create Stripe Connect Express account if not exists
+    if (!accountId) {
+      const account = await stripe.accounts.create({
+        type: 'express',
+        email: referrer.referrerEmail,
+        capabilities: {
+          transfers: { requested: true }
+        },
+        business_type: 'individual',
+        metadata: {
+          referrerId: referrer.referrerId,
+          referrerEmail: referrer.referrerEmail,
+          referralCode: referrer.referralCode
+        }
+      });
+      
+      accountId = account.id;
+      
+      // Save account ID to all referral records for this referrer
+      await CommissionReferral.updateMany(
+        { referrerId: referrer.referrerId },
+        { $set: { stripeConnectAccountId: accountId } }
+      );
+      
+      console.log(`✅ Created Stripe Connect account: ${accountId} for ${referrer.referrerEmail}`);
+    }
+    
+    // Create account link for onboarding
+    const clientUrl = process.env.CLIENT_URL || 'https://www.fixloapp.com';
+    const accountLink = await stripe.accountLinks.create({
+      account: accountId,
+      refresh_url: refreshUrl || `${clientUrl}/earn?refresh=true`,
+      return_url: returnUrl || `${clientUrl}/earn?connected=true`,
+      type: 'account_onboarding'
+    });
+    
+    return res.json({
+      ok: true,
+      onboardingUrl: accountLink.url,
+      accountId
+    });
+    
+  } catch (err) {
+    console.error('❌ Error creating Stripe Connect onboarding:', err);
+    return res.status(500).json({
+      ok: false,
+      error: err.message
+    });
+  }
+});
+
+/**
+ * Get Stripe Connect account status
+ * GET /api/payouts/stripe-connect/status/:email
+ */
+router.get('/stripe-connect/status/:email', async (req, res) => {
+  try {
+    const { email } = req.params;
+    
+    // Find referrer
+    const referrer = await CommissionReferral.findOne({ 
+      referrerEmail: email.toLowerCase() 
+    }).sort({ createdAt: -1 });
+    
+    if (!referrer || !referrer.stripeConnectAccountId) {
+      return res.json({
+        ok: true,
+        connected: false,
+        accountId: null
+      });
+    }
+    
+    // Verify Stripe is initialized
+    if (!stripe) {
+      return res.status(500).json({
+        ok: false,
+        error: 'Stripe is not configured. Please set STRIPE_SECRET_KEY.'
+      });
+    }
+    
+    const account = await stripe.accounts.retrieve(referrer.stripeConnectAccountId);
+    
+    return res.json({
+      ok: true,
+      connected: account.charges_enabled && account.payouts_enabled,
+      accountId: account.id,
+      detailsSubmitted: account.details_submitted,
+      chargesEnabled: account.charges_enabled,
+      payoutsEnabled: account.payouts_enabled
+    });
+    
+  } catch (err) {
+    console.error('❌ Error fetching Stripe Connect status:', err);
     return res.status(500).json({
       ok: false,
       error: err.message
