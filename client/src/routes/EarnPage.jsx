@@ -5,7 +5,7 @@ import { API_BASE } from '../utils/config';
  * EarnPage - Public Commission Referral Page
  * 
  * COMPLIANCE RULES:
- * - Feature flag VITE_REFERRALS_ENABLED must be true
+ * - Feature flag checked at runtime via backend /api/commission-referrals/health
  * - Anyone can participate (no Pro account required)
  * - Independent commission opportunity (NOT employment)
  * - Minimum payout: $25 USD
@@ -29,25 +29,24 @@ export default function EarnPage() {
   const [socialMediaUrl, setSocialMediaUrl] = useState('');
   const [payoutProcessing, setPayoutProcessing] = useState(false);
 
-  // Check feature flag
+  // Check feature flag at runtime from backend
   useEffect(() => {
     const checkFeature = async () => {
-      // First check environment variable (client-side feature flag)
-      const clientEnabled = import.meta.env.VITE_REFERRALS_ENABLED === 'true';
-      
-      if (!clientEnabled) {
-        setFeatureEnabled(false);
-        setLoading(false);
-        return;
-      }
-      
-      // If client flag is enabled, verify server-side feature flag
       try {
-        const response = await fetch(`${API_BASE}/api/commission-referrals/health`);
+        // Fetch backend health check with no caching
+        const response = await fetch(`${API_BASE}/api/commission-referrals/health`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        });
         const data = await response.json();
-        setFeatureEnabled(data.enabled);
+        setFeatureEnabled(data.enabled === true);
       } catch (err) {
         console.error('Error checking feature flag:', err);
+        // On network error, assume disabled for safety
         setFeatureEnabled(false);
       } finally {
         setLoading(false);
@@ -82,13 +81,37 @@ export default function EarnPage() {
     }
   };
 
-  // If feature is disabled, show nothing
+  // Show loading spinner while checking backend
   if (loading) {
-    return null;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>
+          <p className="mt-4 text-slate-600">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
+  // Show disabled state message if referrals are not enabled
   if (!featureEnabled) {
-    return null; // Feature flag disabled - render nothing
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <div className="max-w-2xl mx-auto text-center px-4 py-12">
+          <div className="bg-white rounded-2xl shadow-lg p-8 md:p-12">
+            <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+              Referral Program Coming Soon
+            </h1>
+            <p className="text-lg text-slate-700 mb-6">
+              The Fixlo referral program is not available yet.
+            </p>
+            <p className="text-slate-600">
+              We're working on bringing you an exciting opportunity to earn money by referring professionals to Fixlo. Check back soon!
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const handleRegister = async (e) => {
