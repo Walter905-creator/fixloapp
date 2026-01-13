@@ -112,7 +112,6 @@ export default function ReferralSection({ proId, country = 'US' }) {
   }
 
   const isUSA = country.toUpperCase() === 'US';
-  const freeMonths = referralData.stats?.freeMonthsEarned || 0;
 
   return (
     <div className="w-full bg-gradient-to-br from-brand/5 to-brand/10 rounded-2xl p-8 shadow-sm border border-brand/20">
