@@ -5,7 +5,7 @@ import { API_BASE } from '../utils/config';
  * EarnPage - Public Commission Referral Page
  * 
  * COMPLIANCE RULES:
- * - Feature flag checked at runtime via backend /api/commission-referrals/health
+ * - Feature flag checked via VITE_REFERRALS_ENABLED environment variable
  * - Anyone can participate (no Pro account required)
  * - Independent commission opportunity (NOT employment)
  * - Minimum payout: $25 USD
@@ -14,8 +14,9 @@ import { API_BASE } from '../utils/config';
  */
 
 export default function EarnPage() {
-  const [featureEnabled, setFeatureEnabled] = useState(false);
-  const [loading, setLoading] = useState(true);
+  // Normalize feature flag ONCE at the top
+  const referralsEnabled = import.meta.env.VITE_REFERRALS_ENABLED === 'true';
+  
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [registered, setRegistered] = useState(false);
@@ -28,33 +29,6 @@ export default function EarnPage() {
   const [checkingStripeStatus, setCheckingStripeStatus] = useState(false);
   const [socialMediaUrl, setSocialMediaUrl] = useState('');
   const [payoutProcessing, setPayoutProcessing] = useState(false);
-
-  // Check feature flag at runtime from backend
-  useEffect(() => {
-    const checkFeature = async () => {
-      try {
-        // Fetch backend health check with no caching
-        const response = await fetch(`${API_BASE}/api/commission-referrals/health`, {
-          cache: 'no-store',
-          headers: {
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-          }
-        });
-        const data = await response.json();
-        setFeatureEnabled(data.enabled === true);
-      } catch (err) {
-        console.error('Error checking feature flag:', err);
-        // On network error, assume disabled for safety
-        setFeatureEnabled(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    checkFeature();
-  }, []);
 
   // Check Stripe Connect status when dashboard is loaded
   useEffect(() => {
@@ -80,39 +54,6 @@ export default function EarnPage() {
       setCheckingStripeStatus(false);
     }
   };
-
-  // Show loading spinner while checking backend
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>
-          <p className="mt-4 text-slate-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show disabled state message if referrals are not enabled
-  if (!featureEnabled) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-        <div className="max-w-2xl mx-auto text-center px-4 py-12">
-          <div className="bg-white rounded-2xl shadow-lg p-8 md:p-12">
-            <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-              Referral Program Coming Soon
-            </h1>
-            <p className="text-lg text-slate-700 mb-6">
-              The Fixlo referral program is not available yet.
-            </p>
-            <p className="text-slate-600">
-              We're working on bringing you an exciting opportunity to earn money by referring professionals to Fixlo. Check back soon!
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -285,6 +226,20 @@ export default function EarnPage() {
       answer: 'No. This is not employment. It is an independent commission opportunity.'
     }
   ];
+
+  // If feature is disabled, return a visible message (NOT null)
+  if (!referralsEnabled) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="max-w-md text-center p-8 bg-white rounded-lg shadow">
+          <h2 className="text-xl font-semibold mb-2">Referral Program Unavailable</h2>
+          <p className="text-slate-600">
+            The Fixlo referral program is currently disabled.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
