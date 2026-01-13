@@ -57,6 +57,12 @@ export default function EarnPage() {
         console.log('[/earn] Feature enabled:', data.enabled === true);
       } catch (err) {
         console.error('[/earn] Error checking feature flag:', err);
+        console.error('[/earn] Error details:', {
+          message: err.message,
+          stack: err.stack,
+          apiBase: API_BASE,
+          timestamp: new Date().toISOString()
+        });
         // On network error, assume disabled for safety
         setFeatureEnabled(false);
       } finally {
@@ -269,11 +275,12 @@ export default function EarnPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* 
         TEMPORARY DEBUG BANNER - Required by issue for production diagnosis
+        Added: 2026-01-13
         TODO: Remove this banner after confirming production visibility
         Shows route is mounted and feature flag state
       */}
       <div className="bg-blue-600 text-white py-2 px-4 text-center text-sm font-semibold">
-        🔍 DEBUG: /earn route mounted | Feature Enabled: {featureEnabled ? 'YES' : 'NO'} | Loading: {loading ? 'YES' : 'NO'}
+        🔍 DEBUG [2026-01-13]: /earn route mounted | Feature Enabled: {featureEnabled ? 'YES' : 'NO'} | Loading: {loading ? 'YES' : 'NO'}
       </div>
       
       <div className="container-xl py-12 md:py-16">
