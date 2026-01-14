@@ -1,9 +1,24 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import HelmetSEO from '../seo/HelmetSEO';
 import { STRIPE_CHECKOUT_URL } from '../utils/config';
+import { captureReferralCode } from '../utils/referralCapture';
 
 export default function JoinPage(){
+  const [searchParams] = useSearchParams();
   const stripeUrlRaw = STRIPE_CHECKOUT_URL;
+
+  // Capture referral code from URL and redirect to ProSignupPage with ref parameter
+  useEffect(() => {
+    const refCode = searchParams.get('ref');
+    if (refCode) {
+      // Capture the referral code
+      captureReferralCode(searchParams);
+      
+      // Redirect to ProSignupPage with the ref parameter
+      window.location.href = `/pro/signup?ref=${encodeURIComponent(refCode)}`;
+    }
+  }, [searchParams]);
 
   function resolveCheckoutURL(raw){
     const s = (raw || '').trim();

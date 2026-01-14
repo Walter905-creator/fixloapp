@@ -4,12 +4,14 @@ import HelmetSEO from '../seo/HelmetSEO';
 import { STRIPE_CHECKOUT_URL, API_BASE } from '../utils/config';
 import ProValueBanner from '../components/ProValueBanner';
 import StickyProCTA from '../components/StickyProCTA';
+import { captureReferralCode, getStoredReferralCode, isValidReferralCode } from '../utils/referralCapture';
 
 export default function ProSignupPage(){
   const [searchParams] = useSearchParams();
-  const [referralCode, setReferralCode] = useState(null);
+  const [referralCode, setReferralCode] = useState('');
   const [referralValid, setReferralValid] = useState(false);
   const [referrerName, setReferrerName] = useState('');
+  const [referralCodeFromLink, setReferralCodeFromLink] = useState(false);
   
   const stripeUrlRaw = STRIPE_CHECKOUT_URL;
   const [country, setCountry] = React.useState('US'); // Default to US
@@ -34,15 +36,29 @@ export default function ProSignupPage(){
 
   const isUSUser = country === 'US';
 
-  // Check for referral code in URL
+  // Auto-apply referral code from URL or storage
   useEffect(() => {
-    const refCode = searchParams.get('ref');
-    if (refCode) {
-      setReferralCode(refCode.toUpperCase());
-      validateReferralCode(refCode.toUpperCase());
-      
-      // Track referral click
-      trackReferralClick(refCode.toUpperCase());
+    // Priority 1: Check URL for referral code
+    const refCodeFromUrl = searchParams.get('ref');
+    
+    if (refCodeFromUrl && isValidReferralCode(refCodeFromUrl)) {
+      const normalizedCode = refCodeFromUrl.trim().toUpperCase();
+      // Capture and store the referral code
+      captureReferralCode(searchParams);
+      setReferralCode(normalizedCode);
+      setReferralCodeFromLink(true);
+      validateReferralCode(normalizedCode);
+      trackReferralClick(normalizedCode);
+      return;
+    }
+    
+    // Priority 2: Check localStorage for stored referral code
+    const storedCode = getStoredReferralCode();
+    if (storedCode) {
+      setReferralCode(storedCode);
+      setReferralCodeFromLink(true);
+      validateReferralCode(storedCode);
+      // Don't track click again if coming from storage
     }
   }, [searchParams]);
 
@@ -122,19 +138,19 @@ export default function ProSignupPage(){
     <div className="container-xl py-8">
       <h1 className="text-2xl font-extrabold">Join Fixlo as a Professional</h1>
       
-      {/* Referral Banner */}
-      {referralValid && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+      {/* Referral Banner - Subtle confirmation */}
+      {referralValid && referralCode && (
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg" role="status" aria-live="polite">
           <div className="flex items-center gap-2">
-            <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
             </svg>
             <div>
               <p className="text-sm font-semibold text-green-900">
-                You're joining with a referral from {referrerName}!
+                Joining with a referral code
               </p>
               <p className="text-xs text-green-700">
-                Complete your signup to help them earn a free month.
+                Your referral will be credited after signup. No action needed.
               </p>
             </div>
           </div>
@@ -144,9 +160,6 @@ export default function ProSignupPage(){
       <div className="card p-6 max-w-lg">
         <p className="text-slate-700 mb-6">Start getting quality leads in your area. Background check and onboarding included.</p>
         <form onSubmit={onSubmit} className="space-y-4">
-          {referralCode && (
-            <input type="hidden" name="referralCode" value={referralCode} />
-          )}
           <div>
             <label className="block text-sm text-slate-800 mb-1">Full Name</label>
             <input name="name" className="mt-1 w-full rounded-xl" required/>
@@ -175,6 +188,46 @@ export default function ProSignupPage(){
           <div>
             <label className="block text-sm text-slate-800 mb-1">Date of Birth</label>
             <input name="dob" className="mt-1 w-full rounded-xl" type="date" required/>
+          </div>
+          
+          {/* Referral Code Field - Optional but visible */}
+          <div className="pt-2 border-t border-slate-200">
+            <label className="block text-sm text-slate-800 mb-1">
+              Referral Code <span className="text-slate-500 font-normal">(optional)</span>
+            </label>
+            <input 
+              name="referralCode"
+              value={referralCode}
+              onChange={(e) => {
+                const newCode = e.target.value.trim().toUpperCase();
+                setReferralCode(newCode);
+                if (newCode && isValidReferralCode(newCode)) {
+                  validateReferralCode(newCode);
+                } else {
+                  setReferralValid(false);
+                  setReferrerName('');
+                }
+              }}
+              className="mt-1 w-full rounded-xl" 
+              placeholder="Enter referral code if you have one"
+              maxLength="20"
+            />
+            {referralCodeFromLink && referralCode && (
+              <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                </svg>
+                <span>Referral code applied</span>
+              </p>
+            )}
+            {referralValid && referrerName && (
+              <p className="text-xs text-slate-600 mt-1">
+                Referred by {referrerName}
+              </p>
+            )}
+            <p className="text-xs text-slate-500 mt-1">
+              Have a referral code? Enter it here to support your referrer.
+            </p>
           </div>
           
           {/* Conditional opt-in based on country */}
