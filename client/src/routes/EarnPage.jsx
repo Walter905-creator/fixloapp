@@ -28,6 +28,30 @@ export default function EarnPage() {
   const [checkingStripeStatus, setCheckingStripeStatus] = useState(false);
   const [socialMediaUrl, setSocialMediaUrl] = useState('');
   const [payoutProcessing, setPayoutProcessing] = useState(false);
+  const [guestReferralCode, setGuestReferralCode] = useState('');
+  const [guestReferralUrl, setGuestReferralUrl] = useState('');
+
+  // Generate guest referral code immediately on page load
+  useEffect(() => {
+    const generateGuestCode = () => {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let code = 'GUEST-';
+      for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
+    };
+
+    // Check if we already have a guest code in localStorage
+    let code = localStorage.getItem('fixlo_guest_referral_code');
+    if (!code) {
+      code = generateGuestCode();
+      localStorage.setItem('fixlo_guest_referral_code', code);
+    }
+    
+    setGuestReferralCode(code);
+    setGuestReferralUrl(`https://fixloapp.com/join?ref=${code}`);
+  }, []);
 
   // Check feature flag at runtime from backend
   useEffect(() => {
@@ -142,11 +166,39 @@ export default function EarnPage() {
   };
 
   const copyReferralLink = () => {
-    if (referrerData?.referralUrl) {
-      navigator.clipboard.writeText(referrerData.referralUrl);
+    const linkToCopy = registered && referrerData?.referralUrl 
+      ? referrerData.referralUrl 
+      : guestReferralUrl;
+    
+    if (linkToCopy) {
+      navigator.clipboard.writeText(linkToCopy);
       setSuccess('Referral link copied!');
       setTimeout(() => setSuccess(''), 2000);
     }
+  };
+
+  const shareViaWhatsApp = () => {
+    const linkToShare = registered && referrerData?.referralUrl 
+      ? referrerData.referralUrl 
+      : guestReferralUrl;
+    
+    const message = encodeURIComponent(
+      `Join Fixlo and get access to local jobs. Sign up using my referral link: ${linkToShare}`
+    );
+    
+    window.open(`https://wa.me/?text=${message}`, '_blank');
+  };
+
+  const shareViaSMS = () => {
+    const linkToShare = registered && referrerData?.referralUrl 
+      ? referrerData.referralUrl 
+      : guestReferralUrl;
+    
+    const message = encodeURIComponent(
+      `Join Fixlo and get access to local jobs. Sign up using my referral link: ${linkToShare}`
+    );
+    
+    window.location.href = `sms:?body=${message}`;
   };
 
   const handleStripeConnect = async () => {
@@ -289,131 +341,93 @@ export default function EarnPage() {
         {/* Active Program Content */}
         {!loading && featureEnabled && (
           <>
-            {/* How It Works */}
-            <div className="max-w-5xl mx-auto mb-12 bg-white rounded-2xl shadow-lg p-8 md:p-12">
-              <h2 className="text-3xl font-bold text-slate-900 mb-8 text-center">
-                How It Works
+            {/* Success Message */}
+            {success && (
+              <div className="max-w-4xl mx-auto mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700 text-center">
+                {success}
+              </div>
+            )}
+
+            {/* Your Referral Link (Primary Action) */}
+            <div className="max-w-4xl mx-auto mb-12 bg-white rounded-2xl shadow-lg p-8 md:p-12">
+              <h2 className="text-3xl font-bold text-slate-900 mb-4 text-center">
+                Your Referral Link
               </h2>
-              <div className="grid md:grid-cols-5 gap-6">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-brand rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
-                    1
-                  </div>
-                  <h3 className="font-semibold text-slate-900 mb-2">Sign up as a referrer</h3>
-                </div>
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-brand rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
-                    2
-                  </div>
-                  <h3 className="font-semibold text-slate-900 mb-2">Share your unique Fixlo referral link</h3>
-                </div>
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-brand rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
-                    3
-                  </div>
-                  <h3 className="font-semibold text-slate-900 mb-2">A new Pro joins and stays active for 30 days</h3>
-                </div>
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-brand rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
-                    4
-                  </div>
-                  <h3 className="font-semibold text-slate-900 mb-2">You earn 15–20% commission</h3>
-                </div>
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-brand rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
-                    5
-                  </div>
-                  <h3 className="font-semibold text-slate-900 mb-2">Get paid securely via Stripe</h3>
-                </div>
-              </div>
-            </div>
-
-            {/* Trust Disclaimer */}
-            <div className="max-w-4xl mx-auto mb-12 bg-amber-50 border-l-4 border-amber-500 rounded-lg p-6">
-              <p className="text-amber-900 font-medium">
-                <strong>Important:</strong> This is an independent, commission-based opportunity.
-                Referrers are not employees of Fixlo.
+              <p className="text-slate-600 mb-6 text-center">
+                Share this link with professionals you know. When they sign up, you earn commission!
               </p>
-            </div>
-
-            {/* Registration / Dashboard */}
-            {!registered ? (
-              <div className="max-w-2xl mx-auto mb-12 bg-white rounded-2xl shadow-lg p-8">
-                <h2 className="text-2xl font-bold text-slate-900 mb-6 text-center">
-                  Get Started
-                </h2>
-                
-                {error && (
-                  <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-                    {error}
-                  </div>
-                )}
-                
-                {success && (
-                  <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
-                    {success}
-                  </div>
-                )}
-                
-                <form onSubmit={handleRegister} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-brand"
-                      placeholder="your@email.com"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Your Name (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-brand"
-                      placeholder="John Doe"
-                    />
-                  </div>
-                  
+              
+              {/* Referral Link Display */}
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Referral Link
+                </label>
+                <div className="flex gap-2 flex-col sm:flex-row">
+                  <input
+                    type="text"
+                    value={registered && referrerData?.referralUrl ? referrerData.referralUrl : guestReferralUrl}
+                    readOnly
+                    className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg font-mono text-sm"
+                  />
                   <button
-                    type="submit"
-                    className="w-full px-6 py-4 bg-brand hover:bg-brand-dark text-white font-semibold rounded-lg transition-all transform hover:scale-105 shadow-md"
+                    onClick={copyReferralLink}
+                    className="px-6 py-3 bg-brand hover:bg-brand-dark text-white font-semibold rounded-lg transition-all whitespace-nowrap"
                   >
-                    Create My Referral Link
-                  </button>
-                </form>
-                
-                <div className="mt-6 text-center">
-                  <p className="text-sm text-slate-600 mb-3">Already have a referral link?</p>
-                  <button
-                    onClick={handleLoadDashboard}
-                    className="text-brand font-semibold hover:underline"
-                  >
-                    Load My Dashboard
+                    Copy Link
                   </button>
                 </div>
               </div>
-            ) : (
+
+              {/* Referral Code Display (optional, smaller) */}
+              <div className="mb-6 text-center">
+                <p className="text-sm text-slate-600">
+                  Referral Code: <span className="font-mono font-bold text-brand">{registered && referrerData?.referralCode ? referrerData.referralCode : guestReferralCode}</span>
+                </p>
+              </div>
+
+              {/* Share Buttons */}
+              <div className="mb-8">
+                <h3 className="text-lg font-semibold text-slate-900 mb-4 text-center">Share Your Link</h3>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <button
+                    onClick={shareViaWhatsApp}
+                    className="flex-1 flex items-center justify-center gap-3 px-6 py-4 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-all transform hover:scale-105 shadow-md"
+                  >
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                    </svg>
+                    Share via WhatsApp
+                  </button>
+                  <button
+                    onClick={shareViaSMS}
+                    className="flex-1 flex items-center justify-center gap-3 px-6 py-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-all transform hover:scale-105 shadow-md"
+                  >
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/>
+                    </svg>
+                    Share via SMS
+                  </button>
+                </div>
+              </div>
+
+              {/* How Professionals Use Your Referral (Required Instruction) */}
+              <div className="bg-emerald-50 border-l-4 border-emerald-500 rounded-lg p-6">
+                <h3 className="text-xl font-bold text-slate-900 mb-3">
+                  How professionals use your referral
+                </h3>
+                <p className="text-slate-700 text-lg leading-relaxed">
+                  Professionals must sign up using your referral link or enter your referral code during Fixlo Pro registration.
+                </p>
+              </div>
+            </div>
+
+            {/* Dashboard Section - Only shown if registered */}
+            {registered && referrerData && (
               <div className="max-w-4xl mx-auto mb-12">
-                {/* Dashboard */}
-                <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
+                <div className="bg-white rounded-2xl shadow-lg p-8">
                   <h2 className="text-2xl font-bold text-slate-900 mb-6">
                     Your Referral Dashboard
                   </h2>
-                  
-                  {success && (
-                    <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
-                      {success}
-                    </div>
-                  )}
                   
                   {/* Stats */}
                   <div className="grid md:grid-cols-4 gap-4 mb-6">
@@ -440,27 +454,6 @@ export default function EarnPage() {
                         ${((dashboardData?.totalEarnings || 0) / 100).toFixed(2)}
                       </div>
                       <div className="text-sm text-slate-600 mt-1">Total Earnings</div>
-                    </div>
-                  </div>
-                  
-                  {/* Referral Link */}
-                  <div className="mb-6">
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Your Referral Link
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={referrerData?.referralUrl || ''}
-                        readOnly
-                        className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg font-mono text-sm"
-                      />
-                      <button
-                        onClick={copyReferralLink}
-                        className="px-6 py-3 bg-brand hover:bg-brand-dark text-white font-semibold rounded-lg transition-all"
-                      >
-                        Copy
-                      </button>
                     </div>
                   </div>
                   
@@ -556,6 +549,117 @@ export default function EarnPage() {
                 </div>
               </div>
             )}
+
+            {/* Registration Prompt - Only shown if NOT registered */}
+            {!registered && (
+              <div className="max-w-4xl mx-auto mb-12 bg-white rounded-2xl shadow-lg p-8">
+                <h2 className="text-2xl font-bold text-slate-900 mb-4 text-center">
+                  Want to Track Your Earnings?
+                </h2>
+                <p className="text-slate-600 mb-6 text-center">
+                  Register with your email to track referrals, earnings, and request payouts when you reach $25.
+                </p>
+                
+                {error && (
+                  <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                    {error}
+                  </div>
+                )}
+                
+                <form onSubmit={handleRegister} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-brand"
+                      placeholder="your@email.com"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      Your Name (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-brand"
+                      placeholder="John Doe"
+                    />
+                  </div>
+                  
+                  <button
+                    type="submit"
+                    className="w-full px-6 py-4 bg-brand hover:bg-brand-dark text-white font-semibold rounded-lg transition-all transform hover:scale-105 shadow-md"
+                  >
+                    Register to Track Earnings
+                  </button>
+                </form>
+                
+                <div className="mt-6 text-center">
+                  <p className="text-sm text-slate-600 mb-3">Already registered?</p>
+                  <button
+                    onClick={handleLoadDashboard}
+                    className="text-brand font-semibold hover:underline"
+                  >
+                    Load My Dashboard
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* How It Works */}
+            <div className="max-w-5xl mx-auto mb-12 bg-white rounded-2xl shadow-lg p-8 md:p-12">
+              <h2 className="text-3xl font-bold text-slate-900 mb-8 text-center">
+                How It Works
+              </h2>
+              <div className="grid md:grid-cols-5 gap-6">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-brand rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
+                    1
+                  </div>
+                  <h3 className="font-semibold text-slate-900 mb-2">Get your referral link</h3>
+                </div>
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-brand rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
+                    2
+                  </div>
+                  <h3 className="font-semibold text-slate-900 mb-2">Share your unique Fixlo referral link</h3>
+                </div>
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-brand rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
+                    3
+                  </div>
+                  <h3 className="font-semibold text-slate-900 mb-2">A new Pro joins and stays active for 30 days</h3>
+                </div>
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-brand rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
+                    4
+                  </div>
+                  <h3 className="font-semibold text-slate-900 mb-2">You earn 15–20% commission</h3>
+                </div>
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-brand rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
+                    5
+                  </div>
+                  <h3 className="font-semibold text-slate-900 mb-2">Get paid securely via Stripe</h3>
+                </div>
+              </div>
+            </div>
+
+            {/* Trust Disclaimer */}
+            <div className="max-w-4xl mx-auto mb-12 bg-amber-50 border-l-4 border-amber-500 rounded-lg p-6">
+              <p className="text-amber-900 font-medium">
+                <strong>Important:</strong> This is an independent, commission-based opportunity.
+                Referrers are not employees of Fixlo.
+              </p>
+            </div>
           </>
         )}
 
