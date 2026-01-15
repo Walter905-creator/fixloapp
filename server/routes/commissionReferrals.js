@@ -4,6 +4,7 @@ const router = express.Router();
 const CommissionReferral = require('../models/CommissionReferral');
 const Pro = require('../models/Pro');
 const Payout = require('../models/Payout');
+const requireAuth = require('../middleware/requireAuth');
 
 /**
  * COMPLIANCE: Commission Referral System
@@ -46,6 +47,94 @@ const checkFeatureFlag = (req, res, next) => {
 
 // Apply feature flag to all routes EXCEPT /health (which is already defined above)
 router.use(checkFeatureFlag);
+
+/**
+ * Get authenticated user's referral info
+ * GET /api/commission-referrals/referrer/me
+ * Requires authentication
+ */
+router.get('/referrer/me', requireAuth, async (req, res) => {
+  try {
+    // Get user email from JWT token
+    const userEmail = req.user?.email;
+    
+    if (!userEmail) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Email not found in token'
+      });
+    }
+    
+    // Find referrer by email
+    let referrer = await CommissionReferral.findOne({ 
+      referrerEmail: userEmail.toLowerCase() 
+    }).sort({ createdAt: -1 });
+    
+    if (!referrer) {
+      // User doesn't have a referral account yet - auto-create one
+      const generateCode = () => {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let code = 'FIXLO-REF-';
+        for (let i = 0; i < 6; i++) {
+          code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return code;
+      };
+      
+      let referralCode = generateCode();
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      while (attempts < maxAttempts) {
+        const existing = await CommissionReferral.findOne({ referralCode });
+        if (!existing) break;
+        referralCode = generateCode();
+        attempts++;
+      }
+      
+      if (attempts >= maxAttempts) {
+        return res.status(500).json({
+          ok: false,
+          error: 'Failed to generate unique referral code'
+        });
+      }
+      
+      // Create new referrer
+      const referrerId = `referrer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const userName = req.user?.name || 'Fixlo User';
+      
+      // Default to US if no country in user data
+      const country = req.user?.country || 'US';
+      const commissionRate = country === 'US' ? 0.20 : 0.15;
+      
+      referrer = await CommissionReferral.create({
+        referrerId,
+        referrerEmail: userEmail.toLowerCase(),
+        referrerName: userName,
+        referralCode,
+        commissionRate,
+        country,
+        status: 'pending'
+      });
+      
+      console.log(`✅ Auto-created referral account for authenticated user: ${userEmail} (${referralCode})`);
+    }
+    
+    // Return referrer info
+    return res.json({
+      ok: true,
+      referralCode: referrer.referralCode,
+      referralUrl: `${process.env.CLIENT_URL || 'https://www.fixloapp.com'}/join?commission_ref=${referrer.referralCode}`
+    });
+    
+  } catch (err) {
+    console.error('❌ Error fetching authenticated user referral info:', err);
+    return res.status(500).json({
+      ok: false,
+      error: err.message
+    });
+  }
+});
 
 /**
  * Create a referrer account / Get referrer info
