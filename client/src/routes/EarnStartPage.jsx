@@ -31,9 +31,6 @@ export default function EarnStartPage() {
     setSuccess('');
 
     try {
-      // For now, we'll use a simplified flow that creates the referrer directly
-      // In production, you would implement actual SMS/WhatsApp verification here
-      
       // Validate phone number format (basic validation)
       const phoneRegex = /^[\d\s\-\(\)\+]+$/;
       if (!phoneRegex.test(phone)) {
@@ -42,12 +39,28 @@ export default function EarnStartPage() {
         return;
       }
 
-      // Generate a mock verification code for demo
-      // In production, this would send actual SMS/WhatsApp
-      const mockCode = '123456';
-      console.log(`📱 Verification code would be sent to ${phone}: ${mockCode}`);
+      // In production, this would send actual SMS/WhatsApp verification
+      // For now, using demo mode for UI testing
+      const isDemoMode = process.env.NODE_ENV === 'development' || !process.env.REACT_APP_TWILIO_ENABLED;
       
-      setSuccess(`Verification code sent via ${verificationMethod.toUpperCase()}! (Demo: use 123456)`);
+      if (isDemoMode) {
+        console.log(`[DEMO MODE] Verification code would be sent to ${phone}`);
+        setSuccess(`Verification code sent via ${verificationMethod.toUpperCase()}! (Demo: use 123456)`);
+      } else {
+        // Production: Send actual SMS/WhatsApp via backend
+        const response = await fetch(`${API_BASE}/api/referrals/send-verification`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, method: verificationMethod })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to send verification code');
+        }
+        
+        setSuccess(`Verification code sent via ${verificationMethod.toUpperCase()}!`);
+      }
+      
       setStep('verify');
       
     } catch (err) {
@@ -65,12 +78,27 @@ export default function EarnStartPage() {
     setSuccess('');
 
     try {
-      // In production, verify the code first
-      // For demo, accept '123456'
-      if (verificationCode !== '123456') {
-        setError('Invalid verification code. Try 123456 for demo.');
-        setLoading(false);
-        return;
+      const isDemoMode = process.env.NODE_ENV === 'development' || !process.env.REACT_APP_TWILIO_ENABLED;
+      
+      // In demo mode, accept specific test code
+      // In production, verify via backend
+      if (isDemoMode) {
+        if (verificationCode !== '123456') {
+          setError('Invalid verification code. Try 123456 for demo.');
+          setLoading(false);
+          return;
+        }
+      } else {
+        // Production: Verify code with backend
+        const verifyResponse = await fetch(`${API_BASE}/api/referrals/verify-code`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, code: verificationCode })
+        });
+        
+        if (!verifyResponse.ok) {
+          throw new Error('Invalid verification code');
+        }
       }
 
       // Create referrer account via backend
@@ -80,7 +108,8 @@ export default function EarnStartPage() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          email: `${phone.replace(/\D/g, '')}@fixlo-referral.temp`, // Temporary email
+          // Generate unique temporary email using timestamp and random string
+          email: `ref_${Date.now()}_${Math.random().toString(36).substr(2, 9)}@fixlo.temp`,
           name: name || 'Fixlo Referrer',
           phone: phone,
           country: 'US'
