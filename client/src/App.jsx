@@ -65,9 +65,21 @@ export default function App(){
       <Route path="/pro/sign-in" element={<ProSignInPage/>}/>
       <Route path="/pro/forgot-password" element={<ProForgotPasswordPage/>}/>
       <Route path="/pro/reset-password" element={<ProResetPasswordPage/>}/>
-      <Route path="/admin" element={<AdminPage/>}/>
-      <Route path="/admin/jobs" element={<AdminJobsPage/>}/>
-      <Route path="/admin/social-media" element={<AdminSocialMediaPage/>}/>
+      <Route path="/admin" element={
+        <ProtectedRoute requiredRole="admin">
+          <AdminPage/>
+        </ProtectedRoute>
+      }/>
+      <Route path="/admin/jobs" element={
+        <ProtectedRoute requiredRole="admin">
+          <AdminJobsPage/>
+        </ProtectedRoute>
+      }/>
+      <Route path="/admin/social-media" element={
+        <ProtectedRoute requiredRole="admin">
+          <AdminSocialMediaPage/>
+        </ProtectedRoute>
+      }/>
       <Route path="/my-jobs" element={<CustomerPortalPage/>}/>
       <Route path="/pro/dashboard" element={
         <ProtectedRoute requiredRole="pro">
