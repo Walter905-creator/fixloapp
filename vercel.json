@@ -180,11 +180,7 @@
       "destination": "/admin",
       "permanent": true
     },
-    {
-      "source": "/pro-signup.html",
-      "destination": "/pro-signup", 
-      "permanent": true
-    },
+
     {
       "source": "/sms-compliance.html",
       "destination": "/sms-compliance",
@@ -218,10 +214,7 @@
       "source": "/support", 
       "destination": "/support.html"
     },
-    {
-      "source": "/pro-signup",
-      "destination": "/pro-signup.html"
-    },
+
     {
       "source": "/sms-compliance",
       "destination": "/sms-compliance.html"
@@ -258,10 +251,7 @@
       "source": "/services/(.*)",
       "destination": "/services/$1/index.html"
     },
-    {
-      "source": "/pro/signup",
-      "destination": "/pro/signup/index.html"
-    },
+
     {
       "source": "/ai-assistant",
       "destination": "/ai-assistant/index.html"

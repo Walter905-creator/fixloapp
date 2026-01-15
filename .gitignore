@@ -100,3 +100,4 @@ server/test-email-phone-fixes.js
 
 # Demo/test utility files
 set-referrer.html
+test-pro-auth-routes.js
