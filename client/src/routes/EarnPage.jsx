@@ -98,6 +98,19 @@ export default function EarnPage() {
     }
   }, [registered, referrerData]);
 
+  // Handle hash navigation on page load
+  useEffect(() => {
+    if (window.location.hash) {
+      // Small delay to ensure content is rendered
+      setTimeout(() => {
+        const element = document.getElementById(window.location.hash.substring(1));
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+  }, []);
+
   const checkStripeConnectStatus = async () => {
     if (!referrerData?.email) return;
     
@@ -349,7 +362,7 @@ export default function EarnPage() {
             )}
 
             {/* Your Referral Link (Primary Action) */}
-            <div className="max-w-4xl mx-auto mb-12 bg-white rounded-2xl shadow-lg p-8 md:p-12">
+            <section id="referral-start" className="max-w-4xl mx-auto mb-12 bg-white rounded-2xl shadow-lg p-8 md:p-12">
               <h2 className="text-3xl font-bold text-slate-900 mb-4 text-center">
                 Your Referral Link
               </h2>
@@ -419,7 +432,7 @@ export default function EarnPage() {
                   Professionals must sign up using your referral link or enter your referral code during Fixlo Pro registration.
                 </p>
               </div>
-            </div>
+            </section>
 
             {/* Dashboard Section - Only shown if registered */}
             {registered && referrerData && (
