@@ -35,6 +35,8 @@ import AboutPage from './routes/AboutPage.jsx';
 import TrendServicePage from './routes/TrendServicePage.jsx';
 import CompetitorAlternativesPage from './routes/CompetitorAlternativesPage.jsx';
 import EarnPage from './routes/EarnPage.jsx';
+import EarnStartPage from './routes/EarnStartPage.jsx';
+import EarnDashboardPage from './routes/EarnDashboardPage.jsx';
 export default function App(){
   return (<>
     <PromoBanner />
@@ -90,6 +92,8 @@ export default function App(){
       <Route path="/staff/jobs" element={<JobManagementPage/>}/>
       <Route path="/join" element={<JoinPage/>}/>
       <Route path="/earn" element={<EarnPage/>}/>
+      <Route path="/earn/start" element={<EarnStartPage/>}/>
+      <Route path="/earn/dashboard" element={<EarnDashboardPage/>}/>
       <Route path="/for-professionals" element={<Navigate to="/join" replace/>}/>
       <Route path="/terms" element={<Terms/>}/>
       <Route path="/privacy" element={<Privacy/>}/>

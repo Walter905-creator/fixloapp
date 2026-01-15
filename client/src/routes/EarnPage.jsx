@@ -231,35 +231,31 @@ export default function EarnPage() {
                 Get Your Referral Code
               </h2>
               
-              {/* NOT AUTHENTICATED - Show blocking message */}
+              {/* NOT AUTHENTICATED - Show Get Started CTA */}
               {!isAuthenticated && !authLoading && (
                 <>
                   <div className="mb-8 text-center">
-                    <div className="mb-6 p-6 bg-amber-50 border-l-4 border-amber-500 rounded-lg">
+                    <div className="mb-6 p-6 bg-emerald-50 border-l-4 border-emerald-500 rounded-lg">
                       <p className="text-lg text-slate-900 font-semibold mb-2">
-                        Sign in or create an account to generate your referral link.
+                        Anyone can earn by referring professionals
                       </p>
                       <p className="text-slate-700">
-                        You must be signed in to access your referral code and earn commissions.
+                        Get your unique referral link in minutes using just your phone number.
                       </p>
                     </div>
                     
                     <div className="space-y-4 max-w-md mx-auto">
                       <button
-                        onClick={() => navigate('/pro/sign-in')}
+                        onClick={() => navigate('/earn/start')}
                         className="w-full px-8 py-4 bg-brand hover:bg-brand-dark text-white font-semibold rounded-xl transition-all transform hover:scale-105 shadow-md text-lg"
                       >
-                        Sign In
+                        Get Your Referral Link
                       </button>
                       
                       <div className="text-center">
-                        <p className="text-slate-600 mb-3">Don't have an account?</p>
-                        <button
-                          onClick={() => navigate('/pro/signup')}
-                          className="w-full px-8 py-4 bg-slate-600 hover:bg-slate-700 text-white font-semibold rounded-xl transition-all transform hover:scale-105 shadow-md text-lg"
-                        >
-                          Sign Up
-                        </button>
+                        <p className="text-slate-600 text-sm">
+                          Already have an account? <button onClick={() => navigate('/pro/sign-in')} className="text-brand hover:underline font-medium">Sign in</button>
+                        </p>
                       </div>
                     </div>
                   </div>

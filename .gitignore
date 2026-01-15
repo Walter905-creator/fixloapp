@@ -97,3 +97,6 @@ client/public/version.json
 *.backup
 test-stripe-request-flow.js
 server/test-email-phone-fixes.js
+
+# Demo/test utility files
+set-referrer.html
