@@ -3,12 +3,11 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import logoUrl from '../assets/fixlo-logo.png';
 
-const items = [
+const baseItems = [
   { to: '/services', label: 'Services' },
   { to: '/how-it-works', label: 'How It Works' },
   // { to: '/assistant', label: 'AI Assistant' }, // Hidden per requirements
-  { to: '/contact', label: 'Contact' },
-  { to: '/admin', label: 'Admin' }
+  { to: '/contact', label: 'Contact' }
   // Removed duplicate 'Pro Dashboard' and 'Join Now' from regular items to create as separate CTA button
 ];
 
@@ -24,8 +23,14 @@ export default function Navbar() {
   };
 
   const isPro = isAuthenticated && user?.role === 'pro';
+  const isAdmin = isAuthenticated && user?.role === 'admin';
   const firstName = user?.name?.split(' ')[0] || user?.name || user?.phone || 'User';
   const displayName = firstName;
+  
+  // Only show admin link to users with admin role
+  const items = isAdmin 
+    ? [...baseItems, { to: '/admin', label: 'Admin' }]
+    : baseItems;
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">

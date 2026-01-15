@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import HelmetSEO from '../seo/HelmetSEO';
 import { API_BASE } from '../utils/config';
@@ -7,6 +7,7 @@ import { API_BASE } from '../utils/config';
 export default function ProSignInPage(){
   const api = API_BASE;
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login } = useAuth();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -41,7 +42,14 @@ export default function ProSignInPage(){
             phone: data.pro.phone
           };
           login(data.token, userData);
-          navigate('/pro/dashboard');
+          
+          // Check for redirect parameter
+          const redirectPath = searchParams.get('redirect');
+          if (redirectPath) {
+            navigate(redirectPath);
+          } else {
+            navigate('/pro/dashboard');
+          }
         } else {
           setError('Login failed - invalid response format.');
         }

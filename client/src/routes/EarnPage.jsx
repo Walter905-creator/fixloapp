@@ -224,26 +224,32 @@ export default function EarnPage() {
               </div>
             )}
 
+            {/* ALWAYS RENDER REFERRAL SECTION FIRST - BEFORE FAQs */}
             {/* Your Referral Link Section */}
             <section id="referral-start" className="max-w-4xl mx-auto mb-12 bg-white rounded-2xl shadow-lg p-8 md:p-12">
               <h2 className="text-3xl font-bold text-slate-900 mb-4 text-center">
                 Get Your Referral Code
               </h2>
               
-              {/* NOT AUTHENTICATED - Show CTA */}
+              {/* NOT AUTHENTICATED - Show blocking message */}
               {!isAuthenticated && !authLoading && (
                 <>
                   <div className="mb-8 text-center">
-                    <p className="text-lg text-slate-700 mb-6">
-                      You must be <strong>signed in</strong> to generate and view your referral link and code.
-                    </p>
+                    <div className="mb-6 p-6 bg-amber-50 border-l-4 border-amber-500 rounded-lg">
+                      <p className="text-lg text-slate-900 font-semibold mb-2">
+                        Sign in or create an account to generate your referral link.
+                      </p>
+                      <p className="text-slate-700">
+                        You must be signed in to access your referral code and earn commissions.
+                      </p>
+                    </div>
                     
                     <div className="space-y-4 max-w-md mx-auto">
                       <button
                         onClick={() => navigate('/pro/sign-in')}
                         className="w-full px-8 py-4 bg-brand hover:bg-brand-dark text-white font-semibold rounded-xl transition-all transform hover:scale-105 shadow-md text-lg"
                       >
-                        Sign In to Get Your Referral Link
+                        Sign In
                       </button>
                       
                       <div className="text-center">
@@ -256,19 +262,6 @@ export default function EarnPage() {
                         </button>
                       </div>
                     </div>
-                  </div>
-                  
-                  {/* Instruction for authenticated users preview */}
-                  <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-6 mt-6">
-                    <h3 className="text-xl font-bold text-slate-900 mb-3">
-                      How to Get Your Referral Code
-                    </h3>
-                    <ol className="list-decimal list-inside text-slate-700 space-y-2">
-                      <li>Sign in to your Fixlo account (or create a new account)</li>
-                      <li>Your unique referral code and link will be automatically generated</li>
-                      <li>Share your referral link with professionals you know</li>
-                      <li>Earn commissions when they sign up and stay active!</li>
-                    </ol>
                   </div>
                 </>
               )}
@@ -357,7 +350,13 @@ export default function EarnPage() {
                     </>
                   ) : (
                     <div className="text-center py-8">
-                      <p className="text-red-600">Failed to load referral data. Please try refreshing the page.</p>
+                      <p className="text-red-600 mb-4">Failed to load referral data. Please try refreshing the page.</p>
+                      <button
+                        onClick={fetchAuthenticatedReferralData}
+                        className="px-6 py-3 bg-brand hover:bg-brand-dark text-white font-semibold rounded-lg"
+                      >
+                        Retry
+                      </button>
                     </div>
                   )}
                 </>
@@ -372,7 +371,7 @@ export default function EarnPage() {
               )}
             </section>
 
-            {/* How It Works */}
+            {/* How It Works - AFTER referral section */}
             <div className="max-w-5xl mx-auto mb-12 bg-white rounded-2xl shadow-lg p-8 md:p-12">
               <h2 className="text-3xl font-bold text-slate-900 mb-8 text-center">
                 How It Works
@@ -418,42 +417,42 @@ export default function EarnPage() {
                 Referrers are not employees of Fixlo.
               </p>
             </div>
+
+            {/* FAQ Section - ALWAYS RENDER AFTER REFERRAL SECTION */}
+            <div className="max-w-4xl mx-auto mb-12 bg-white rounded-2xl shadow-lg p-8 md:p-12">
+              <h2 className="text-3xl font-bold text-slate-900 mb-8 text-center">
+                Frequently Asked Questions
+              </h2>
+              
+              <div className="space-y-4">
+                {faqItems.map((item, index) => (
+                  <div key={index} className="border border-slate-200 rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => setExpandedFaq(expandedFaq === index ? null : index)}
+                      className="w-full px-6 py-4 text-left bg-slate-50 hover:bg-slate-100 transition-colors flex justify-between items-center"
+                    >
+                      <span className="font-semibold text-slate-900">{item.question}</span>
+                      <svg
+                        className={`w-5 h-5 text-slate-600 transition-transform ${expandedFaq === index ? 'transform rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    
+                    {expandedFaq === index && (
+                      <div className="px-6 py-4 bg-white">
+                        <p className="text-slate-700">{item.answer}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           </>
         )}
-
-        {/* FAQ Section */}
-        <div className="max-w-4xl mx-auto mb-12 bg-white rounded-2xl shadow-lg p-8 md:p-12">
-          <h2 className="text-3xl font-bold text-slate-900 mb-8 text-center">
-            Frequently Asked Questions
-          </h2>
-          
-          <div className="space-y-4">
-            {faqItems.map((item, index) => (
-              <div key={index} className="border border-slate-200 rounded-lg overflow-hidden">
-                <button
-                  onClick={() => setExpandedFaq(expandedFaq === index ? null : index)}
-                  className="w-full px-6 py-4 text-left bg-slate-50 hover:bg-slate-100 transition-colors flex justify-between items-center"
-                >
-                  <span className="font-semibold text-slate-900">{item.question}</span>
-                  <svg
-                    className={`w-5 h-5 text-slate-600 transition-transform ${expandedFaq === index ? 'transform rotate-180' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                
-                {expandedFaq === index && (
-                  <div className="px-6 py-4 bg-white">
-                    <p className="text-slate-700">{item.answer}</p>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );
