@@ -187,6 +187,9 @@ router.post('/register', async (req, res) => {
     let attempts = 0;
     const maxAttempts = 10;
     
+    // Simple collision detection with database queries
+    // Note: For high-scale scenarios, consider using database-level unique constraints
+    // with try/catch or pre-generating a pool of codes for better performance
     while (attempts < maxAttempts) {
       const existing = await CommissionReferral.findOne({ referralCode });
       if (!existing) break;

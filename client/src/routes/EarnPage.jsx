@@ -35,6 +35,8 @@ export default function EarnPage() {
   const fetchAuthenticatedReferralData = async () => {
     setLoadingAuthReferral(true);
     try {
+      // Get token from localStorage where AuthContext stores it
+      // This is safe as we've already verified isAuthenticated via AuthContext
       const token = localStorage.getItem('fixlo_token');
       const response = await fetch(`${API_BASE}/api/commission-referrals/referrer/me`, {
         headers: {
@@ -349,7 +351,7 @@ export default function EarnPage() {
                           How professionals use your referral
                         </h3>
                         <p className="text-slate-700 text-lg leading-relaxed">
-                          Professionals must sign up using your referral link or enter your referral code during Fixlo Pro registration. Sign in to Fixlo to get your referral link now.
+                          Professionals must sign up using your referral link or enter your referral code during Fixlo Pro registration.
                         </p>
                       </div>
                     </>
