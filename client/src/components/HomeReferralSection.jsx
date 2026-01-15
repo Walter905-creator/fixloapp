@@ -26,7 +26,7 @@ export default function HomeReferralSection() {
 
           {/* CTA Button */}
           <button
-            onClick={() => navigate('/earn')}
+            onClick={() => navigate('/earn#referral-start')}
             className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
           >
             Get Started
