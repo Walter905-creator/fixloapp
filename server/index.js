@@ -136,7 +136,7 @@ app.use((req, res, next) => {
     )
     .header(
       "Access-Control-Allow-Headers",
-      "Content-Type, Authorization, X-Requested-With, Accept, Origin"
+      "Content-Type, Authorization, X-Requested-With, Accept, Origin, Expires, Cache-Control, Pragma"
     )
     .header("Access-Control-Allow-Credentials", "true")
     .header("Access-Control-Max-Age", "86400")
@@ -163,6 +163,9 @@ app.use(
       "X-Requested-With",
       "Access-Control-Request-Method",
       "Access-Control-Request-Headers",
+      "Expires",
+      "Cache-Control",
+      "Pragma",
     ],
     exposedHeaders: [
       "Access-Control-Allow-Origin",
