@@ -231,16 +231,19 @@ export default function EarnPage() {
                 Get Your Referral Code
               </h2>
               
-              {/* NOT AUTHENTICATED - Show Get Started CTA */}
+              {/* NOT AUTHENTICATED - Show Referral Welcome Gate (NOT Pro Sign In) */}
               {!isAuthenticated && !authLoading && (
                 <>
                   <div className="mb-8 text-center">
                     <div className="mb-6 p-6 bg-emerald-50 border-l-4 border-emerald-500 rounded-lg">
                       <p className="text-lg text-slate-900 font-semibold mb-2">
-                        Anyone can earn by referring professionals
+                        ✨ Anyone can earn by referring professionals
                       </p>
-                      <p className="text-slate-700">
-                        Get your unique referral link in minutes using just your phone number.
+                      <p className="text-slate-700 mb-3">
+                        Get your unique referral link in minutes. No Pro account required!
+                      </p>
+                      <p className="text-sm text-slate-600">
+                        Referral accounts are <strong>free and separate</strong> from Fixlo Pro subscriptions.
                       </p>
                     </div>
                     
@@ -249,12 +252,27 @@ export default function EarnPage() {
                         onClick={() => navigate('/earn/start')}
                         className="w-full px-8 py-4 bg-brand hover:bg-brand-dark text-white font-semibold rounded-xl transition-all transform hover:scale-105 shadow-md text-lg"
                       >
-                        Get Your Referral Link
+                        Create Free Referral Account
                       </button>
                       
                       <div className="text-center">
                         <p className="text-slate-600 text-sm">
-                          Already have an account? <button onClick={() => navigate('/pro/sign-in')} className="text-brand hover:underline font-medium">Sign in</button>
+                          Already have a referral account?{' '}
+                          <button 
+                            onClick={() => navigate('/earn/sign-in')} 
+                            className="text-brand hover:underline font-medium"
+                          >
+                            Sign in here
+                          </button>
+                        </p>
+                      </div>
+                      
+                      <div className="pt-4 border-t border-slate-200">
+                        <p className="text-xs text-slate-500 italic">
+                          Note: If you're a Fixlo Pro looking for your Pro dashboard,{' '}
+                          <a href="/pro/sign-in" className="text-brand hover:underline">
+                            click here to sign in
+                          </a>
                         </p>
                       </div>
                     </div>

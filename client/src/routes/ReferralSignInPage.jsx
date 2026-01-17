@@ -1,30 +1,33 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE } from '../utils/config';
 import HelmetSEO from '../seo/HelmetSEO';
 import { useReferralAuth } from '../context/ReferralAuthContext';
 
 /**
- * EarnStartPage - Non-Pro Referral Registration
+ * ReferralSignInPage - Sign in for returning referral users
  * 
- * CRITICAL: This is NOT Pro authentication
+ * CRITICAL: This is NOT Pro Sign In
  * - Phone verification only (SMS/WhatsApp)
  * - No email/password required
- * - Creates CommissionReferrer account
- * - Redirects to /earn after successful registration
+ * - Redirects to /earn after successful login
+ * - Separate from Pro authentication flow
  */
 
-export default function EarnStartPage() {
+export default function ReferralSignInPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { loginReferral } = useReferralAuth();
   const [step, setStep] = useState('phone'); // 'phone' or 'verify'
   const [phone, setPhone] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
-  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [verificationMethod, setVerificationMethod] = useState('sms'); // 'sms' or 'whatsapp'
+
+  // Get redirect path from query params or default to /earn
+  const from = location.state?.from?.pathname || '/earn';
 
   const handlePhoneSubmit = async (e) => {
     e.preventDefault();
@@ -103,25 +106,18 @@ export default function EarnStartPage() {
         }
       }
 
-      // Create referrer account via backend
-      const response = await fetch(`${API_BASE}/api/commission-referrals/register`, {
-        method: 'POST',
+      // Fetch referral account by phone
+      const response = await fetch(`${API_BASE}/api/commission-referrals/referrer/phone/${encodeURIComponent(phone)}`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          // Generate unique temporary email using timestamp and random string
-          email: `ref_${Date.now()}_${Math.random().toString(36).substr(2, 9)}@fixlo.temp`,
-          name: name || 'Fixlo Referrer',
-          phone: phone,
-          country: 'US'
-        })
+        }
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to create referral account');
+        throw new Error(data.error || 'Account not found. Please create a new referral account.');
       }
 
       if (data.ok && data.referrer) {
@@ -131,14 +127,14 @@ export default function EarnStartPage() {
           referralCode: data.referrer.referralCode,
           email: data.referrer.email,
           phone: phone,
-          name: name || 'Fixlo Referrer'
+          name: data.referrer.name || 'Fixlo Referrer'
         });
 
-        setSuccess('Account created! Redirecting...');
+        setSuccess('Sign in successful! Redirecting...');
         
-        // Redirect to /earn (referral page)
+        // Redirect to original destination or /earn
         setTimeout(() => {
-          navigate('/earn');
+          navigate(from, { replace: true });
         }, 1500);
       } else {
         throw new Error('Invalid response from server');
@@ -155,9 +151,9 @@ export default function EarnStartPage() {
   return (
     <>
       <HelmetSEO 
-        title="Get Your Referral Link | Fixlo Earn" 
-        canonicalPathname="/earn/start"
-        description="Start earning by referring professionals to Fixlo. Get your unique referral link in minutes."
+        title="Referral Sign In | Fixlo Earn" 
+        canonicalPathname="/earn/sign-in"
+        description="Sign in to your Fixlo referral account to manage your referral link and earnings."
       />
       
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-12">
@@ -166,11 +162,17 @@ export default function EarnStartPage() {
             {/* Header */}
             <div className="text-center mb-8">
               <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-3">
-                Get Your Referral Link
+                Referral Sign In
               </h1>
               <p className="text-lg text-slate-600">
-                Enter your phone number to get your personal referral link and start earning.
+                Enter your phone number to access your referral account
               </p>
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+                <strong>Note:</strong> This is for referral accounts only. Not a Fixlo Pro?{' '}
+                <a href="/pro/sign-in" className="text-blue-700 hover:underline font-semibold">
+                  Sign in as a Pro here
+                </a>
+              </div>
             </div>
 
             {/* Error Message */}
@@ -191,20 +193,6 @@ export default function EarnStartPage() {
             {step === 'phone' && (
               <div className="bg-white rounded-2xl shadow-lg p-8">
                 <form onSubmit={handlePhoneSubmit} className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Your Name (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="John Doe"
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand"
-                      disabled={loading}
-                    />
-                  </div>
-
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-2">
                       Phone Number *
@@ -263,13 +251,13 @@ export default function EarnStartPage() {
 
                   <div className="text-center pt-4 border-t border-slate-200">
                     <p className="text-sm text-slate-600">
-                      Already have an account?{' '}
+                      Don't have a referral account?{' '}
                       <button
                         type="button"
-                        onClick={() => navigate('/earn')}
+                        onClick={() => navigate('/earn/start')}
                         className="text-brand hover:underline font-medium"
                       >
-                        Back to Earn
+                        Create one now
                       </button>
                     </p>
                   </div>
@@ -319,7 +307,7 @@ export default function EarnStartPage() {
                     disabled={loading || !verificationCode}
                     className="w-full px-6 py-4 bg-brand hover:bg-brand-dark text-white font-semibold rounded-xl transition-all transform hover:scale-105 shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                   >
-                    {loading ? 'Verifying...' : 'Verify & Continue'}
+                    {loading ? 'Verifying...' : 'Sign In'}
                   </button>
 
                   <div className="text-center space-y-2">
@@ -348,9 +336,9 @@ export default function EarnStartPage() {
             )}
 
             {/* Info Notice */}
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
-              <p className="font-medium mb-1">⚡ Quick & Easy</p>
-              <p>No email or password required. Just verify your phone and start earning!</p>
+            <div className="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-800">
+              <p className="font-medium mb-1">✨ No Pro Account Required</p>
+              <p>Referral accounts are free and separate from Fixlo Pro. Anyone can earn by referring professionals!</p>
             </div>
           </div>
         </div>

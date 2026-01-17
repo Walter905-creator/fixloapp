@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE } from '../utils/config';
 import HelmetSEO from '../seo/HelmetSEO';
+import { useReferralAuth } from '../context/ReferralAuthContext';
 
 /**
  * EarnDashboardPage - Referral Dashboard for Non-Pro Referrers
@@ -15,38 +16,25 @@ import HelmetSEO from '../seo/HelmetSEO';
 
 export default function EarnDashboardPage() {
   const navigate = useNavigate();
-  const [referrerData, setReferrerData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const location = useLocation();
+  const { referralUser, isReferralAuthenticated, loading: authLoading, logoutReferral } = useReferralAuth();
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    loadReferrerData();
-  }, []);
-
-  const loadReferrerData = () => {
-    try {
-      // Load from localStorage
-      const stored = localStorage.getItem('fixlo_referrer');
-      
-      if (!stored) {
-        // No referrer session found, redirect to start
-        navigate('/earn/start');
-        return;
-      }
-
-      const data = JSON.parse(stored);
-      setReferrerData(data);
-      setLoading(false);
-    } catch (err) {
-      console.error('Error loading referrer data:', err);
-      setError('Failed to load your referral data. Please try again.');
-      setLoading(false);
+    if (!authLoading && !isReferralAuthenticated) {
+      // No referral session found, redirect to sign in with return path
+      navigate('/earn/sign-in', { state: { from: location } });
     }
-  };
+  }, [authLoading, isReferralAuthenticated, navigate, location]);
 
+  const handleLogout = () => {
+    logoutReferral();
+    navigate('/earn');
+  };
   const copyReferralLink = () => {
-    const referralUrl = `${window.location.origin}/join?commission_ref=${referrerData.referralCode}`;
+    const referralUrl = `${window.location.origin}/join?commission_ref=${referralUser.referralCode}`;
     
     navigator.clipboard.writeText(referralUrl);
     setSuccess('Referral link copied!');
@@ -54,7 +42,7 @@ export default function EarnDashboardPage() {
   };
 
   const shareViaWhatsApp = () => {
-    const referralUrl = `${window.location.origin}/join?commission_ref=${referrerData.referralCode}`;
+    const referralUrl = `${window.location.origin}/join?commission_ref=${referralUser.referralCode}`;
     const message = encodeURIComponent(
       `Join Fixlo and get access to local jobs as a professional. Sign up using my referral link: ${referralUrl}`
     );
@@ -63,7 +51,7 @@ export default function EarnDashboardPage() {
   };
 
   const shareViaSMS = () => {
-    const referralUrl = `${window.location.origin}/join?commission_ref=${referrerData.referralCode}`;
+    const referralUrl = `${window.location.origin}/join?commission_ref=${referralUser.referralCode}`;
     const message = encodeURIComponent(
       `Join Fixlo and get access to local jobs as a professional. Sign up using my referral link: ${referralUrl}`
     );
@@ -71,12 +59,7 @@ export default function EarnDashboardPage() {
     window.location.href = `sms:?body=${message}`;
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('fixlo_referrer');
-    navigate('/earn');
-  };
-
-  if (loading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
         <div className="text-center">
@@ -87,11 +70,11 @@ export default function EarnDashboardPage() {
     );
   }
 
-  if (!referrerData) {
+  if (!isReferralAuthenticated || !referralUser) {
     return null; // Will redirect in useEffect
   }
 
-  const referralUrl = `${window.location.origin}/join?commission_ref=${referrerData.referralCode}`;
+  const referralUrl = `${window.location.origin}/join?commission_ref=${referralUser.referralCode}`;
 
   return (
     <>
@@ -111,7 +94,7 @@ export default function EarnDashboardPage() {
                   Your Referral Dashboard
                 </h1>
                 <p className="text-lg text-slate-600">
-                  Welcome back, {referrerData.name}!
+                  Welcome back, {referralUser.name}!
                 </p>
               </div>
               <button
@@ -149,7 +132,7 @@ export default function EarnDashboardPage() {
                 </label>
                 <div className="text-center mb-4">
                   <span className="text-3xl font-mono font-bold text-brand">
-                    {referrerData.referralCode}
+                    {referralUser.referralCode}
                   </span>
                 </div>
               </div>
@@ -206,7 +189,7 @@ export default function EarnDashboardPage() {
                   How professionals use your referral
                 </h3>
                 <p className="text-slate-700 text-lg leading-relaxed">
-                  Professionals must sign up using your referral link or enter your referral code <strong>{referrerData.referralCode}</strong> during Fixlo Pro registration. You'll earn commission when they stay active for 30 days.
+                  Professionals must sign up using your referral link or enter your referral code <strong>{referralUser.referralCode}</strong> during Fixlo Pro registration. You'll earn commission when they stay active for 30 days.
                 </p>
               </div>
             </div>
