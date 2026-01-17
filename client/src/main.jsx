@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { Analytics } from '@vercel/analytics/react';
 import { AuthProvider } from './context/AuthContext';
+import { ReferralAuthProvider } from './context/ReferralAuthContext';
 import App from './App';
 import './index.css';
 
@@ -29,8 +30,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <HelmetProvider>
       <BrowserRouter>
         <AuthProvider>
-          <App />
-          <Analytics /> {/* Vercel Web Analytics */}
+          <ReferralAuthProvider>
+            <App />
+            <Analytics /> {/* Vercel Web Analytics */}
+          </ReferralAuthProvider>
         </AuthProvider>
       </BrowserRouter>
     </HelmetProvider>
