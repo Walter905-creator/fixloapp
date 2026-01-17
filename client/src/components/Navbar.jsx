@@ -6,6 +6,7 @@ import logoUrl from '../assets/fixlo-logo.png';
 const baseItems = [
   { to: '/services', label: 'Services' },
   { to: '/how-it-works', label: 'How It Works' },
+  { to: '/earn', label: 'Earn' },
   // { to: '/assistant', label: 'AI Assistant' }, // Hidden per requirements
   { to: '/contact', label: 'Contact' }
   // Removed duplicate 'Pro Dashboard' and 'Join Now' from regular items to create as separate CTA button

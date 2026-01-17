@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE } from '../utils/config';
 import HelmetSEO from '../seo/HelmetSEO';
 import { useReferralAuth } from '../context/ReferralAuthContext';
@@ -16,6 +16,7 @@ import { useReferralAuth } from '../context/ReferralAuthContext';
 
 export default function EarnDashboardPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { referralUser, isReferralAuthenticated, loading: authLoading, logoutReferral } = useReferralAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -23,10 +24,10 @@ export default function EarnDashboardPage() {
 
   useEffect(() => {
     if (!authLoading && !isReferralAuthenticated) {
-      // No referral session found, redirect to sign in
-      navigate('/earn/sign-in');
+      // No referral session found, redirect to sign in with return path
+      navigate('/earn/sign-in', { state: { from: location } });
     }
-  }, [authLoading, isReferralAuthenticated, navigate]);
+  }, [authLoading, isReferralAuthenticated, navigate, location]);
 
   const handleLogout = () => {
     logoutReferral();

@@ -46,7 +46,7 @@ export default function ReferralSignInPage() {
 
       // In production, this would send actual SMS/WhatsApp verification
       // For now, using demo mode for UI testing
-      const isDemoMode = process.env.NODE_ENV === 'development' || !process.env.REACT_APP_TWILIO_ENABLED;
+      const isDemoMode = import.meta.env.MODE === 'development' || !import.meta.env.VITE_TWILIO_ENABLED;
       
       if (isDemoMode) {
         console.log(`[DEMO MODE] Verification code would be sent to ${phone}`);
@@ -83,7 +83,7 @@ export default function ReferralSignInPage() {
     setSuccess('');
 
     try {
-      const isDemoMode = process.env.NODE_ENV === 'development' || !process.env.REACT_APP_TWILIO_ENABLED;
+      const isDemoMode = import.meta.env.MODE === 'development' || !import.meta.env.VITE_TWILIO_ENABLED;
       
       // In demo mode, accept specific test code
       // In production, verify via backend
@@ -295,9 +295,11 @@ export default function ReferralSignInPage() {
                       className="w-full px-4 py-3 border border-slate-300 rounded-lg text-center text-2xl tracking-widest font-mono focus:outline-none focus:ring-2 focus:ring-brand"
                       disabled={loading}
                     />
-                    <p className="mt-2 text-sm text-slate-500 text-center">
-                      Demo: Enter 123456
-                    </p>
+                    {(import.meta.env.MODE === 'development' || !import.meta.env.VITE_TWILIO_ENABLED) && (
+                      <p className="mt-2 text-sm text-slate-500 text-center">
+                        Demo: Enter 123456
+                      </p>
+                    )}
                   </div>
 
                   <button
