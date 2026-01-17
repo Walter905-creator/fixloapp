@@ -37,6 +37,7 @@ import CompetitorAlternativesPage from './routes/CompetitorAlternativesPage.jsx'
 import EarnPage from './routes/EarnPage.jsx';
 import EarnStartPage from './routes/EarnStartPage.jsx';
 import EarnDashboardPage from './routes/EarnDashboardPage.jsx';
+import ReferralSignInPage from './routes/ReferralSignInPage.jsx';
 export default function App(){
   return (<>
     <PromoBanner />
@@ -93,6 +94,7 @@ export default function App(){
       <Route path="/join" element={<JoinPage/>}/>
       <Route path="/earn" element={<EarnPage/>}/>
       <Route path="/earn/start" element={<EarnStartPage/>}/>
+      <Route path="/earn/sign-in" element={<ReferralSignInPage/>}/>
       <Route path="/earn/dashboard" element={<EarnDashboardPage/>}/>
       <Route path="/for-professionals" element={<Navigate to="/join" replace/>}/>
       <Route path="/terms" element={<Terms/>}/>

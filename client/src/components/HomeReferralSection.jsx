@@ -17,14 +17,11 @@ export default function HomeReferralSection() {
     return null;
   }
 
-  // Determine CTA based on auth state
-  const ctaText = isAuthenticated ? "View your referral link" : "Sign in to get your referral link";
+  // Determine CTA - ALWAYS redirect to /earn (PUBLIC route)
+  // Users will see welcome gate on /earn if not authenticated
+  const ctaText = isAuthenticated ? "View your referral link" : "Get your referral link";
   const ctaAction = () => {
-    if (isAuthenticated) {
-      navigate('/earn');
-    } else {
-      navigate('/pro/sign-in?redirect=/earn');
-    }
+    navigate('/earn');
   };
 
   return (
@@ -41,10 +38,10 @@ export default function HomeReferralSection() {
             Get paid for every professional you bring to Fixlo. <strong>Unlimited earnings.</strong>
           </p>
 
-          {/* Auth-aware subtext */}
+          {/* Public participation message */}
           {!isAuthenticated && (
             <p className="text-base text-slate-600 mb-8 max-w-2xl mx-auto">
-              You must be signed in to earn commissions.
+              No Pro account required. Anyone can participate and earn.
             </p>
           )}
 
