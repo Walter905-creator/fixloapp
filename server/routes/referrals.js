@@ -19,6 +19,9 @@ const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
  * - Rewards issued as promo codes for NEXT billing cycle
  */
 
+// Constants for error detection
+const CONFIGURATION_ERROR_MARKER = 'CONFIGURATION_INVALID';
+
 // Anti-fraud configuration
 const ANTI_FRAUD_CONFIG = {
   MAX_REFERRALS_PER_IP_PER_DAY: process.env.MAX_REFERRALS_PER_IP || 3,
@@ -478,7 +481,6 @@ router.post('/send-verification', async (req, res) => {
     // Prepare message
     const message = `Fixlo: Your verification code is ${code}. Valid for 15 minutes. Reply STOP to opt out.`;
 
-    let channelUsed = null;
     let lastError = null;
 
     // STEP 1: Try WhatsApp first
@@ -530,8 +532,8 @@ router.post('/send-verification', async (req, res) => {
 
       // Check for configuration errors
       if (
-        (smsError.message && smsError.message.includes('CONFIGURATION_INVALID')) ||
-        (lastError && lastError.message && lastError.message.includes('CONFIGURATION_INVALID'))
+        (smsError.message && smsError.message.includes(CONFIGURATION_ERROR_MARKER)) ||
+        (lastError && lastError.message && lastError.message.includes(CONFIGURATION_ERROR_MARKER))
       ) {
         return res.status(503).json({
           success: false,
