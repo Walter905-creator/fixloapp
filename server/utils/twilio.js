@@ -26,7 +26,8 @@ function getTwilioClient() {
  * Normalize phone number to E.164 format
  * 
  * @deprecated Use normalizePhoneToE164 from phoneNormalizer.js for better error handling
- * This wrapper maintains backward compatibility
+ * This wrapper maintains backward compatibility and will be kept for existing code.
+ * New code should use the phoneNormalizer module directly for structured error handling.
  */
 function normalizeE164(phone) {
   const result = normalizePhoneToE164(phone);

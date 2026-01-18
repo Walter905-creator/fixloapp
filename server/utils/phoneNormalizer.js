@@ -112,6 +112,11 @@ function normalizePhoneToE164(phone) {
  * - First digit must be 1-9 (country codes don't start with 0)
  * - Total digits: 1-15 (per ITU-T E.164 standard)
  * - Total length: 2-16 characters (+ sign + digits)
+ * 
+ * Note: This pattern /^\+[1-9]\d{1,14}$/ is more accurate than simpler patterns
+ * like /^\+\d{10,15}$/ because it enforces the ITU-T E.164 requirement that
+ * country codes cannot start with 0. This prevents invalid numbers like
+ * "+02025551234" from being accepted.
  */
 function isValidE164Format(phone) {
   if (!phone || typeof phone !== 'string') {
@@ -119,6 +124,7 @@ function isValidE164Format(phone) {
   }
 
   // E.164 regex: + followed by 1-9, then 1-14 more digits
+  // More precise than /^\+\d{10,15}$/ as it rejects leading zeros
   const e164Regex = /^\+[1-9]\d{1,14}$/;
   return e164Regex.test(phone);
 }
