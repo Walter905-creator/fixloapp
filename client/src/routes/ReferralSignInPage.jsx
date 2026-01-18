@@ -200,7 +200,11 @@ export default function ReferralSignInPage() {
                       Choose how you'd like to receive your verification code
                     </label>
                     <div className="flex gap-4">
-                      <label className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-all ${verificationMethod === 'sms' ? 'border-brand bg-brand bg-opacity-5' : 'border-slate-300 hover:border-brand'}`}>
+                      <label className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-all ${
+                        verificationMethod === 'sms' 
+                          ? 'border-brand bg-brand bg-opacity-5' 
+                          : 'border-slate-300 hover:border-brand'
+                      }`}>
                         <input
                           type="radio"
                           name="method"
@@ -211,7 +215,11 @@ export default function ReferralSignInPage() {
                         />
                         <span className="font-medium text-slate-700">✅ SMS (default)</span>
                       </label>
-                      <label className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-all ${verificationMethod === 'whatsapp' ? 'border-brand bg-brand bg-opacity-5' : 'border-slate-300 hover:border-brand'}`}>
+                      <label className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-all ${
+                        verificationMethod === 'whatsapp' 
+                          ? 'border-brand bg-brand bg-opacity-5' 
+                          : 'border-slate-300 hover:border-brand'
+                      }`}>
                         <input
                           type="radio"
                           name="method"
