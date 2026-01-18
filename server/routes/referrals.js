@@ -431,6 +431,16 @@ router.post('/send-verification', async (req, res) => {
     console.log('📱 Referral SMS request received');
     console.log(`   Method: ${method}`);
 
+    // Early guard: Validate method parameter
+    if (!['sms', 'whatsapp'].includes(method)) {
+      console.warn(`⚠️ Invalid verification method: ${method}`);
+      return res.status(400).json({
+        ok: false,
+        error: 'INVALID_METHOD',
+        message: 'Method must be either "sms" or "whatsapp"'
+      });
+    }
+
     if (!phone) {
       return res.status(400).json({
         ok: false,
@@ -476,52 +486,90 @@ router.post('/send-verification', async (req, res) => {
     // Prepare SMS message
     const message = `Fixlo: Your verification code is ${code}. Valid for 15 minutes. Reply STOP to opt out.`;
 
-    // Send via SMS or WhatsApp
-    try {
-      console.log(`   Sending ${method} via Twilio...`);
-      
-      let result;
-      if (method === 'whatsapp') {
-        result = await sendWhatsAppMessage(normalizedPhone, message);
-      } else {
-        result = await sendSms(normalizedPhone, message);
-      }
+    // Strict method isolation: SMS and WhatsApp paths are completely separate
+    if (method === 'sms') {
+      // SMS-only path - never touches WhatsApp config
+      try {
+        console.log(`   Sending SMS via Twilio...`);
+        const result = await sendSms(normalizedPhone, message);
 
-      console.log(`✅ Verification code sent successfully`);
-      console.log(`   Twilio message SID: ${result.sid}`);
-      console.log(`   Phone: ${maskedPhone}`);
+        console.log(`✅ SMS verification code sent successfully`);
+        console.log(`   Twilio message SID: ${result.sid}`);
+        console.log(`   Phone: ${maskedPhone}`);
 
-      return res.json({
-        ok: true,
-        message: 'Verification code sent'
-      });
+        return res.json({
+          ok: true,
+          message: 'Verification code sent'
+        });
 
-    } catch (smsError) {
-      console.error('❌ SMS/WhatsApp delivery failed');
-      console.error(`   Phone: ${maskedPhone}`);
-      console.error(`   Error: ${smsError.message}`);
+      } catch (smsError) {
+        // NEVER allow Twilio errors to bubble to Express
+        console.warn('⚠️ SMS delivery failed (non-blocking)');
+        console.warn(`   Phone: ${maskedPhone}`);
+        console.warn(`   Reason: ${smsError.code || smsError.message}`);
 
-      // Check if it's a configuration error
-      if (smsError.message.includes('CONFIGURATION_INVALID')) {
+        // Check if it's a configuration error
+        if (smsError.message && smsError.message.includes('CONFIGURATION_INVALID')) {
+          return res.status(503).json({
+            ok: false,
+            error: 'SMS_TEMPORARILY_UNAVAILABLE',
+            message: 'SMS delivery failed. Please try WhatsApp instead.'
+          });
+        }
+
+        // Other errors (network, Twilio API, etc.)
         return res.status(503).json({
           ok: false,
-          error: 'SMS_CONFIGURATION_INVALID',
-          message: 'SMS is temporarily unavailable. Please try again later or contact support.'
+          error: 'SMS_TEMPORARILY_UNAVAILABLE',
+          message: 'SMS delivery failed. Please try WhatsApp instead.'
         });
       }
+    } else if (method === 'whatsapp') {
+      // WhatsApp-only path - never touches SMS config
+      try {
+        console.log(`   Sending WhatsApp message via Twilio...`);
+        const result = await sendWhatsAppMessage(normalizedPhone, message);
 
-      // Other errors (network, Twilio API, etc.)
-      return res.status(500).json({
-        ok: false,
-        error: 'SMS delivery failed. Please try again or contact support.'
-      });
+        console.log(`✅ WhatsApp verification code sent successfully`);
+        console.log(`   Twilio message SID: ${result.sid}`);
+        console.log(`   Phone: ${maskedPhone}`);
+
+        return res.json({
+          ok: true,
+          message: 'Verification code sent'
+        });
+
+      } catch (whatsappError) {
+        // NEVER allow Twilio errors to bubble to Express
+        console.warn('⚠️ WhatsApp delivery failed (non-blocking)');
+        console.warn(`   Phone: ${maskedPhone}`);
+        console.warn(`   Reason: ${whatsappError.code || whatsappError.message}`);
+
+        // Check if it's a configuration error
+        if (whatsappError.message && whatsappError.message.includes('CONFIGURATION_INVALID')) {
+          return res.status(503).json({
+            ok: false,
+            error: 'WHATSAPP_TEMPORARILY_UNAVAILABLE',
+            message: 'WhatsApp delivery failed. Please try SMS instead.'
+          });
+        }
+
+        // Other errors (network, Twilio API, etc.)
+        return res.status(503).json({
+          ok: false,
+          error: 'WHATSAPP_TEMPORARILY_UNAVAILABLE',
+          message: 'WhatsApp delivery failed. Please try SMS instead.'
+        });
+      }
     }
 
   } catch (error) {
-    console.error('❌ Send verification error:', error);
+    // Final safety net - should never reach here due to strict error handling above
+    console.error('❌ Unexpected verification error:', error);
     return res.status(500).json({
       ok: false,
-      error: error.message || 'Server error'
+      error: 'INTERNAL_ERROR',
+      message: 'Something went wrong. Please try again.'
     });
   }
 });

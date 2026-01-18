@@ -58,7 +58,25 @@ export default function ReferralSignInPage() {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to send verification code');
+        // Handle 503 Service Unavailable (SMS/WhatsApp temporarily unavailable)
+        if (response.status === 503) {
+          if (data.error === 'SMS_TEMPORARILY_UNAVAILABLE') {
+            setError('SMS is temporarily unavailable. Please try WhatsApp instead.');
+            // Suggest switching to WhatsApp
+            setVerificationMethod('whatsapp');
+          } else if (data.error === 'WHATSAPP_TEMPORARILY_UNAVAILABLE') {
+            setError('WhatsApp is temporarily unavailable. Please try SMS instead.');
+            // Suggest switching to SMS
+            setVerificationMethod('sms');
+          } else {
+            setError(data.message || 'Service temporarily unavailable. Please try again.');
+          }
+          // DO NOT retry automatically
+          setLoading(false);
+          return;
+        }
+        
+        throw new Error(data.error || data.message || 'Failed to send verification code');
       }
       
       setSuccess('Check your phone for the verification code!');
