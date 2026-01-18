@@ -49,7 +49,7 @@ function maskPhoneForLogging(phone) {
 
 // Periodic cleanup of expired verification codes (runs every 5 minutes)
 // This prevents memory leaks from expired codes
-setInterval(() => {
+const cleanupInterval = setInterval(() => {
   let cleanedCount = 0;
   for (const [key, value] of verificationCodes.entries()) {
     if (value.expires < Date.now()) {
@@ -61,6 +61,16 @@ setInterval(() => {
     console.log(`🧹 Cleaned up ${cleanedCount} expired verification code(s)`);
   }
 }, 5 * 60 * 1000); // Run every 5 minutes
+
+// Clean up interval on process exit to prevent resource leaks
+process.on('SIGINT', () => {
+  clearInterval(cleanupInterval);
+  process.exit(0);
+});
+process.on('SIGTERM', () => {
+  clearInterval(cleanupInterval);
+  process.exit(0);
+});
 
 /**
  * Get referral information for a pro
@@ -446,6 +456,9 @@ router.post('/send-verification', async (req, res) => {
     // Mask phone for logging (show country code + last 4 digits)
     const maskedPhone = maskPhoneForLogging(normalizedPhone);
     
+    // Note: We intentionally log "<redacted>" for the original input here
+    // because it may contain PII in various formats. The Twilio utility logs
+    // more detail for SMS debugging purposes (with appropriate security context).
     console.log(`   Original phone input: <redacted>`);
     console.log(`   Normalized phone: ${maskedPhone}`);
 
