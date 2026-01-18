@@ -3,7 +3,8 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { sign } = require('../utils/jwt');
 const Pro = require('../models/Pro');
-const { sendSms, normalizeE164 } = require('../utils/twilio');
+const { sendSms } = require('../utils/twilio');
+const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
 
 // Pro login endpoint - uses phone number
 router.post('/login', async (req, res) => {
@@ -12,7 +13,14 @@ router.post('/login', async (req, res) => {
 
   try {
     // Normalize phone number for lookup
-    const normalizedPhone = normalizeE164(phone);
+    const normalizationResult = normalizePhoneToE164(phone);
+    
+    if (!normalizationResult.success) {
+      console.error('❌ Login phone normalization failed:', normalizationResult.error);
+      return res.status(400).json({ error: 'Invalid phone number format' });
+    }
+    
+    const normalizedPhone = normalizationResult.phone;
     const pro = await Pro.findOne({ phone: normalizedPhone });
     if (!pro) return res.status(401).json({ error: 'Invalid credentials' });
 
@@ -47,6 +55,7 @@ router.post('/login', async (req, res) => {
 // Request password reset via SMS
 router.post('/request-password-reset', async (req, res) => {
   const { phone } = req.body || {};
+  const isDemoMode = process.env.NODE_ENV !== 'production';
   
   if (!phone) {
     return res.status(400).json({ error: 'Phone number is required' });
@@ -54,13 +63,30 @@ router.post('/request-password-reset', async (req, res) => {
 
   try {
     // Normalize phone number for lookup
-    const normalizedPhone = normalizeE164(phone);
+    const normalizationResult = normalizePhoneToE164(phone);
+    
+    if (!normalizationResult.success) {
+      console.error('❌ Password reset: Phone normalization failed');
+      console.error(`   Original phone: ${normalizationResult.original}`);
+      console.error(`   Error: ${normalizationResult.error}`);
+      return res.status(400).json({ 
+        error: 'Invalid phone number format. Please use a valid phone number.' 
+      });
+    }
+    
+    const normalizedPhone = normalizationResult.phone;
+    
+    console.log('🔐 Password reset requested');
+    console.log(`   Original phone: ${normalizationResult.original}`);
+    console.log(`   Normalized E.164: ${normalizedPhone}`);
+    console.log(`   Mode: ${isDemoMode ? 'DEMO' : 'PRODUCTION'}`);
+    
     const pro = await Pro.findOne({ phone: normalizedPhone });
     
     // Always return success to prevent phone enumeration
     // Even if user doesn't exist, we return success
     if (!pro) {
-      console.log('Password reset requested for non-existent phone:', normalizedPhone);
+      console.log(`⚠️ Password reset requested for non-existent phone: ${normalizedPhone}`);
       return res.json({ 
         success: true,
         message: 'If this phone number exists, a reset message was sent.'
@@ -79,12 +105,19 @@ router.post('/request-password-reset', async (req, res) => {
     // Send SMS with reset code
     try {
       await sendSms(normalizedPhone, `Fixlo: Your password reset code is ${resetCode}. Valid for 15 minutes. Reply STOP to opt out.`);
-      console.log('✅ Password reset SMS sent to:', normalizedPhone);
+      console.log('✅ Password reset SMS sent successfully');
+      console.log(`   Phone: ${normalizedPhone}`);
+      console.log(`   Mode: ${isDemoMode ? 'DEMO' : 'PRODUCTION'}`);
+      // SECURITY: Never log the actual verification code
     } catch (smsError) {
-      console.error('❌ Failed to send SMS:', smsError);
-      // In development, log the code for testing
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('📱 SMS disabled - Reset code for', normalizedPhone, ':', resetCode);
+      console.error('❌ Failed to send password reset SMS');
+      console.error(`   Phone: ${normalizedPhone}`);
+      console.error(`   Error: ${smsError.message}`);
+      console.error(`   Mode: ${isDemoMode ? 'DEMO' : 'PRODUCTION'}`);
+      
+      // In development, log the code for testing (but never in production)
+      if (isDemoMode) {
+        console.log('📱 [DEMO MODE ONLY] Reset code:', resetCode);
       }
     }
 
