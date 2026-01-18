@@ -627,11 +627,11 @@ router.post('/verify-code', async (req, res) => {
       }
 
       // Create new referrer
-      const referrerId = `referrer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const referrerId = `referrer_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
       
       referrer = await CommissionReferral.create({
         referrerId,
-        referrerEmail: `ref_${Date.now()}_${Math.random().toString(36).substr(2, 9)}@fixlo.temp`,
+        referrerEmail: `ref_${Date.now()}_${Math.random().toString(36).substring(2, 11)}@fixlo.temp`,
         referrerName: 'Fixlo Referrer',
         referrerPhone: normalizedPhone,
         referralCode,
