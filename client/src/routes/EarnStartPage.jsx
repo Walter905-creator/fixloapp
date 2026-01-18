@@ -24,9 +24,9 @@ export default function EarnStartPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [verificationMethod, setVerificationMethod] = useState('sms'); // 'sms' or 'whatsapp'
   const [referralCode, setReferralCode] = useState('');
   const [referralLink, setReferralLink] = useState('');
+  const [channelUsed, setChannelUsed] = useState(''); // Track which channel delivered the code
 
   const handlePhoneSubmit = async (e) => {
     e.preventDefault();
@@ -43,40 +43,34 @@ export default function EarnStartPage() {
         return;
       }
 
-      // Send verification code via backend
+      // Send verification code via backend (automatic WhatsApp -> SMS fallback)
       setSuccess('Sending verification code...');
       
       const response = await fetch(`${API_BASE}/api/referrals/send-verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, method: verificationMethod })
+        body: JSON.stringify({ phone })
       });
       
       const data = await response.json();
       
       if (!response.ok) {
-        // Handle 503 Service Unavailable (SMS/WhatsApp temporarily unavailable)
-        if (response.status === 503) {
-          if (data.error === 'SMS_TEMPORARILY_UNAVAILABLE') {
-            setError('SMS is temporarily unavailable. Please try WhatsApp instead.');
-            // Suggest switching to WhatsApp
-            setVerificationMethod('whatsapp');
-          } else if (data.error === 'WHATSAPP_TEMPORARILY_UNAVAILABLE') {
-            setError('WhatsApp is temporarily unavailable. Please try SMS instead.');
-            // Suggest switching to SMS
-            setVerificationMethod('sms');
-          } else {
-            setError(data.message || 'Service temporarily unavailable. Please try again.');
-          }
-          // DO NOT retry automatically
-          setLoading(false);
-          return;
-        }
-        
-        throw new Error(data.error || data.message || 'Failed to send verification code');
+        // Handle error responses
+        throw new Error(data.message || 'Failed to send verification code');
       }
       
-      setSuccess('Check your phone for the verification code!');
+      // Success - display which channel was used
+      const channel = data.channelUsed || 'SMS';
+      setChannelUsed(channel);
+      
+      if (channel === 'whatsapp') {
+        setSuccess('✅ Code sent via WhatsApp! Check your WhatsApp messages.');
+      } else if (channel === 'sms') {
+        setSuccess('✅ Code sent via SMS! Check your text messages.');
+      } else {
+        setSuccess('Check your phone for the verification code!');
+      }
+      
       setStep('verify');
       
     } catch (err) {
@@ -192,46 +186,15 @@ export default function EarnStartPage() {
                       disabled={loading}
                     />
                     <p className="mt-2 text-sm text-slate-500">
-                      We'll send you a verification code
+                      We'll try WhatsApp first, then SMS if needed
                     </p>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Choose how you'd like to receive your verification code
-                    </label>
-                    <div className="flex gap-4">
-                      <label className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-all ${
-                        verificationMethod === 'sms' 
-                          ? 'border-brand bg-brand bg-opacity-5' 
-                          : 'border-slate-300 hover:border-brand'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="method"
-                          value="sms"
-                          checked={verificationMethod === 'sms'}
-                          onChange={(e) => setVerificationMethod(e.target.value)}
-                          className="w-4 h-4"
-                        />
-                        <span className="font-medium text-slate-700">✅ SMS (default)</span>
-                      </label>
-                      <label className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-all ${
-                        verificationMethod === 'whatsapp' 
-                          ? 'border-brand bg-brand bg-opacity-5' 
-                          : 'border-slate-300 hover:border-brand'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="method"
-                          value="whatsapp"
-                          checked={verificationMethod === 'whatsapp'}
-                          onChange={(e) => setVerificationMethod(e.target.value)}
-                          className="w-4 h-4"
-                        />
-                        <span className="font-medium text-slate-700">✅ WhatsApp (recommended)</span>
-                      </label>
-                    </div>
+                  {/* Information about WhatsApp verification */}
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                      <strong>📱 How it works:</strong> We'll attempt to send your code via WhatsApp first. If that doesn't work, we'll automatically send it via SMS. You'll always receive a code!
+                    </p>
                   </div>
 
                   <button
@@ -268,9 +231,19 @@ export default function EarnStartPage() {
                     </svg>
                   </div>
                   <p className="text-slate-600">
-                    We sent a verification code to
+                    We sent a verification code via {channelUsed === 'whatsapp' ? 'WhatsApp' : 'SMS'} to
                   </p>
                   <p className="font-semibold text-slate-900 mt-1">{phone}</p>
+                  {channelUsed === 'whatsapp' && (
+                    <p className="text-sm text-blue-600 mt-2">
+                      Check your WhatsApp messages 📱
+                    </p>
+                  )}
+                  {channelUsed === 'sms' && (
+                    <p className="text-sm text-blue-600 mt-2">
+                      Check your text messages 💬
+                    </p>
+                  )}
                 </div>
 
                 <form onSubmit={handleVerificationSubmit} className="space-y-6">
