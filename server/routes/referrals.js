@@ -588,13 +588,134 @@ router.post('/verify-code', async (req, res) => {
     verificationCodes.delete(normalizedPhone);
 
     console.log('✅ Verification code validated successfully');
+
+    // Create or fetch referrer AFTER successful verification
+    const CommissionReferral = require('../models/CommissionReferral');
+    
+    let referrer = await CommissionReferral.findOne({ 
+      referrerPhone: normalizedPhone 
+    }).sort({ createdAt: -1 });
+
+    if (!referrer) {
+      // Generate unique referral code
+      const generateReferralCode = () => {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let code = 'FIXLO-';
+        for (let i = 0; i < 5; i++) {
+          code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return code;
+      };
+
+      let referralCode = generateReferralCode();
+      let attempts = 0;
+      const maxAttempts = 10;
+
+      // Ensure unique code
+      while (attempts < maxAttempts) {
+        const existing = await CommissionReferral.findOne({ referralCode });
+        if (!existing) break;
+        referralCode = generateReferralCode();
+        attempts++;
+      }
+
+      if (attempts >= maxAttempts) {
+        return res.status(500).json({
+          ok: false,
+          error: 'Failed to generate unique referral code'
+        });
+      }
+
+      // Create new referrer
+      const referrerId = `referrer_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+      
+      referrer = await CommissionReferral.create({
+        referrerId,
+        referrerEmail: `ref_${Date.now()}_${Math.random().toString(36).substring(2, 11)}@fixlo.temp`,
+        referrerName: 'Fixlo Referrer',
+        referrerPhone: normalizedPhone,
+        referralCode,
+        commissionRate: 0.15,
+        country: 'US',
+        status: 'pending'
+      });
+
+      console.log(`✅ Created new referrer: ${referralCode} for phone ${maskPhoneForLogging(normalizedPhone)}`);
+    }
+
+    // Build referral link
+    const baseUrl = process.env.CLIENT_URL || 'https://www.fixloapp.com';
+    const referralLink = `${baseUrl}/join?ref=${referrer.referralCode}`;
+
     return res.json({
       ok: true,
-      message: 'Verification successful'
+      verified: true,
+      referralCode: referrer.referralCode,
+      referralLink: referralLink
     });
 
   } catch (error) {
     console.error('❌ Verify code error:', error);
+    return res.status(500).json({
+      ok: false,
+      error: error.message || 'Server error'
+    });
+  }
+});
+
+/**
+ * Get referral info for verified user
+ * GET /api/referrals/me
+ * Query params: phone (required)
+ */
+router.get('/me', async (req, res) => {
+  try {
+    const { phone } = req.query;
+
+    if (!phone) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Phone number is required'
+      });
+    }
+
+    // Normalize phone number
+    const normalizationResult = normalizePhoneToE164(phone);
+
+    if (!normalizationResult.success) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Invalid phone number format'
+      });
+    }
+
+    const normalizedPhone = normalizationResult.phone;
+    const CommissionReferral = require('../models/CommissionReferral');
+    
+    // Find referrer by phone
+    const referrer = await CommissionReferral.findOne({ 
+      referrerPhone: normalizedPhone 
+    }).sort({ createdAt: -1 });
+
+    if (!referrer) {
+      return res.status(404).json({
+        ok: false,
+        error: 'Referrer not found'
+      });
+    }
+
+    // Build referral link
+    const baseUrl = process.env.CLIENT_URL || 'https://www.fixloapp.com';
+    const referralLink = `${baseUrl}/join?ref=${referrer.referralCode}`;
+
+    return res.json({
+      ok: true,
+      referralCode: referrer.referralCode,
+      referralLink: referralLink
+    });
+
+  } catch (error) {
+    console.error('❌ Get referral info error:', error);
     return res.status(500).json({
       ok: false,
       error: error.message || 'Server error'
