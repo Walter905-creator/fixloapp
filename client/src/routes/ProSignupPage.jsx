@@ -28,7 +28,8 @@ export default function ProSignupPage(){
           }
         }
       } catch (error) {
-        console.error('Failed to detect country:', error);
+        // Silently handle country detection failures - this is non-blocking
+        console.info('Country detection failed — defaulting to US');
       }
     }
     detectCountry();
