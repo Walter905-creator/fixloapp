@@ -1,10 +1,13 @@
 // server/routes/referrals.js
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const Pro = require('../models/Pro');
 const Referral = require('../models/Referral');
 const { generateReferralReward } = require('../services/referralPromoCode');
 const { sendReferralRewardNotification } = require('../services/referralNotification');
+const { sendSms, sendWhatsAppMessage } = require('../utils/twilio');
+const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
 
 /**
  * COMPLIANCE: Referral system endpoints
@@ -21,6 +24,10 @@ const ANTI_FRAUD_CONFIG = {
   MAX_REFERRALS_PER_IP_PER_DAY: process.env.MAX_REFERRALS_PER_IP || 3,
   RATE_LIMIT_WINDOW_HOURS: 24
 };
+
+// In-memory storage for verification codes (in production, use Redis)
+// Structure: { phone: { code: hashedCode, expires: timestamp } }
+const verificationCodes = new Map();
 
 /**
  * Get referral information for a pro
@@ -366,6 +373,190 @@ router.post('/complete', async (req, res) => {
     return res.status(500).json({
       ok: false,
       error: err.message
+    });
+  }
+});
+
+/**
+ * Send verification code via SMS/WhatsApp
+ * POST /api/referrals/send-verification
+ */
+router.post('/send-verification', async (req, res) => {
+  try {
+    const { phone, method = 'sms' } = req.body;
+
+    console.log('📱 Referral SMS request received');
+    console.log(`   Method: ${method}`);
+
+    if (!phone) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Phone number is required'
+      });
+    }
+
+    // Normalize phone number to E.164 format
+    const normalizationResult = normalizePhoneToE164(phone);
+
+    if (!normalizationResult.success) {
+      console.error('❌ Referral verification: Phone normalization failed');
+      console.error(`   Original phone: <redacted>`);
+      console.error(`   Error: ${normalizationResult.error}`);
+      return res.status(400).json({
+        ok: false,
+        error: `Invalid phone number format: ${normalizationResult.error}`
+      });
+    }
+
+    const normalizedPhone = normalizationResult.phone;
+
+    // Mask phone for logging (show country code + last 4 digits)
+    const maskedPhone = normalizedPhone.replace(/(\+\d{1,3})\d+(\d{4})/, '$1******$2');
+    
+    console.log(`   Original phone input: <redacted>`);
+    console.log(`   Normalized phone: ${maskedPhone}`);
+
+    // Generate 6-digit verification code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedCode = crypto.createHash('sha256').update(code).digest('hex');
+
+    // Store verification code with 15-minute expiration
+    const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
+    verificationCodes.set(normalizedPhone, {
+      code: hashedCode,
+      expires: expiresAt
+    });
+
+    // Clean up expired codes periodically
+    for (const [key, value] of verificationCodes.entries()) {
+      if (value.expires < Date.now()) {
+        verificationCodes.delete(key);
+      }
+    }
+
+    // Prepare SMS message
+    const message = `Fixlo: Your verification code is ${code}. Valid for 15 minutes. Reply STOP to opt out.`;
+
+    // Send via SMS or WhatsApp
+    try {
+      console.log(`   Sending SMS via Twilio...`);
+      
+      let result;
+      if (method === 'whatsapp') {
+        result = await sendWhatsAppMessage(normalizedPhone, message);
+      } else {
+        result = await sendSms(normalizedPhone, message);
+      }
+
+      if (result.disabled) {
+        console.error('❌ SMS delivery failed: Twilio service is disabled');
+        return res.status(500).json({
+          ok: false,
+          error: 'SMS delivery failed. Service is temporarily unavailable.'
+        });
+      }
+
+      console.log(`✅ Verification code sent successfully`);
+      console.log(`   Twilio message SID: ${result.sid}`);
+      console.log(`   Phone: ${maskedPhone}`);
+
+      return res.json({
+        ok: true,
+        message: 'Verification code sent'
+      });
+
+    } catch (smsError) {
+      console.error('❌ SMS delivery failed');
+      console.error(`   Phone: ${maskedPhone}`);
+      console.error(`   Error: ${smsError.message}`);
+
+      return res.status(500).json({
+        ok: false,
+        error: 'SMS delivery failed. Please try again or contact support.'
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Send verification error:', error);
+    return res.status(500).json({
+      ok: false,
+      error: error.message || 'Server error'
+    });
+  }
+});
+
+/**
+ * Verify code
+ * POST /api/referrals/verify-code
+ */
+router.post('/verify-code', async (req, res) => {
+  try {
+    const { phone, code } = req.body;
+
+    if (!phone || !code) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Phone number and verification code are required'
+      });
+    }
+
+    // Normalize phone number
+    const normalizationResult = normalizePhoneToE164(phone);
+
+    if (!normalizationResult.success) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Invalid phone number format'
+      });
+    }
+
+    const normalizedPhone = normalizationResult.phone;
+    const storedData = verificationCodes.get(normalizedPhone);
+
+    // Check if code exists
+    if (!storedData) {
+      console.warn('⚠️ Verification attempt with no code sent');
+      return res.status(400).json({
+        ok: false,
+        error: 'No verification code found. Please request a new code.'
+      });
+    }
+
+    // Check if code is expired
+    if (storedData.expires < Date.now()) {
+      verificationCodes.delete(normalizedPhone);
+      console.warn('⚠️ Verification code expired');
+      return res.status(400).json({
+        ok: false,
+        error: 'Verification code has expired. Please request a new code.'
+      });
+    }
+
+    // Verify code
+    const hashedInputCode = crypto.createHash('sha256').update(code).digest('hex');
+    
+    if (hashedInputCode !== storedData.code) {
+      console.warn('⚠️ Invalid verification code attempt');
+      return res.status(400).json({
+        ok: false,
+        error: 'Invalid verification code. Please try again.'
+      });
+    }
+
+    // Code is valid - remove it
+    verificationCodes.delete(normalizedPhone);
+
+    console.log('✅ Verification code validated successfully');
+    return res.json({
+      ok: true,
+      message: 'Verification successful'
+    });
+
+  } catch (error) {
+    console.error('❌ Verify code error:', error);
+    return res.status(500).json({
+      ok: false,
+      error: error.message || 'Server error'
     });
   }
 });

@@ -321,6 +321,65 @@ router.get('/dashboard/:email', async (req, res) => {
 });
 
 /**
+ * Get referrer by phone number
+ * GET /api/commission-referrals/referrer/phone/:phone
+ */
+router.get('/referrer/phone/:phone', async (req, res) => {
+  try {
+    const { phone } = req.params;
+    const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
+    
+    if (!phone) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Phone number is required'
+      });
+    }
+
+    // Normalize phone number
+    const normalizationResult = normalizePhoneToE164(phone);
+    
+    if (!normalizationResult.success) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Invalid phone number format'
+      });
+    }
+
+    const normalizedPhone = normalizationResult.phone;
+    
+    // Find referrer by phone
+    const referrer = await CommissionReferral.findOne({ 
+      referrerPhone: normalizedPhone 
+    }).sort({ createdAt: -1 });
+    
+    if (!referrer) {
+      return res.status(404).json({
+        ok: false,
+        error: 'Referrer not found with this phone number'
+      });
+    }
+    
+    return res.json({
+      ok: true,
+      referrer: {
+        referrerId: referrer.referrerId,
+        referralCode: referrer.referralCode,
+        email: referrer.referrerEmail,
+        name: referrer.referrerName
+      }
+    });
+    
+  } catch (err) {
+    console.error('❌ Error fetching referrer by phone:', err);
+    return res.status(500).json({
+      ok: false,
+      error: err.message
+    });
+  }
+});
+
+/**
  * Track referral when Pro signs up with commission code
  * POST /api/commission-referrals/track
  */
