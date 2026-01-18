@@ -478,21 +478,13 @@ router.post('/send-verification', async (req, res) => {
 
     // Send via SMS or WhatsApp
     try {
-      console.log(`   Sending SMS via Twilio...`);
+      console.log(`   Sending ${method} via Twilio...`);
       
       let result;
       if (method === 'whatsapp') {
         result = await sendWhatsAppMessage(normalizedPhone, message);
       } else {
         result = await sendSms(normalizedPhone, message);
-      }
-
-      if (result.disabled) {
-        console.error('❌ SMS delivery failed: Twilio service is disabled');
-        return res.status(500).json({
-          ok: false,
-          error: 'SMS delivery failed. Service is temporarily unavailable.'
-        });
       }
 
       console.log(`✅ Verification code sent successfully`);
@@ -505,10 +497,20 @@ router.post('/send-verification', async (req, res) => {
       });
 
     } catch (smsError) {
-      console.error('❌ SMS delivery failed');
+      console.error('❌ SMS/WhatsApp delivery failed');
       console.error(`   Phone: ${maskedPhone}`);
       console.error(`   Error: ${smsError.message}`);
 
+      // Check if it's a configuration error
+      if (smsError.message.includes('CONFIGURATION_INVALID')) {
+        return res.status(503).json({
+          ok: false,
+          error: 'SMS_CONFIGURATION_INVALID',
+          message: 'SMS is temporarily unavailable. Please try again later or contact support.'
+        });
+      }
+
+      // Other errors (network, Twilio API, etc.)
       return res.status(500).json({
         ok: false,
         error: 'SMS delivery failed. Please try again or contact support.'

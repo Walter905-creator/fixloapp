@@ -52,12 +52,28 @@ function isUSPhoneNumber(phone) {
  */
 async function sendSms(to, body) {
   const cli = getTwilioClient();
-  const from = process.env.TWILIO_PHONE_NUMBER;
+  // Support both TWILIO_PHONE_NUMBER and TWILIO_PHONE for backward compatibility
+  const from = process.env.TWILIO_PHONE_NUMBER || process.env.TWILIO_PHONE;
   const isDemoMode = process.env.NODE_ENV !== 'production';
 
-  if (!cli || !from) {
-    console.warn('⚠️ SMS disabled: missing Twilio configuration');
-    return { sid: null, disabled: true };
+  // Validate SMS configuration
+  if (!cli) {
+    console.error('❌ SMS configuration invalid: Twilio client not initialized');
+    console.error('   Missing: TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN');
+    throw new Error('SMS_CONFIGURATION_INVALID: Twilio credentials not configured');
+  }
+
+  if (!from) {
+    console.error('❌ SMS configuration invalid: No phone number configured');
+    console.error('   Missing: TWILIO_PHONE_NUMBER or TWILIO_PHONE');
+    throw new Error('SMS_CONFIGURATION_INVALID: Twilio phone number not configured');
+  }
+
+  // Validate E.164 format
+  if (!from.startsWith('+')) {
+    console.error('❌ SMS configuration invalid: Phone number not in E.164 format');
+    console.error(`   Value: ${from}`);
+    throw new Error('SMS_CONFIGURATION_INVALID: Twilio phone number must be in E.164 format (e.g., +12564881814)');
   }
 
   // Normalize phone number to E.164 format
@@ -108,13 +124,30 @@ async function sendSms(to, body) {
  */
 async function sendWhatsAppMessage(to, templateDataOrMessage = {}) {
   const cli = getTwilioClient();
-  const from = `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`;
+  const whatsappNumber = process.env.TWILIO_WHATSAPP_NUMBER;
   const isDemoMode = process.env.NODE_ENV !== 'production';
 
-  if (!cli || !process.env.TWILIO_WHATSAPP_NUMBER) {
-    console.warn('⚠️ WhatsApp disabled: missing Twilio configuration');
-    return { sid: null, disabled: true };
+  // Validate WhatsApp configuration
+  if (!cli) {
+    console.error('❌ WhatsApp configuration invalid: Twilio client not initialized');
+    console.error('   Missing: TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN');
+    throw new Error('WHATSAPP_CONFIGURATION_INVALID: Twilio credentials not configured');
   }
+
+  if (!whatsappNumber) {
+    console.error('❌ WhatsApp configuration invalid: No WhatsApp number configured');
+    console.error('   Missing: TWILIO_WHATSAPP_NUMBER');
+    throw new Error('WHATSAPP_CONFIGURATION_INVALID: Twilio WhatsApp number not configured');
+  }
+
+  // Validate E.164 format
+  if (!whatsappNumber.startsWith('+')) {
+    console.error('❌ WhatsApp configuration invalid: Phone number not in E.164 format');
+    console.error(`   Value: ${whatsappNumber}`);
+    throw new Error('WHATSAPP_CONFIGURATION_INVALID: Twilio WhatsApp number must be in E.164 format (e.g., +14155238886)');
+  }
+
+  const from = `whatsapp:${whatsappNumber}`;
 
   // Normalize phone number to E.164 format
   const normalizationResult = normalizePhoneToE164(to);
@@ -134,6 +167,7 @@ async function sendWhatsAppMessage(to, templateDataOrMessage = {}) {
   console.log('📱 WhatsApp phone normalization:');
   console.log(`   Original: ${normalizationResult.original}`);
   console.log(`   Normalized E.164: ${toE164}`);
+  console.log(`   WhatsApp format: ${toWhatsApp}`);
   console.log(`   Mode: ${isDemoMode ? 'DEMO' : 'PRODUCTION'}`);
 
   // If a string is passed, use it as the body directly
