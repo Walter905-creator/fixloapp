@@ -280,15 +280,23 @@ Frontend proceeds with referral flow
 
 ## Known Limitations
 
-1. **In-Memory Storage**: Verification codes are stored in memory (Map). In a multi-server environment, use Redis or a database instead.
+1. **In-Memory Storage**: Verification codes are stored in memory (Map). This has important limitations:
+   - ⚠️ All codes are lost if server restarts
+   - ⚠️ Does not work in multi-server deployments (each server has separate memory)
+   - ⚠️ Memory usage grows until periodic cleanup runs
+   - ✅ Automatic cleanup runs every 5 minutes to prevent memory leaks
+   - **RECOMMENDATION**: Implement Redis with TTL for production scalability
 
-2. **No Rate Limiting**: Currently no rate limiting on verification attempts. Consider adding rate limiting to prevent abuse.
+2. **No Rate Limiting**: Currently no rate limiting on verification attempts. Consider adding rate limiting to prevent abuse (e.g., max 3 attempts per phone per hour).
 
 3. **US-Only SMS**: SMS is currently limited to US phone numbers. WhatsApp can be used for international numbers.
 
 ## Future Improvements
 
-- [ ] Move verification code storage to Redis for scalability
+- [ ] **HIGH PRIORITY**: Move verification code storage to Redis for scalability
+  - Use Redis TTL for automatic expiration
+  - Supports multi-server deployments
+  - Survives server restarts
 - [ ] Add rate limiting (e.g., max 3 attempts per phone per hour)
 - [ ] Add IP-based rate limiting
 - [ ] Track failed verification attempts

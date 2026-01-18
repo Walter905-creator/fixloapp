@@ -27,7 +27,40 @@ const ANTI_FRAUD_CONFIG = {
 
 // In-memory storage for verification codes (in production, use Redis)
 // Structure: { phone: { code: hashedCode, expires: timestamp } }
+// ⚠️ WARNING: This in-memory storage has limitations:
+// 1. All codes are lost if server restarts
+// 2. Does not work in multi-server deployments
+// 3. Memory usage grows until cleanup runs
+// RECOMMENDATION: Implement Redis with TTL for production scalability
 const verificationCodes = new Map();
+
+/**
+ * Mask phone number for logging
+ * @param {string} phone - E.164 formatted phone number
+ * @returns {string} - Masked phone (e.g., "+1******9953")
+ */
+function maskPhoneForLogging(phone) {
+  if (!phone || typeof phone !== 'string') {
+    return '<invalid>';
+  }
+  // Show country code + last 4 digits, mask the rest
+  return phone.replace(/(\+\d{1,3})\d+(\d{4})/, '$1******$2');
+}
+
+// Periodic cleanup of expired verification codes (runs every 5 minutes)
+// This prevents memory leaks from expired codes
+setInterval(() => {
+  let cleanedCount = 0;
+  for (const [key, value] of verificationCodes.entries()) {
+    if (value.expires < Date.now()) {
+      verificationCodes.delete(key);
+      cleanedCount++;
+    }
+  }
+  if (cleanedCount > 0) {
+    console.log(`🧹 Cleaned up ${cleanedCount} expired verification code(s)`);
+  }
+}, 5 * 60 * 1000); // Run every 5 minutes
 
 /**
  * Get referral information for a pro
@@ -411,7 +444,7 @@ router.post('/send-verification', async (req, res) => {
     const normalizedPhone = normalizationResult.phone;
 
     // Mask phone for logging (show country code + last 4 digits)
-    const maskedPhone = normalizedPhone.replace(/(\+\d{1,3})\d+(\d{4})/, '$1******$2');
+    const maskedPhone = maskPhoneForLogging(normalizedPhone);
     
     console.log(`   Original phone input: <redacted>`);
     console.log(`   Normalized phone: ${maskedPhone}`);
@@ -426,13 +459,6 @@ router.post('/send-verification', async (req, res) => {
       code: hashedCode,
       expires: expiresAt
     });
-
-    // Clean up expired codes periodically
-    for (const [key, value] of verificationCodes.entries()) {
-      if (value.expires < Date.now()) {
-        verificationCodes.delete(key);
-      }
-    }
 
     // Prepare SMS message
     const message = `Fixlo: Your verification code is ${code}. Valid for 15 minutes. Reply STOP to opt out.`;
