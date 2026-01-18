@@ -41,28 +41,22 @@ export default function EarnStartPage() {
         return;
       }
 
-      // In production, this would send actual SMS/WhatsApp verification
-      // For now, using demo mode for UI testing
-      const isDemoMode = import.meta.env.MODE === 'development' || !import.meta.env.VITE_TWILIO_ENABLED;
+      // Send verification code via backend
+      setSuccess('Sending verification code...');
       
-      if (isDemoMode) {
-        console.log(`[DEMO MODE] Verification code would be sent to ${phone}`);
-        setSuccess(`Verification code sent via ${verificationMethod.toUpperCase()}! (Demo: use 123456)`);
-      } else {
-        // Production: Send actual SMS/WhatsApp via backend
-        const response = await fetch(`${API_BASE}/api/referrals/send-verification`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone, method: verificationMethod })
-        });
-        
-        if (!response.ok) {
-          throw new Error('Failed to send verification code');
-        }
-        
-        setSuccess(`Verification code sent via ${verificationMethod.toUpperCase()}!`);
+      const response = await fetch(`${API_BASE}/api/referrals/send-verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, method: verificationMethod })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send verification code');
       }
       
+      setSuccess('Check your phone for the verification code!');
       setStep('verify');
       
     } catch (err) {
@@ -80,27 +74,17 @@ export default function EarnStartPage() {
     setSuccess('');
 
     try {
-      const isDemoMode = import.meta.env.MODE === 'development' || !import.meta.env.VITE_TWILIO_ENABLED;
+      // Verify code with backend
+      const verifyResponse = await fetch(`${API_BASE}/api/referrals/verify-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, code: verificationCode })
+      });
       
-      // In demo mode, accept specific test code
-      // In production, verify via backend
-      if (isDemoMode) {
-        if (verificationCode !== '123456') {
-          setError('Invalid verification code. Try 123456 for demo.');
-          setLoading(false);
-          return;
-        }
-      } else {
-        // Production: Verify code with backend
-        const verifyResponse = await fetch(`${API_BASE}/api/referrals/verify-code`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone, code: verificationCode })
-        });
-        
-        if (!verifyResponse.ok) {
-          throw new Error('Invalid verification code');
-        }
+      const verifyData = await verifyResponse.json();
+      
+      if (!verifyResponse.ok) {
+        throw new Error(verifyData.error || 'Invalid verification code');
       }
 
       // Create referrer account via backend
@@ -307,11 +291,6 @@ export default function EarnStartPage() {
                       className="w-full px-4 py-3 border border-slate-300 rounded-lg text-center text-2xl tracking-widest font-mono focus:outline-none focus:ring-2 focus:ring-brand"
                       disabled={loading}
                     />
-                    {(import.meta.env.MODE === 'development' || !import.meta.env.VITE_TWILIO_ENABLED) && (
-                      <p className="mt-2 text-sm text-slate-500 text-center">
-                        Demo: Enter 123456
-                      </p>
-                    )}
                   </div>
 
                   <button
