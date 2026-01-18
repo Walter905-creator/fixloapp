@@ -18,13 +18,15 @@ export default function ReferralSignInPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { loginReferral } = useReferralAuth();
-  const [step, setStep] = useState('phone'); // 'phone' or 'verify'
+  const [step, setStep] = useState('phone'); // 'phone', 'verify', or 'ready'
   const [phone, setPhone] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [verificationMethod, setVerificationMethod] = useState('sms'); // 'sms' or 'whatsapp'
+  const [referralCode, setReferralCode] = useState('');
+  const [referralLink, setReferralLink] = useState('');
 
   // Get redirect path from query params or default to /earn
   const from = location.state?.from?.pathname || '/earn';
@@ -90,36 +92,12 @@ export default function ReferralSignInPage() {
         throw new Error(verifyData.error || 'Invalid verification code');
       }
 
-      // Fetch referral account by phone
-      const response = await fetch(`${API_BASE}/api/commission-referrals/referrer/phone/${encodeURIComponent(phone)}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Account not found. Please create a new referral account.');
-      }
-
-      if (data.ok && data.referrer) {
-        // Store referrer session using ReferralAuthContext
-        loginReferral({
-          referrerId: data.referrer.referrerId,
-          referralCode: data.referrer.referralCode,
-          email: data.referrer.email,
-          phone: phone,
-          name: data.referrer.name || 'Fixlo Referrer'
-        });
-
-        setSuccess('Sign in successful! Redirecting...');
-        
-        // Redirect to original destination or /earn
-        setTimeout(() => {
-          navigate(from, { replace: true });
-        }, 1500);
+      // Backend now returns referralCode and referralLink after verification
+      if (verifyData.verified && verifyData.referralCode && verifyData.referralLink) {
+        setReferralCode(verifyData.referralCode);
+        setReferralLink(verifyData.referralLink);
+        setStep('ready');
+        setSuccess('Verification successful! Your referral code is ready.');
       } else {
         throw new Error('Invalid response from server');
       }
@@ -322,11 +300,127 @@ export default function ReferralSignInPage() {
               </div>
             )}
 
+            {/* Ready Step - Show Referral Code */}
+            {step === 'ready' && (
+              <div className="bg-white rounded-2xl shadow-lg p-8">
+                <div className="text-center mb-6">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-900 mb-2">
+                    🎉 Welcome Back!
+                  </h2>
+                  <p className="text-slate-600">
+                    Here's your referral code and link
+                  </p>
+                </div>
+
+                <div className="space-y-4 mb-6">
+                  {/* Referral Code Box */}
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      Your Referral Code
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={referralCode}
+                        readOnly
+                        className="flex-1 px-4 py-3 border border-slate-300 rounded-lg bg-slate-50 text-center text-lg font-bold text-brand"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(referralCode);
+                          setSuccess('Referral code copied!');
+                          setTimeout(() => setSuccess(''), 2000);
+                        }}
+                        className="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all"
+                        title="Copy code"
+                      >
+                        📋
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Referral Link Box */}
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      Your Referral Link
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={referralLink}
+                        readOnly
+                        className="flex-1 px-4 py-3 border border-slate-300 rounded-lg bg-slate-50 text-sm text-slate-600"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(referralLink);
+                          setSuccess('Referral link copied!');
+                          setTimeout(() => setSuccess(''), 2000);
+                        }}
+                        className="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all"
+                        title="Copy link"
+                      >
+                        📋
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Share Buttons */}
+                <div className="space-y-3 mb-6">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const text = `Join Fixlo and grow your business! Use my referral code: ${referralCode} or click here: ${referralLink}`;
+                      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+                      window.open(whatsappUrl, '_blank');
+                    }}
+                    className="w-full px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2"
+                  >
+                    <span>📱</span>
+                    Share via WhatsApp
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const text = `Join Fixlo and grow your business! Use my referral code: ${referralCode} or visit: ${referralLink}`;
+                      const smsUrl = `sms:?body=${encodeURIComponent(text)}`;
+                      window.location.href = smsUrl;
+                    }}
+                    className="w-full px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2"
+                  >
+                    <span>💬</span>
+                    Share via SMS
+                  </button>
+                </div>
+
+                <div className="text-center pt-4 border-t border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => navigate(from, { replace: true })}
+                    className="text-brand hover:underline font-medium"
+                  >
+                    Go to Dashboard →
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Info Notice */}
-            <div className="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-800">
-              <p className="font-medium mb-1">✨ No Pro Account Required</p>
-              <p>Referral accounts are free and separate from Fixlo Pro. Anyone can earn by referring professionals!</p>
-            </div>
+            {step !== 'ready' && (
+              <div className="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-800">
+                <p className="font-medium mb-1">✨ No Pro Account Required</p>
+                <p>Referral accounts are free and separate from Fixlo Pro. Anyone can earn by referring professionals!</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
