@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import PromoBanner from './components/PromoBanner';
 import ProBanner from './components/ProBanner';
 import CookieConsent from './components/CookieConsent';
+import MetaPixelTracker from './components/MetaPixelTracker';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import RequireAdmin from './components/RequireAdmin';
@@ -41,6 +42,7 @@ import EarnDashboardPage from './routes/EarnDashboardPage.jsx';
 import ReferralSignInPage from './routes/ReferralSignInPage.jsx';
 export default function App(){
   return (<>
+    <MetaPixelTracker />
     <PromoBanner />
     <ProBanner />
     <Navbar/>

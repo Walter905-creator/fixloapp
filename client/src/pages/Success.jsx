@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import HelmetSEO from '../seo/HelmetSEO';
+import { trackMetaPixelEvent } from '../utils/metaPixel';
 
 export default function Success() {
   useEffect(() => {
@@ -7,6 +8,19 @@ export default function Success() {
     window.gtag && window.gtag('event', 'conversion', {
       'send_to': 'AW-17355871496/iOK8CN_dh_kaEIiq9tNA',
       'transaction_id': Date.now().toString() // optional unique ID
+    });
+    
+    // Track Meta Pixel CompleteRegistration event for Pro signup
+    trackMetaPixelEvent('CompleteRegistration', {
+      content_name: 'Pro Signup',
+      status: 'completed'
+    });
+    
+    // Track Meta Pixel Subscribe event for Stripe subscription
+    trackMetaPixelEvent('Subscribe', {
+      value: 29.99,
+      currency: 'USD',
+      predicted_ltv: 359.88 // 12 months
     });
   }, []);
 

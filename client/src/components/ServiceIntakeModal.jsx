@@ -3,6 +3,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { STRIPE_PUBLISHABLE_KEY, API_BASE } from '../utils/config';
 import { normalizeUSPhone } from '../utils/phoneUtils';
+import { trackMetaPixelEvent } from '../utils/metaPixel';
 
 // Initialize Stripe with validated key
 if (!STRIPE_PUBLISHABLE_KEY) {
@@ -318,6 +319,13 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
   const handlePaymentSuccess = (paymentData) => {
     // Success! Request was created and payment authorized
     console.log('✅ Request submitted successfully:', paymentData);
+    
+    // Track Meta Pixel Lead event
+    trackMetaPixelEvent('Lead', {
+      content_name: 'Service Request',
+      content_category: 'Service Request Submission'
+    });
+    
     setSubmitSuccess(true);
     setCurrentStep(totalSteps);
   };

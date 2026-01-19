@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { initializeMetaPixelConsent } from '../utils/metaPixel';
 
 /**
  * Cookie Consent Banner Component
@@ -52,6 +53,9 @@ const CookieConsent = () => {
         'ad_storage': 'granted'
       });
     }
+    
+    // Initialize Meta Pixel tracking
+    initializeMetaPixelConsent();
   };
 
   const handleRejectAll = () => {
@@ -93,6 +97,11 @@ const CookieConsent = () => {
         'analytics_storage': preferences.analytics ? 'granted' : 'denied',
         'ad_storage': preferences.marketing ? 'granted' : 'denied'
       });
+    }
+    
+    // Initialize Meta Pixel if marketing consent is granted
+    if (preferences.marketing) {
+      initializeMetaPixelConsent();
     }
   };
 
