@@ -43,7 +43,7 @@ router.post('/login', async (req, res) => {
     const isOwner = pro.email?.toLowerCase() === OWNER_EMAIL.toLowerCase() || 
                     (OWNER_USER_ID && pro._id.toString() === OWNER_USER_ID);
     
-    if (isOwner) {
+    if (isOwner && process.env.NODE_ENV !== 'production') {
       console.log('🔐 Owner logged in - granting admin access');
     }
 

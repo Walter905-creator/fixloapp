@@ -58,7 +58,9 @@ router.post("/login", async (req, res) => {
 
   const token = sign({ role: 'admin', email: email.toLowerCase(), isAdmin: true });
   
-  console.log(`🔐 Admin login successful: ${email}`);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`🔐 Admin login successful: ${email}`);
+  }
   
   res.json({
     success: true,

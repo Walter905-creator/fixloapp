@@ -47,8 +47,9 @@ JWT_SECRET=<secure-random-string>
 3. Verify JSON contains: `"isAdmin": true`
 
 **Server Log Check** (if access to logs):
-- Should see: `🔐 Owner (Walter Arevalo) logged in - granting admin access`
-- Should see: `✅ Admin access granted: role=pro, isAdmin=true`
+- Development mode should see: `🔐 Owner logged in - granting admin access`
+- Development mode should see: `✅ Admin access granted`
+- Production mode: Minimal logging only
 
 ### Test 2: Regular Pro Access (Non-Admin)
 **Objective**: Verify regular pros CANNOT access admin dashboard
@@ -85,7 +86,8 @@ curl -X GET https://fixloapp.onrender.com/api/admin/pros \
 ```
 
 **Server Log Check** (if access to logs):
-- Should see: `🚫 Admin access denied: User role=pro, isAdmin=false`
+- Development mode should see: `🚫 Admin access denied: Insufficient permissions`
+- Production mode: Minimal logging only
 
 ### Test 3: Unauthenticated Access
 **Objective**: Verify unauthenticated users cannot access admin routes
@@ -167,22 +169,19 @@ curl -X GET https://fixloapp.onrender.com/api/admin/pros \
 ### Test 7: Server Logs (If Access Available)
 **Objective**: Verify proper logging of admin access
 
-**Check for These Log Entries**:
+**Check for These Log Entries (Development Mode Only)**:
 ```
 Owner login:
-🔐 Owner (Walter Arevalo) logged in - granting admin access
+🔐 Owner logged in - granting admin access
 
 Admin route access (owner):
-✅ Admin access granted: role=pro, isAdmin=true
+✅ Admin access granted
 
 Admin route access denied (regular pro):
-🚫 Admin access denied: role=pro, isAdmin=false
+🚫 Admin access denied: Insufficient permissions
 
-Admin API access granted (owner):
-✅ Admin route access granted: role=pro, isAdmin=true
-
-Admin API access denied (regular pro):
-🚫 Admin route access denied: User role=pro, isAdmin=false
+Production Mode:
+Minimal logging - detailed auth info not logged
 ```
 
 ## Regression Testing
