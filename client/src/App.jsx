@@ -88,7 +88,6 @@ export default function App(){
       }/>
       
       {/* Old admin routes - redirect to prevent 404 hints */}
-      <Route path="/admin" element={<Navigate to="/" replace/>}/>
       <Route path="/admin/*" element={<Navigate to="/" replace/>}/>
       <Route path="/services/admin" element={<Navigate to="/" replace/>}/>
       <Route path="/services/*/admin" element={<Navigate to="/" replace/>}/>
