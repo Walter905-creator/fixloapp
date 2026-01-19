@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { hasMarketingConsent } from '../utils/metaPixel';
 
 /**
  * MetaPixelTracker Component
@@ -20,22 +21,8 @@ const MetaPixelTracker = () => {
       return;
     }
 
-    // Check cookie consent for marketing cookies
-    const consentData = localStorage.getItem('fixlo_cookie_consent');
-    let hasMarketingConsent = false;
-
-    if (consentData) {
-      try {
-        const consent = JSON.parse(consentData);
-        hasMarketingConsent = consent.marketing === true;
-      } catch (e) {
-        // If consent data is invalid, default to no consent
-        hasMarketingConsent = false;
-      }
-    }
-
     // Only fire pixel if marketing consent is granted
-    if (hasMarketingConsent) {
+    if (hasMarketingConsent()) {
       window.fbq('track', 'PageView');
     }
   }, [location.pathname, location.search]);

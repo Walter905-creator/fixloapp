@@ -50,14 +50,14 @@ export const trackMetaPixelEvent = (eventName, eventData = {}) => {
 
 /**
  * Initialize Meta Pixel consent after user accepts marketing cookies
+ * Note: Does not fire PageView event as MetaPixelTracker handles that
  */
 export const initializeMetaPixelConsent = () => {
   if (typeof window.fbq !== 'function') {
     return;
   }
 
-  // Re-initialize pixel after consent is granted
-  if (hasMarketingConsent()) {
-    window.fbq('track', 'PageView');
-  }
+  // Simply ensure pixel is ready for tracking
+  // PageView will be fired by MetaPixelTracker on next route change or page reload
+  // This prevents duplicate PageView events
 };
