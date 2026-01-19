@@ -258,7 +258,7 @@ export default function AdminSocialMediaPage() {
     <>
       <HelmetSEO 
         title="Social Media Manager | Admin | Fixlo" 
-        canonicalPathname="/admin/social-media" 
+        canonicalPathname="/dashboard/admin/social" 
         robots="noindex, nofollow" 
       />
       

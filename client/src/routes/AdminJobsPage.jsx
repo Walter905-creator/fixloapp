@@ -311,7 +311,7 @@ export default function AdminJobsPage() {
     <>
       <HelmetSEO 
         title="Admin Job Control Center | Fixlo" 
-        canonicalPathname="/admin/jobs" 
+        canonicalPathname="/dashboard/admin/jobs" 
         robots="noindex, nofollow" 
       />
       
