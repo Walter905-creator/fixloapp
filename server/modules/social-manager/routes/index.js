@@ -7,13 +7,14 @@ const scheduler = require('../scheduler');
 const analyticsService = require('../analytics');
 const adminService = require('../admin');
 const postingService = require('../posting');
+const requireAuth = require('../../middleware/requireAuth');
 
 /**
  * Social Media Manager API Routes
  * All routes are prefixed with /api/social
  * 
- * Authentication: Requires admin authentication
- * (Integrated with Fixlo's existing auth middleware)
+ * Authentication: Requires admin authentication for all routes except OAuth callbacks
+ * (OAuth callbacks must remain public as they're called by OAuth providers)
  */
 
 // ==================== OAuth & Connection Routes ====================
@@ -22,6 +23,8 @@ const postingService = require('../posting');
  * GET /api/social/oauth/meta/callback
  * OAuth callback handler for Meta (Facebook/Instagram)
  * This receives the authorization code from Meta and completes the connection
+ * 
+ * NOTE: This route MUST remain public - it's called by Meta OAuth service
  */
 router.get('/oauth/meta/callback', async (req, res) => {
   try {
@@ -97,6 +100,19 @@ router.get('/oauth/meta/callback', async (req, res) => {
       : 'http://localhost:3000');
     return res.redirect(`${clientUrl}/dashboard/admin/social?error=internal_error`);
   }
+});
+
+// ==================== ADMIN AUTHENTICATION REQUIRED ====================
+// All routes below this point require admin authentication
+router.use(requireAuth);
+router.use((req, res, next) => {
+  if (req.user?.role !== 'admin') {
+    return res.status(403).json({ 
+      success: false,
+      error: 'Forbidden - Admin access required' 
+    });
+  }
+  next();
 });
 
 /**

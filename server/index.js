@@ -326,12 +326,11 @@ app.use("/api/admin", adminRateLimit, require("./routes/adminJobs")); // Admin j
 app.use("/api/auth", authRateLimit, require("./routes/auth"));
 app.use("/api/pro-auth", authRateLimit, require("./routes/proAuth"));
 
-// Social Media Manager (admin only)
-// TODO: Add auth middleware to restrict to admin users only
+// Social Media Manager (admin only - protected with requireAuth in routes)
 try {
   const socialManagerRoutes = require("./modules/social-manager/routes");
   app.use("/api/social", adminRateLimit, socialManagerRoutes);
-  console.log("✅ Social Media Manager routes loaded");
+  console.log("✅ Social Media Manager routes loaded (admin protected)");
 } catch (e) {
   console.warn("⚠️ Social Media Manager routes not loaded:", e.message);
 }
