@@ -28,9 +28,9 @@ export default function Navbar() {
   const firstName = user?.name?.split(' ')[0] || user?.name || user?.phone || 'User';
   const displayName = firstName;
   
-  // Only show admin link to users with admin role
+  // Only show admin link to users with admin role (not publicly linked)
   const items = isAdmin 
-    ? [...baseItems, { to: '/admin', label: 'Admin' }]
+    ? [...baseItems, { to: '/dashboard/admin', label: 'Admin' }]
     : baseItems;
 
   return (
