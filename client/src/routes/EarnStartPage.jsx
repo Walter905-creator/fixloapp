@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { API_BASE } from '../utils/config';
 import HelmetSEO from '../seo/HelmetSEO';
 import { useReferralAuth } from '../context/ReferralAuthContext';
+import { trackMetaPixelEvent } from '../utils/metaPixel';
 
 /**
  * EarnStartPage - Non-Pro Referral Registration
@@ -107,6 +108,12 @@ export default function EarnStartPage() {
         setReferralLink(verifyData.referralLink);
         setStep('ready');
         setSuccess('Verification successful! Your referral code is ready.');
+        
+        // Track Meta Pixel CompleteRegistration event for referral verification
+        trackMetaPixelEvent('CompleteRegistration', {
+          content_name: 'Referral Verification',
+          status: 'completed'
+        });
       } else {
         throw new Error('Invalid response from server');
       }
