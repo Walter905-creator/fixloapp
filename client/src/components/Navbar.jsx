@@ -24,11 +24,11 @@ export default function Navbar() {
   };
 
   const isPro = isAuthenticated && user?.role === 'pro';
-  const isAdmin = isAuthenticated && user?.role === 'admin';
+  const isAdmin = isAuthenticated && (user?.role === 'admin' || user?.isAdmin === true);
   const firstName = user?.name?.split(' ')[0] || user?.name || user?.phone || 'User';
   const displayName = firstName;
   
-  // Only show admin link to users with admin role (not publicly linked)
+  // Only show admin link to users with admin access (not publicly linked)
   const items = isAdmin 
     ? [...baseItems, { to: '/dashboard/admin', label: 'Admin' }]
     : baseItems;

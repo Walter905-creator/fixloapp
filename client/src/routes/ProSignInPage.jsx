@@ -39,7 +39,8 @@ export default function ProSignInPage(){
             name: data.pro.name,
             email: data.pro.email,
             trade: data.pro.trade,
-            phone: data.pro.phone
+            phone: data.pro.phone,
+            isAdmin: !!data.pro.isAdmin  // Explicit boolean conversion
           };
           login(data.token, userData);
           
