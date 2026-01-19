@@ -5,6 +5,7 @@ import ProBanner from './components/ProBanner';
 import CookieConsent from './components/CookieConsent';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
+import RequireAdmin from './components/RequireAdmin';
 import HomePage from './routes/HomePage.jsx';
 import ServicesPage from './routes/ServicesPage.jsx';
 import HowItWorksPage from './routes/HowItWorksPage.jsx';
@@ -68,21 +69,29 @@ export default function App(){
       <Route path="/pro/sign-in" element={<ProSignInPage/>}/>
       <Route path="/pro/forgot-password" element={<ProForgotPasswordPage/>}/>
       <Route path="/pro/reset-password" element={<ProResetPasswordPage/>}/>
-      <Route path="/admin" element={
-        <ProtectedRoute requiredRole="admin">
+      
+      {/* Admin routes - PRIVATE ONLY, not public, not linked anywhere */}
+      <Route path="/dashboard/admin" element={
+        <RequireAdmin>
           <AdminPage/>
-        </ProtectedRoute>
+        </RequireAdmin>
       }/>
-      <Route path="/admin/jobs" element={
-        <ProtectedRoute requiredRole="admin">
+      <Route path="/dashboard/admin/jobs" element={
+        <RequireAdmin>
           <AdminJobsPage/>
-        </ProtectedRoute>
+        </RequireAdmin>
       }/>
-      <Route path="/admin/social-media" element={
-        <ProtectedRoute requiredRole="admin">
+      <Route path="/dashboard/admin/social" element={
+        <RequireAdmin>
           <AdminSocialMediaPage/>
-        </ProtectedRoute>
+        </RequireAdmin>
       }/>
+      
+      {/* Old admin routes - redirect to prevent 404 hints */}
+      <Route path="/admin/*" element={<Navigate to="/" replace/>}/>
+      <Route path="/services/admin" element={<Navigate to="/" replace/>}/>
+      <Route path="/services/*/admin" element={<Navigate to="/" replace/>}/>
+      
       <Route path="/my-jobs" element={<CustomerPortalPage/>}/>
       <Route path="/pro/dashboard" element={
         <ProtectedRoute requiredRole="pro">

@@ -1,4 +1,10 @@
 User-agent: *
 Allow: /
 
+# Block admin routes from indexing
+Disallow: /admin
+Disallow: /admin/
+Disallow: /dashboard/admin
+Disallow: /dashboard/admin/
+
 Sitemap: https://www.fixloapp.com/sitemap.xml
