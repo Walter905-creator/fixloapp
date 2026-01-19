@@ -14,11 +14,15 @@ router.use((req, res, next) => {
   const hasAdminAccess = req.user?.role === 'admin' || req.user?.isAdmin === true;
   
   if (!hasAdminAccess) {
-    console.log(`🚫 Admin jobs access denied: role=${req.user?.role}, isAdmin=${req.user?.isAdmin}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`🚫 Admin jobs access denied: role=${req.user?.role}, isAdmin=${req.user?.isAdmin}`);
+    }
     return res.status(403).json({ error: 'Forbidden - Admin access required' });
   }
   
-  console.log(`✅ Admin jobs access granted: role=${req.user?.role}, isAdmin=${req.user?.isAdmin}`);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`✅ Admin jobs access granted: role=${req.user?.role}, isAdmin=${req.user?.isAdmin}`);
+  }
   next();
 });
 

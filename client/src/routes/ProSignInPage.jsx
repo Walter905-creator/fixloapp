@@ -40,7 +40,7 @@ export default function ProSignInPage(){
             email: data.pro.email,
             trade: data.pro.trade,
             phone: data.pro.phone,
-            isAdmin: data.pro.isAdmin || false  // Store admin flag from server
+            isAdmin: !!data.pro.isAdmin  // Explicit boolean conversion
           };
           login(data.token, userData);
           

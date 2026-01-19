@@ -6,8 +6,8 @@ const Pro = require('../models/Pro');
 const { sendSms } = require('../utils/twilio');
 const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
 
-// Admin owner email (Walter Arevalo)
-const OWNER_EMAIL = 'pro4u.improvements@gmail.com';
+// Admin owner email (Walter Arevalo) - should be set via environment variable
+const OWNER_EMAIL = process.env.OWNER_EMAIL || 'pro4u.improvements@gmail.com';
 const OWNER_USER_ID = process.env.OWNER_USER_ID; // Optional: match by user ID as well
 
 // Pro login endpoint - uses phone number
@@ -39,12 +39,12 @@ router.post('/login', async (req, res) => {
     const ok = await bcrypt.compare(password, pro.password);
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
 
-    // Check if this user is the owner (Walter Arevalo)
+    // Check if this user is the owner
     const isOwner = pro.email?.toLowerCase() === OWNER_EMAIL.toLowerCase() || 
                     (OWNER_USER_ID && pro._id.toString() === OWNER_USER_ID);
     
     if (isOwner) {
-      console.log('🔐 Owner (Walter Arevalo) logged in - granting admin access');
+      console.log('🔐 Owner logged in - granting admin access');
     }
 
     const token = sign({ role: 'pro', id: pro._id, phone: pro.phone, isAdmin: isOwner });

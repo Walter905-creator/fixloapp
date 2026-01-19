@@ -8,7 +8,7 @@ const mongoose = require("mongoose");
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@fixloapp.com';
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH; // store hash, not raw
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'ChangeThisInProduction123!'; // fallback for backward compatibility
-const OWNER_EMAIL = 'pro4u.improvements@gmail.com'; // Walter Arevalo - owner with admin access
+const OWNER_EMAIL = process.env.OWNER_EMAIL || 'pro4u.improvements@gmail.com'; // Owner with admin access
 
 // Initialize Stripe once at module level
 let stripe = null;
