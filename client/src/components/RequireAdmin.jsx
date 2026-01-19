@@ -30,10 +30,13 @@ export default function RequireAdmin({ children }) {
   }
 
   // Redirect non-admin users to home (no hints that admin exists)
-  if (user.role !== 'admin') {
+  // Check for both role === 'admin' AND isAdmin flag (for owner)
+  const hasAdminAccess = user.role === 'admin' || user.isAdmin === true;
+  
+  if (!hasAdminAccess) {
     return <Navigate to="/" replace />;
   }
 
-  // User is authenticated and is admin - render the protected content
+  // User is authenticated and has admin access - render the protected content
   return children;
 }

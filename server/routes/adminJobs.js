@@ -10,9 +10,15 @@ const { logPaymentAction, logAdminAction } = require('../services/auditLogger');
 // Protect all routes with admin authentication
 router.use(requireAuth);
 router.use((req, res, next) => {
-  if (req.user?.role !== 'admin') {
+  // Check if user has admin role OR isAdmin flag (for owner)
+  const hasAdminAccess = req.user?.role === 'admin' || req.user?.isAdmin === true;
+  
+  if (!hasAdminAccess) {
+    console.log(`🚫 Admin jobs access denied: role=${req.user?.role}, isAdmin=${req.user?.isAdmin}`);
     return res.status(403).json({ error: 'Forbidden - Admin access required' });
   }
+  
+  console.log(`✅ Admin jobs access granted: role=${req.user?.role}, isAdmin=${req.user?.isAdmin}`);
   next();
 });
 

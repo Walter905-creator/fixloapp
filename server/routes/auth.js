@@ -8,6 +8,7 @@ const mongoose = require("mongoose");
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@fixloapp.com';
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH; // store hash, not raw
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'ChangeThisInProduction123!'; // fallback for backward compatibility
+const OWNER_EMAIL = 'pro4u.improvements@gmail.com'; // Walter Arevalo - owner with admin access
 
 // Initialize Stripe once at module level
 let stripe = null;
@@ -27,7 +28,11 @@ router.post("/login", async (req, res) => {
     return res.status(400).json({ error: "Email and password are required" });
   }
 
-  if (email !== ADMIN_EMAIL) {
+  // Check if email matches admin or owner email
+  const isAdminEmail = email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  const isOwnerEmail = email.toLowerCase() === OWNER_EMAIL.toLowerCase();
+  
+  if (!isAdminEmail && !isOwnerEmail) {
     return res.status(401).json({ error: "Invalid credentials" });
   }
 
@@ -51,14 +56,17 @@ router.post("/login", async (req, res) => {
     return res.status(401).json({ error: "Invalid credentials" });
   }
 
-  const token = sign({ role: 'admin', email: ADMIN_EMAIL });
+  const token = sign({ role: 'admin', email: email.toLowerCase(), isAdmin: true });
+  
+  console.log(`🔐 Admin login successful: ${email}`);
   
   res.json({
     success: true,
     token,
     admin: {
-      email: ADMIN_EMAIL,
-      role: "admin"
+      email: email.toLowerCase(),
+      role: "admin",
+      isAdmin: true
     }
   });
 });
