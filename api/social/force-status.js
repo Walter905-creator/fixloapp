@@ -45,6 +45,8 @@ async function connectToDatabase() {
     await mongoose.connect(MONGODB_URI, {
       serverSelectionTimeoutMS: 5000, // 5 second timeout
       socketTimeoutMS: 10000,
+      maxPoolSize: 10, // Maximum 10 connections in pool
+      minPoolSize: 1,  // Keep at least 1 connection alive
     });
 
     cachedDbConnection = mongoose.connection;
@@ -134,9 +136,33 @@ module.exports = async (req, res) => {
       });
     }
 
-    // Load models dynamically (only if DB is connected)
-    const SocialAccount = mongoose.models.SocialAccount || 
-      require('../../server/modules/social-manager/models').SocialAccount;
+    // Load SocialAccount model dynamically
+    // Define schema inline to avoid coupling with server directory
+    let SocialAccount;
+    
+    if (mongoose.models.SocialAccount) {
+      SocialAccount = mongoose.models.SocialAccount;
+    } else {
+      // Define minimal schema needed for this query
+      const socialAccountSchema = new mongoose.Schema({
+        ownerId: String,
+        platform: String,
+        isActive: Boolean,
+        accountName: String,
+        platformUsername: String,
+        platformAccountId: String,
+        platformSettings: {
+          pageId: String,
+          pageName: String,
+          instagramBusinessId: String,
+        },
+        connectedAt: Date,
+        isTokenValid: Boolean,
+        tokenExpiresAt: Date,
+      });
+      
+      SocialAccount = mongoose.model('SocialAccount', socialAccountSchema);
+    }
 
     // Determine ownerId
     let ownerId = 'admin';

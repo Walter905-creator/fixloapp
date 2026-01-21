@@ -199,14 +199,6 @@
   ],
   "rewrites": [
     {
-      "source": "/api/ping",
-      "destination": "/api/ping"
-    },
-    {
-      "source": "/api/social/force-status",
-      "destination": "/api/social/force-status"
-    },
-    {
       "source": "/terms",
       "destination": "/terms.html"
     },

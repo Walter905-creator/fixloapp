@@ -50,7 +50,7 @@ function makeRequest(url) {
     }, TIMEOUT);
     
     const req = client.get(url, (res) => {
-      clearTimeout(timeout);
+      clearTimeout(timeout); // Clear timeout on successful response
       
       let data = '';
       res.on('data', chunk => data += chunk);
@@ -64,8 +64,14 @@ function makeRequest(url) {
     });
     
     req.on('error', (error) => {
-      clearTimeout(timeout);
+      clearTimeout(timeout); // Clear timeout on error
       reject(error);
+    });
+    
+    req.on('timeout', () => {
+      clearTimeout(timeout);
+      req.destroy();
+      reject(new Error(`Request timeout after ${TIMEOUT}ms`));
     });
   });
 }
