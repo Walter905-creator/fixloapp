@@ -34,7 +34,9 @@
     "check-ai": "grep -E \"^[^/]*{.*'AI Assistant'\" client/src/components/Navbar.jsx && echo 'ERROR: Active AI Assistant found in navigation!' && exit 1 || echo 'Navigation AI Assistant check - OK'",
     "activate-owner-pro": "node scripts/activate-owner-pro.js",
     "test-walter-lead": "node scripts/test-walter-lead.js",
-    "create-test-users": "node scripts/createTestUsers.js"
+    "create-test-users": "node scripts/createTestUsers.js",
+    "test:api:local": "node test-api-endpoints.js http://localhost:3000",
+    "test:api:production": "node test-api-endpoints.js https://fixloapp.com"
   },
   "dependencies": {
     "@vercel/og": "^0.6.3",
