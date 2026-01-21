@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { getHandler, getConfiguredPlatforms } = require('../oauth');
-const { SocialAccount, ScheduledPost } = require('../models');
+const { SocialAccount, ScheduledPost, SocialAuditLog } = require('../models');
+const { tokenEncryption } = require('../security');
 const { contentGenerator } = require('../content');
 const scheduler = require('../scheduler');
 const analyticsService = require('../analytics');
@@ -143,10 +144,6 @@ router.get('/oauth/meta/callback', async (req, res) => {
       console.info('[Meta OAuth Backend] Token storage: SUCCESS');
       
       // STEP 5: Create or update SocialAccount for Facebook Page
-      const { SocialAccount } = require('../models');
-      const { tokenEncryption } = require('../security');
-      const { SocialAuditLog } = require('../models');
-      
       let facebookAccount = await SocialAccount.findOne({
         ownerId,
         platform: 'meta_facebook',
@@ -353,8 +350,6 @@ router.get('/oauth/meta/callback', async (req, res) => {
  */
 router.get('/force-status', async (req, res) => {
   try {
-    const { SocialAccount } = require('../models');
-    
     // Get default owner ID (in production, this could be from query param if needed)
     const ownerId = req.query.ownerId || 'admin';
     
