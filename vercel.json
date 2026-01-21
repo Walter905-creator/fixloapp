@@ -199,8 +199,12 @@
   ],
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "https://fixloapp.onrender.com/api/$1"
+      "source": "/api/ping",
+      "destination": "/api/ping"
+    },
+    {
+      "source": "/api/social/force-status",
+      "destination": "/api/social/force-status"
     },
     {
       "source": "/terms",
