@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE } from '../utils/config';
 import HelmetSEO from '../seo/HelmetSEO';
@@ -14,6 +14,10 @@ import { useReferralAuth } from '../context/ReferralAuthContext';
  * - Separate from Pro authentication flow
  */
 
+// Constants
+const MAX_POLL_ATTEMPTS = 10; // Poll for 10 seconds (10 attempts x 1 second)
+const POLL_INTERVAL_MS = 1000; // Poll every 1 second
+
 export default function ReferralSignInPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -27,15 +31,31 @@ export default function ReferralSignInPage() {
   const [referralCode, setReferralCode] = useState('');
   const [referralLink, setReferralLink] = useState('');
   const [channelUsed, setChannelUsed] = useState(''); // Track which channel delivered the code
+  const [messageSid, setMessageSid] = useState(''); // Track message SID for delivery polling
+  const [deliveryStatus, setDeliveryStatus] = useState(''); // Track delivery status
+  const [selectedMethod, setSelectedMethod] = useState('whatsapp'); // Default to WhatsApp
+
+  // Ref to store polling interval for cleanup
+  const pollIntervalRef = useRef(null);
 
   // Get redirect path from query params or default to /earn
   const from = location.state?.from?.pathname || '/earn';
+
+  // Cleanup polling interval on unmount
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+    };
+  }, []);
 
   const handlePhoneSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     setSuccess('');
+    setDeliveryStatus('sending');
 
     try {
       // Validate phone number format (basic validation)
@@ -43,44 +63,109 @@ export default function ReferralSignInPage() {
       if (!phoneRegex.test(phone)) {
         setError('Please enter a valid phone number');
         setLoading(false);
+        setDeliveryStatus('');
         return;
       }
 
-      // Send verification code via backend (automatic WhatsApp -> SMS fallback)
-      setSuccess('Sending verification code...');
+      // Send verification code via selected method
+      setSuccess(`Sending verification code via ${selectedMethod.toUpperCase()}...`);
       
       const response = await fetch(`${API_BASE}/api/referrals/send-verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone })
+        body: JSON.stringify({ phone, method: selectedMethod })
       });
       
       const data = await response.json();
       
-      if (!response.ok) {
-        // Handle error responses
+      // Handle failure responses
+      if (!data.success) {
+        // WhatsApp failed - show SMS option
+        if (data.channel === 'whatsapp' && data.suggestion === 'Try SMS instead') {
+          setError(data.message || 'WhatsApp could not deliver the message.');
+          setSelectedMethod('sms'); // Auto-select SMS for retry
+          setLoading(false);
+          setDeliveryStatus('failed');
+          return;
+        }
+        
+        // Both methods failed or other error
         throw new Error(data.message || 'Failed to send verification code');
       }
       
-      // Success - display which channel was used
+      // Message SEND accepted - now wait for delivery confirmation
       const channel = data.channelUsed || 'SMS';
-      setChannelUsed(channel);
+      const sid = data.messageSid;
       
-      if (channel === 'whatsapp') {
-        setSuccess('✅ Code sent via WhatsApp! Check your WhatsApp messages.');
-      } else if (channel === 'sms') {
-        setSuccess('✅ Code sent via SMS! Check your text messages.');
-      } else {
-        setSuccess('Check your phone for the verification code!');
+      setChannelUsed(channel);
+      setMessageSid(sid);
+      setDeliveryStatus('waiting');
+      setSuccess(`Waiting for ${channel.toUpperCase()} delivery confirmation...`);
+      
+      // Poll for delivery status
+      let pollAttempts = 0;
+      
+      // Clear any existing polling interval
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
       }
       
-      setStep('verify');
+      pollIntervalRef.current = setInterval(async () => {
+        pollAttempts++;
+        
+        try {
+          const statusResponse = await fetch(`${API_BASE}/api/referrals/delivery-status/${sid}`);
+          const statusData = await statusResponse.json();
+          
+          if (statusData.ok && statusData.isDelivered) {
+            // SUCCESS: Message delivered
+            clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
+            setDeliveryStatus('delivered');
+            setSuccess(`✅ Code sent via ${channel.toUpperCase()}! Check your ${channel === 'whatsapp' ? 'WhatsApp' : 'text'} messages.`);
+            setStep('verify');
+            setLoading(false);
+          } else if (statusData.ok && statusData.isFailed) {
+            // FAILED: Message failed to deliver
+            clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
+            setDeliveryStatus('failed');
+            
+            if (channel === 'whatsapp') {
+              setError('WhatsApp could not deliver the message.');
+              setSelectedMethod('sms'); // Auto-select SMS for retry
+            } else {
+              setError('SMS delivery failed. Please check your phone number and try again.');
+            }
+            
+            setLoading(false);
+          } else if (pollAttempts >= MAX_POLL_ATTEMPTS) {
+            // TIMEOUT: No delivery confirmation within timeout period
+            clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
+            setDeliveryStatus('timeout');
+            
+            if (channel === 'whatsapp') {
+              setError('WhatsApp delivery timed out. The message may not have been delivered.');
+              setSelectedMethod('sms'); // Auto-select SMS for retry
+            } else {
+              setError('SMS delivery timed out. Please try again.');
+            }
+            
+            setLoading(false);
+          }
+          
+        } catch (pollError) {
+          console.error('Delivery status poll error:', pollError);
+          // Continue polling - don't fail on single poll error
+        }
+      }, POLL_INTERVAL_MS);
       
     } catch (err) {
       console.error('Phone submission error:', err);
       setError(err.message || 'Failed to send verification code. Please try again.');
-    } finally {
       setLoading(false);
+      setDeliveryStatus('');
     }
   };
 
@@ -181,23 +266,62 @@ export default function ReferralSignInPage() {
                       disabled={loading}
                     />
                     <p className="mt-2 text-sm text-slate-500">
-                      We'll try WhatsApp first, then SMS if needed
+                      {selectedMethod === 'whatsapp' 
+                        ? 'We\'ll send your code via WhatsApp' 
+                        : 'We\'ll send your code via SMS'}
                     </p>
                   </div>
 
-                  {/* Information about WhatsApp verification */}
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm text-blue-800">
-                      <strong>📱 How it works:</strong> We'll attempt to send your code via WhatsApp first. If that doesn't work, we'll automatically send it via SMS. You'll always receive a code!
-                    </p>
-                  </div>
+                  {/* Method Selection (only show if WhatsApp failed) */}
+                  {deliveryStatus === 'failed' && selectedMethod === 'sms' && (
+                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-sm text-yellow-800 mb-3">
+                        <strong>⚠️ WhatsApp delivery failed.</strong> Click below to try SMS instead.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setError('');
+                          setDeliveryStatus('');
+                        }}
+                        className="text-sm font-semibold text-brand hover:underline"
+                      >
+                        ← Try WhatsApp again
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Delivery Status Info */}
+                  {deliveryStatus === 'waiting' && (
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg animate-pulse">
+                      <p className="text-sm text-blue-800">
+                        <strong>⏳ Waiting for delivery confirmation...</strong>
+                        <br />
+                        Your code is on its way. This usually takes a few seconds.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Information about verification */}
+                  {!deliveryStatus && (
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        <strong>📱 How it works:</strong> We'll send your verification code via {selectedMethod === 'whatsapp' ? 'WhatsApp' : 'SMS'}. You'll only see success when the message is confirmed delivered.
+                      </p>
+                    </div>
+                  )}
 
                   <button
                     type="submit"
                     disabled={loading || !phone}
                     className="w-full px-6 py-4 bg-brand hover:bg-brand-dark text-white font-semibold rounded-xl transition-all transform hover:scale-105 shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                   >
-                    {loading ? 'Sending...' : 'Send Verification Code'}
+                    {loading 
+                      ? `Sending via ${selectedMethod.toUpperCase()}...` 
+                      : deliveryStatus === 'failed' && selectedMethod === 'sms'
+                        ? 'Send via SMS Instead'
+                        : `Send Code via ${selectedMethod === 'whatsapp' ? 'WhatsApp' : 'SMS'}`
+                    }
                   </button>
 
                   <div className="text-center pt-4 border-t border-slate-200">

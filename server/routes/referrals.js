@@ -37,6 +37,11 @@ const ANTI_FRAUD_CONFIG = {
 // RECOMMENDATION: Implement Redis with TTL for production scalability
 const verificationCodes = new Map();
 
+// In-memory storage for delivery status tracking
+// Structure: { messageSid: { phone, method, status, errorCode, errorMessage, timestamp } }
+// ⚠️ WARNING: Same limitations as verificationCodes - use Redis in production
+const deliveryStatuses = new Map();
+
 /**
  * Mask phone number for logging
  * @param {string} phone - E.164 formatted phone number
@@ -50,18 +55,31 @@ function maskPhoneForLogging(phone) {
   return phone.replace(/(\+\d{1,3})\d+(\d{4})/, '$1******$2');
 }
 
-// Periodic cleanup of expired verification codes (runs every 5 minutes)
-// This prevents memory leaks from expired codes
+// Periodic cleanup of expired verification codes and delivery statuses (runs every 5 minutes)
+// This prevents memory leaks from expired codes and old delivery statuses
 const cleanupInterval = setInterval(() => {
-  let cleanedCount = 0;
+  let cleanedCodesCount = 0;
+  let cleanedStatusCount = 0;
+  
+  // Clean up expired verification codes
   for (const [key, value] of verificationCodes.entries()) {
     if (value.expires < Date.now()) {
       verificationCodes.delete(key);
-      cleanedCount++;
+      cleanedCodesCount++;
     }
   }
-  if (cleanedCount > 0) {
-    console.log(`🧹 Cleaned up ${cleanedCount} expired verification code(s)`);
+  
+  // Clean up old delivery statuses (older than 1 hour)
+  const oneHourAgo = Date.now() - 60 * 60 * 1000;
+  for (const [key, value] of deliveryStatuses.entries()) {
+    if (value.timestamp < oneHourAgo) {
+      deliveryStatuses.delete(key);
+      cleanedStatusCount++;
+    }
+  }
+  
+  if (cleanedCodesCount > 0 || cleanedStatusCount > 0) {
+    console.log(`🧹 Cleaned up ${cleanedCodesCount} expired verification code(s) and ${cleanedStatusCount} old delivery status(es)`);
   }
 }, 5 * 60 * 1000); // Run every 5 minutes
 
@@ -424,25 +442,38 @@ router.post('/complete', async (req, res) => {
 });
 
 /**
- * Send verification code via WhatsApp with automatic SMS fallback
+ * Send verification code with delivery confirmation
  * POST /api/referrals/send-verification
  * 
- * PRODUCTION BEHAVIOR:
- * 1. Attempts WhatsApp delivery first
- * 2. If WhatsApp fails, automatically falls back to SMS
- * 3. Returns which channel successfully delivered the code
- * 4. User ALWAYS receives a code if either channel works
+ * ENHANCED PRODUCTION BEHAVIOR:
+ * 1. Attempts WhatsApp delivery first with status callback tracking
+ * 2. Returns message SID for delivery status polling
+ * 3. Frontend checks delivery status before showing success
+ * 4. SMS fallback is USER-INITIATED (not automatic)
+ * 5. Clear failure messages with SMS retry option
+ * 
+ * @param {string} phone - Phone number to send verification code to
+ * @param {string} method - Optional: 'whatsapp' (default) or 'sms' (user-selected fallback)
  */
 router.post('/send-verification', async (req, res) => {
   try {
-    const { phone } = req.body;
+    const { phone, method = 'whatsapp' } = req.body;
 
     console.log('📱 Referral verification request received');
+    console.log(`   Requested method: ${method}`);
 
     if (!phone) {
       return res.status(400).json({
-        ok: false,
+        success: false,
         error: 'Phone number is required'
+      });
+    }
+
+    // Validate method parameter
+    if (method !== 'whatsapp' && method !== 'sms') {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid method. Must be "whatsapp" or "sms"'
       });
     }
 
@@ -454,7 +485,7 @@ router.post('/send-verification', async (req, res) => {
       console.error(`   Original phone: <redacted>`);
       console.error(`   Error: ${normalizationResult.error}`);
       return res.status(400).json({
-        ok: false,
+        success: false,
         error: `Invalid phone number format: ${normalizationResult.error}`
       });
     }
@@ -479,73 +510,97 @@ router.post('/send-verification', async (req, res) => {
     });
 
     // Prepare message
-    const message = `Fixlo: Your verification code is ${code}. Valid for 15 minutes. Reply STOP to opt out.`;
+    const messageBody = `Fixlo: Your verification code is ${code}. Valid for 15 minutes. Reply STOP to opt out.`;
 
-    let lastError = null;
+    // Build status callback URL (for production delivery tracking)
+    const baseUrl = process.env.API_BASE_URL || process.env.SERVER_URL || 'https://fixloapp.onrender.com';
+    const statusCallbackUrl = `${baseUrl}/api/referrals/sms-status-callback`;
 
-    // STEP 1: Try WhatsApp first
-    console.log(`   Step 1: Attempting WhatsApp delivery...`);
+    // Send via requested method
     try {
-      const whatsappResult = await sendWhatsAppMessage(normalizedPhone, message);
-      
-      console.log(`✅ WhatsApp verification code sent successfully`);
-      console.log(`   Twilio message SID: ${whatsappResult.sid}`);
-      console.log(`   Phone: ${maskedPhone}`);
-      console.log(`   Channel: WhatsApp`);
+      let result;
+      let channelUsed;
 
-      return res.json({
-        success: true,
-        channelUsed: 'whatsapp',
-        message: 'Verification code sent via WhatsApp'
+      if (method === 'sms') {
+        // User explicitly chose SMS
+        console.log(`   Sending via SMS (user-selected)...`);
+        result = await sendSms(normalizedPhone, messageBody, { statusCallback: statusCallbackUrl });
+        channelUsed = 'sms';
+        
+        console.log(`✅ SMS verification code SEND accepted`);
+        console.log(`   Twilio message SID: ${result.sid}`);
+        console.log(`   Phone: ${maskedPhone}`);
+        console.log(`   Channel: SMS`);
+        
+      } else {
+        // Default: Try WhatsApp
+        console.log(`   Sending via WhatsApp...`);
+        result = await sendWhatsAppMessage(normalizedPhone, messageBody, { statusCallback: statusCallbackUrl });
+        channelUsed = 'whatsapp';
+        
+        console.log(`✅ WhatsApp verification code SEND accepted`);
+        console.log(`   Twilio message SID: ${result.sid}`);
+        console.log(`   Phone: ${maskedPhone}`);
+        console.log(`   Channel: WhatsApp`);
+      }
+
+      // Initialize delivery status tracking
+      deliveryStatuses.set(result.sid, {
+        phone: normalizedPhone,
+        method: channelUsed,
+        status: 'queued', // Initial status
+        errorCode: null,
+        errorMessage: null,
+        timestamp: Date.now()
       });
 
-    } catch (whatsappError) {
-      // WhatsApp failed - log reason and continue to SMS fallback
-      console.warn('⚠️ WhatsApp delivery failed, attempting SMS fallback...');
-      console.warn(`   Phone: ${maskedPhone}`);
-      console.warn(`   WhatsApp error: ${whatsappError.code || whatsappError.message}`);
-      lastError = whatsappError;
-    }
-
-    // STEP 2: Automatic SMS fallback
-    console.log(`   Step 2: Attempting SMS fallback...`);
-    try {
-      const smsResult = await sendSms(normalizedPhone, message);
-
-      console.log(`✅ SMS verification code sent successfully (fallback)`);
-      console.log(`   Twilio message SID: ${smsResult.sid}`);
-      console.log(`   Phone: ${maskedPhone}`);
-      console.log(`   Channel: SMS (fallback from WhatsApp)`);
-
+      // Return success with message SID for status polling
       return res.json({
         success: true,
-        channelUsed: 'sms',
-        message: 'Verification code sent via SMS'
+        channelUsed,
+        messageSid: result.sid,
+        message: `Verification code sent via ${channelUsed}. Waiting for delivery confirmation...`,
+        // Frontend should poll /delivery-status/:messageSid to check delivery
+        pollUrl: `/api/referrals/delivery-status/${result.sid}`
       });
 
-    } catch (smsError) {
-      // Both WhatsApp and SMS failed - this is a critical error
-      console.error('❌ CRITICAL: Both WhatsApp and SMS delivery failed');
+    } catch (error) {
+      // Send failed
+      console.error(`❌ ${method.toUpperCase()} delivery FAILED`);
       console.error(`   Phone: ${maskedPhone}`);
-      console.error(`   WhatsApp error: ${lastError?.code || lastError?.message}`);
-      console.error(`   SMS error: ${smsError.code || smsError.message}`);
+      console.error(`   Error: ${error.message}`);
+      console.error(`   Twilio Error Code: ${error.code || 'N/A'}`);
 
       // Check for configuration errors
-      if (
-        (smsError.message && smsError.message.includes(CONFIGURATION_ERROR_MARKER)) ||
-        (lastError && lastError.message && lastError.message.includes(CONFIGURATION_ERROR_MARKER))
-      ) {
+      if (error.message && error.message.includes(CONFIGURATION_ERROR_MARKER)) {
         return res.status(503).json({
           success: false,
-          error: 'SERVICE_UNAVAILABLE',
-          message: 'Verification service is temporarily unavailable. Please try again later.'
+          channel: method,
+          reason: 'SERVICE_UNAVAILABLE',
+          message: 'Verification service is temporarily unavailable. Please try again later.',
+          suggestion: null
         });
       }
 
-      // Other errors (network, Twilio API, etc.)
+      // WhatsApp-specific errors
+      if (method === 'whatsapp') {
+        // Suggest SMS as fallback
+        return res.json({
+          success: false,
+          channel: 'whatsapp',
+          reason: 'NOT_DELIVERED',
+          errorCode: error.code || null,
+          message: 'WhatsApp could not deliver the message.',
+          suggestion: 'Try SMS instead'
+        });
+      }
+
+      // SMS failed (both channels now exhausted)
       return res.status(500).json({
         success: false,
-        error: 'DELIVERY_FAILED',
+        channel: 'sms',
+        reason: 'DELIVERY_FAILED',
+        errorCode: error.code || null,
         message: 'Unable to send verification code. Please check your phone number and try again.'
       });
     }
@@ -751,6 +806,113 @@ router.get('/me', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Get referral info error:', error);
+    return res.status(500).json({
+      ok: false,
+      error: error.message || 'Server error'
+    });
+  }
+});
+
+/**
+ * Twilio status callback endpoint
+ * POST /api/referrals/sms-status-callback
+ * 
+ * Receives delivery status updates from Twilio for SMS and WhatsApp messages
+ * Status transitions: queued → sending → sent → delivered / failed / undelivered
+ */
+router.post('/sms-status-callback', (req, res) => {
+  try {
+    const {
+      MessageSid,
+      MessageStatus,
+      To,
+      ErrorCode,
+      ErrorMessage,
+      From
+    } = req.body;
+
+    // Determine channel from 'From' field
+    const channel = From && From.includes('whatsapp:') ? 'whatsapp' : 'sms';
+    
+    // Mask phone for logging
+    const maskedPhone = To ? maskPhoneForLogging(To.replace('whatsapp:', '')) : '<unknown>';
+    
+    console.log(`📬 Twilio status callback received`);
+    console.log(`   Message SID: ${MessageSid}`);
+    console.log(`   Status: ${MessageStatus}`);
+    console.log(`   Channel: ${channel}`);
+    console.log(`   To: ${maskedPhone}`);
+    
+    if (ErrorCode || ErrorMessage) {
+      console.error(`   Error Code: ${ErrorCode}`);
+      console.error(`   Error Message: ${ErrorMessage}`);
+    }
+
+    // Update delivery status in memory
+    const existingStatus = deliveryStatuses.get(MessageSid);
+    deliveryStatuses.set(MessageSid, {
+      phone: To ? To.replace('whatsapp:', '') : existingStatus?.phone || '',
+      method: channel,
+      status: MessageStatus,
+      errorCode: ErrorCode || null,
+      errorMessage: ErrorMessage || null,
+      timestamp: Date.now()
+    });
+
+    // Acknowledge receipt to Twilio
+    res.sendStatus(200);
+    
+  } catch (error) {
+    console.error('❌ Error processing Twilio status callback:', error);
+    res.sendStatus(500);
+  }
+});
+
+/**
+ * Check delivery status for a message
+ * GET /api/referrals/delivery-status/:messageSid
+ */
+router.get('/delivery-status/:messageSid', (req, res) => {
+  try {
+    const { messageSid } = req.params;
+    
+    if (!messageSid) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Message SID is required'
+      });
+    }
+
+    const status = deliveryStatuses.get(messageSid);
+    
+    if (!status) {
+      return res.status(404).json({
+        ok: false,
+        error: 'Delivery status not found',
+        messageSid
+      });
+    }
+
+    // Determine if delivery was successful
+    const isDelivered = status.status === 'delivered' || status.status === 'read';
+    const isFailed = status.status === 'failed' || status.status === 'undelivered';
+    const isPending = status.status === 'queued' || status.status === 'sending' || status.status === 'sent';
+
+    return res.json({
+      ok: true,
+      messageSid,
+      status: status.status,
+      method: status.method,
+      isDelivered,
+      isFailed,
+      isPending,
+      errorCode: status.errorCode,
+      errorMessage: status.errorMessage,
+      timestamp: status.timestamp
+    });
+
+  } catch (error) {
+    console.error('❌ Error checking delivery status:', error);
     return res.status(500).json({
       ok: false,
       error: error.message || 'Server error'
