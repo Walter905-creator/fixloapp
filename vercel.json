@@ -199,10 +199,6 @@
   ],
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "https://fixloapp.onrender.com/api/$1"
-    },
-    {
       "source": "/terms",
       "destination": "/terms.html"
     },

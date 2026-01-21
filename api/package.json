@@ -1,0 +1,15 @@
+{
+  "name": "fixlo-api-functions",
+  "version": "1.0.0",
+  "description": "Vercel serverless API functions for Fixlo",
+  "private": true,
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "mongoose": "^8.0.0"
+  },
+  "scripts": {
+    "test": "node ../test-api-endpoints.js http://localhost:3000"
+  }
+}
