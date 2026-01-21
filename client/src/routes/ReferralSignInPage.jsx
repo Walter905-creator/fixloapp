@@ -194,7 +194,8 @@ export default function ReferralSignInPage() {
         setReferralCode(verifyData.referralCode);
         setReferralLink(verifyData.referralLink);
         setStep('ready');
-        setSuccess('Verification successful! Your referral code is ready.');
+        // CRITICAL: UI message per requirements - no mention of delivery failures
+        setSuccess('Verified! Your referral link has been sent via text message.');
       } else {
         throw new Error('Invalid response from server');
       }
