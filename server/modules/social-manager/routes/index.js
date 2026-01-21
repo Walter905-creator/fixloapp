@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { getHandler, getConfiguredPlatforms } = require('../oauth');
-const { SocialAccount, ScheduledPost } = require('../models');
+const { SocialAccount, ScheduledPost, SocialAuditLog } = require('../models');
+const { tokenEncryption } = require('../security');
 const { contentGenerator } = require('../content');
 const scheduler = require('../scheduler');
 const analyticsService = require('../analytics');
@@ -24,28 +25,53 @@ const requireAuth = require('../../middleware/requireAuth');
  * OAuth callback handler for Meta (Facebook/Instagram)
  * This receives the authorization code from Meta and completes the connection
  * 
+ * BACKEND-ONLY IMPLEMENTATION:
+ * This endpoint completes the entire OAuth flow server-side without relying on
+ * the frontend. It exchanges the code for tokens, fetches Page and Instagram info,
+ * stores encrypted tokens in MongoDB, and returns a JSON response.
+ * 
+ * This allows Meta OAuth to work even if:
+ * - Frontend is unavailable
+ * - Admin UI routes are hidden
+ * - Only backend + Meta OAuth are accessible
+ * 
+ * VERIFICATION:
+ * Use GET /api/social/force-status to verify connection status via API
+ * 
  * NOTE: This route MUST remain public - it's called by Meta OAuth service
  */
 router.get('/oauth/meta/callback', async (req, res) => {
   try {
     const { code, state, error, error_description } = req.query;
     
-    // Get client URL with secure default
-    const clientUrl = process.env.CLIENT_URL || (process.env.NODE_ENV === 'production' 
-      ? 'https://www.fixloapp.com' 
-      : 'http://localhost:3000');
+    // DIAGNOSTIC: Log OAuth callback received
+    console.info('[Meta OAuth Backend] Callback received', {
+      hasCode: !!code,
+      hasState: !!state,
+      hasError: !!error,
+      timestamp: new Date().toISOString()
+    });
     
-    // Check for OAuth errors - sanitize error messages
+    // Check for OAuth errors
     if (error) {
-      console.error('[Meta OAuth] OAuth error from Meta:', { error, error_description });
-      // Use safe, generic error message for redirect
-      const safeError = error === 'access_denied' ? 'access_denied' : 'oauth_error';
-      return res.redirect(`${clientUrl}/dashboard/admin/social?error=${safeError}`);
+      console.error('[Meta OAuth Backend] OAuth error from Meta:', { error, error_description });
+      return res.status(400).json({
+        success: false,
+        platform: 'meta',
+        connected: false,
+        error: error === 'access_denied' ? 'User denied access' : 'OAuth error',
+        errorCode: error
+      });
     }
     
     if (!code) {
-      console.error('[Meta OAuth] No authorization code received');
-      return res.redirect(`${clientUrl}/dashboard/admin/social?error=no_code`);
+      console.error('[Meta OAuth Backend] No authorization code received');
+      return res.status(400).json({
+        success: false,
+        platform: 'meta',
+        connected: false,
+        error: 'No authorization code received'
+      });
     }
     
     // Parse state to get ownerId and accountType
@@ -58,47 +84,351 @@ router.get('/oauth/meta/callback', async (req, res) => {
         ownerId = stateData.ownerId || 'admin';
         accountType = stateData.accountType || 'instagram';
       } catch (e) {
-        console.warn('[Meta OAuth] Failed to parse state:', e);
+        console.warn('[Meta OAuth Backend] Failed to parse state:', e);
       }
     }
     
-    console.info('[Meta OAuth] Callback received, processing connection...', {
+    console.info('[Meta OAuth Backend] Processing OAuth connection...', {
       accountType,
-      ownerId,
-      hasCode: !!code
+      ownerId
     });
     
-    // Get the Meta handler and complete connection
+    // Get the Meta handler
     const handler = getHandler('meta_instagram'); // Both Instagram and Facebook use same handler
     
     try {
-      const account = await handler.connect({
-        code,
-        ownerId,
-        accountType
+      // STEP 1: Exchange authorization code for short-lived token
+      console.info('[Meta OAuth Backend] Step 1: Exchanging code for token...');
+      const shortTokenData = await handler.exchangeCodeForToken(code);
+      console.info('[Meta OAuth Backend] Token exchange: SUCCESS');
+      
+      // STEP 2: Exchange for long-lived token (60 days)
+      console.info('[Meta OAuth Backend] Step 2: Getting long-lived token...');
+      const longTokenData = await handler.getLongLivedToken(shortTokenData.access_token);
+      console.info('[Meta OAuth Backend] Long-lived token: SUCCESS', {
+        expiresIn: longTokenData.expires_in
       });
       
-      console.info('[Meta OAuth] Connection successful, redirecting to admin page');
-      // Redirect back to admin page with success
-      return res.redirect(`${clientUrl}/dashboard/admin/social?connected=true&platform=${account.platform}`);
+      // STEP 3: Get complete Page and Instagram information with access tokens
+      console.info('[Meta OAuth Backend] Step 3: Fetching Page and Instagram info...');
+      const metaAccountInfo = await handler.getCompleteMetaAccountInfo(longTokenData.access_token);
+      console.info('[Meta OAuth Backend] Account info fetch: SUCCESS', {
+        hasPage: !!metaAccountInfo.pageId,
+        hasInstagram: metaAccountInfo.hasInstagram,
+        pageName: metaAccountInfo.pageName,
+        instagramUsername: metaAccountInfo.instagramUsername
+      });
+      
+      // STEP 4: Store Page access token (encrypted)
+      console.info('[Meta OAuth Backend] Step 4: Storing encrypted tokens...');
+      const pageTokenStored = await tokenEncryption.storeToken({
+        tokenValue: metaAccountInfo.pageAccessToken,
+        tokenType: 'access',
+        accountRef: null, // Will update after creating account
+        platform: 'meta_facebook',
+        expiresIn: longTokenData.expires_in
+      });
+      
+      // Store Instagram access token if available (uses same token as Page)
+      let instagramTokenStored = null;
+      if (metaAccountInfo.hasInstagram) {
+        instagramTokenStored = await tokenEncryption.storeToken({
+          tokenValue: metaAccountInfo.instagramAccessToken,
+          tokenType: 'access',
+          accountRef: null, // Will update after creating account
+          platform: 'meta_instagram',
+          expiresIn: longTokenData.expires_in
+        });
+      }
+      
+      console.info('[Meta OAuth Backend] Token storage: SUCCESS');
+      
+      // STEP 5: Create or update SocialAccount for Facebook Page
+      let facebookAccount = await SocialAccount.findOne({
+        ownerId,
+        platform: 'meta_facebook',
+        platformAccountId: metaAccountInfo.pageId
+      });
+      
+      if (facebookAccount) {
+        // Update existing account
+        facebookAccount.accessTokenRef = pageTokenStored._id;
+        facebookAccount.tokenExpiresAt = new Date(Date.now() + longTokenData.expires_in * 1000);
+        facebookAccount.isActive = true;
+        facebookAccount.isTokenValid = true;
+        facebookAccount.requiresReauth = false;
+        facebookAccount.platformSettings = {
+          ...facebookAccount.platformSettings,
+          pageId: metaAccountInfo.pageId,
+          pageName: metaAccountInfo.pageName
+        };
+        await facebookAccount.save();
+        console.info('[Meta OAuth Backend] Facebook account updated');
+      } else {
+        // Create new account
+        facebookAccount = new SocialAccount({
+          ownerId,
+          platform: 'meta_facebook',
+          platformAccountId: metaAccountInfo.pageId,
+          platformUsername: metaAccountInfo.pageName,
+          accountName: metaAccountInfo.pageName,
+          profileUrl: `https://facebook.com/${metaAccountInfo.pageId}`,
+          accessTokenRef: pageTokenStored._id,
+          tokenExpiresAt: new Date(Date.now() + longTokenData.expires_in * 1000),
+          platformSettings: {
+            pageId: metaAccountInfo.pageId,
+            pageName: metaAccountInfo.pageName
+          },
+          grantedScopes: ['pages_show_list'],
+          connectedAt: new Date()
+        });
+        await facebookAccount.save();
+        console.info('[Meta OAuth Backend] Facebook account created');
+      }
+      
+      // Update token with account reference
+      pageTokenStored.accountRef = facebookAccount._id;
+      await pageTokenStored.save();
+      
+      // STEP 6: Create or update SocialAccount for Instagram (if available)
+      let instagramAccount = null;
+      if (metaAccountInfo.hasInstagram) {
+        instagramAccount = await SocialAccount.findOne({
+          ownerId,
+          platform: 'meta_instagram',
+          platformAccountId: metaAccountInfo.instagramBusinessId
+        });
+        
+        if (instagramAccount) {
+          // Update existing account
+          instagramAccount.accessTokenRef = instagramTokenStored._id;
+          instagramAccount.tokenExpiresAt = new Date(Date.now() + longTokenData.expires_in * 1000);
+          instagramAccount.isActive = true;
+          instagramAccount.isTokenValid = true;
+          instagramAccount.requiresReauth = false;
+          instagramAccount.platformUsername = metaAccountInfo.instagramUsername;
+          instagramAccount.accountName = metaAccountInfo.instagramName;
+          instagramAccount.profileImageUrl = metaAccountInfo.instagramProfilePicture;
+          instagramAccount.platformSettings = {
+            ...instagramAccount.platformSettings,
+            pageId: metaAccountInfo.pageId,
+            pageName: metaAccountInfo.pageName,
+            instagramBusinessId: metaAccountInfo.instagramBusinessId
+          };
+          await instagramAccount.save();
+          console.info('[Meta OAuth Backend] Instagram account updated');
+        } else {
+          // Create new account
+          instagramAccount = new SocialAccount({
+            ownerId,
+            platform: 'meta_instagram',
+            platformAccountId: metaAccountInfo.instagramBusinessId,
+            platformUsername: metaAccountInfo.instagramUsername,
+            accountName: metaAccountInfo.instagramName,
+            profileUrl: `https://instagram.com/${metaAccountInfo.instagramUsername}`,
+            profileImageUrl: metaAccountInfo.instagramProfilePicture,
+            accessTokenRef: instagramTokenStored._id,
+            tokenExpiresAt: new Date(Date.now() + longTokenData.expires_in * 1000),
+            platformSettings: {
+              pageId: metaAccountInfo.pageId,
+              pageName: metaAccountInfo.pageName,
+              instagramBusinessId: metaAccountInfo.instagramBusinessId
+            },
+            grantedScopes: ['pages_show_list'],
+            connectedAt: new Date()
+          });
+          await instagramAccount.save();
+          console.info('[Meta OAuth Backend] Instagram account created');
+        }
+        
+        // Update token with account reference
+        instagramTokenStored.accountRef = instagramAccount._id;
+        await instagramTokenStored.save();
+      }
+      
+      // STEP 7: Log successful connection
+      await SocialAuditLog.logAction({
+        actorId: ownerId,
+        actorType: 'admin',
+        action: 'connect_account',
+        status: 'success',
+        description: `Connected Meta accounts via backend-only OAuth: Facebook Page "${metaAccountInfo.pageName}"${metaAccountInfo.hasInstagram ? ` + Instagram @${metaAccountInfo.instagramUsername}` : ''}`,
+        platform: 'meta_facebook'
+      });
+      
+      console.info('[Meta OAuth Backend] CONNECTION COMPLETE', {
+        facebookConnected: true,
+        instagramConnected: metaAccountInfo.hasInstagram,
+        pageId: metaAccountInfo.pageId,
+        instagramBusinessId: metaAccountInfo.instagramBusinessId,
+        connectedAt: facebookAccount.connectedAt,
+        connectedBy: ownerId
+      });
+      
+      // STEP 8: Return JSON response (NO frontend redirect)
+      return res.status(200).json({
+        success: true,
+        platform: 'meta',
+        connected: true,
+        facebookConnected: true,
+        instagramConnected: metaAccountInfo.hasInstagram,
+        pageId: metaAccountInfo.pageId,
+        pageName: metaAccountInfo.pageName,
+        instagramBusinessId: metaAccountInfo.instagramBusinessId,
+        instagramUsername: metaAccountInfo.instagramUsername,
+        connectedAt: facebookAccount.connectedAt,
+        message: `Successfully connected Meta accounts: Facebook Page "${metaAccountInfo.pageName}"${metaAccountInfo.hasInstagram ? ` + Instagram @${metaAccountInfo.instagramUsername}` : ''}`
+      });
       
     } catch (connectError) {
-      console.error('[Meta OAuth] Connection failed:', connectError);
+      console.error('[Meta OAuth Backend] Connection failed:', {
+        error: connectError.message,
+        reason: connectError.reason,
+        stack: connectError.stack
+      });
       
-      // Get failure reason if available - use only predefined safe reason codes
-      const safeReasons = ['NO_PAGES', 'NO_PAGE_TOKEN', 'NO_IG_BUSINESS', 'APP_NOT_LIVE', 'UNKNOWN'];
-      const reason = safeReasons.includes(connectError.reason) ? connectError.reason : 'UNKNOWN';
+      // Log failure
+      await SocialAuditLog.logAction({
+        actorId: ownerId,
+        actorType: 'admin',
+        action: 'connect_account',
+        status: 'failure',
+        description: `Failed to connect Meta account via backend OAuth: ${connectError.message}`,
+        platform: 'meta_facebook',
+        errorMessage: connectError.message
+      });
       
-      // Redirect back to admin page with safe error code only (no message)
-      return res.redirect(`${clientUrl}/dashboard/admin/social?reason=${reason}`);
+      return res.status(500).json({
+        success: false,
+        platform: 'meta',
+        connected: false,
+        error: connectError.message,
+        reason: connectError.reason || 'UNKNOWN'
+      });
     }
     
   } catch (error) {
-    console.error('[Meta OAuth] Callback handler error:', error);
-    const clientUrl = process.env.CLIENT_URL || (process.env.NODE_ENV === 'production' 
-      ? 'https://www.fixloapp.com' 
-      : 'http://localhost:3000');
-    return res.redirect(`${clientUrl}/dashboard/admin/social?error=internal_error`);
+    console.error('[Meta OAuth Backend] Callback handler error:', {
+      error: error.message,
+      stack: error.stack
+    });
+    
+    return res.status(500).json({
+      success: false,
+      platform: 'meta',
+      connected: false,
+      error: 'Internal server error during OAuth callback'
+    });
+  }
+});
+
+/**
+ * GET /api/social/force-status
+ * Get Meta (Facebook + Instagram) connection status
+ * 
+ * This endpoint provides a way to verify Meta OAuth connections via API
+ * without requiring frontend access. Useful for:
+ * - Verifying successful OAuth completion
+ * - Checking connection status when frontend is unavailable
+ * - Monitoring/debugging connection issues
+ * 
+ * NOTE: This route is public (no auth required) as it only returns
+ * connection status without exposing sensitive data (tokens are never returned)
+ * 
+ * SECURITY: ownerId is restricted to 'admin' by default. In production,
+ * this endpoint should require authentication if you need to check status
+ * for different users.
+ * 
+ * RESPONSE FORMAT:
+ * {
+ *   success: true,
+ *   facebookConnected: boolean,
+ *   instagramConnected: boolean,
+ *   pageId: string | null,
+ *   pageName: string | null,
+ *   instagramBusinessId: string | null,
+ *   instagramUsername: string | null,
+ *   connectedAt: date | null,
+ *   isTokenValid: boolean
+ * }
+ */
+router.get('/force-status', async (req, res) => {
+  try {
+    // SECURITY: Only allow checking status for 'admin' owner
+    // To support multiple users, add authentication and use req.user.id
+    let ownerId = 'admin';
+    
+    // Only allow override in development mode for testing
+    if (process.env.NODE_ENV !== 'production' && req.query.ownerId) {
+      // Validate ownerId format (alphanumeric and underscore only)
+      if (/^[a-zA-Z0-9_-]+$/.test(req.query.ownerId)) {
+        ownerId = req.query.ownerId;
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid ownerId format'
+        });
+      }
+    }
+    
+    console.info('[Meta Force Status] Checking connection status for ownerId:', ownerId);
+    
+    // Find Facebook Page account
+    const facebookAccount = await SocialAccount.findOne({
+      ownerId,
+      platform: 'meta_facebook',
+      isActive: true
+    }).sort({ connectedAt: -1 }); // Get most recent
+    
+    // Find Instagram account
+    const instagramAccount = await SocialAccount.findOne({
+      ownerId,
+      platform: 'meta_instagram',
+      isActive: true
+    }).sort({ connectedAt: -1 }); // Get most recent
+    
+    // Build response with explicit null checks for better readability
+    const pageId = facebookAccount?.platformSettings?.pageId || null;
+    const pageName = facebookAccount?.platformSettings?.pageName || facebookAccount?.accountName || null;
+    const instagramBusinessId = instagramAccount?.platformSettings?.instagramBusinessId || instagramAccount?.platformAccountId || null;
+    const instagramUsername = instagramAccount?.platformUsername || null;
+    const connectedAt = facebookAccount?.connectedAt || instagramAccount?.connectedAt || null;
+    const isTokenValid = (facebookAccount?.isTokenValid || instagramAccount?.isTokenValid) || false;
+    const tokenExpiresAt = facebookAccount?.tokenExpiresAt || instagramAccount?.tokenExpiresAt || null;
+    
+    const response = {
+      success: true,
+      facebookConnected: !!facebookAccount,
+      instagramConnected: !!instagramAccount,
+      pageId,
+      pageName,
+      instagramBusinessId,
+      instagramUsername,
+      connectedAt,
+      isTokenValid,
+      tokenExpiresAt
+    };
+    
+    console.info('[Meta Force Status] Status check complete:', {
+      facebookConnected: response.facebookConnected,
+      instagramConnected: response.instagramConnected,
+      pageId: response.pageId,
+      instagramBusinessId: response.instagramBusinessId
+    });
+    
+    res.json(response);
+    
+  } catch (error) {
+    console.error('[Meta Force Status] Error checking status:', {
+      error: error.message,
+      stack: error.stack
+    });
+    
+    res.status(500).json({
+      success: false,
+      error: 'Failed to check connection status',
+      message: error.message
+    });
   }
 });
 
