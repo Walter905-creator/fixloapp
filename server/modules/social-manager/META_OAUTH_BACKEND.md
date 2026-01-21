@@ -157,6 +157,10 @@ SOCIAL_META_REDIRECT_URI=https://api.fixloapp.com/api/social/oauth/meta/callback
 
 # Client URL for fallback
 CLIENT_URL=https://www.fixloapp.com
+
+# Preferred Facebook Page name for selection (defaults to "fixlo")
+# When multiple Pages exist, the system will prefer pages containing this string
+SOCIAL_META_PREFERRED_PAGE=fixlo
 ```
 
 ## Verification
@@ -284,7 +288,9 @@ OAuth callback (called by Meta)
 Check connection status
 
 **Query Parameters:**
-- `ownerId` - Optional owner ID (defaults to "admin")
+- `ownerId` - Optional owner ID
+  - **Production:** Restricted to 'admin' only for security
+  - **Development:** Can be customized for testing (alphanumeric and underscore/dash only)
 
 **Response:**
 ```json
@@ -301,6 +307,9 @@ Check connection status
   "tokenExpiresAt": date | null
 }
 ```
+
+**Security Note:**  
+In production, this endpoint only checks status for the 'admin' owner. To support multiple users, add authentication middleware and use the authenticated user's ID.
 
 ## Migration Notes
 
