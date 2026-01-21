@@ -48,9 +48,10 @@ function isUSPhoneNumber(phone) {
  * 
  * @param {string} to - Phone number (will be normalized to E.164)
  * @param {string} body - SMS message body (DO NOT include verification codes in logs)
+ * @param {object} options - Optional settings { statusCallback: URL }
  * @returns {Promise<object>} - Twilio message response
  */
-async function sendSms(to, body) {
+async function sendSms(to, body, options = {}) {
   const cli = getTwilioClient();
   // Support both TWILIO_PHONE_NUMBER and TWILIO_PHONE for backward compatibility
   const from = process.env.TWILIO_PHONE_NUMBER || process.env.TWILIO_PHONE;
@@ -96,11 +97,19 @@ async function sendSms(to, body) {
   console.log(`   Mode: ${isDemoMode ? 'DEMO' : 'PRODUCTION'}`);
 
   try {
-    const message = await cli.messages.create({
+    const messageParams = {
       to: toE164,
       from,
       body,
-    });
+    };
+
+    // Add status callback if provided
+    if (options.statusCallback) {
+      messageParams.statusCallback = options.statusCallback;
+      console.log(`   Status callback URL: ${options.statusCallback}`);
+    }
+
+    const message = await cli.messages.create(messageParams);
 
     console.log(`✅ SMS sent successfully to ${toE164}`);
     console.log(`   Message SID: ${message.sid}`);
@@ -120,9 +129,10 @@ async function sendSms(to, body) {
  * 
  * @param {string} to - Phone number (will be normalized to E.164)
  * @param {string|object} templateDataOrMessage - Message body or template data
+ * @param {object} options - Optional settings { statusCallback: URL }
  * @returns {Promise<object>} - Twilio message response
  */
-async function sendWhatsAppMessage(to, templateDataOrMessage = {}) {
+async function sendWhatsAppMessage(to, templateDataOrMessage = {}, options = {}) {
   const cli = getTwilioClient();
   const whatsappNumber = process.env.TWILIO_WHATSAPP_NUMBER;
   const isDemoMode = process.env.NODE_ENV !== 'production';
@@ -187,11 +197,19 @@ Log in to your Fixlo account to view details and contact the customer.`;
   }
 
   try {
-    const message = await cli.messages.create({
+    const messageParams = {
       to: toWhatsApp,
       from,
       body,
-    });
+    };
+
+    // Add status callback if provided
+    if (options.statusCallback) {
+      messageParams.statusCallback = options.statusCallback;
+      console.log(`   Status callback URL: ${options.statusCallback}`);
+    }
+
+    const message = await cli.messages.create(messageParams);
 
     console.log(`✅ WhatsApp sent successfully to ${toWhatsApp}`);
     console.log(`   Message SID: ${message.sid}`);
@@ -200,6 +218,7 @@ Log in to your Fixlo account to view details and contact the customer.`;
   } catch (err) {
     console.error(`❌ WhatsApp delivery failed to ${toWhatsApp}`);
     console.error(`   Error: ${err.message}`);
+    console.error(`   Twilio Error Code: ${err.code || 'N/A'}`);
     console.error(`   Mode: ${isDemoMode ? 'DEMO' : 'PRODUCTION'}`);
     throw err;
   }
