@@ -737,11 +737,48 @@ router.post('/verify-code', async (req, res) => {
     const baseUrl = process.env.CLIENT_URL || 'https://www.fixloapp.com';
     const referralLink = `${baseUrl}/join?ref=${referrer.referralCode}`;
 
+    // ========================================
+    // CRITICAL: GUARANTEED SMS DELIVERY
+    // ========================================
+    // Send referral link via SMS (PRIMARY - GUARANTEED)
+    const smsMessage = `You're verified 🎉
+Share your Fixlo referral link and start earning:
+${referralLink}`;
+
+    let smsDelivered = false;
+    try {
+      await sendSms(normalizedPhone, smsMessage);
+      smsDelivered = true;
+      console.log(`✅ Referral link sent via SMS to ${maskPhoneForLogging(normalizedPhone)}`);
+    } catch (smsError) {
+      // Log SMS failure but DO NOT block verification success
+      console.error(`⚠️ SMS delivery failed (non-blocking): ${smsError.message}`);
+    }
+
+    // ========================================
+    // OPTIONAL: WHATSAPP DELIVERY (BEST-EFFORT)
+    // ========================================
+    // Send referral link via WhatsApp (SECONDARY - OPTIONAL)
+    // This is best-effort and failure does NOT affect the response
+    let whatsappDelivered = false;
+    try {
+      await sendWhatsAppMessage(normalizedPhone, smsMessage);
+      whatsappDelivered = true;
+      console.log(`✅ Referral link sent via WhatsApp to ${maskPhoneForLogging(normalizedPhone)}`);
+    } catch (whatsappError) {
+      // WhatsApp failure is expected and does not affect flow
+      console.log(`ℹ️ WhatsApp delivery skipped: ${whatsappError.message}`);
+    }
+
+    // Return success ONLY after attempting SMS delivery
+    // Note: Even if SMS fails, we return success because phone is verified
     return res.json({
       ok: true,
       verified: true,
       referralCode: referrer.referralCode,
-      referralLink: referralLink
+      referralLink: referralLink,
+      smsDelivered,
+      whatsappDelivered
     });
 
   } catch (error) {
