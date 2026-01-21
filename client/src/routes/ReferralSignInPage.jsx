@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE } from '../utils/config';
 import HelmetSEO from '../seo/HelmetSEO';
@@ -13,6 +13,10 @@ import { useReferralAuth } from '../context/ReferralAuthContext';
  * - Redirects to /earn after successful login
  * - Separate from Pro authentication flow
  */
+
+// Constants
+const MAX_POLL_ATTEMPTS = 10; // Poll for 10 seconds (10 attempts x 1 second)
+const POLL_INTERVAL_MS = 1000; // Poll every 1 second
 
 export default function ReferralSignInPage() {
   const navigate = useNavigate();
@@ -31,8 +35,20 @@ export default function ReferralSignInPage() {
   const [deliveryStatus, setDeliveryStatus] = useState(''); // Track delivery status
   const [selectedMethod, setSelectedMethod] = useState('whatsapp'); // Default to WhatsApp
 
+  // Ref to store polling interval for cleanup
+  const pollIntervalRef = useRef(null);
+
   // Get redirect path from query params or default to /earn
   const from = location.state?.from?.pathname || '/earn';
+
+  // Cleanup polling interval on unmount
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+    };
+  }, []);
 
   const handlePhoneSubmit = async (e) => {
     e.preventDefault();
@@ -88,9 +104,13 @@ export default function ReferralSignInPage() {
       
       // Poll for delivery status
       let pollAttempts = 0;
-      const maxPollAttempts = 10; // Poll for 10 seconds (10 attempts x 1 second)
       
-      const pollInterval = setInterval(async () => {
+      // Clear any existing polling interval
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+      
+      pollIntervalRef.current = setInterval(async () => {
         pollAttempts++;
         
         try {
@@ -99,14 +119,16 @@ export default function ReferralSignInPage() {
           
           if (statusData.ok && statusData.isDelivered) {
             // SUCCESS: Message delivered
-            clearInterval(pollInterval);
+            clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
             setDeliveryStatus('delivered');
             setSuccess(`✅ Code sent via ${channel.toUpperCase()}! Check your ${channel === 'whatsapp' ? 'WhatsApp' : 'text'} messages.`);
             setStep('verify');
             setLoading(false);
           } else if (statusData.ok && statusData.isFailed) {
             // FAILED: Message failed to deliver
-            clearInterval(pollInterval);
+            clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
             setDeliveryStatus('failed');
             
             if (channel === 'whatsapp') {
@@ -117,9 +139,10 @@ export default function ReferralSignInPage() {
             }
             
             setLoading(false);
-          } else if (pollAttempts >= maxPollAttempts) {
-            // TIMEOUT: No delivery confirmation within 10 seconds
-            clearInterval(pollInterval);
+          } else if (pollAttempts >= MAX_POLL_ATTEMPTS) {
+            // TIMEOUT: No delivery confirmation within timeout period
+            clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
             setDeliveryStatus('timeout');
             
             if (channel === 'whatsapp') {
@@ -136,7 +159,7 @@ export default function ReferralSignInPage() {
           console.error('Delivery status poll error:', pollError);
           // Continue polling - don't fail on single poll error
         }
-      }, 1000); // Poll every 1 second
+      }, POLL_INTERVAL_MS);
       
     } catch (err) {
       console.error('Phone submission error:', err);

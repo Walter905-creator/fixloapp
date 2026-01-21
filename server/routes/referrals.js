@@ -498,27 +498,16 @@ router.post('/send-verification', async (req, res) => {
     console.log(`   Original phone input: <redacted>`);
     console.log(`   Normalized phone: ${maskedPhone}`);
 
-    // Generate 6-digit verification code (or reuse existing if within 15 minutes)
-    let code;
-    const existingCode = verificationCodes.get(normalizedPhone);
-    
-    if (existingCode && existingCode.expires > Date.now()) {
-      // Reuse existing code if user retries within 15 minutes
-      code = null; // We don't store plaintext, so generate new one
-      console.log(`   Reusing verification session for ${maskedPhone}`);
-    }
-    
-    if (!code) {
-      code = Math.floor(100000 + Math.random() * 900000).toString();
-      const hashedCode = crypto.createHash('sha256').update(code).digest('hex');
-      
-      // Store verification code with 15-minute expiration
-      const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
-      verificationCodes.set(normalizedPhone, {
-        code: hashedCode,
-        expires: expiresAt
-      });
-    }
+    // Generate 6-digit verification code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedCode = crypto.createHash('sha256').update(code).digest('hex');
+
+    // Store verification code with 15-minute expiration
+    const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
+    verificationCodes.set(normalizedPhone, {
+      code: hashedCode,
+      expires: expiresAt
+    });
 
     // Prepare message
     const messageBody = `Fixlo: Your verification code is ${code}. Valid for 15 minutes. Reply STOP to opt out.`;
