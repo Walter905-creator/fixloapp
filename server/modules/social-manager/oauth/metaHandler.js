@@ -209,6 +209,120 @@ class MetaOAuthHandler {
   }
   
   /**
+   * Get complete Facebook Page and Instagram account information with access tokens
+   * This is used for backend-only OAuth completion without frontend
+   * @param {string} userAccessToken - Long-lived user access token
+   * @returns {Promise<Object>} - Complete page and Instagram info with tokens
+   */
+  async getCompleteMetaAccountInfo(userAccessToken) {
+    try {
+      // Step 1: Get user's Facebook Pages with access tokens
+      console.info('[Meta OAuth] Fetching Facebook Pages with access tokens...');
+      const pagesResponse = await axios.get(`${this.graphApiUrl}/me/accounts`, {
+        params: {
+          access_token: userAccessToken,
+          fields: 'id,name,access_token,instagram_business_account'
+        }
+      });
+      
+      const pages = pagesResponse.data.data;
+      
+      // Check if any pages exist
+      if (!pages || pages.length === 0) {
+        throw new Error(ERROR_MESSAGES[ERROR_REASONS.NO_PAGES]);
+      }
+      
+      console.info('[Meta OAuth] Pages found:', {
+        count: pages.length,
+        pageNames: pages.map(p => p.name)
+      });
+      
+      // Step 2: Select the appropriate page
+      // Try to find "Fixlo" page first, otherwise use first page (or only page)
+      let selectedPage = pages.find(p => 
+        p.name && p.name.toLowerCase().includes('fixlo')
+      );
+      
+      if (!selectedPage) {
+        selectedPage = pages[0];
+        console.info('[Meta OAuth] No Fixlo page found, using first page:', selectedPage.name);
+      } else {
+        console.info('[Meta OAuth] Selected Fixlo page:', selectedPage.name);
+      }
+      
+      // Verify Page has access token
+      if (!selectedPage.access_token) {
+        console.error('[Meta OAuth] Page access token not available - app may not be in Live mode');
+        throw new Error(ERROR_MESSAGES[ERROR_REASONS.NO_PAGE_TOKEN]);
+      }
+      
+      // Step 3: Get Instagram Business Account if linked
+      let instagramInfo = null;
+      
+      if (selectedPage.instagram_business_account) {
+        console.info('[Meta OAuth] Fetching Instagram Business Account details...');
+        try {
+          const igResponse = await axios.get(
+            `${this.graphApiUrl}/${selectedPage.instagram_business_account.id}`,
+            {
+              params: {
+                // Use Page access token for Instagram API calls
+                access_token: selectedPage.access_token,
+                fields: 'id,username,name,profile_picture_url'
+              }
+            }
+          );
+          
+          instagramInfo = {
+            instagramBusinessId: igResponse.data.id,
+            instagramUsername: igResponse.data.username,
+            instagramName: igResponse.data.name,
+            instagramProfilePicture: igResponse.data.profile_picture_url,
+            // Instagram uses the Page access token for API calls
+            instagramAccessToken: selectedPage.access_token
+          };
+          
+          console.info('[Meta OAuth] Instagram Business Account found:', {
+            username: instagramInfo.instagramUsername,
+            id: instagramInfo.instagramBusinessId
+          });
+        } catch (igError) {
+          console.error('[Meta OAuth] Failed to fetch Instagram account details:', {
+            error: igError.message,
+            pageId: selectedPage.id
+          });
+          throw new Error(ERROR_MESSAGES[ERROR_REASONS.NO_IG_BUSINESS]);
+        }
+      } else {
+        console.warn('[Meta OAuth] No Instagram Business Account linked to selected page');
+      }
+      
+      // Step 4: Return complete information
+      return {
+        // Facebook Page info
+        pageId: selectedPage.id,
+        pageName: selectedPage.name,
+        pageAccessToken: selectedPage.access_token,
+        
+        // Instagram info (may be null if not linked)
+        ...instagramInfo,
+        
+        // Metadata
+        hasInstagram: !!instagramInfo,
+        selectedPageName: selectedPage.name,
+        totalPagesAvailable: pages.length
+      };
+      
+    } catch (error) {
+      // Preserve original error message if it's one of our constants
+      if (Object.values(ERROR_MESSAGES).includes(error.message)) {
+        throw error;
+      }
+      throw new Error(`Failed to get Meta account info: ${error.response?.data?.error?.message || error.message}`);
+    }
+  }
+  
+  /**
    * Get Facebook Page info
    * @param {string} accessToken - User access token
    * @param {string} pageId - Optional specific page ID
