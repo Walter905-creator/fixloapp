@@ -1,0 +1,89 @@
+VERCEL ROUTING CONFIGURATION - vercel.json
+===========================================
+
+CRITICAL ROUTE PRIORITY RULES:
+-------------------------------
+
+1. API routes must be processed BEFORE the SPA fallback
+2. The catch-all rewrite pattern MUST exclude /api/* paths
+3. Static files are served directly from the build output
+
+CURRENT CONFIGURATION:
+---------------------
+
+The key rewrite in vercel.json is:
+
+    {
+      "source": "/((?!api).*)",
+      "destination": "/index.html"
+    }
+
+This regex pattern "/((?!api).*)" means:
+- Match any path that does NOT start with "api"
+- Negative lookahead (?!api) excludes /api/* paths
+- Everything else falls through to /index.html (SPA fallback)
+
+HOW REQUESTS ARE PROCESSED:
+---------------------------
+
+Request to /api/ping:
+  1. Does NOT match "/((?!api).*)" because it starts with "api"
+  2. Falls through to Vercel's automatic serverless function routing
+  3. Executes /api/ping.js serverless function
+  4. Returns JSON response
+
+Request to /about:
+  1. MATCHES "/((?!api).*)" because it does NOT start with "api"
+  2. Rewritten to /index.html
+  3. React app loads and handles client-side routing
+  4. Shows the About page
+
+WHY THIS WORKS:
+--------------
+
+Vercel processes requests in this order:
+1. Check /api/* directory for serverless functions (highest priority)
+2. Apply redirects from vercel.json
+3. Apply rewrites from vercel.json (our regex is here)
+4. Serve static files from build output
+5. Return 404 if nothing matches
+
+By using the negative lookahead, we ensure /api/* paths skip the 
+rewrite step and go directly to serverless function execution.
+
+TESTING:
+-------
+
+Test API endpoint:
+  curl -i https://fixloapp.com/api/ping
+  
+  Should return:
+  - HTTP 200
+  - Content-Type: application/json
+  - JSON body with status information
+
+Test SPA fallback:
+  curl -i https://fixloapp.com/about
+  
+  Should return:
+  - HTTP 200
+  - Content-Type: text/html
+  - HTML with React app container
+
+TROUBLESHOOTING:
+---------------
+
+If /api/ping returns HTML instead of JSON:
+- Check vercel.json has the correct regex pattern
+- Verify no other rewrites are catching /api/*
+- Ensure /api/ping.js exists in the repository
+- Redeploy to Vercel
+
+REFERENCES:
+----------
+
+- VERCEL_API_ROUTING.md - Detailed documentation
+- /api/README.md - API endpoint documentation
+- vercel.json - Configuration file
+
+Last Updated: 2026-01-21

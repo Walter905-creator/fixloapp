@@ -261,7 +261,7 @@
       "destination": "/sms-optin/index.html"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!api).*)",
       "destination": "/index.html"
     }
   ],
