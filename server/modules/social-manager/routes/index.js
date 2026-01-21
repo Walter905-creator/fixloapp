@@ -335,6 +335,10 @@ router.get('/oauth/meta/callback', async (req, res) => {
  * NOTE: This route is public (no auth required) as it only returns
  * connection status without exposing sensitive data (tokens are never returned)
  * 
+ * SECURITY: ownerId is restricted to 'admin' by default. In production,
+ * this endpoint should require authentication if you need to check status
+ * for different users.
+ * 
  * RESPONSE FORMAT:
  * {
  *   success: true,
@@ -350,8 +354,22 @@ router.get('/oauth/meta/callback', async (req, res) => {
  */
 router.get('/force-status', async (req, res) => {
   try {
-    // Get default owner ID (in production, this could be from query param if needed)
-    const ownerId = req.query.ownerId || 'admin';
+    // SECURITY: Only allow checking status for 'admin' owner
+    // To support multiple users, add authentication and use req.user.id
+    let ownerId = 'admin';
+    
+    // Only allow override in development mode for testing
+    if (process.env.NODE_ENV !== 'production' && req.query.ownerId) {
+      // Validate ownerId format (alphanumeric and underscore only)
+      if (/^[a-zA-Z0-9_-]+$/.test(req.query.ownerId)) {
+        ownerId = req.query.ownerId;
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid ownerId format'
+        });
+      }
+    }
     
     console.info('[Meta Force Status] Checking connection status for ownerId:', ownerId);
     
@@ -369,18 +387,26 @@ router.get('/force-status', async (req, res) => {
       isActive: true
     }).sort({ connectedAt: -1 }); // Get most recent
     
-    // Build response
+    // Build response with explicit null checks for better readability
+    const pageId = facebookAccount?.platformSettings?.pageId || null;
+    const pageName = facebookAccount?.platformSettings?.pageName || facebookAccount?.accountName || null;
+    const instagramBusinessId = instagramAccount?.platformSettings?.instagramBusinessId || instagramAccount?.platformAccountId || null;
+    const instagramUsername = instagramAccount?.platformUsername || null;
+    const connectedAt = facebookAccount?.connectedAt || instagramAccount?.connectedAt || null;
+    const isTokenValid = (facebookAccount?.isTokenValid || instagramAccount?.isTokenValid) || false;
+    const tokenExpiresAt = facebookAccount?.tokenExpiresAt || instagramAccount?.tokenExpiresAt || null;
+    
     const response = {
       success: true,
       facebookConnected: !!facebookAccount,
       instagramConnected: !!instagramAccount,
-      pageId: facebookAccount?.platformSettings?.pageId || null,
-      pageName: facebookAccount?.platformSettings?.pageName || facebookAccount?.accountName || null,
-      instagramBusinessId: instagramAccount?.platformSettings?.instagramBusinessId || instagramAccount?.platformAccountId || null,
-      instagramUsername: instagramAccount?.platformUsername || null,
-      connectedAt: facebookAccount?.connectedAt || instagramAccount?.connectedAt || null,
-      isTokenValid: facebookAccount?.isTokenValid || instagramAccount?.isTokenValid || false,
-      tokenExpiresAt: facebookAccount?.tokenExpiresAt || instagramAccount?.tokenExpiresAt || null
+      pageId,
+      pageName,
+      instagramBusinessId,
+      instagramUsername,
+      connectedAt,
+      isTokenValid,
+      tokenExpiresAt
     };
     
     console.info('[Meta Force Status] Status check complete:', {

@@ -57,6 +57,10 @@ class MetaOAuthHandler {
     this.tokenUrl = 'https://graph.facebook.com/v18.0/oauth/access_token';
     this.graphApiUrl = 'https://graph.facebook.com/v18.0';
     
+    // Page selection preference (configurable via environment)
+    // When multiple pages exist, prefer pages containing this string in their name
+    this.preferredPageName = process.env.SOCIAL_META_PREFERRED_PAGE || 'fixlo';
+    
     // Debug info storage
     this.lastOAuthAttempt = null;
   }
@@ -238,16 +242,16 @@ class MetaOAuthHandler {
       });
       
       // Step 2: Select the appropriate page
-      // Try to find "Fixlo" page first, otherwise use first page (or only page)
+      // Try to find preferred page first (configurable), otherwise use first page (or only page)
       let selectedPage = pages.find(p => 
-        p.name && p.name.toLowerCase().includes('fixlo')
+        p.name && p.name.toLowerCase().includes(this.preferredPageName.toLowerCase())
       );
       
       if (!selectedPage) {
         selectedPage = pages[0];
-        console.info('[Meta OAuth] No Fixlo page found, using first page:', selectedPage.name);
+        console.info(`[Meta OAuth] No '${this.preferredPageName}' page found, using first page:`, selectedPage.name);
       } else {
-        console.info('[Meta OAuth] Selected Fixlo page:', selectedPage.name);
+        console.info(`[Meta OAuth] Selected '${this.preferredPageName}' page:`, selectedPage.name);
       }
       
       // Verify Page has access token
