@@ -22,6 +22,13 @@ const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
 // Constants for error detection
 const CONFIGURATION_ERROR_MARKER = 'CONFIGURATION_INVALID';
 
+// SMS message templates
+const SMS_TEMPLATES = {
+  REFERRAL_LINK: (referralLink) => `You're verified 🎉
+Share your Fixlo referral link and start earning:
+${referralLink}`
+};
+
 // Anti-fraud configuration
 const ANTI_FRAUD_CONFIG = {
   MAX_REFERRALS_PER_IP_PER_DAY: process.env.MAX_REFERRALS_PER_IP || 3,
@@ -741,9 +748,7 @@ router.post('/verify-code', async (req, res) => {
     // CRITICAL: GUARANTEED SMS DELIVERY
     // ========================================
     // Send referral link via SMS (PRIMARY - GUARANTEED)
-    const smsMessage = `You're verified 🎉
-Share your Fixlo referral link and start earning:
-${referralLink}`;
+    const smsMessage = SMS_TEMPLATES.REFERRAL_LINK(referralLink);
 
     let smsDelivered = false;
     try {
