@@ -633,7 +633,7 @@ router.post('/verify-code', async (req, res) => {
 
     if (!phone || !code) {
       return res.status(400).json({
-        ok: false,
+        success: false,
         error: 'Phone number and verification code are required'
       });
     }
@@ -643,7 +643,7 @@ router.post('/verify-code', async (req, res) => {
 
     if (!normalizationResult.success) {
       return res.status(400).json({
-        ok: false,
+        success: false,
         error: 'Invalid phone number format'
       });
     }
@@ -655,7 +655,7 @@ router.post('/verify-code', async (req, res) => {
     if (!storedData) {
       console.warn('⚠️ Verification attempt with no code sent');
       return res.status(400).json({
-        ok: false,
+        success: false,
         error: 'No verification code found. Please request a new code.'
       });
     }
@@ -665,7 +665,7 @@ router.post('/verify-code', async (req, res) => {
       verificationCodes.delete(normalizedPhone);
       console.warn('⚠️ Verification code expired');
       return res.status(400).json({
-        ok: false,
+        success: false,
         error: 'Verification code has expired. Please request a new code.'
       });
     }
@@ -676,7 +676,7 @@ router.post('/verify-code', async (req, res) => {
     if (hashedInputCode !== storedData.code) {
       console.warn('⚠️ Invalid verification code attempt');
       return res.status(400).json({
-        ok: false,
+        success: false,
         error: 'Invalid verification code. Please try again.'
       });
     }
@@ -718,7 +718,7 @@ router.post('/verify-code', async (req, res) => {
 
       if (attempts >= maxAttempts) {
         return res.status(500).json({
-          ok: false,
+          success: false,
           error: 'Failed to generate unique referral code'
         });
       }
@@ -802,7 +802,7 @@ router.post('/verify-code', async (req, res) => {
   } catch (error) {
     console.error('❌ Verify code error:', error);
     return res.status(500).json({
-      ok: false,
+      success: false,
       error: error.message || 'Server error'
     });
   }
