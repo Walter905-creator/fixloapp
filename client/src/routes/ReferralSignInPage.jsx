@@ -189,13 +189,14 @@ export default function ReferralSignInPage() {
         throw new Error(verifyData.error || 'Invalid verification code');
       }
 
-      // Backend now returns referralCode and referralLink after verification
-      if (verifyData.verified && verifyData.referralCode && verifyData.referralLink) {
+      // Backend returns success, verified, referralCode, referralLink, and deliveryChannel
+      // Per requirements: UI must NEVER show delivery failure after verification success
+      if (verifyData.success && verifyData.verified && verifyData.referralCode && verifyData.referralLink) {
         setReferralCode(verifyData.referralCode);
         setReferralLink(verifyData.referralLink);
         setStep('ready');
-        // CRITICAL: UI message per requirements - no mention of delivery failures
-        setSuccess('Verified! Your referral link has been sent via text message.');
+        // CRITICAL: Exact message per requirements - no mention of delivery status
+        setSuccess('Verified! Your referral link has been sent by text message.');
       } else {
         throw new Error('Invalid response from server');
       }

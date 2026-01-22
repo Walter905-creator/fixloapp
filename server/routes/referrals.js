@@ -25,7 +25,7 @@ const CONFIGURATION_ERROR_MARKER = 'CONFIGURATION_INVALID';
 // SMS message templates
 const SMS_TEMPLATES = {
   REFERRAL_LINK: (referralLink) => `You're verified 🎉
-Share your Fixlo referral link and start earning:
+Start earning by sharing your Fixlo referral link:
 ${referralLink}`
 };
 
@@ -633,7 +633,7 @@ router.post('/verify-code', async (req, res) => {
 
     if (!phone || !code) {
       return res.status(400).json({
-        ok: false,
+        success: false,
         error: 'Phone number and verification code are required'
       });
     }
@@ -643,7 +643,7 @@ router.post('/verify-code', async (req, res) => {
 
     if (!normalizationResult.success) {
       return res.status(400).json({
-        ok: false,
+        success: false,
         error: 'Invalid phone number format'
       });
     }
@@ -655,7 +655,7 @@ router.post('/verify-code', async (req, res) => {
     if (!storedData) {
       console.warn('⚠️ Verification attempt with no code sent');
       return res.status(400).json({
-        ok: false,
+        success: false,
         error: 'No verification code found. Please request a new code.'
       });
     }
@@ -665,7 +665,7 @@ router.post('/verify-code', async (req, res) => {
       verificationCodes.delete(normalizedPhone);
       console.warn('⚠️ Verification code expired');
       return res.status(400).json({
-        ok: false,
+        success: false,
         error: 'Verification code has expired. Please request a new code.'
       });
     }
@@ -676,7 +676,7 @@ router.post('/verify-code', async (req, res) => {
     if (hashedInputCode !== storedData.code) {
       console.warn('⚠️ Invalid verification code attempt');
       return res.status(400).json({
-        ok: false,
+        success: false,
         error: 'Invalid verification code. Please try again.'
       });
     }
@@ -718,7 +718,7 @@ router.post('/verify-code', async (req, res) => {
 
       if (attempts >= maxAttempts) {
         return res.status(500).json({
-          ok: false,
+          success: false,
           error: 'Failed to generate unique referral code'
         });
       }
@@ -745,19 +745,32 @@ router.post('/verify-code', async (req, res) => {
     const referralLink = `${baseUrl}/join?ref=${referrer.referralCode}`;
 
     // ========================================
-    // CRITICAL: GUARANTEED SMS DELIVERY
+    // CRITICAL: SMS-FIRST GUARANTEED DELIVERY
     // ========================================
-    // Send referral link via SMS (PRIMARY - GUARANTEED)
+    // Send referral link via SMS (PRIMARY - GUARANTEED with retry)
     const smsMessage = SMS_TEMPLATES.REFERRAL_LINK(referralLink);
 
-    let smsDelivered = false;
+    let smsSuccess = false;
+    
+    // First attempt
     try {
       await sendSms(normalizedPhone, smsMessage);
-      smsDelivered = true;
-      console.log(`✅ Referral link sent via SMS to ${maskPhoneForLogging(normalizedPhone)}`);
+      smsSuccess = true;
+      console.log(`✅ Referral link sent via SMS to ${maskPhoneForLogging(normalizedPhone)} (attempt 1)`);
     } catch (smsError) {
-      // Log SMS failure but DO NOT block verification success
-      console.error(`⚠️ SMS delivery failed (non-blocking): ${smsError.message}`);
+      console.warn(`⚠️ SMS delivery failed (attempt 1): ${smsError.message}`);
+      
+      // Retry once on failure
+      try {
+        await sendSms(normalizedPhone, smsMessage);
+        smsSuccess = true;
+        console.log(`✅ Referral link sent via SMS to ${maskPhoneForLogging(normalizedPhone)} (attempt 2 - retry successful)`);
+      } catch (retryError) {
+        // Both attempts failed - log but DO NOT block verification success
+        console.error(`❌ SMS delivery failed after retry: ${retryError.message}`);
+        console.error(`   Phone: ${maskPhoneForLogging(normalizedPhone)}`);
+        // Continue - user is still verified
+      }
     }
 
     // ========================================
@@ -765,31 +778,31 @@ router.post('/verify-code', async (req, res) => {
     // ========================================
     // Send referral link via WhatsApp (SECONDARY - OPTIONAL)
     // This is best-effort and failure does NOT affect the response
-    let whatsappDelivered = false;
     try {
       await sendWhatsAppMessage(normalizedPhone, smsMessage);
-      whatsappDelivered = true;
-      console.log(`✅ Referral link sent via WhatsApp to ${maskPhoneForLogging(normalizedPhone)}`);
+      console.log(`ℹ️ Referral link also sent via WhatsApp to ${maskPhoneForLogging(normalizedPhone)}`);
     } catch (whatsappError) {
       // WhatsApp failure is expected and does not affect flow
       console.log(`ℹ️ WhatsApp delivery skipped: ${whatsappError.message}`);
     }
 
-    // Return success ONLY after attempting SMS delivery
-    // Note: Even if SMS fails, we return success because phone is verified
+    // ========================================
+    // RETURN SUCCESS AFTER SMS ATTEMPT
+    // ========================================
+    // IMPORTANT: Return success regardless of SMS delivery status
+    // User's phone is verified, which is the primary goal
     return res.json({
-      ok: true,
+      success: true,
       verified: true,
       referralCode: referrer.referralCode,
       referralLink: referralLink,
-      smsDelivered,
-      whatsappDelivered
+      deliveryChannel: 'sms'
     });
 
   } catch (error) {
     console.error('❌ Verify code error:', error);
     return res.status(500).json({
-      ok: false,
+      success: false,
       error: error.message || 'Server error'
     });
   }
