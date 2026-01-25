@@ -1036,4 +1036,316 @@ router.get('/admin/configuration', (req, res) => {
   }
 });
 
+// ==================== Test Posting & Scheduler Control ====================
+
+/**
+ * POST /api/social/post/test
+ * Send a test post to Instagram (and Facebook if supported)
+ * Uses stored Meta credentials without relying on UI or scheduling
+ * 
+ * Requirements:
+ * - Admin authentication required
+ * - Meta must be connected (checks DB)
+ * - Posts hardcoded test message
+ * - Returns structured response
+ */
+router.post('/post/test', requireAuth, async (req, res) => {
+  const requestId = Date.now().toString(36);
+  
+  console.log('[Social Post] Attempt', {
+    requestId,
+    userId: req.user?.id,
+    timestamp: new Date().toISOString()
+  });
+
+  try {
+    const ownerId = req.user?.id || 'admin';
+
+    // Find active Instagram account
+    const instagramAccount = await SocialAccount.findOne({
+      ownerId,
+      platform: 'meta_instagram',
+      isActive: true,
+      isTokenValid: true
+    }).sort({ connectedAt: -1 });
+
+    if (!instagramAccount) {
+      console.warn('[Social Post] No active Instagram account found');
+      return res.status(400).json({
+        success: false,
+        error: 'No active Instagram account found',
+        message: 'Connect Instagram via Meta OAuth first',
+        requestId
+      });
+    }
+
+    // Verify token is not expired
+    if (instagramAccount.tokenExpiresAt && new Date(instagramAccount.tokenExpiresAt) < new Date()) {
+      console.warn('[Social Post] Instagram token expired');
+      return res.status(400).json({
+        success: false,
+        error: 'Instagram token expired',
+        message: 'Re-authenticate via Meta OAuth',
+        requestId
+      });
+    }
+
+    // Get decrypted access token
+    const accessToken = await tokenEncryption.retrieveToken(instagramAccount.accessTokenRef);
+
+    if (!accessToken) {
+      console.warn('[Social Post] Token not found');
+      return res.status(400).json({
+        success: false,
+        error: 'Access token unavailable',
+        message: 'Re-authenticate via Meta OAuth',
+        requestId
+      });
+    }
+
+    // Post to Instagram using adapter
+    const metaAdapter = require('../posting/metaAdapter');
+    
+    const testCaption = "Fixlo test post — automated social system is live 🚀";
+    const testImageUrl = "https://fixloapp.com/fixlo-logo.png";
+    
+    console.log('[Social Post] Posting to Instagram...', {
+      username: instagramAccount.platformUsername,
+      requestId
+    });
+
+    const result = await metaAdapter.publishInstagram({
+      account: instagramAccount,
+      content: testCaption,
+      mediaUrls: [testImageUrl],
+      accessToken
+    });
+
+    console.log('[Social Post] Success', {
+      postId: result.platformPostId,
+      platform: 'instagram',
+      requestId
+    });
+
+    // Log action
+    await SocialAuditLog.logAction({
+      actorId: ownerId,
+      actorType: 'admin',
+      action: 'test_post',
+      status: 'success',
+      description: 'Published test post to Instagram',
+      accountId: instagramAccount._id,
+      platform: 'meta_instagram'
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Test post published successfully',
+      platform: 'instagram',
+      account: instagramAccount.platformUsername,
+      postId: result.platformPostId,
+      postUrl: result.platformPostUrl,
+      caption: testCaption,
+      requestId
+    });
+
+  } catch (error) {
+    console.error('[Social Post] Failure', {
+      error: error.message,
+      requestId
+    });
+
+    // Log failure
+    try {
+      await SocialAuditLog.logAction({
+        actorId: req.user?.id || 'admin',
+        actorType: 'admin',
+        action: 'test_post',
+        status: 'failure',
+        description: 'Failed to publish test post',
+        platform: 'meta_instagram',
+        errorMessage: error.message
+      });
+    } catch (logError) {
+      console.error('[Social Post] Failed to log failure:', logError.message);
+    }
+
+    let errorMessage = 'Failed to publish test post';
+    let statusCode = 500;
+
+    if (error.message.includes('Instagram publish failed')) {
+      errorMessage = error.message;
+      statusCode = 400;
+    }
+
+    return res.status(statusCode).json({
+      success: false,
+      error: errorMessage,
+      details: error.message,
+      requestId
+    });
+  }
+});
+
+/**
+ * POST /api/social/scheduler/start
+ * Start the social media scheduler
+ * 
+ * Requirements:
+ * - Admin authentication required
+ * - Verifies Meta is connected
+ * - Starts cron jobs
+ * - Safe to call multiple times
+ */
+router.post('/scheduler/start', requireAuth, async (req, res) => {
+  const requestId = Date.now().toString(36);
+  
+  console.log('[scheduler-start] Request received', {
+    requestId,
+    userId: req.user?.id,
+    timestamp: new Date().toISOString()
+  });
+
+  try {
+    const ownerId = req.user?.id || 'admin';
+
+    // Check if scheduler is already running
+    const schedulerStatus = scheduler.getStatus();
+    
+    if (schedulerStatus.isRunning) {
+      console.log('[scheduler-start] Already running');
+      return res.status(200).json({
+        success: true,
+        message: 'Scheduler already running',
+        status: schedulerStatus,
+        requestId
+      });
+    }
+
+    // Check Meta connection
+    const metaAccounts = await SocialAccount.find({
+      ownerId,
+      platform: { $in: ['meta_instagram', 'meta_facebook'] },
+      isActive: true,
+      isTokenValid: true
+    });
+
+    if (metaAccounts.length === 0) {
+      console.warn('[scheduler-start] Meta not connected');
+      return res.status(400).json({
+        success: false,
+        error: 'Meta accounts not connected',
+        message: 'Connect Instagram or Facebook via Meta OAuth before starting scheduler',
+        requestId
+      });
+    }
+
+    // Start scheduler
+    scheduler.start();
+    
+    console.log('[scheduler-start] Started successfully');
+
+    // Log action
+    await SocialAuditLog.logAction({
+      actorId: ownerId,
+      actorType: 'admin',
+      action: 'scheduler_start',
+      status: 'success',
+      description: 'Started social media scheduler'
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Scheduler started successfully',
+      status: scheduler.getStatus(),
+      metaAccounts: {
+        instagram: metaAccounts.some(a => a.platform === 'meta_instagram'),
+        facebook: metaAccounts.some(a => a.platform === 'meta_facebook')
+      },
+      manualApprovalMode: true,
+      requestId
+    });
+
+  } catch (error) {
+    console.error('[scheduler-start] Error:', error.message);
+
+    // Log failure
+    try {
+      await SocialAuditLog.logAction({
+        actorId: req.user?.id || 'admin',
+        actorType: 'admin',
+        action: 'scheduler_start',
+        status: 'failure',
+        description: 'Failed to start scheduler',
+        errorMessage: error.message
+      });
+    } catch (logError) {
+      console.error('[scheduler-start] Failed to log failure:', logError.message);
+    }
+
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to start scheduler',
+      details: error.message,
+      requestId
+    });
+  }
+});
+
+/**
+ * GET /api/social/scheduler/status
+ * Get scheduler status
+ * 
+ * No authentication required (read-only)
+ */
+router.get('/scheduler/status', async (req, res) => {
+  const requestId = Date.now().toString(36);
+
+  try {
+    const ownerId = req.query.ownerId || req.user?.id || 'admin';
+
+    // Get scheduler status
+    const schedulerStatus = scheduler.getStatus();
+
+    // Check Meta connection
+    const metaAccounts = await SocialAccount.find({
+      ownerId,
+      platform: { $in: ['meta_instagram', 'meta_facebook'] },
+      isActive: true
+    }).lean();
+
+    const validAccounts = metaAccounts.filter(a => a.isTokenValid);
+
+    return res.status(200).json({
+      success: true,
+      scheduler: schedulerStatus,
+      meta: {
+        connected: validAccounts.length > 0,
+        totalAccounts: metaAccounts.length,
+        validAccounts: validAccounts.length,
+        instagram: {
+          connected: metaAccounts.some(a => a.platform === 'meta_instagram'),
+          isValid: validAccounts.some(a => a.platform === 'meta_instagram')
+        },
+        facebook: {
+          connected: metaAccounts.some(a => a.platform === 'meta_facebook'),
+          isValid: validAccounts.some(a => a.platform === 'meta_facebook')
+        }
+      },
+      timestamp: new Date().toISOString(),
+      requestId
+    });
+
+  } catch (error) {
+    console.error('[scheduler-status] Error:', error.message);
+
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to get scheduler status',
+      details: error.message,
+      requestId
+    });
+  }
+});
+
 module.exports = router;
