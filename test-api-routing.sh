@@ -43,7 +43,7 @@ if echo "$BODY" | grep -q "<!DOCTYPE html>"; then
   exit 1
 fi
 
-if echo "$BODY" | grep -q '"status"'; then
+if echo "$BODY" | grep -q '"ok"'; then
   echo "✅ PASS: Response contains expected JSON structure"
 else
   echo "❌ FAIL: Response does not contain expected JSON structure"
