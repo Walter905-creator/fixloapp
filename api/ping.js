@@ -1,3 +1,5 @@
+// VERCEL_API_HEALTHCHECK — must return JSON, never HTML
+
 /**
  * Vercel Serverless Function: /api/ping
  * 
@@ -7,7 +9,7 @@
  * This endpoint does NOT require database connection and will always respond.
  */
 
-module.exports = async (req, res) => {
+export default function handler(req, res) {
   // Log API hit (non-sensitive)
   console.log('[API /ping] Health check request', {
     method: req.method,
@@ -50,7 +52,7 @@ module.exports = async (req, res) => {
 
   // Return success response
   const response = {
-    status: 'ok',
+    ok: true,
     timestamp: new Date().toISOString(),
     message: 'Fixlo API is operational',
     environment: process.env.VERCEL_ENV || 'development',
@@ -60,4 +62,4 @@ module.exports = async (req, res) => {
   console.log('[API /ping] Responding with:', response);
   
   return res.status(200).json(response);
-};
+}
