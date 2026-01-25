@@ -77,7 +77,7 @@ fi
 echo "  ✅ api/ping.js exists"
 
 if [ ! -f "api/social/force-status.js" ]; then
-    echo "⚠️  WARNING: api/social/force-status.js not found"
+    echo "⚠️  WARNING: api/social/force-status.js not found (optional - will be created when needed)"
 fi
 
 echo ""
