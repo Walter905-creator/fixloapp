@@ -4,6 +4,55 @@
 
 This document explains how API routes are configured for the Fixlo application on Vercel.
 
+## ⚠️ CRITICAL: API Routing Verification
+
+### Production Health Check
+
+To verify that API routing is working correctly in production:
+
+```bash
+curl -i https://fixloapp.com/api/ping
+```
+
+### Expected Output (✅ CORRECT)
+
+```
+HTTP/2 200
+content-type: application/json
+x-content-type-options: nosniff
+
+{"ok":true,"timestamp":"2026-01-25T20:30:00.000Z","message":"Fixlo API is operational","environment":"production","region":"iad1"}
+```
+
+**Key indicators:**
+- ✅ `content-type: application/json` header
+- ✅ `{"ok":true}` JSON response
+- ✅ HTTP 200 status
+
+### Warning Signs (❌ BROKEN)
+
+If you see HTML output like this:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Fixlo</title>
+    ...
+```
+
+**This means API routing is broken!**
+
+The `/api/*` routes are being served by the SPA (index.html) instead of serverless functions.
+
+### How to Fix
+
+1. Verify `vercel.json` has proper `routes` configuration with `/api/*` before catch-all
+2. Ensure no `rewrites` are interfering with API routes
+3. Redeploy to Vercel
+4. Re-run verification test
+
 ## Architecture
 
 Fixlo uses a **hybrid deployment** architecture:
@@ -21,42 +70,43 @@ Vercel automatically exposes any file in the `/api` directory as a serverless fu
 
 ### vercel.json Configuration
 
-The `vercel.json` file controls routing:
+The `vercel.json` file controls routing using the `routes` configuration:
 
 ```json
 {
-  "rewrites": [
+  "version": 2,
+  "routes": [
     {
-      "source": "/api/ping",
-      "destination": "/api/ping"
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
     },
     {
-      "source": "/api/social/force-status",
-      "destination": "/api/social/force-status"
-    },
-    // ... other routes ...
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
 ```
 
 **Key Points:**
-1. **API routes MUST be defined BEFORE the SPA fallback** (`/(.*)`).
-2. API routes return JSON responses, not HTML.
-3. The SPA fallback catches all non-API routes and serves `index.html`.
+1. **API routes MUST come BEFORE the SPA fallback** in the `routes` array
+2. API routes return JSON responses, not HTML
+3. The SPA fallback catches all non-API routes and serves `index.html`
+4. Using `routes` (not `rewrites`) ensures proper priority for serverless functions
 
 ### Route Order Matters
 
-Routes are matched **top-to-bottom**. If the SPA fallback (`/(.*)`) comes before API routes, all requests (including API calls) would serve `index.html` instead of JSON.
+Routes are matched **top-to-bottom** in the `routes` array. If the SPA fallback comes before API routes, all requests (including API calls) would serve `index.html` instead of JSON.
 
 **Current Order (Correct):**
-1. `/api/ping` → Serverless function
-2. `/api/social/force-status` → Serverless function
-3. Other specific routes (terms, privacy, etc.)
-4. `/(.*)`  → SPA fallback (serves index.html)
+1. `/api/(.*)` → Serverless functions (highest priority)
+2. `/(.*)`  → SPA fallback (serves index.html for all other routes)
+
+This ensures that:
+- `/api/ping` → Serverless function
+- `/api/social/force-status` → Serverless function
+- `/api/social/post/test` → Serverless function
+- All other routes → React SPA (index.html)
 
 ## Testing API Routes
 
@@ -84,8 +134,8 @@ curl https://fixloapp.com/api/social/force-status
 **GET /api/ping**
 ```json
 {
-  "status": "ok",
-  "timestamp": "2026-01-21T01:52:00.000Z",
+  "ok": true,
+  "timestamp": "2026-01-25T20:30:00.000Z",
   "message": "Fixlo API is operational",
   "environment": "production",
   "region": "iad1"
@@ -164,9 +214,14 @@ Logs are available in Vercel dashboard under Functions → Logs.
 
 ### API returns HTML instead of JSON
 
-**Cause**: SPA fallback is intercepting API routes.
+**Cause**: Routing configuration is incorrect - SPA fallback is intercepting API routes.
 
-**Solution**: Ensure API routes are defined BEFORE `/(.*` in `vercel.json` rewrites.
+**Solution**: 
+1. Ensure `vercel.json` uses `routes` (not `rewrites`) for API routing
+2. Verify `/api/(.*)` route comes BEFORE `/(.*)`  in the `routes` array
+3. Remove any `rewrites` that might interfere with API routes
+4. Redeploy to Vercel
+5. Test with: `curl -i https://fixloapp.com/api/ping`
 
 ### 404 on API routes
 

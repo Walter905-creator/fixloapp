@@ -1,6 +1,17 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "version": 2,
   "trailingSlash": false,
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
   "redirects": [
     {
       "source": "/:path*",
@@ -195,74 +206,6 @@
       "source": "/ai-assistant.html", 
       "destination": "/ai-assistant",
       "permanent": true
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/terms",
-      "destination": "/terms.html"
-    },
-    {
-      "source": "/privacy",
-      "destination": "/privacy.html"
-    },
-    {
-      "source": "/support", 
-      "destination": "/support.html"
-    },
-
-    {
-      "source": "/sms-compliance",
-      "destination": "/sms-compliance.html"
-    },
-    {
-      "source": "/contact-support",
-      "destination": "/contact-support.html"
-    },
-    {
-      "source": "/admin",
-      "destination": "/admin.html"
-    },
-    {
-      "source": "/dashboard",
-      "destination": "/dashboard.html"
-    },
-    {
-      "source": "/signup",
-      "destination": "/signup/index.html"
-    },
-    {
-      "source": "/how-it-works",
-      "destination": "/how-it-works/index.html"
-    },
-    {
-      "source": "/contact", 
-      "destination": "/contact/index.html"
-    },
-    {
-      "source": "/services",
-      "destination": "/services/index.html"
-    },
-    {
-      "source": "/services/(.*)",
-      "destination": "/services/$1/index.html"
-    },
-
-    {
-      "source": "/ai-assistant",
-      "destination": "/ai-assistant/index.html"
-    },
-    {
-      "source": "/sms-optin",
-      "destination": "/sms-optin/index.html"
-    },
-    {
-      "source": "/sms-optin/",
-      "destination": "/sms-optin/index.html"
-    },
-    {
-      "source": "/((?!api).*)",
-      "destination": "/index.html"
     }
   ],
   "env": {
