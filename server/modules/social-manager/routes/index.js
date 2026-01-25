@@ -1044,12 +1044,12 @@ router.get('/admin/configuration', (req, res) => {
  * Uses stored Meta credentials without relying on UI or scheduling
  * 
  * Requirements:
- * - Admin authentication required
+ * - Admin authentication (applied globally above)
  * - Meta must be connected (checks DB)
  * - Posts hardcoded test message
  * - Returns structured response
  */
-router.post('/post/test', requireAuth, async (req, res) => {
+router.post('/post/test', async (req, res) => {
   const requestId = Date.now().toString(36);
   
   console.log('[Social Post] Attempt', {
@@ -1192,12 +1192,12 @@ router.post('/post/test', requireAuth, async (req, res) => {
  * Start the social media scheduler
  * 
  * Requirements:
- * - Admin authentication required
+ * - Admin authentication (applied globally above)
  * - Verifies Meta is connected
  * - Starts cron jobs
  * - Safe to call multiple times
  */
-router.post('/scheduler/start', requireAuth, async (req, res) => {
+router.post('/scheduler/start', async (req, res) => {
   const requestId = Date.now().toString(36);
   
   console.log('[scheduler-start] Request received', {

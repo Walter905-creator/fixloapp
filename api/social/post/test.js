@@ -74,7 +74,6 @@ function verifyAdminToken(req) {
   const token = authHeader.slice(7);
   
   try {
-    // Simple JWT verification - in production, use proper JWT library
     const jwt = require('jsonwebtoken');
     const secret = process.env.JWT_SECRET;
     
@@ -254,6 +253,9 @@ module.exports = async (req, res) => {
     }
 
     // Decrypt token using same algorithm as tokenEncryption service (AES-256-GCM)
+    // Note: We inline the decryption logic here instead of importing the tokenEncryption
+    // service to minimize dependencies in the serverless function. The logic matches
+    // the tokenEncryption.decrypt() method exactly.
     const crypto = require('crypto');
     const encryptionKey = process.env.SOCIAL_ENCRYPTION_KEY;
     
@@ -332,6 +334,26 @@ module.exports = async (req, res) => {
 
     const postId = publishResponse.data.id;
     
+    // Fetch the actual permalink (Instagram shortcode URL)
+    let postUrl = `https://www.instagram.com/p/${postId}/`; // Fallback URL
+    try {
+      const permalinkResponse = await axios.get(
+        `https://graph.facebook.com/v18.0/${postId}`,
+        {
+          params: {
+            fields: 'permalink',
+            access_token: accessToken
+          }
+        }
+      );
+      if (permalinkResponse.data.permalink) {
+        postUrl = permalinkResponse.data.permalink;
+      }
+    } catch (permalinkError) {
+      console.warn('[Social Post] Could not fetch permalink:', permalinkError.message);
+      // Continue with fallback URL
+    }
+    
     console.log('[Social Post] Success', {
       postId,
       platform: 'instagram',
@@ -339,15 +361,13 @@ module.exports = async (req, res) => {
     });
 
     // Return success response
-    // Note: Instagram post URL requires the shortcode, not the post ID
-    // For now, return the post ID and let the client construct the URL if needed
     return res.status(200).json({
       success: true,
       message: 'Test post published successfully',
       platform: 'instagram',
       account: instagramAccount.platformUsername,
       postId: postId,
-      postUrl: `https://www.instagram.com/p/${postId}/`, // Note: May need to fetch actual permalink
+      postUrl: postUrl,
       caption: testCaption,
       requestId
     });
