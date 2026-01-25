@@ -196,10 +196,13 @@ module.exports = async (req, res) => {
       const encryptedTokenSchema = new mongoose.Schema({
         encryptedValue: String,
         iv: String,
+        authTag: String,
         tokenType: String,
         platform: String,
         accountRef: mongoose.Schema.Types.ObjectId,
         isRevoked: Boolean,
+        isValid: Boolean,
+        expiresAt: Date,
         createdAt: Date
       });
       EncryptedToken = mongoose.model('EncryptedToken', encryptedTokenSchema);
@@ -250,7 +253,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    // Decrypt token
+    // Decrypt token using same algorithm as tokenEncryption service (AES-256-GCM)
     const crypto = require('crypto');
     const encryptionKey = process.env.SOCIAL_ENCRYPTION_KEY;
     
@@ -263,11 +266,32 @@ module.exports = async (req, res) => {
       });
     }
 
-    const key = Buffer.from(encryptionKey, 'base64');
-    const iv = Buffer.from(tokenRecord.iv, 'hex');
-    const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+    // Parse encryption key (supports both base64 and hex)
+    let key;
+    if (encryptionKey.length === 64) {
+      key = Buffer.from(encryptionKey, 'hex');
+    } else {
+      key = Buffer.from(encryptionKey, 'base64');
+    }
+
+    // Verify authTag exists (required for AES-GCM)
+    if (!tokenRecord.authTag) {
+      console.error('[test-post] Token missing authTag - may be using old encryption');
+      return res.status(500).json({
+        success: false,
+        error: 'Token encryption format incompatible',
+        message: 'Re-authenticate via Meta OAuth',
+        requestId
+      });
+    }
+
+    // Decrypt using AES-256-GCM (same as tokenEncryption service)
+    const iv = Buffer.from(tokenRecord.iv, 'base64');
+    const authTag = Buffer.from(tokenRecord.authTag, 'base64');
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+    decipher.setAuthTag(authTag);
     
-    let accessToken = decipher.update(tokenRecord.encryptedValue, 'hex', 'utf8');
+    let accessToken = decipher.update(tokenRecord.encryptedValue, 'base64', 'utf8');
     accessToken += decipher.final('utf8');
 
     // Post to Instagram using Graph API
@@ -315,13 +339,15 @@ module.exports = async (req, res) => {
     });
 
     // Return success response
+    // Note: Instagram post URL requires the shortcode, not the post ID
+    // For now, return the post ID and let the client construct the URL if needed
     return res.status(200).json({
       success: true,
       message: 'Test post published successfully',
       platform: 'instagram',
       account: instagramAccount.platformUsername,
       postId: postId,
-      postUrl: `https://instagram.com/p/${postId}`,
+      postUrl: `https://www.instagram.com/p/${postId}/`, // Note: May need to fetch actual permalink
       caption: testCaption,
       requestId
     });

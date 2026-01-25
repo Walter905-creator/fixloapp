@@ -20,13 +20,6 @@ const mongoose = require('mongoose');
 let cachedDbConnection = null;
 let connectionAttempted = false;
 
-// Global scheduler state (shared across function invocations)
-global.schedulerState = global.schedulerState || {
-  isRunning: false,
-  startedAt: null,
-  jobs: []
-};
-
 /**
  * Connect to MongoDB
  */
@@ -203,18 +196,6 @@ module.exports = async (req, res) => {
       });
     }
 
-    // Check if scheduler is already running
-    if (global.schedulerState.isRunning) {
-      console.log('[scheduler-start] Already running');
-      return res.status(200).json({
-        success: true,
-        message: 'Scheduler already running',
-        status: 'running',
-        startedAt: global.schedulerState.startedAt,
-        requestId
-      });
-    }
-
     // Determine ownerId
     const ownerId = req.body?.ownerId || 'admin';
 
@@ -240,10 +221,6 @@ module.exports = async (req, res) => {
     console.warn('[scheduler-start] Scheduler must be started on the main Express server');
     console.warn('[scheduler-start] Use the server-side /api/social/scheduler/start route instead');
 
-    // Mark as "virtually" started for status tracking
-    global.schedulerState.isRunning = true;
-    global.schedulerState.startedAt = new Date();
-
     return res.status(200).json({
       success: true,
       message: 'Scheduler start requested',
@@ -252,7 +229,7 @@ module.exports = async (req, res) => {
       status: 'start_requested',
       metaStatus,
       manualApprovalMode: true,
-      startedAt: global.schedulerState.startedAt,
+      serverlessEnvironment: true,
       requestId
     });
 
