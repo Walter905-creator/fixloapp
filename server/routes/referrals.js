@@ -44,11 +44,6 @@ const ANTI_FRAUD_CONFIG = {
 // RECOMMENDATION: Implement Redis with TTL for production scalability
 const verificationCodes = new Map();
 
-// In-memory storage for delivery status tracking
-// Structure: { messageSid: { phone, method, status, errorCode, errorMessage, timestamp } }
-// ⚠️ WARNING: Same limitations as verificationCodes - use Redis in production
-const deliveryStatuses = new Map();
-
 /**
  * Mask phone number for logging
  * @param {string} phone - E.164 formatted phone number
@@ -62,11 +57,10 @@ function maskPhoneForLogging(phone) {
   return phone.replace(/(\+\d{1,3})\d+(\d{4})/, '$1******$2');
 }
 
-// Periodic cleanup of expired verification codes and delivery statuses (runs every 5 minutes)
-// This prevents memory leaks from expired codes and old delivery statuses
+// Periodic cleanup of expired verification codes (runs every 5 minutes)
+// This prevents memory leaks from expired codes
 const cleanupInterval = setInterval(() => {
   let cleanedCodesCount = 0;
-  let cleanedStatusCount = 0;
   
   // Clean up expired verification codes
   for (const [key, value] of verificationCodes.entries()) {
@@ -76,17 +70,8 @@ const cleanupInterval = setInterval(() => {
     }
   }
   
-  // Clean up old delivery statuses (older than 1 hour)
-  const oneHourAgo = Date.now() - 60 * 60 * 1000;
-  for (const [key, value] of deliveryStatuses.entries()) {
-    if (value.timestamp < oneHourAgo) {
-      deliveryStatuses.delete(key);
-      cleanedStatusCount++;
-    }
-  }
-  
-  if (cleanedCodesCount > 0 || cleanedStatusCount > 0) {
-    console.log(`🧹 Cleaned up ${cleanedCodesCount} expired verification code(s) and ${cleanedStatusCount} old delivery status(es)`);
+  if (cleanedCodesCount > 0) {
+    console.log(`🧹 Cleaned up ${cleanedCodesCount} expired verification code(s)`);
   }
 }, 5 * 60 * 1000); // Run every 5 minutes
 
@@ -894,113 +879,6 @@ router.get('/me', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Get referral info error:', error);
-    return res.status(500).json({
-      ok: false,
-      error: error.message || 'Server error'
-    });
-  }
-});
-
-/**
- * Twilio status callback endpoint
- * POST /api/referrals/sms-status-callback
- * 
- * Receives delivery status updates from Twilio for SMS and WhatsApp messages
- * Status transitions: queued → sending → sent → delivered / failed / undelivered
- */
-router.post('/sms-status-callback', (req, res) => {
-  try {
-    const {
-      MessageSid,
-      MessageStatus,
-      To,
-      ErrorCode,
-      ErrorMessage,
-      From
-    } = req.body;
-
-    // Determine channel from 'From' field
-    const channel = From && From.includes('whatsapp:') ? 'whatsapp' : 'sms';
-    
-    // Mask phone for logging
-    const maskedPhone = To ? maskPhoneForLogging(To.replace('whatsapp:', '')) : '<unknown>';
-    
-    console.log(`📬 Twilio status callback received`);
-    console.log(`   Message SID: ${MessageSid}`);
-    console.log(`   Status: ${MessageStatus}`);
-    console.log(`   Channel: ${channel}`);
-    console.log(`   To: ${maskedPhone}`);
-    
-    if (ErrorCode || ErrorMessage) {
-      console.error(`   Error Code: ${ErrorCode}`);
-      console.error(`   Error Message: ${ErrorMessage}`);
-    }
-
-    // Update delivery status in memory
-    const existingStatus = deliveryStatuses.get(MessageSid);
-    deliveryStatuses.set(MessageSid, {
-      phone: To ? To.replace('whatsapp:', '') : existingStatus?.phone || '',
-      method: channel,
-      status: MessageStatus,
-      errorCode: ErrorCode || null,
-      errorMessage: ErrorMessage || null,
-      timestamp: Date.now()
-    });
-
-    // Acknowledge receipt to Twilio
-    res.sendStatus(200);
-    
-  } catch (error) {
-    console.error('❌ Error processing Twilio status callback:', error);
-    res.sendStatus(500);
-  }
-});
-
-/**
- * Check delivery status for a message
- * GET /api/referrals/delivery-status/:messageSid
- */
-router.get('/delivery-status/:messageSid', (req, res) => {
-  try {
-    const { messageSid } = req.params;
-    
-    if (!messageSid) {
-      return res.status(400).json({
-        ok: false,
-        error: 'Message SID is required'
-      });
-    }
-
-    const status = deliveryStatuses.get(messageSid);
-    
-    if (!status) {
-      return res.status(404).json({
-        ok: false,
-        error: 'Delivery status not found',
-        messageSid
-      });
-    }
-
-    // Determine if delivery was successful
-    const isDelivered = status.status === 'delivered' || status.status === 'read';
-    const isFailed = status.status === 'failed' || status.status === 'undelivered';
-    const isPending = status.status === 'queued' || status.status === 'sending' || status.status === 'sent';
-
-    return res.json({
-      ok: true,
-      messageSid,
-      status: status.status,
-      method: status.method,
-      isDelivered,
-      isFailed,
-      isPending,
-      errorCode: status.errorCode,
-      errorMessage: status.errorMessage,
-      timestamp: status.timestamp
-    });
-
-  } catch (error) {
-    console.error('❌ Error checking delivery status:', error);
     return res.status(500).json({
       ok: false,
       error: error.message || 'Server error'
