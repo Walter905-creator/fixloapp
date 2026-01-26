@@ -33,23 +33,52 @@ class Scheduler {
   
   /**
    * Start the scheduler
+   * SAFETY: Respects SOCIAL_AUTOMATION_ENABLED environment variable
+   * @param {Object} options - Start options
+   * @param {boolean} options.force - Force start bypass (reserved for testing/internal use only)
+   * @throws {Error} If SOCIAL_AUTOMATION_ENABLED is false and force is not true
+   * 
+   * NOTE: The force option is NOT used by API endpoints to ensure the environment
+   * flag is always respected. It exists only for testing purposes.
    */
-  start() {
+  start(options = {}) {
     if (this.isRunning) {
       console.log('📅 Social scheduler already running');
       return;
     }
     
+    // SAFETY CHECK: Respect SOCIAL_AUTOMATION_ENABLED flag
+    // This prevents accidental auto-start in production
+    const automationEnabled = process.env.SOCIAL_AUTOMATION_ENABLED === 'true';
+    const { force = false } = options;
+    
+    if (!automationEnabled && !force) {
+      console.warn('🛑 SOCIAL_AUTOMATION_ENABLED is false - scheduler will not start.');
+      const error = new Error('Social automation is disabled. Set SOCIAL_AUTOMATION_ENABLED=true to enable.');
+      error.code = 'AUTOMATION_DISABLED';
+      throw error;
+    }
+    
+    if (force && !automationEnabled) {
+      console.log('⚠️ SECURITY WARNING: Scheduler started with force flag while automation is disabled. This should only happen in testing.');
+    }
+    
     console.log('📅 Starting social media scheduler...');
     
     // Main posting job - runs every 15 minutes
+    // SAFETY: Wrapped in try-catch to prevent scheduler crashes
     const postingJob = cron.schedule('*/15 * * * *', async () => {
-      if (this.emergencyStop) {
-        console.log('🛑 Emergency stop active - skipping scheduled posting');
-        return;
+      try {
+        if (this.emergencyStop) {
+          console.log('🛑 Emergency stop active - skipping scheduled posting');
+          return;
+        }
+        
+        await this.processScheduledPosts();
+      } catch (error) {
+        // SAFETY: Log error but don't crash the scheduler
+        console.error('❌ Posting job error (non-fatal):', error.message);
       }
-      
-      await this.processScheduledPosts();
     }, {
       scheduled: true,
       timezone: 'America/New_York'
@@ -62,8 +91,14 @@ class Scheduler {
     });
     
     // Token refresh job - runs every 6 hours
+    // SAFETY: Wrapped in try-catch to prevent scheduler crashes
     const refreshJob = cron.schedule('0 */6 * * *', async () => {
-      await this.refreshExpiredTokens();
+      try {
+        await this.refreshExpiredTokens();
+      } catch (error) {
+        // SAFETY: Log error but don't crash the scheduler
+        console.error('❌ Token refresh job error (non-fatal):', error.message);
+      }
     }, {
       scheduled: true,
       timezone: 'America/New_York'
@@ -76,8 +111,14 @@ class Scheduler {
     });
     
     // Metrics collection job - runs daily at 2 AM
+    // SAFETY: Wrapped in try-catch to prevent scheduler crashes
     const metricsJob = cron.schedule('0 2 * * *', async () => {
-      await this.collectMetrics();
+      try {
+        await this.collectMetrics();
+      } catch (error) {
+        // SAFETY: Log error but don't crash the scheduler
+        console.error('❌ Metrics collection job error (non-fatal):', error.message);
+      }
     }, {
       scheduled: true,
       timezone: 'America/New_York'
@@ -90,9 +131,15 @@ class Scheduler {
     });
     
     // Retry failed posts - runs every hour
+    // SAFETY: Wrapped in try-catch to prevent scheduler crashes
     const retryJob = cron.schedule('0 * * * *', async () => {
-      if (this.emergencyStop) return;
-      await this.retryFailedPosts();
+      try {
+        if (this.emergencyStop) return;
+        await this.retryFailedPosts();
+      } catch (error) {
+        // SAFETY: Log error but don't crash the scheduler
+        console.error('❌ Retry job error (non-fatal):', error.message);
+      }
     }, {
       scheduled: true,
       timezone: 'America/New_York'

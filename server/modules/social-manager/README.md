@@ -404,6 +404,61 @@ Posts are automatically scheduled during optimal engagement windows:
 - ✅ Token refresh before posting
 - ✅ Metrics collection (daily at 2 AM)
 
+### Automation Control (Production Safety)
+
+**IMPORTANT: Automated posting is OFF by default for safety**
+
+The scheduler respects the `SOCIAL_AUTOMATION_ENABLED` environment variable:
+
+```bash
+# Default (safe): Automation disabled
+SOCIAL_AUTOMATION_ENABLED=false
+
+# Enable automated posting
+SOCIAL_AUTOMATION_ENABLED=true
+```
+
+#### Manual Control via API
+
+**IMPORTANT: All scheduler control requires `SOCIAL_AUTOMATION_ENABLED=true`**
+
+The API endpoints provide manual control over the scheduler, but the environment flag must still be enabled. This ensures automated posting cannot be activated without explicit configuration approval.
+
+**Start Scheduler**
+```bash
+POST /api/social/scheduler/start
+```
+- **Requires** `SOCIAL_AUTOMATION_ENABLED=true` to succeed
+- Returns HTTP 403 error if automation is disabled
+- Verifies Meta accounts are connected
+- Logs action to audit trail
+
+**Stop Scheduler**
+```bash
+POST /api/social/scheduler/stop
+```
+- Stops all scheduled jobs gracefully
+- Can stop regardless of `SOCIAL_AUTOMATION_ENABLED` flag
+- Logs action to audit trail
+
+**Get Status**
+```bash
+GET /api/social/scheduler/status
+```
+- Returns scheduler status
+- Shows `automationEnabled` flag value
+- Lists connected accounts
+- No authentication required (read-only)
+
+#### Safety Features
+
+1. **OFF by default** - Never auto-starts in production
+2. **Environment-controlled** - Requires explicit flag to enable
+3. **Error isolation** - Scheduler failures don't crash server
+4. **Graceful degradation** - Continues running even if jobs fail
+5. **Audit logging** - All start/stop actions logged
+6. **No token logging** - Tokens never appear in logs
+
 ---
 
 ## 🔒 Security
