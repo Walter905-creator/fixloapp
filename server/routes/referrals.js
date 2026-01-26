@@ -715,16 +715,22 @@ router.post('/verify-code', async (req, res) => {
     const smsMessage = SMS_TEMPLATES.REFERRAL_LINK(referralLink);
     
     // Fire async - don't wait for completion
-    setImmediate(async () => {
-      try {
-        await sendSms(normalizedPhone, smsMessage);
-        console.log(`✅ Referral link sent via SMS to ${maskPhoneForLogging(normalizedPhone)}`);
-      } catch (smsError) {
-        // Log error but don't fail - user already verified
-        console.error(`⚠️ SMS send failed (non-blocking): ${smsError.message}`);
-        console.error(`   Phone: ${maskPhoneForLogging(normalizedPhone)}`);
-        console.error(`   User can still access link via UI`);
-      }
+    // Wrapped to prevent unhandled promise rejections
+    setImmediate(() => {
+      (async () => {
+        try {
+          await sendSms(normalizedPhone, smsMessage);
+          console.log(`✅ Referral link sent via SMS to ${maskPhoneForLogging(normalizedPhone)}`);
+        } catch (smsError) {
+          // Log error but don't fail - user already verified
+          console.error(`⚠️ SMS send failed (non-blocking): ${smsError.message}`);
+          console.error(`   Phone: ${maskPhoneForLogging(normalizedPhone)}`);
+          console.error(`   User can still access link via UI`);
+        }
+      })().catch(err => {
+        // Final safety net for any uncaught errors
+        console.error(`⚠️ Unexpected error in SMS send: ${err.message}`);
+      });
     });
 
     // ========================================
@@ -801,14 +807,20 @@ router.post('/resend-link', async (req, res) => {
     // Send referral link via SMS (fire and forget - best effort)
     const smsMessage = SMS_TEMPLATES.REFERRAL_LINK(referralLink);
     
-    setImmediate(async () => {
-      try {
-        await sendSms(normalizedPhone, smsMessage);
-        console.log(`✅ Referral link resent via SMS to ${maskPhoneForLogging(normalizedPhone)}`);
-      } catch (smsError) {
-        console.error(`⚠️ SMS resend failed: ${smsError.message}`);
-        console.error(`   Phone: ${maskPhoneForLogging(normalizedPhone)}`);
-      }
+    // Wrapped to prevent unhandled promise rejections
+    setImmediate(() => {
+      (async () => {
+        try {
+          await sendSms(normalizedPhone, smsMessage);
+          console.log(`✅ Referral link resent via SMS to ${maskPhoneForLogging(normalizedPhone)}`);
+        } catch (smsError) {
+          console.error(`⚠️ SMS resend failed: ${smsError.message}`);
+          console.error(`   Phone: ${maskPhoneForLogging(normalizedPhone)}`);
+        }
+      })().catch(err => {
+        // Final safety net for any uncaught errors
+        console.error(`⚠️ Unexpected error in SMS resend: ${err.message}`);
+      });
     });
 
     // Return success immediately
