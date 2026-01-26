@@ -30,8 +30,19 @@ function verifyAdminToken(req) {
   const token = authHeader.slice(7);
   
   // Check for special admin key (for CI/CD and monitoring tools)
-  const ADMIN_SECRET_KEY = process.env.ADMIN_SECRET_KEY || 'fixlo_admin_2026_super_secret_key';
-  if (token === ADMIN_SECRET_KEY) {
+  // SECURITY: Set ADMIN_SECRET_KEY environment variable in production
+  const ADMIN_SECRET_KEY = process.env.ADMIN_SECRET_KEY;
+  const DEFAULT_KEY = 'fixlo_admin_2026_super_secret_key';
+  
+  // Use default key only in development/testing
+  const effectiveKey = ADMIN_SECRET_KEY || DEFAULT_KEY;
+  
+  // Warn if using default key in production
+  if (!ADMIN_SECRET_KEY && process.env.NODE_ENV === 'production') {
+    console.warn('[scheduler-start] ⚠️  WARNING: Using default ADMIN_SECRET_KEY in production. Set ADMIN_SECRET_KEY environment variable.');
+  }
+  
+  if (token === effectiveKey) {
     return { valid: true, userId: 'admin', isAdminKey: true };
   }
   

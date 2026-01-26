@@ -69,32 +69,38 @@ async function checkMetaConnection(ownerId) {
 
 /**
  * Get scheduler state from MongoDB
+ * Note: Uses inline schema to avoid cold start issues with model imports in serverless
  */
 async function getSchedulerState() {
-  let SchedulerState;
-  
-  if (mongoose.models.SchedulerState) {
-    SchedulerState = mongoose.models.SchedulerState;
-  } else {
-    const schedulerStateSchema = new mongoose.Schema({
-      _id: String,
-      lastRunAt: Date,
-      lastRunDuration: Number,
-      lastRunStatus: String,
-      totalExecutions: Number,
-      totalPostsPublished: Number,
-      executionLock: Boolean,
-      nextScheduledPost: {
-        postId: mongoose.Schema.Types.ObjectId,
-        scheduledFor: Date,
-        platform: String
-      }
-    });
-    SchedulerState = mongoose.model('SchedulerState', schedulerStateSchema);
-  }
-
   try {
+    // Try to use existing model if already registered
+    let SchedulerState;
+    
+    if (mongoose.models.SchedulerState) {
+      SchedulerState = mongoose.models.SchedulerState;
+    } else {
+      // Define minimal inline schema for serverless cold starts
+      // This ensures the function works even if the model hasn't been loaded yet
+      const schedulerStateSchema = new mongoose.Schema({
+        _id: String,
+        lastRunAt: Date,
+        lastRunDuration: Number,
+        lastRunStatus: String,
+        totalExecutions: Number,
+        totalPostsPublished: Number,
+        executionLock: Boolean,
+        nextScheduledPost: {
+          postId: mongoose.Schema.Types.ObjectId,
+          scheduledFor: Date,
+          platform: String
+        }
+      }, { collection: 'schedulerstates' }); // Explicitly set collection name
+      
+      SchedulerState = mongoose.model('SchedulerState', schedulerStateSchema);
+    }
+
     const state = await SchedulerState.findById('scheduler_state').lean();
+    
     return state || {
       lastRunAt: null,
       lastRunDuration: null,

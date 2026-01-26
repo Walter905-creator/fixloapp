@@ -8,6 +8,7 @@ echo "===================================="
 echo ""
 
 BASE_URL="${1:-https://fixloapp.com}"
+# SECURITY NOTE: Default key is for testing only. Set ADMIN_SECRET_KEY environment variable in production.
 ADMIN_SECRET_KEY="${ADMIN_SECRET_KEY:-fixlo_admin_2026_super_secret_key}"
 
 echo "Base URL: $BASE_URL"
