@@ -53,7 +53,14 @@ async function initialize(options = {}) {
   
   // Start scheduler
   if (startScheduler) {
-    scheduler.start();
+    try {
+      // SAFETY: Only auto-start if SOCIAL_AUTOMATION_ENABLED is true
+      // When false, scheduler must be started manually via API
+      scheduler.start();
+    } catch (error) {
+      console.log('ℹ️ Scheduler not auto-started:', error.message);
+      console.log('   Use POST /api/social/scheduler/start to start manually');
+    }
   } else {
     console.log('ℹ️ Scheduler not started (manual control)');
   }

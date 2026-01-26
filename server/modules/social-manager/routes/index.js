@@ -1222,6 +1222,20 @@ router.post('/scheduler/start', async (req, res) => {
       });
     }
 
+    // SAFETY CHECK: Verify SOCIAL_AUTOMATION_ENABLED
+    // This flag must be explicitly enabled to allow scheduler start
+    const automationEnabled = process.env.SOCIAL_AUTOMATION_ENABLED === 'true';
+    
+    if (!automationEnabled) {
+      console.warn('[scheduler-start] SOCIAL_AUTOMATION_ENABLED is false');
+      return res.status(403).json({
+        success: false,
+        error: 'Social automation is disabled',
+        message: 'Set SOCIAL_AUTOMATION_ENABLED=true in environment variables to enable automated posting',
+        requestId
+      });
+    }
+
     // Check Meta connection
     const metaAccounts = await SocialAccount.find({
       ownerId,
@@ -1241,7 +1255,9 @@ router.post('/scheduler/start', async (req, res) => {
     }
 
     // Start scheduler
-    scheduler.start();
+    // SAFETY: Using force=true to allow manual start even if SOCIAL_AUTOMATION_ENABLED is false
+    // (since we already checked the flag above)
+    scheduler.start({ force: true });
     
     console.log('[scheduler-start] Started successfully');
 
@@ -1293,6 +1309,90 @@ router.post('/scheduler/start', async (req, res) => {
 });
 
 /**
+ * POST /api/social/scheduler/stop
+ * Stop the social media scheduler
+ * SAFETY: Allows manual shutdown regardless of SOCIAL_AUTOMATION_ENABLED flag
+ * 
+ * Response:
+ * {
+ *   success: true,
+ *   message: "Scheduler stopped successfully",
+ *   status: { isRunning: false, emergencyStop: false, activeJobs: 0, jobs: [] }
+ * }
+ */
+router.post('/scheduler/stop', async (req, res) => {
+  const requestId = Date.now().toString(36);
+  
+  console.log('[scheduler-stop] Request received', {
+    requestId,
+    userId: req.user?.id,
+    timestamp: new Date().toISOString()
+  });
+
+  try {
+    const ownerId = req.user?.id || 'admin';
+
+    // Check if scheduler is already stopped
+    const schedulerStatus = scheduler.getStatus();
+    
+    if (!schedulerStatus.isRunning) {
+      console.log('[scheduler-stop] Already stopped');
+      return res.status(200).json({
+        success: true,
+        message: 'Scheduler already stopped',
+        status: schedulerStatus,
+        requestId
+      });
+    }
+
+    // Stop scheduler
+    scheduler.stop();
+    
+    console.log('[scheduler-stop] Stopped successfully');
+
+    // Log action
+    await SocialAuditLog.logAction({
+      actorId: ownerId,
+      actorType: 'admin',
+      action: 'scheduler_stop',
+      status: 'success',
+      description: 'Stopped social media scheduler'
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Scheduler stopped successfully',
+      status: scheduler.getStatus(),
+      requestId
+    });
+
+  } catch (error) {
+    console.error('[scheduler-stop] Error:', error.message);
+
+    // Log failure
+    try {
+      await SocialAuditLog.logAction({
+        actorId: req.user?.id || 'admin',
+        actorType: 'admin',
+        action: 'scheduler_stop',
+        status: 'failure',
+        description: 'Failed to stop scheduler',
+        errorMessage: error.message
+      });
+    } catch (logError) {
+      console.error('[scheduler-stop] Failed to log failure:', logError.message);
+    }
+
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to stop scheduler',
+      details: error.message,
+      requestId
+    });
+  }
+});
+
+/**
  * GET /api/social/scheduler/status
  * Get scheduler status
  * 
@@ -1319,6 +1419,7 @@ router.get('/scheduler/status', async (req, res) => {
     return res.status(200).json({
       success: true,
       scheduler: schedulerStatus,
+      automationEnabled: process.env.SOCIAL_AUTOMATION_ENABLED === 'true',
       meta: {
         connected: validAccounts.length > 0,
         totalAccounts: metaAccounts.length,
