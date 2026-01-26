@@ -1222,20 +1222,6 @@ router.post('/scheduler/start', async (req, res) => {
       });
     }
 
-    // SAFETY CHECK: Verify SOCIAL_AUTOMATION_ENABLED
-    // This flag must be explicitly enabled to allow scheduler start
-    const automationEnabled = process.env.SOCIAL_AUTOMATION_ENABLED === 'true';
-    
-    if (!automationEnabled) {
-      console.warn('[scheduler-start] SOCIAL_AUTOMATION_ENABLED is false');
-      return res.status(403).json({
-        success: false,
-        error: 'Social automation is disabled',
-        message: 'Set SOCIAL_AUTOMATION_ENABLED=true in environment variables to enable automated posting',
-        requestId
-      });
-    }
-
     // Check Meta connection
     const metaAccounts = await SocialAccount.find({
       ownerId,
@@ -1255,9 +1241,8 @@ router.post('/scheduler/start', async (req, res) => {
     }
 
     // Start scheduler
-    // SAFETY: Using force=true to allow manual start even if SOCIAL_AUTOMATION_ENABLED is false
-    // (since we already checked the flag above)
-    scheduler.start({ force: true });
+    // Will throw error if SOCIAL_AUTOMATION_ENABLED is not true
+    scheduler.start();
     
     console.log('[scheduler-start] Started successfully');
 
@@ -1285,6 +1270,27 @@ router.post('/scheduler/start', async (req, res) => {
   } catch (error) {
     console.error('[scheduler-start] Error:', error.message);
 
+    // Handle specific error cases with appropriate HTTP status codes
+    let statusCode = 500;
+    let errorResponse = {
+      success: false,
+      error: 'Failed to start scheduler',
+      details: error.message,
+      requestId
+    };
+
+    // Social automation disabled
+    if (error.message && error.message.includes('Social automation is disabled')) {
+      statusCode = 403;
+      errorResponse = {
+        success: false,
+        error: 'Social automation is disabled',
+        message: 'Set SOCIAL_AUTOMATION_ENABLED=true in environment variables to enable automated posting',
+        details: error.message,
+        requestId
+      };
+    }
+
     // Log failure
     try {
       await SocialAuditLog.logAction({
@@ -1299,12 +1305,7 @@ router.post('/scheduler/start', async (req, res) => {
       console.error('[scheduler-start] Failed to log failure:', logError.message);
     }
 
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to start scheduler',
-      details: error.message,
-      requestId
-    });
+    return res.status(statusCode).json(errorResponse);
   }
 });
 

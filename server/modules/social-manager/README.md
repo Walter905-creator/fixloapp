@@ -426,8 +426,8 @@ Even when `SOCIAL_AUTOMATION_ENABLED=false`, you can manually control the schedu
 ```bash
 POST /api/social/scheduler/start
 ```
-- Requires `SOCIAL_AUTOMATION_ENABLED=true` to start
-- Returns error if flag is false
+- **Requires** `SOCIAL_AUTOMATION_ENABLED=true` to succeed
+- Returns HTTP 403 error if automation is disabled
 - Verifies Meta accounts are connected
 - Logs action to audit trail
 
