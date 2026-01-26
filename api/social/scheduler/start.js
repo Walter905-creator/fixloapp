@@ -15,49 +15,7 @@
  */
 
 const mongoose = require('mongoose');
-
-// Connection state cache
-let cachedDbConnection = null;
-let connectionAttempted = false;
-
-/**
- * Connect to MongoDB
- */
-async function connectToDatabase() {
-  if (cachedDbConnection && mongoose.connection.readyState === 1) {
-    return cachedDbConnection;
-  }
-
-  if (connectionAttempted && !cachedDbConnection) {
-    return null;
-  }
-
-  connectionAttempted = true;
-
-  try {
-    const MONGODB_URI = process.env.MONGODB_URI;
-    
-    if (!MONGODB_URI) {
-      console.warn('[scheduler-start] MONGODB_URI not configured');
-      return null;
-    }
-
-    await mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 10000,
-      maxPoolSize: 10,
-      minPoolSize: 1,
-    });
-
-    cachedDbConnection = mongoose.connection;
-    console.log('[scheduler-start] Database connected');
-    
-    return cachedDbConnection;
-  } catch (error) {
-    console.error('[scheduler-start] Database connection failed:', error.message);
-    return null;
-  }
-}
+const dbConnect = require('../../server/lib/dbConnect');
 
 /**
  * Verify admin JWT token
@@ -184,14 +142,17 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // Connect to database
-    const db = await connectToDatabase();
+    // Connect to database using centralized connection handler
+    const db = await dbConnect();
 
-    if (!db) {
+    const databaseAvailable = db !== null;
+
+    if (!databaseAvailable) {
       return res.status(503).json({
         success: false,
         error: 'Database connection unavailable',
-        message: 'Configure MONGODB_URI environment variable',
+        message: 'Configure MONGO_URI environment variable in Vercel',
+        databaseAvailable: false,
         requestId
       });
     }
@@ -228,6 +189,8 @@ module.exports = async (req, res) => {
       note: 'Use the main server endpoint to actually start cron jobs',
       status: 'start_requested',
       metaStatus,
+      metaConnected: metaStatus.connected,
+      databaseAvailable: true,
       manualApprovalMode: true,
       serverlessEnvironment: true,
       requestId
