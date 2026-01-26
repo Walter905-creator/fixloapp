@@ -68,13 +68,17 @@ async function testConnection() {
     console.error('❌ Connection failed:', error.message);
     console.error('');
     console.error('Error details:', error);
-    process.exit(1);
+    // Don't call process.exit here - let finally block run first
   } finally {
     // Close the connection
     if (mongoose.connection.readyState === 1) {
       await mongoose.connection.close();
       console.log('');
       console.log('🔌 Connection closed');
+    }
+    // Exit with error code if there was an error
+    if (mongoose.connection.readyState !== 1) {
+      process.exit(1);
     }
   }
 }

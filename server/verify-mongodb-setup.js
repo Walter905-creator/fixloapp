@@ -47,14 +47,21 @@ console.log('📋 Connection String Details:');
 console.log('   ', displayUri);
 console.log('');
 
-// Extract connection details
-const match = MONGODB_URI.match(/mongodb\+srv:\/\/([^:]+):([^@]+)@([^/]+)\/([^?]+)/);
-if (match) {
-  const [, username, password, cluster, database] = match;
-  console.log('   Username:', username);
-  console.log('   Password:', '*'.repeat(password.length), '(masked)');
-  console.log('   Cluster:', cluster);
-  console.log('   Database:', database);
+// Extract connection details using URL parsing
+try {
+  // For SRV URIs, we need to parse manually since URL can't handle mongodb+srv://
+  const match = MONGODB_URI.match(/mongodb(?:\+srv)?:\/\/([^:]+):([^@]+)@([^/]+)\/([^?]+)/);
+  if (match) {
+    const [, username, password, cluster, database] = match;
+    console.log('   Username:', username);
+    console.log('   Password:', '*'.repeat(Math.min(password.length, 32)), '(masked)');
+    console.log('   Cluster:', cluster);
+    console.log('   Database:', database);
+    console.log('');
+  }
+} catch (err) {
+  // If parsing fails, just continue without detailed breakdown
+  console.log('   (Connection string details not parsed)');
   console.log('');
 }
 

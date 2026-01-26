@@ -81,14 +81,26 @@ async function run() {
     console.error('❌ Connection failed:', error.message);
     console.error('');
     console.error('Error details:', error);
-    process.exit(1);
+    // Don't call process.exit here - let finally block run first
   } finally {
     // Ensures that the client will close when you finish/error
-    await client.close();
-    console.log('');
-    console.log('🔌 Connection closed');
+    try {
+      await client.close();
+      console.log('');
+      console.log('🔌 Connection closed');
+    } catch (closeError) {
+      console.error('Error closing connection:', closeError.message);
+    }
   }
 }
 
 // Run the connection test
-run().catch(console.dir);
+run()
+  .then(() => {
+    console.log('✅ Test completed successfully');
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error('❌ Test failed:', error);
+    process.exit(1);
+  });
