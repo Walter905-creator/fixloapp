@@ -122,11 +122,12 @@ try {
     console.log('   - Handler execution completed');
   });
   
-  // Test with special admin key
+  // Test with special admin key (use test key, not production key)
+  const TEST_ADMIN_KEY = process.env.ADMIN_SECRET_KEY || 'test_admin_key_for_testing';
   const mockReqWithAuth = {
     method: 'POST',
     headers: {
-      authorization: 'Bearer fixlo_admin_2026_super_secret_key'
+      authorization: `Bearer ${TEST_ADMIN_KEY}`
     },
     body: {}
   };

@@ -80,10 +80,6 @@ async function dbConnect() {
     // Timeout settings for serverless environment
     serverSelectionTimeoutMS: 10000, // 10 seconds
     socketTimeoutMS: 45000, // 45 seconds
-    
-    // Prevent deprecation warnings
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
   }).then(() => {
     console.log('[dbConnect] ✅ MongoDB connected successfully');
     globalThis.__mongoClient = mongoose.connection;
