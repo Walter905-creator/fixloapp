@@ -14,46 +14,7 @@
  */
 
 const mongoose = require('mongoose');
-
-// Connection state cache
-let cachedDbConnection = null;
-let connectionAttempted = false;
-
-/**
- * Connect to MongoDB
- */
-async function connectToDatabase() {
-  if (cachedDbConnection && mongoose.connection.readyState === 1) {
-    return cachedDbConnection;
-  }
-
-  if (connectionAttempted && !cachedDbConnection) {
-    return null;
-  }
-
-  connectionAttempted = true;
-
-  try {
-    const MONGODB_URI = process.env.MONGODB_URI;
-    
-    if (!MONGODB_URI) {
-      return null;
-    }
-
-    await mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 10000,
-      maxPoolSize: 10,
-      minPoolSize: 1,
-    });
-
-    cachedDbConnection = mongoose.connection;
-    
-    return cachedDbConnection;
-  } catch (error) {
-    return null;
-  }
-}
+const dbConnect = require('../../lib/dbConnect');
 
 /**
  * Check Meta connection status
@@ -147,17 +108,19 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // Connect to database
-    const db = await connectToDatabase();
+    // Connect to database using centralized connection handler
+    const db = await dbConnect();
 
-    if (!db) {
+    const databaseAvailable = db !== null;
+
+    if (!databaseAvailable) {
       return res.status(200).json({
         success: true,
         isRunning: false,
         environment: 'serverless',
         metaConnected: false,
         databaseAvailable: false,
-        message: 'Database connection unavailable',
+        message: 'Database connection unavailable - check MONGO_URI environment variable',
         requestId
       });
     }
@@ -185,6 +148,8 @@ module.exports = async (req, res) => {
         manualApprovalMode: true
       },
       meta: metaStatus,
+      metaConnected: metaStatus.connected,
+      databaseAvailable: true,
       database: {
         connected: true
       },
