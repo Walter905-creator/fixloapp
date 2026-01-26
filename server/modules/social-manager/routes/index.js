@@ -1241,7 +1241,10 @@ router.post('/scheduler/start', async (req, res) => {
     }
 
     // Start scheduler
-    // Will throw error if SOCIAL_AUTOMATION_ENABLED is not true
+    // NOTE: Not using force=true here because we want the scheduler to enforce
+    // the SOCIAL_AUTOMATION_ENABLED check even for manual API calls.
+    // This ensures the environment flag is the single source of truth for whether
+    // automated posting is allowed in this deployment.
     scheduler.start();
     
     console.log('[scheduler-start] Started successfully');

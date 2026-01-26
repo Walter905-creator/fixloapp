@@ -35,8 +35,11 @@ class Scheduler {
    * Start the scheduler
    * SAFETY: Respects SOCIAL_AUTOMATION_ENABLED environment variable
    * @param {Object} options - Start options
-   * @param {boolean} options.force - Force start even if automation disabled (for manual API control)
+   * @param {boolean} options.force - Force start bypass (reserved for testing/internal use only)
    * @throws {Error} If SOCIAL_AUTOMATION_ENABLED is false and force is not true
+   * 
+   * NOTE: The force option is NOT used by API endpoints to ensure the environment
+   * flag is always respected. It exists only for testing purposes.
    */
   start(options = {}) {
     if (this.isRunning) {
@@ -50,14 +53,14 @@ class Scheduler {
     const { force = false } = options;
     
     if (!automationEnabled && !force) {
-      console.warn('🛑 SOCIAL_AUTOMATION_ENABLED is false - scheduler will not start automatically. Use API endpoints to start manually.');
+      console.warn('🛑 SOCIAL_AUTOMATION_ENABLED is false - scheduler will not start.');
       const error = new Error('Social automation is disabled. Set SOCIAL_AUTOMATION_ENABLED=true to enable.');
       error.code = 'AUTOMATION_DISABLED';
       throw error;
     }
     
     if (force && !automationEnabled) {
-      console.log('⚠️ Scheduler started manually (SOCIAL_AUTOMATION_ENABLED is false)');
+      console.log('⚠️ SECURITY WARNING: Scheduler started with force flag while automation is disabled. This should only happen in testing.');
     }
     
     console.log('📅 Starting social media scheduler...');

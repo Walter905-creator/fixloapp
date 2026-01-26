@@ -420,7 +420,9 @@ SOCIAL_AUTOMATION_ENABLED=true
 
 #### Manual Control via API
 
-Even when `SOCIAL_AUTOMATION_ENABLED=false`, you can manually control the scheduler:
+**IMPORTANT: All scheduler control requires `SOCIAL_AUTOMATION_ENABLED=true`**
+
+The API endpoints provide manual control over the scheduler, but the environment flag must still be enabled. This ensures automated posting cannot be activated without explicit configuration approval.
 
 **Start Scheduler**
 ```bash
