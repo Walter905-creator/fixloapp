@@ -6,7 +6,7 @@
     "node": ">=18.0.0 <22.0.0"
   },
   "scripts": {
-    "prepare": "husky",
+    "prepare": "node -e \"if (process.env.NODE_ENV !== 'production') require('child_process').execSync('husky', { stdio: 'inherit' })\"",
     "clean-old-builds": "rm -rf client/build build public && echo '🧹 Cleaned old builds'",
     "install-client": "cd client && npm install --no-fund --no-audit",
     "build-client": "cd client && node scripts/inject-build-meta.js && REACT_APP_BUILD_TIMESTAMP=$(date +%s) GENERATE_SOURCEMAP=false npm run build",
