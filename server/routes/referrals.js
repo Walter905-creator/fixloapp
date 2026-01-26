@@ -449,22 +449,21 @@ router.post('/complete', async (req, res) => {
 });
 
 /**
- * Send verification code with delivery confirmation
+ * Send verification code
  * POST /api/referrals/send-verification
  * 
- * ENHANCED PRODUCTION BEHAVIOR:
- * 1. Attempts WhatsApp delivery first with status callback tracking
- * 2. Returns message SID for delivery status polling
- * 3. Frontend checks delivery status before showing success
- * 4. SMS fallback is USER-INITIATED (not automatic)
- * 5. Clear failure messages with SMS retry option
+ * SIMPLIFIED BEHAVIOR (NO DELIVERY CONFIRMATION):
+ * 1. Sends verification code via requested method (SMS or WhatsApp)
+ * 2. Returns success immediately when send is accepted
+ * 3. NO delivery status polling required
+ * 4. Frontend proceeds to verification step immediately
  * 
  * @param {string} phone - Phone number to send verification code to
- * @param {string} method - Optional: 'whatsapp' (default) or 'sms' (user-selected fallback)
+ * @param {string} method - Optional: 'sms' (default) or 'whatsapp'
  */
 router.post('/send-verification', async (req, res) => {
   try {
-    const { phone, method = 'whatsapp' } = req.body;
+    const { phone, method = 'sms' } = req.body;
 
     console.log('📱 Referral verification request received');
     console.log(`   Requested method: ${method}`);
@@ -519,61 +518,38 @@ router.post('/send-verification', async (req, res) => {
     // Prepare message
     const messageBody = `Fixlo: Your verification code is ${code}. Valid for 15 minutes. Reply STOP to opt out.`;
 
-    // Build status callback URL (for production delivery tracking)
-    const baseUrl = process.env.API_BASE_URL || process.env.SERVER_URL || 'https://fixloapp.onrender.com';
-    const statusCallbackUrl = `${baseUrl}/api/referrals/sms-status-callback`;
-
-    // Send via requested method
+    // Send via requested method (fire and forget - don't block on delivery)
     try {
-      let result;
       let channelUsed;
 
       if (method === 'sms') {
-        // User explicitly chose SMS
-        console.log(`   Sending via SMS (user-selected)...`);
-        result = await sendSms(normalizedPhone, messageBody, { statusCallback: statusCallbackUrl });
+        console.log(`   Sending via SMS...`);
+        await sendSms(normalizedPhone, messageBody);
         channelUsed = 'sms';
         
-        console.log(`✅ SMS verification code SEND accepted`);
-        console.log(`   Twilio message SID: ${result.sid}`);
+        console.log(`✅ SMS verification code sent`);
         console.log(`   Phone: ${maskedPhone}`);
         console.log(`   Channel: SMS`);
         
       } else {
-        // Default: Try WhatsApp
         console.log(`   Sending via WhatsApp...`);
-        result = await sendWhatsAppMessage(normalizedPhone, messageBody, { statusCallback: statusCallbackUrl });
+        await sendWhatsAppMessage(normalizedPhone, messageBody);
         channelUsed = 'whatsapp';
         
-        console.log(`✅ WhatsApp verification code SEND accepted`);
-        console.log(`   Twilio message SID: ${result.sid}`);
+        console.log(`✅ WhatsApp verification code sent`);
         console.log(`   Phone: ${maskedPhone}`);
         console.log(`   Channel: WhatsApp`);
       }
 
-      // Initialize delivery status tracking
-      deliveryStatuses.set(result.sid, {
-        phone: normalizedPhone,
-        method: channelUsed,
-        status: 'queued', // Initial status
-        errorCode: null,
-        errorMessage: null,
-        timestamp: Date.now()
-      });
-
-      // Return success with message SID for status polling
+      // Return success immediately - no delivery polling
       return res.json({
         success: true,
-        channelUsed,
-        messageSid: result.sid,
-        message: `Verification code sent via ${channelUsed}. Waiting for delivery confirmation...`,
-        // Frontend should poll /delivery-status/:messageSid to check delivery
-        pollUrl: `/api/referrals/delivery-status/${result.sid}`
+        message: `Verification code sent via ${channelUsed}. Check your ${channelUsed === 'whatsapp' ? 'WhatsApp' : 'text'} messages.`
       });
 
     } catch (error) {
       // Send failed
-      console.error(`❌ ${method.toUpperCase()} delivery FAILED`);
+      console.error(`❌ ${method.toUpperCase()} send FAILED`);
       console.error(`   Phone: ${maskedPhone}`);
       console.error(`   Error: ${error.message}`);
       console.error(`   Twilio Error Code: ${error.code || 'N/A'}`);
@@ -582,32 +558,22 @@ router.post('/send-verification', async (req, res) => {
       if (error.message && error.message.includes(CONFIGURATION_ERROR_MARKER)) {
         return res.status(503).json({
           success: false,
-          channel: method,
-          reason: 'SERVICE_UNAVAILABLE',
-          message: 'Verification service is temporarily unavailable. Please try again later.',
-          suggestion: null
+          message: 'Verification service is temporarily unavailable. Please try again later.'
         });
       }
 
-      // WhatsApp-specific errors
+      // WhatsApp-specific errors - suggest SMS fallback
       if (method === 'whatsapp') {
-        // Suggest SMS as fallback
         return res.json({
           success: false,
-          channel: 'whatsapp',
-          reason: 'NOT_DELIVERED',
-          errorCode: error.code || null,
-          message: 'WhatsApp could not deliver the message.',
+          message: 'WhatsApp could not send the message. Try SMS instead.',
           suggestion: 'Try SMS instead'
         });
       }
 
-      // SMS failed (both channels now exhausted)
+      // SMS failed
       return res.status(500).json({
         success: false,
-        channel: 'sms',
-        reason: 'DELIVERY_FAILED',
-        errorCode: error.code || null,
         message: 'Unable to send verification code. Please check your phone number and try again.'
       });
     }
@@ -617,7 +583,6 @@ router.post('/send-verification', async (req, res) => {
     console.error('❌ Unexpected verification error:', error);
     return res.status(500).json({
       success: false,
-      error: 'INTERNAL_ERROR',
       message: 'Something went wrong. Please try again.'
     });
   }
@@ -626,6 +591,14 @@ router.post('/send-verification', async (req, res) => {
 /**
  * Verify code
  * POST /api/referrals/verify-code
+ * 
+ * CRITICAL DECOUPLING (per requirements):
+ * 1. Validates verification code
+ * 2. Marks phone as verified
+ * 3. Generates referralCode and referralLink
+ * 4. Fires SMS send (NEVER blocks on delivery)
+ * 5. Returns success with referralCode and referralLink ONLY
+ * 6. NO delivery status flags in response
  */
 router.post('/verify-code', async (req, res) => {
   try {
@@ -681,10 +654,14 @@ router.post('/verify-code', async (req, res) => {
       });
     }
 
+    // ========================================
+    // VERIFICATION SUCCESS - PROCEED
+    // ========================================
     // Code is valid - remove it
     verificationCodes.delete(normalizedPhone);
 
     console.log('✅ Verification code validated successfully');
+    console.log(`   Phone: ${maskPhoneForLogging(normalizedPhone)}`);
 
     // Create or fetch referrer AFTER successful verification
     const CommissionReferral = require('../models/CommissionReferral');
@@ -717,9 +694,11 @@ router.post('/verify-code', async (req, res) => {
       }
 
       if (attempts >= maxAttempts) {
+        // Fail gracefully - still return what we have
+        console.error('❌ Failed to generate unique referral code after max attempts');
         return res.status(500).json({
           success: false,
-          error: 'Failed to generate unique referral code'
+          error: 'Failed to generate unique referral code. Please try again.'
         });
       }
 
@@ -734,7 +713,7 @@ router.post('/verify-code', async (req, res) => {
         referralCode,
         commissionRate: 0.15,
         country: 'US',
-        status: 'pending'
+        status: 'active' // Mark as active since verified
       });
 
       console.log(`✅ Created new referrer: ${referralCode} for phone ${maskPhoneForLogging(normalizedPhone)}`);
@@ -745,62 +724,116 @@ router.post('/verify-code', async (req, res) => {
     const referralLink = `${baseUrl}/join?ref=${referrer.referralCode}`;
 
     // ========================================
-    // CRITICAL: SMS-FIRST GUARANTEED DELIVERY
+    // FIRE-AND-FORGET SMS SEND (NEVER BLOCKS)
     // ========================================
-    // Send referral link via SMS (PRIMARY - GUARANTEED with retry)
+    // Send referral link via SMS - BEST EFFORT, NO BLOCKING
     const smsMessage = SMS_TEMPLATES.REFERRAL_LINK(referralLink);
-
-    let smsSuccess = false;
     
-    // First attempt
-    try {
-      await sendSms(normalizedPhone, smsMessage);
-      smsSuccess = true;
-      console.log(`✅ Referral link sent via SMS to ${maskPhoneForLogging(normalizedPhone)} (attempt 1)`);
-    } catch (smsError) {
-      console.warn(`⚠️ SMS delivery failed (attempt 1): ${smsError.message}`);
-      
-      // Retry once on failure
+    // Fire async - don't wait for completion
+    setImmediate(async () => {
       try {
         await sendSms(normalizedPhone, smsMessage);
-        smsSuccess = true;
-        console.log(`✅ Referral link sent via SMS to ${maskPhoneForLogging(normalizedPhone)} (attempt 2 - retry successful)`);
-      } catch (retryError) {
-        // Both attempts failed - log but DO NOT block verification success
-        console.error(`❌ SMS delivery failed after retry: ${retryError.message}`);
+        console.log(`✅ Referral link sent via SMS to ${maskPhoneForLogging(normalizedPhone)}`);
+      } catch (smsError) {
+        // Log error but don't fail - user already verified
+        console.error(`⚠️ SMS send failed (non-blocking): ${smsError.message}`);
         console.error(`   Phone: ${maskPhoneForLogging(normalizedPhone)}`);
-        // Continue - user is still verified
+        console.error(`   User can still access link via UI`);
       }
-    }
+    });
 
     // ========================================
-    // OPTIONAL: WHATSAPP DELIVERY (BEST-EFFORT)
+    // RETURN SUCCESS IMMEDIATELY
     // ========================================
-    // Send referral link via WhatsApp (SECONDARY - OPTIONAL)
-    // This is best-effort and failure does NOT affect the response
-    try {
-      await sendWhatsAppMessage(normalizedPhone, smsMessage);
-      console.log(`ℹ️ Referral link also sent via WhatsApp to ${maskPhoneForLogging(normalizedPhone)}`);
-    } catch (whatsappError) {
-      // WhatsApp failure is expected and does not affect flow
-      console.log(`ℹ️ WhatsApp delivery skipped: ${whatsappError.message}`);
-    }
-
-    // ========================================
-    // RETURN SUCCESS AFTER SMS ATTEMPT
-    // ========================================
-    // IMPORTANT: Return success regardless of SMS delivery status
-    // User's phone is verified, which is the primary goal
+    // CRITICAL: Return success BEFORE SMS delivery completes
+    // Per requirements: NO delivery status flags
+    console.log(`✅ Verification complete - returning success`);
+    console.log(`   Referral code: ${referrer.referralCode}`);
+    console.log(`   Referral link: ${referralLink}`);
+    
     return res.json({
       success: true,
       verified: true,
       referralCode: referrer.referralCode,
-      referralLink: referralLink,
-      deliveryChannel: 'sms'
+      referralLink: referralLink
     });
 
   } catch (error) {
     console.error('❌ Verify code error:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Server error'
+    });
+  }
+});
+
+/**
+ * Resend referral link via SMS
+ * POST /api/referrals/resend-link
+ * 
+ * Allows user to manually resend referral link if not received
+ */
+router.post('/resend-link', async (req, res) => {
+  try {
+    const { phone } = req.body;
+
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        error: 'Phone number is required'
+      });
+    }
+
+    // Normalize phone number
+    const normalizationResult = normalizePhoneToE164(phone);
+
+    if (!normalizationResult.success) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid phone number format'
+      });
+    }
+
+    const normalizedPhone = normalizationResult.phone;
+    const CommissionReferral = require('../models/CommissionReferral');
+    
+    // Find referrer by phone
+    const referrer = await CommissionReferral.findOne({ 
+      referrerPhone: normalizedPhone 
+    }).sort({ createdAt: -1 });
+
+    if (!referrer) {
+      return res.status(404).json({
+        success: false,
+        error: 'Referrer not found. Please verify your phone number first.'
+      });
+    }
+
+    // Build referral link
+    const baseUrl = process.env.CLIENT_URL || 'https://www.fixloapp.com';
+    const referralLink = `${baseUrl}/join?ref=${referrer.referralCode}`;
+
+    // Send referral link via SMS (fire and forget - best effort)
+    const smsMessage = SMS_TEMPLATES.REFERRAL_LINK(referralLink);
+    
+    setImmediate(async () => {
+      try {
+        await sendSms(normalizedPhone, smsMessage);
+        console.log(`✅ Referral link resent via SMS to ${maskPhoneForLogging(normalizedPhone)}`);
+      } catch (smsError) {
+        console.error(`⚠️ SMS resend failed: ${smsError.message}`);
+        console.error(`   Phone: ${maskPhoneForLogging(normalizedPhone)}`);
+      }
+    });
+
+    // Return success immediately
+    return res.json({
+      success: true,
+      message: 'Referral link is being sent to your phone.'
+    });
+
+  } catch (error) {
+    console.error('❌ Resend link error:', error);
     return res.status(500).json({
       success: false,
       error: error.message || 'Server error'
