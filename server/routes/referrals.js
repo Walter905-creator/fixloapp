@@ -29,6 +29,25 @@ Start earning by sharing your Fixlo referral link:
 ${referralLink}`
 };
 
+/**
+ * Get or create Twilio client (cached)
+ * Prevents repeated initialization overhead
+ */
+let twilioClientCache = null;
+function getTwilioClient() {
+  const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN } = process.env;
+  
+  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
+    return null;
+  }
+  
+  if (!twilioClientCache) {
+    twilioClientCache = require('twilio')(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+  }
+  
+  return twilioClientCache;
+}
+
 // Anti-fraud configuration
 const ANTI_FRAUD_CONFIG = {
   MAX_REFERRALS_PER_IP_PER_DAY: process.env.MAX_REFERRALS_PER_IP || 3,
@@ -600,15 +619,7 @@ router.get('/delivery-status/:messageSid', async (req, res) => {
       });
     }
 
-    // Get Twilio client
-    const getTwilioClient = () => {
-      const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN } = process.env;
-      if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
-        return null;
-      }
-      return require('twilio')(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
-    };
-
+    // Get cached Twilio client
     const client = getTwilioClient();
     
     if (!client) {

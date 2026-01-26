@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * Manual Validation Checklist for Referral Verification Flow Fix
  * 

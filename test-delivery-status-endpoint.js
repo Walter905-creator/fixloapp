@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * Test delivery-status endpoint
  * 
