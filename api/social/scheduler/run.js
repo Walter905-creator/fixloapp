@@ -1,17 +1,17 @@
 /**
- * Vercel Serverless Function: POST /api/social/scheduler/start
+ * Vercel Serverless Function: POST /api/social/scheduler/run
  * 
- * Start the social media scheduler with safety checks
+ * Execute one scheduler cycle (serverless-compatible)
  * 
  * Requirements:
- * - Admin-only access
- * - Verifies Meta is connected before starting
- * - Respects manual approval mode
- * - Safe to call multiple times (idempotent)
+ * - Admin authentication required (JWT or admin secret key)
+ * - Idempotent - safe to call multiple times
+ * - Uses MongoDB execution lock to prevent concurrent executions
+ * - Processes scheduled posts that are due now
  * 
  * Usage:
- * POST /api/social/scheduler/start
- * Headers: Authorization: Bearer <admin-jwt-token>
+ * POST /api/social/scheduler/run
+ * Headers: Authorization: Bearer <admin-jwt-token-or-secret-key>
  */
 
 const mongoose = require('mongoose');
@@ -39,7 +39,7 @@ function verifyAdminToken(req) {
   
   // Warn if using default key in production
   if (!ADMIN_SECRET_KEY && process.env.NODE_ENV === 'production') {
-    console.warn('[scheduler-start] ⚠️  WARNING: Using default ADMIN_SECRET_KEY in production. Set ADMIN_SECRET_KEY environment variable.');
+    console.warn('[scheduler-run] ⚠️  WARNING: Using default ADMIN_SECRET_KEY in production. Set ADMIN_SECRET_KEY environment variable.');
   }
   
   if (token === effectiveKey) {
@@ -52,7 +52,7 @@ function verifyAdminToken(req) {
     const secret = process.env.JWT_SECRET;
     
     if (!secret) {
-      console.error('[scheduler-start] JWT_SECRET not configured');
+      console.error('[scheduler-run] JWT_SECRET not configured');
       return { valid: false, error: 'Server configuration error' };
     }
     
@@ -70,46 +70,12 @@ function verifyAdminToken(req) {
 }
 
 /**
- * Check if Meta is connected
- */
-async function checkMetaConnection(ownerId) {
-  let SocialAccount;
-  
-  if (mongoose.models.SocialAccount) {
-    SocialAccount = mongoose.models.SocialAccount;
-  } else {
-    const socialAccountSchema = new mongoose.Schema({
-      ownerId: String,
-      platform: String,
-      isActive: Boolean,
-      isTokenValid: Boolean,
-      platformAccountId: String
-    });
-    SocialAccount = mongoose.model('SocialAccount', socialAccountSchema);
-  }
-
-  const metaAccounts = await SocialAccount.find({
-    ownerId,
-    platform: { $in: ['meta_instagram', 'meta_facebook'] },
-    isActive: true,
-    isTokenValid: true
-  });
-
-  return {
-    connected: metaAccounts.length > 0,
-    instagramConnected: metaAccounts.some(a => a.platform === 'meta_instagram'),
-    facebookConnected: metaAccounts.some(a => a.platform === 'meta_facebook'),
-    accountCount: metaAccounts.length
-  };
-}
-
-/**
  * Main handler
  */
 module.exports = async (req, res) => {
   const requestId = Date.now().toString(36);
   
-  console.log('[scheduler-start] Request received', {
+  console.log('[scheduler-run] Request received', {
     requestId,
     method: req.method,
     timestamp: new Date().toISOString()
@@ -163,9 +129,7 @@ module.exports = async (req, res) => {
     // Connect to database using centralized connection handler
     const db = await dbConnect();
 
-    const databaseAvailable = db !== null;
-
-    if (!databaseAvailable) {
+    if (!db) {
       return res.status(503).json({
         success: false,
         error: 'Database connection unavailable',
@@ -175,51 +139,44 @@ module.exports = async (req, res) => {
       });
     }
 
-    // Determine ownerId
-    const ownerId = req.body?.ownerId || 'admin';
+    console.log('[scheduler-run] Database connected, loading scheduler...');
 
-    // Check Meta connection
-    const metaStatus = await checkMetaConnection(ownerId);
-
-    if (!metaStatus.connected) {
-      console.warn('[scheduler-start] Meta not connected');
-      return res.status(400).json({
-        success: false,
-        error: 'Meta accounts not connected',
-        message: 'Connect Instagram or Facebook via Meta OAuth before starting scheduler',
-        metaStatus,
-        requestId
-      });
-    }
-
-    // Note: In serverless environment (Vercel), we cannot start persistent cron jobs
-    // The scheduler runs in the main Express server, not in serverless functions
-    // This endpoint serves as a status indicator and configuration setter
+    // Load scheduler dynamically to avoid issues with serverless cold starts
+    const schedulerPath = require.resolve('../../../server/modules/social-manager/scheduler');
     
-    console.warn('[scheduler-start] WARNING: Serverless environment detected');
-    console.warn('[scheduler-start] Scheduler must be started on the main Express server');
-    console.warn('[scheduler-start] Use the server-side /api/social/scheduler/start route instead');
+    // Clear cache to get fresh instance
+    delete require.cache[schedulerPath];
+    
+    const scheduler = require('../../../server/modules/social-manager/scheduler');
+
+    console.log('[scheduler-run] Executing scheduler cycle...');
+    
+    // Execute one scheduler cycle
+    const result = await scheduler.executeOnce();
+
+    console.log('[scheduler-run] Execution complete', {
+      success: result.success,
+      postsProcessed: result.postsProcessed,
+      postsPublished: result.postsPublished,
+      skipped: result.skipped
+    });
 
     return res.status(200).json({
       success: true,
-      message: 'Scheduler start requested',
-      warning: 'In serverless environment - scheduler runs on main Express server',
-      note: 'Use the main server endpoint to actually start cron jobs',
-      status: 'start_requested',
-      metaStatus,
-      metaConnected: metaStatus.connected,
-      databaseAvailable: true,
-      manualApprovalMode: true,
-      serverlessEnvironment: true,
+      result,
+      message: result.skipped 
+        ? 'Scheduler execution already in progress' 
+        : `Processed ${result.postsProcessed} posts, published ${result.postsPublished}`,
       requestId
     });
 
   } catch (error) {
-    console.error('[scheduler-start] Error:', error.message);
+    console.error('[scheduler-run] Error:', error.message);
+    console.error('[scheduler-run] Stack:', error.stack);
 
     return res.status(500).json({
       success: false,
-      error: 'Failed to start scheduler',
+      error: 'Failed to execute scheduler',
       details: error.message,
       requestId
     });

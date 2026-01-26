@@ -8,11 +8,13 @@ const EncryptedToken = require('./EncryptedToken');
 const ScheduledPost = require('./ScheduledPost');
 const PostMetric = require('./PostMetric');
 const SocialAuditLog = require('./SocialAuditLog');
+const SchedulerState = require('./SchedulerState');
 
 module.exports = {
   SocialAccount,
   EncryptedToken,
   ScheduledPost,
   PostMetric,
-  SocialAuditLog
+  SocialAuditLog,
+  SchedulerState
 };

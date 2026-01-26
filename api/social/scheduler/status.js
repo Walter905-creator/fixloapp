@@ -5,7 +5,7 @@
  * 
  * Requirements:
  * - No authentication required (read-only status)
- * - Returns scheduler state
+ * - Returns scheduler state from MongoDB (serverless-compatible)
  * - Returns Meta connection status
  * - Safe for monitoring/health checks
  * 
@@ -68,6 +68,63 @@ async function checkMetaConnection(ownerId) {
 }
 
 /**
+ * Get scheduler state from MongoDB
+ * Note: Uses inline schema to avoid cold start issues with model imports in serverless
+ */
+async function getSchedulerState() {
+  try {
+    // Try to use existing model if already registered
+    let SchedulerState;
+    
+    if (mongoose.models.SchedulerState) {
+      SchedulerState = mongoose.models.SchedulerState;
+    } else {
+      // Define minimal inline schema for serverless cold starts
+      // This ensures the function works even if the model hasn't been loaded yet
+      const schedulerStateSchema = new mongoose.Schema({
+        _id: String,
+        lastRunAt: Date,
+        lastRunDuration: Number,
+        lastRunStatus: String,
+        totalExecutions: Number,
+        totalPostsPublished: Number,
+        executionLock: Boolean,
+        nextScheduledPost: {
+          postId: mongoose.Schema.Types.ObjectId,
+          scheduledFor: Date,
+          platform: String
+        }
+      }, { collection: 'schedulerstates' }); // Explicitly set collection name
+      
+      SchedulerState = mongoose.model('SchedulerState', schedulerStateSchema);
+    }
+
+    const state = await SchedulerState.findById('scheduler_state').lean();
+    
+    return state || {
+      lastRunAt: null,
+      lastRunDuration: null,
+      lastRunStatus: null,
+      totalExecutions: 0,
+      totalPostsPublished: 0,
+      executionLock: false,
+      nextScheduledPost: null
+    };
+  } catch (error) {
+    console.error('[scheduler-status] Failed to get scheduler state:', error.message);
+    return {
+      lastRunAt: null,
+      lastRunDuration: null,
+      lastRunStatus: null,
+      totalExecutions: 0,
+      totalPostsPublished: 0,
+      executionLock: false,
+      nextScheduledPost: null
+    };
+  }
+}
+
+/**
  * Main handler
  */
 module.exports = async (req, res) => {
@@ -116,8 +173,8 @@ module.exports = async (req, res) => {
     if (!databaseAvailable) {
       return res.status(200).json({
         success: true,
-        isRunning: false,
         environment: 'serverless',
+        serverless: true,
         metaConnected: false,
         databaseAvailable: false,
         message: 'Database connection unavailable - check MONGO_URI environment variable',
@@ -131,27 +188,35 @@ module.exports = async (req, res) => {
     // Check Meta connection
     const metaStatus = await checkMetaConnection(ownerId);
 
-    // Get scheduler state from global (if available)
-    const schedulerState = global.schedulerState || {
-      isRunning: false,
-      startedAt: null
-    };
+    // Get scheduler state from MongoDB
+    const schedulerState = await getSchedulerState();
 
-    // Note: In serverless environment, actual cron jobs run on the main server
+    // Calculate if scheduler is operational
+    const isOperational = databaseAvailable && metaStatus.connected;
+
     return res.status(200).json({
       success: true,
       environment: 'serverless',
-      note: 'Scheduler runs on main Express server, not in serverless functions',
+      serverless: true,
+      operational: isOperational,
       scheduler: {
-        isRunning: schedulerState.isRunning,
-        startedAt: schedulerState.startedAt,
-        manualApprovalMode: true
+        lastRunAt: schedulerState.lastRunAt,
+        lastRunDuration: schedulerState.lastRunDuration,
+        lastRunStatus: schedulerState.lastRunStatus,
+        totalExecutions: schedulerState.totalExecutions,
+        totalPostsPublished: schedulerState.totalPostsPublished,
+        executionLock: schedulerState.executionLock,
+        nextScheduledPost: schedulerState.nextScheduledPost
       },
       meta: metaStatus,
       metaConnected: metaStatus.connected,
       databaseAvailable: true,
       database: {
         connected: true
+      },
+      endpoints: {
+        run: '/api/social/scheduler/run (POST, requires auth)',
+        status: '/api/social/scheduler/status (GET, public)'
       },
       timestamp: new Date().toISOString(),
       requestId

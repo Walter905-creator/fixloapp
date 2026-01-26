@@ -1,5 +1,5 @@
 const cron = require('node-cron');
-const { ScheduledPost, SocialAccount } = require('../models');
+const { ScheduledPost, SocialAccount, SchedulerState } = require('../models');
 const postingService = require('../posting');
 const { oauthHandlers } = require('../oauth');
 
@@ -413,6 +413,186 @@ class Scheduler {
         schedule: j.schedule
       }))
     };
+  }
+  
+  /**
+   * Execute one scheduler cycle (serverless-compatible)
+   * This method is idempotent and safe to call multiple times
+   * Uses MongoDB-based execution locking to prevent concurrent executions
+   * 
+   * @returns {Promise<Object>} Execution result
+   */
+  async executeOnce() {
+    const instanceId = `scheduler_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const startTime = Date.now();
+    
+    console.log(`[Scheduler] Execute once called (instance: ${instanceId})`);
+    
+    let postsProcessed = 0;
+    let postsPublished = 0;
+    let lockAcquired = false;
+    
+    try {
+      // Try to acquire execution lock (prevents concurrent executions)
+      lockAcquired = await SchedulerState.acquireLock(instanceId, 300000); // 5 minute lock
+      
+      if (!lockAcquired) {
+        console.log('[Scheduler] Another instance is already running, skipping execution');
+        return {
+          success: true,
+          skipped: true,
+          reason: 'Another instance is running',
+          message: 'Scheduler execution already in progress'
+        };
+      }
+      
+      console.log('[Scheduler] Lock acquired, processing scheduled posts...');
+      
+      // Process scheduled posts (same logic as processScheduledPosts)
+      const now = new Date();
+      const fifteenMinutesAgo = new Date(now.getTime() - 15 * 60 * 1000);
+      
+      // Find posts that should be published now
+      const posts = await ScheduledPost.find({
+        status: { $in: ['approved', 'scheduled'] },
+        scheduledFor: {
+          $gte: fifteenMinutesAgo,
+          $lte: now
+        }
+      }).limit(50); // Process up to 50 posts per cycle
+      
+      postsProcessed = posts.length;
+      
+      if (posts.length === 0) {
+        console.log('[Scheduler] No posts ready to publish');
+      } else {
+        console.log(`[Scheduler] Processing ${posts.length} scheduled posts...`);
+        
+        for (const post of posts) {
+          try {
+            // Check rate limit
+            const canPost = await postingService.checkRateLimit(post.platform, post.accountId);
+            if (!canPost) {
+              console.log(`[Scheduler] Rate limit reached for ${post.platform}, deferring post ${post._id}`);
+              // Defer by 1 hour
+              post.scheduledFor = new Date(Date.now() + 60 * 60 * 1000);
+              await post.save();
+              continue;
+            }
+            
+            // Check if we should refresh token before posting
+            await this.ensureValidToken(post.accountId);
+            
+            // Publish
+            await postingService.publishPost(post);
+            postsPublished++;
+            console.log(`[Scheduler] ✅ Published post ${post._id} to ${post.platform}`);
+          } catch (error) {
+            console.error(`[Scheduler] ❌ Failed to publish post ${post._id}:`, error.message);
+            
+            // Will be retried by retry job if retries remaining
+            if (post.canRetry()) {
+              console.log(`[Scheduler] Will retry (${post.attemptCount}/${post.maxAttempts})`);
+            }
+          }
+        }
+      }
+      
+      // Find next scheduled post for status reporting
+      const nextPost = await ScheduledPost.findOne({
+        status: { $in: ['approved', 'scheduled'] },
+        scheduledFor: { $gt: now }
+      })
+        .sort({ scheduledFor: 1 })
+        .select('_id scheduledFor platform')
+        .lean();
+      
+      const duration = Date.now() - startTime;
+      
+      // Update stats
+      await SchedulerState.updateStats({
+        duration,
+        status: 'success',
+        error: null,
+        postsProcessed,
+        postsPublished,
+        nextScheduledPost: nextPost ? {
+          postId: nextPost._id,
+          scheduledFor: nextPost.scheduledFor,
+          platform: nextPost.platform
+        } : null
+      });
+      
+      console.log(`[Scheduler] Execution completed in ${duration}ms`);
+      
+      return {
+        success: true,
+        postsProcessed,
+        postsPublished,
+        duration,
+        nextScheduledPost: nextPost,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('[Scheduler] Execution error:', error);
+      
+      const duration = Date.now() - startTime;
+      
+      // Update stats with failure
+      await SchedulerState.updateStats({
+        duration,
+        status: 'failure',
+        error: error.message,
+        postsProcessed,
+        postsPublished
+      });
+      
+      // Release lock if acquired
+      if (lockAcquired) {
+        await SchedulerState.releaseLock(instanceId);
+      }
+      
+      return {
+        success: false,
+        error: error.message,
+        postsProcessed,
+        postsPublished,
+        duration,
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+  
+  /**
+   * Get detailed scheduler state (for serverless status endpoint)
+   * @returns {Promise<Object>} Scheduler state
+   */
+  async getServerlessState() {
+    try {
+      const state = await SchedulerState.getState();
+      
+      return {
+        lastRunAt: state?.lastRunAt || null,
+        lastRunDuration: state?.lastRunDuration || null,
+        lastRunStatus: state?.lastRunStatus || null,
+        totalExecutions: state?.totalExecutions || 0,
+        totalPostsPublished: state?.totalPostsPublished || 0,
+        nextScheduledPost: state?.nextScheduledPost || null,
+        executionLock: state?.executionLock || false
+      };
+    } catch (error) {
+      console.error('[Scheduler] Failed to get serverless state:', error);
+      return {
+        lastRunAt: null,
+        lastRunDuration: null,
+        lastRunStatus: null,
+        totalExecutions: 0,
+        totalPostsPublished: 0,
+        nextScheduledPost: null,
+        executionLock: false,
+        error: error.message
+      };
+    }
   }
 }
 
