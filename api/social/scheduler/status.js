@@ -14,7 +14,7 @@
  */
 
 const mongoose = require('mongoose');
-const dbConnect = require('../../server/lib/dbConnect');
+const dbConnect = require('../lib/dbConnect');
 
 /**
  * Check Meta connection status
