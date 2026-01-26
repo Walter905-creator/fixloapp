@@ -15,7 +15,7 @@
  */
 
 const mongoose = require('mongoose');
-const dbConnect = require('../lib/dbConnect');
+const dbConnect = require('../../lib/dbConnect');
 
 /**
  * Verify admin JWT token or special admin key
