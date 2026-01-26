@@ -866,12 +866,14 @@ async function start() {
     }
 
     // Initialize Social Media Manager
+    // SAFETY: Scheduler will only auto-start if SOCIAL_AUTOMATION_ENABLED=true
+    // When false, use POST /api/social/scheduler/start to start manually
     try {
       const socialManager = require('./modules/social-manager');
       // Only start if encryption key is configured
       if (process.env.SOCIAL_ENCRYPTION_KEY) {
         await socialManager.initialize({
-          startScheduler: true,
+          startScheduler: true, // Attempts auto-start (respects SOCIAL_AUTOMATION_ENABLED)
           requireApproval: true // Safe default: require manual approval
         });
         console.log('✅ Social Media Manager initialized');
