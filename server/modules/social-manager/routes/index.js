@@ -1279,8 +1279,8 @@ router.post('/scheduler/start', async (req, res) => {
       requestId
     };
 
-    // Social automation disabled
-    if (error.message && error.message.includes('Social automation is disabled')) {
+    // Social automation disabled (using error code for robust detection)
+    if (error.code === 'AUTOMATION_DISABLED') {
       statusCode = 403;
       errorResponse = {
         success: false,

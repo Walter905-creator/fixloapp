@@ -50,9 +50,10 @@ class Scheduler {
     const { force = false } = options;
     
     if (!automationEnabled && !force) {
-      const errorMsg = '🛑 SOCIAL_AUTOMATION_ENABLED is false - scheduler will not start automatically. Use API endpoints to start manually.';
-      console.warn(errorMsg);
-      throw new Error('Social automation is disabled. Set SOCIAL_AUTOMATION_ENABLED=true to enable.');
+      console.warn('🛑 SOCIAL_AUTOMATION_ENABLED is false - scheduler will not start automatically. Use API endpoints to start manually.');
+      const error = new Error('Social automation is disabled. Set SOCIAL_AUTOMATION_ENABLED=true to enable.');
+      error.code = 'AUTOMATION_DISABLED';
+      throw error;
     }
     
     if (force && !automationEnabled) {
