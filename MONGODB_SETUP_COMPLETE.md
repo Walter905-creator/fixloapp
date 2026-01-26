@@ -1,5 +1,18 @@
 # MongoDB Setup Complete
 
+## ⚠️ CRITICAL SECURITY WARNING
+
+**The MongoDB credentials have been committed to version control.**
+
+**IMMEDIATE ACTION REQUIRED:**
+1. **Rotate the MongoDB password** in MongoDB Atlas Dashboard
+2. Update MONGODB_URI in your production environment variables (Render, Vercel)
+3. Review `SECURITY_NOTICE_MONGODB.md` for detailed security recommendations
+
+This is necessary because credentials in git history are permanently exposed and should be considered compromised.
+
+---
+
 ## Summary
 
 MongoDB has been successfully configured for the Fixlo application using the provided MongoDB Atlas connection string.
