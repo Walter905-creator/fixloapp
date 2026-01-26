@@ -56,17 +56,26 @@ async function initialize(options = {}) {
     try {
       // SAFETY: Only auto-start if SOCIAL_AUTOMATION_ENABLED is true
       // When false, scheduler must be started manually via API
+      const automationEnabled = process.env.SOCIAL_AUTOMATION_ENABLED === 'true';
+      
       scheduler.start();
+      
+      console.log('✅ Social Media Manager initialized');
+      if (automationEnabled) {
+        console.log('🚀 Social automation ENABLED');
+        console.log('📅 Scheduler running');
+      } else {
+        console.log('⚠️ Social automation DISABLED (scheduler started but posting blocked)');
+      }
     } catch (error) {
       console.log('ℹ️ Scheduler not auto-started:', error.message);
       console.log('   Use POST /api/social/scheduler/start to start manually');
+      console.log('✅ Social Media Manager initialized');
     }
   } else {
+    console.log('✅ Social Media Manager initialized');
     console.log('ℹ️ Scheduler not started (manual control)');
   }
-  
-  console.log('✅ Social Media Manager initialized');
-  console.log(`   Manual approval: ${requireApproval ? 'ENABLED' : 'DISABLED'}`);
   
   return {
     routes,

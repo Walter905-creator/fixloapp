@@ -8,7 +8,7 @@ const scheduler = require('../scheduler');
 const analyticsService = require('../analytics');
 const adminService = require('../admin');
 const postingService = require('../posting');
-const requireAuth = require('../../middleware/requireAuth');
+const adminAuth = require('../../../middleware/adminAuth');
 
 /**
  * Social Media Manager API Routes
@@ -434,16 +434,7 @@ router.get('/force-status', async (req, res) => {
 
 // ==================== ADMIN AUTHENTICATION REQUIRED ====================
 // All routes below this point require admin authentication
-router.use(requireAuth);
-router.use((req, res, next) => {
-  if (req.user?.role !== 'admin') {
-    return res.status(403).json({ 
-      success: false,
-      error: 'Forbidden - Admin access required' 
-    });
-  }
-  next();
-});
+router.use(adminAuth);
 
 /**
  * GET /api/social/platforms
