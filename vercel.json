@@ -1,5 +1,6 @@
 {
-  "framework": null,
+  "framework": "other",
+  "outputDirectory": ".",
   "rewrites": [
     {
       "source": "/api/(.*)",
