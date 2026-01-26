@@ -29,6 +29,25 @@ Start earning by sharing your Fixlo referral link:
 ${referralLink}`
 };
 
+/**
+ * Get or create Twilio client (cached)
+ * Prevents repeated initialization overhead
+ */
+let twilioClientCache = null;
+function getTwilioClient() {
+  const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN } = process.env;
+  
+  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
+    return null;
+  }
+  
+  if (!twilioClientCache) {
+    twilioClientCache = require('twilio')(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+  }
+  
+  return twilioClientCache;
+}
+
 // Anti-fraud configuration
 const ANTI_FRAUD_CONFIG = {
   MAX_REFERRALS_PER_IP_PER_DAY: process.env.MAX_REFERRALS_PER_IP || 3,
@@ -503,32 +522,37 @@ router.post('/send-verification', async (req, res) => {
     // Prepare message
     const messageBody = `Fixlo: Your verification code is ${code}. Valid for 15 minutes. Reply STOP to opt out.`;
 
-    // Send via requested method (fire and forget - don't block on delivery)
+    // Send via requested method
     try {
       let channelUsed;
+      let twilioMessage;
 
       if (method === 'sms') {
         console.log(`   Sending via SMS...`);
-        await sendSms(normalizedPhone, messageBody);
+        twilioMessage = await sendSms(normalizedPhone, messageBody);
         channelUsed = 'sms';
         
         console.log(`✅ SMS verification code sent`);
         console.log(`   Phone: ${maskedPhone}`);
         console.log(`   Channel: SMS`);
+        console.log(`   Message SID: ${twilioMessage.sid}`);
         
       } else {
         console.log(`   Sending via WhatsApp...`);
-        await sendWhatsAppMessage(normalizedPhone, messageBody);
+        twilioMessage = await sendWhatsAppMessage(normalizedPhone, messageBody);
         channelUsed = 'whatsapp';
         
         console.log(`✅ WhatsApp verification code sent`);
         console.log(`   Phone: ${maskedPhone}`);
         console.log(`   Channel: WhatsApp`);
+        console.log(`   Message SID: ${twilioMessage.sid}`);
       }
 
-      // Return success immediately - no delivery polling
+      // Return success with messageSid for optional delivery polling
       return res.json({
         success: true,
+        channel: channelUsed,
+        messageSid: twilioMessage.sid,
         message: `Verification code sent via ${channelUsed}. Check your ${channelUsed === 'whatsapp' ? 'WhatsApp' : 'text'} messages.`
       });
 
@@ -569,6 +593,72 @@ router.post('/send-verification', async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Something went wrong. Please try again.'
+    });
+  }
+});
+
+/**
+ * Check delivery status of a verification message
+ * GET /api/referrals/delivery-status/:messageSid
+ * 
+ * OPTIONAL ENDPOINT for delivery confirmation
+ * - Returns JSON (never HTML)
+ * - Gracefully handles invalid/missing messageSid
+ * - Non-blocking - frontend should not depend on this
+ */
+router.get('/delivery-status/:messageSid', async (req, res) => {
+  try {
+    const { messageSid } = req.params;
+
+    // Validate messageSid
+    if (!messageSid || messageSid === 'undefined' || messageSid === 'null') {
+      return res.status(400).json({
+        success: false,
+        reason: 'invalid_message_sid',
+        error: 'Message SID is required and must be valid'
+      });
+    }
+
+    // Get cached Twilio client
+    const client = getTwilioClient();
+    
+    if (!client) {
+      return res.status(503).json({
+        success: false,
+        reason: 'service_unavailable',
+        error: 'Twilio service is not configured'
+      });
+    }
+
+    // Fetch message status from Twilio
+    const message = await client.messages(messageSid).fetch();
+
+    // Map Twilio status to our format
+    const status = message.status;
+    const isDelivered = status === 'delivered' || status === 'sent';
+    const isFailed = status === 'failed' || status === 'undelivered';
+    const isPending = status === 'queued' || status === 'sending' || status === 'accepted';
+
+    return res.json({
+      ok: true,
+      success: true,
+      messageSid: message.sid,
+      status: status,
+      isDelivered: isDelivered,
+      isFailed: isFailed,
+      isPending: isPending,
+      errorCode: message.errorCode || null,
+      errorMessage: message.errorMessage || null
+    });
+
+  } catch (error) {
+    console.error('❌ Delivery status check error:', error.message);
+    
+    // Return JSON error (never HTML)
+    return res.status(500).json({
+      success: false,
+      reason: 'fetch_failed',
+      error: error.message || 'Failed to check delivery status'
     });
   }
 });

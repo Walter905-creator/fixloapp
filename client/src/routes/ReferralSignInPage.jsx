@@ -33,7 +33,7 @@ export default function ReferralSignInPage() {
   const [channelUsed, setChannelUsed] = useState(''); // Track which channel delivered the code
   const [messageSid, setMessageSid] = useState(''); // Track message SID for delivery polling
   const [deliveryStatus, setDeliveryStatus] = useState(''); // Track delivery status
-  const [selectedMethod, setSelectedMethod] = useState('whatsapp'); // Default to WhatsApp
+  const [selectedMethod, setSelectedMethod] = useState('sms'); // Default to SMS per requirements
 
   // Ref to store polling interval for cleanup
   const pollIntervalRef = useRef(null);
@@ -49,6 +49,82 @@ export default function ReferralSignInPage() {
       }
     };
   }, []);
+
+  /**
+   * Start NON-BLOCKING delivery status polling
+   * - Only polls if messageSid is valid
+   * - Logs warnings on failure but never blocks
+   * - Automatically stops after success or timeout
+   */
+  const startDeliveryPolling = (sid, channel) => {
+    let pollAttempts = 0;
+    
+    // Clear any existing polling interval
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+    }
+    
+    pollIntervalRef.current = setInterval(async () => {
+      pollAttempts++;
+      
+      try {
+        const statusResponse = await fetch(`${API_BASE}/api/referrals/delivery-status/${sid}`);
+        
+        // Handle non-JSON responses gracefully
+        if (!statusResponse.ok) {
+          console.warn(`⚠️ Delivery status polling failed: ${statusResponse.status} ${statusResponse.statusText}`);
+          // Continue polling - don't block on single failure
+          return;
+        }
+        
+        const statusData = await statusResponse.json();
+        
+        if (statusData.success && statusData.isDelivered) {
+          // SUCCESS: Message delivered
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+          setDeliveryStatus('delivered');
+          setSuccess(`✅ Code sent via ${channel.toUpperCase()}! Check your ${channel === 'sms' ? 'text' : 'WhatsApp'} messages.`);
+          setStep('verify');
+          setLoading(false);
+        } else if (statusData.success && statusData.isFailed) {
+          // FAILED: Message confirmed failed - proceed anyway with warning
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+          setDeliveryStatus('failed');
+          console.warn(`⚠️ Message delivery failed but proceeding anyway`);
+          // Proceed to verify step - user can still try entering code
+          setSuccess(`Code sent via ${channel.toUpperCase()}. Check your ${channel === 'sms' ? 'text' : 'WhatsApp'} messages.`);
+          setStep('verify');
+          setLoading(false);
+        } else if (pollAttempts >= MAX_POLL_ATTEMPTS) {
+          // TIMEOUT: No delivery confirmation - proceed anyway
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+          setDeliveryStatus('timeout');
+          console.warn(`⚠️ Delivery polling timed out after ${MAX_POLL_ATTEMPTS} attempts - proceeding anyway`);
+          // Proceed to verify step - don't block user
+          setSuccess(`Code sent via ${channel.toUpperCase()}. Check your ${channel === 'sms' ? 'text' : 'WhatsApp'} messages.`);
+          setStep('verify');
+          setLoading(false);
+        }
+        
+      } catch (pollError) {
+        console.error('⚠️ Delivery status poll error:', pollError.message);
+        // Continue polling - don't fail on single poll error
+        
+        // If we've been polling for too long, just proceed
+        if (pollAttempts >= MAX_POLL_ATTEMPTS) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+          console.warn(`⚠️ Polling failed repeatedly - proceeding to verification step`);
+          setSuccess(`Code sent via ${channel.toUpperCase()}. Check your messages.`);
+          setStep('verify');
+          setLoading(false);
+        }
+      }
+    }, POLL_INTERVAL_MS);
+  };
 
   const handlePhoneSubmit = async (e) => {
     e.preventDefault();
@@ -80,86 +156,41 @@ export default function ReferralSignInPage() {
       
       // Handle failure responses
       if (!data.success) {
-        // WhatsApp failed - show SMS option
-        if (data.channel === 'whatsapp' && data.suggestion === 'Try SMS instead') {
-          setError(data.message || 'WhatsApp could not deliver the message.');
+        // WhatsApp/SMS failed - show appropriate message
+        if (data.suggestion === 'Try SMS instead') {
+          setError(data.message || 'WhatsApp could not send the message.');
           setSelectedMethod('sms'); // Auto-select SMS for retry
           setLoading(false);
           setDeliveryStatus('failed');
           return;
         }
         
-        // Both methods failed or other error
+        // Other error
         throw new Error(data.message || 'Failed to send verification code');
       }
       
-      // Message SEND accepted - now wait for delivery confirmation
-      const channel = data.channelUsed || 'SMS';
+      // SUCCESS: Twilio accepted the message
+      const channel = data.channel || 'sms';
       const sid = data.messageSid;
       
       setChannelUsed(channel);
-      setMessageSid(sid);
-      setDeliveryStatus('waiting');
-      setSuccess(`Waiting for ${channel.toUpperCase()} delivery confirmation...`);
       
-      // Poll for delivery status
-      let pollAttempts = 0;
-      
-      // Clear any existing polling interval
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-      }
-      
-      pollIntervalRef.current = setInterval(async () => {
-        pollAttempts++;
+      // CRITICAL: Only poll if messageSid exists and is valid
+      if (sid && sid !== 'undefined' && sid !== 'null') {
+        setMessageSid(sid);
+        setDeliveryStatus('waiting');
+        setSuccess(`Waiting for ${channel.toUpperCase()} delivery confirmation...`);
         
-        try {
-          const statusResponse = await fetch(`${API_BASE}/api/referrals/delivery-status/${sid}`);
-          const statusData = await statusResponse.json();
-          
-          if (statusData.ok && statusData.isDelivered) {
-            // SUCCESS: Message delivered
-            clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-            setDeliveryStatus('delivered');
-            setSuccess(`✅ Code sent via ${channel.toUpperCase()}! Check your ${channel === 'whatsapp' ? 'WhatsApp' : 'text'} messages.`);
-            setStep('verify');
-            setLoading(false);
-          } else if (statusData.ok && statusData.isFailed) {
-            // FAILED: Message failed to deliver
-            clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-            setDeliveryStatus('failed');
-            
-            if (channel === 'whatsapp') {
-              setError('WhatsApp could not deliver the message.');
-              setSelectedMethod('sms'); // Auto-select SMS for retry
-            } else {
-              setError('SMS delivery failed. Please check your phone number and try again.');
-            }
-            
-            setLoading(false);
-          } else if (pollAttempts >= MAX_POLL_ATTEMPTS) {
-            // TIMEOUT: No delivery confirmation within timeout period
-            clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-            setDeliveryStatus('timeout');
-            
-            if (channel === 'whatsapp') {
-              setError('WhatsApp delivery timed out. The message may not have been delivered.');
-              setSelectedMethod('sms'); // Auto-select SMS for retry
-            } else {
-              setError('SMS delivery timed out. Please try again.');
-            }
-            
-            setLoading(false);
-          }
-          
-        } catch (pollError) {
-          console.error('Delivery status poll error:', pollError);
-          // Continue polling - don't fail on single poll error
-        }
-      }, POLL_INTERVAL_MS);
+        // Start NON-BLOCKING delivery status polling
+        startDeliveryPolling(sid, channel);
+      } else {
+        // No messageSid - proceed immediately without polling
+        console.warn('⚠️ No messageSid returned - skipping delivery polling');
+        setDeliveryStatus('sent');
+        setSuccess(`✅ Code sent via ${channel.toUpperCase()}! Check your ${channel === 'sms' ? 'text' : 'WhatsApp'} messages.`);
+        setStep('verify');
+        setLoading(false);
+      }
       
     } catch (err) {
       console.error('Phone submission error:', err);
