@@ -133,8 +133,8 @@ router.post('/create-checkout-session', async (req, res) => {
   try {
     console.log('🔔 Stripe checkout session requested');
     
-    // Get email, userId, and optional customerId from request body
-    const { email, userId, customerId } = req.body;
+    // Get email, userId, tier, and optional customerId from request body
+    const { email, userId, customerId, tier } = req.body;
     
     if (!email) {
       return res.status(400).json({
@@ -155,11 +155,19 @@ router.post('/create-checkout-session', async (req, res) => {
     // Check required environment variables
     const clientUrl = process.env.YOUR_DOMAIN || process.env.CLIENT_URL || 'https://www.fixloapp.com';
     
-    // Get price ID from environment variables - using the product ID from the problem statement
-    const priceId = process.env.STRIPE_PRICE_ID || 
-                   'prod_SaAyX0rd1VWGE0';
+    // Determine subscription tier and price ID
+    // tier can be: 'PRO' (default, $59.99) or 'AI_PLUS' ($99)
+    const subscriptionTier = tier === 'AI_PLUS' ? 'AI_PLUS' : 'PRO';
     
-    console.log(`💰 Creating checkout session with price ID: ${priceId}`);
+    // Get price ID based on tier
+    let priceId;
+    if (subscriptionTier === 'AI_PLUS') {
+      priceId = process.env.STRIPE_AI_PLUS_PRICE_ID || 'price_ai_plus_monthly';
+    } else {
+      priceId = process.env.STRIPE_PRICE_ID || 'prod_SaAyX0rd1VWGE0';
+    }
+    
+    console.log(`💰 Creating checkout session for tier: ${subscriptionTier} with price ID: ${priceId}`);
     console.log(`🔗 Using client URL: ${clientUrl}`);
     console.log(`👤 Customer email: ${email}, User ID: ${userId || 'N/A'}`);
 
@@ -195,6 +203,7 @@ router.post('/create-checkout-session', async (req, res) => {
         metadata: {
           userId: userId || '',
           service: 'fixlo-pro-subscription',
+          tier: subscriptionTier,
           timestamp: new Date().toISOString()
         }
       },
@@ -202,6 +211,7 @@ router.post('/create-checkout-session', async (req, res) => {
         userId: userId || '',
         customerId: customerIdToUse,
         service: 'fixlo-pro-subscription',
+        tier: subscriptionTier,
         timestamp: new Date().toISOString()
       },
       success_url: `${clientUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
@@ -342,6 +352,16 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
               subscriptionStartDate: new Date()
             };
             
+            // Set subscription tier based on metadata
+            // tier metadata: 'AI_PLUS' or 'PRO' (default)
+            if (session.metadata?.tier === 'AI_PLUS') {
+              updateData.subscriptionTier = 'ai_plus';
+              console.log(`🌟 Setting AI+ tier for pro ${userId}`);
+            } else {
+              updateData.subscriptionTier = 'pro';
+              console.log(`⭐ Setting PRO tier for pro ${userId}`);
+            }
+            
             // If there's a trial, set the subscription end date
             if (session.subscription) {
               const subscription = await stripe.subscriptions.retrieve(session.subscription);
@@ -406,6 +426,15 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
               const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
               pro.subscriptionStartDate = new Date(subscription.current_period_start * 1000);
               pro.subscriptionEndDate = new Date(subscription.current_period_end * 1000);
+              
+              // Update subscription tier from metadata if available
+              if (subscription.metadata?.tier === 'AI_PLUS') {
+                pro.subscriptionTier = 'ai_plus';
+                console.log(`🌟 Maintaining AI+ tier for pro ${pro._id}`);
+              } else if (subscription.metadata?.tier === 'PRO') {
+                pro.subscriptionTier = 'pro';
+                console.log(`⭐ Maintaining PRO tier for pro ${pro._id}`);
+              }
             }
             
             await pro.save();

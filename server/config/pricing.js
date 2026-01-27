@@ -6,7 +6,8 @@
 // Base pricing in USD (US market)
 const BASE_PRICING = {
   proMonthlySubscription: 59.99,
-  proAnnualSubscription: 599.99 // 2 months free
+  proAnnualSubscription: 599.99, // 2 months free
+  aiPlusMonthlySubscription: 99.00 // AI+ tier with priority lead access
 };
 
 /**
