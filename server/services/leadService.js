@@ -42,9 +42,18 @@ async function createAIDiagnosedLead({
   try {
     console.log('📝 Creating AI-diagnosed lead');
 
-    // Validate required fields
-    if (!name || !phone || !trade || !description) {
-      throw new Error('Name, phone, trade, and description are required');
+    // Validate required fields with type checks
+    if (!name || typeof name !== 'string') {
+      throw new Error('Name must be a valid string');
+    }
+    if (!phone || typeof phone !== 'string') {
+      throw new Error('Phone must be a valid string');
+    }
+    if (!trade || typeof trade !== 'string') {
+      throw new Error('Trade must be a valid string');
+    }
+    if (!description || typeof description !== 'string') {
+      throw new Error('Description must be a valid string');
     }
 
     // Geocode the address
@@ -65,10 +74,11 @@ async function createAIDiagnosedLead({
     // Normalize trade for consistency
     const normalizedTrade = trade.charAt(0).toUpperCase() + trade.slice(1).toLowerCase();
 
-    // Ensure email has a fallback
+    // Ensure email has a fallback with secure random identifier
+    const crypto = require('crypto');
     const safeEmail = email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
       ? email.toLowerCase()
-      : `no-reply+${Date.now()}@fixloapp.com`;
+      : `no-reply+${crypto.randomUUID()}@fixloapp.com`;
 
     // Create the lead
     const leadData = {

@@ -35,8 +35,13 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
  */
 async function matchPros({ trade, coordinates, maxDistance = 30, prioritizeAIPlus = false }) {
   try {
-    if (!trade || !coordinates || coordinates.length !== 2) {
-      throw new Error('Trade and valid coordinates are required for matching');
+    // Validate inputs first
+    if (!trade || typeof trade !== 'string') {
+      throw new Error('Trade must be a valid string');
+    }
+    
+    if (!coordinates || !Array.isArray(coordinates) || coordinates.length !== 2) {
+      throw new Error('Valid coordinates [longitude, latitude] are required for matching');
     }
 
     const [longitude, latitude] = coordinates;

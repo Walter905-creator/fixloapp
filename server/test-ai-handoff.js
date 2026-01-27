@@ -245,7 +245,7 @@ function testResponseFormat() {
     matchedPros: [
       {
         id: '507f1f77bcf86cd799439012',
-        name: 'John\'s Electrical',
+        name: "John's Electrical",
         distance: 5.2,
         rating: 4.8,
         reviewCount: 45,
