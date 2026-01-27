@@ -354,6 +354,13 @@ const proSchema = new mongoose.Schema({
     default: false
   },
   
+  // Subscription tier for lead prioritization
+  subscriptionTier: {
+    type: String,
+    enum: ['free', 'pro', 'ai_plus'],
+    default: 'free'
+  },
+  
   // Referral system fields
   referralCode: {
     type: String,

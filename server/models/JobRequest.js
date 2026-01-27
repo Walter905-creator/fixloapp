@@ -256,6 +256,32 @@ const JobRequestSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  // AI Diagnosis Metadata
+  source: {
+    type: String,
+    enum: ['MANUAL', 'AI_DIAGNOSED'],
+    default: 'MANUAL'
+  },
+  priority: {
+    type: String,
+    enum: ['LOW', 'MEDIUM', 'HIGH'],
+    default: 'MEDIUM'
+  },
+  aiQualified: {
+    type: Boolean,
+    default: false
+  },
+  aiDiagnosis: {
+    issue: String,
+    difficulty: Number,
+    riskLevel: String,
+    diyAllowed: Boolean,
+    steps: [String],
+    stopConditions: [String]
+  },
+  aiImages: [{
+    type: String
+  }],
   createdAt: {
     type: Date,
     default: Date.now,

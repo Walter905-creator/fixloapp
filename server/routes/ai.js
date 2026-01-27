@@ -611,9 +611,78 @@ You must respond ONLY with valid JSON in this exact structure:
     // Log successful diagnosis
     console.log(`✅ Diagnosis complete - Risk: ${diagnosis.riskLevel}, DIY: ${diagnosis.diyAllowed}`);
     
-    // Return clean JSON response
+    // AI → Pro Handoff Logic
+    // Trigger when diyAllowed === false OR riskLevel === "HIGH"
+    if (diagnosis.diyAllowed === false || diagnosis.riskLevel === 'HIGH') {
+      console.log('🔄 AI → Pro handoff triggered');
+      
+      try {
+        // Extract additional user info from request body for lead creation
+        const { name, email, phone, address, city, state, zip, trade } = req.body;
+        
+        // Only proceed with handoff if we have minimum required user info
+        if (name && phone && address && trade) {
+          const { createAIDiagnosedLead } = require('../services/leadService');
+          const { matchPros, formatProsForClient } = require('../services/proMatching');
+          
+          // Create lead with AI diagnosis metadata
+          const lead = await createAIDiagnosedLead({
+            userId,
+            name,
+            email,
+            phone,
+            address,
+            city,
+            state,
+            zip,
+            trade,
+            description,
+            aiDiagnosis: diagnosis,
+            images,
+            priority: 'HIGH'
+          });
+          
+          console.log(`✅ AI-diagnosed lead created: ${lead._id}`);
+          
+          // Match pros based on trade, location, and criteria
+          const matchedPros = await matchPros({
+            trade: lead.trade,
+            coordinates: lead.location.coordinates,
+            maxDistance: 30,
+            prioritizeAIPlus: true // AI+ subscribers get priority
+          });
+          
+          console.log(`✅ Matched ${matchedPros.length} professionals`);
+          
+          // Format pros for client (safe data only, no internal scoring)
+          const prosForClient = formatProsForClient(matchedPros, 10);
+          
+          // Return Pro recommendation mode
+          return res.json({
+            success: true,
+            mode: 'PRO_RECOMMENDED',
+            diagnosis: diagnosis,
+            lead: {
+              id: lead._id.toString(),
+              status: lead.status
+            },
+            matchedPros: prosForClient,
+            timestamp: new Date().toISOString()
+          });
+        } else {
+          console.log('⚠️ Insufficient user info for lead creation, returning diagnosis only');
+          // Fall through to standard diagnosis response
+        }
+      } catch (handoffError) {
+        console.error('❌ AI → Pro handoff failed:', handoffError.message);
+        // Fall through to standard diagnosis response on error
+      }
+    }
+    
+    // Return clean JSON response (DIY mode or handoff failed)
     return res.json({
       success: true,
+      mode: 'DIY',
       diagnosis: diagnosis,
       timestamp: new Date().toISOString()
     });
