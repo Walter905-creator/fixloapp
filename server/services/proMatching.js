@@ -72,10 +72,20 @@ async function matchPros({ trade, coordinates, maxDistance = 30, prioritizeAIPlu
 
     // For AI-qualified leads with prioritizeAIPlus=true, implement strict tiering
     if (prioritizeAIPlus) {
-      // Separate pros by subscription tier
-      const aiPlusPros = pros.filter(pro => pro.subscriptionTier === 'ai_plus');
-      const proPros = pros.filter(pro => pro.subscriptionTier === 'pro');
-      const freePros = pros.filter(pro => pro.subscriptionTier === 'free' || !pro.subscriptionTier);
+      // Separate pros by subscription tier in a single pass (more efficient)
+      const aiPlusPros = [];
+      const proPros = [];
+      const freePros = [];
+      
+      pros.forEach(pro => {
+        if (pro.subscriptionTier === 'ai_plus') {
+          aiPlusPros.push(pro);
+        } else if (pro.subscriptionTier === 'pro') {
+          proPros.push(pro);
+        } else {
+          freePros.push(pro);
+        }
+      });
       
       console.log(`📊 Tier breakdown: AI+ (${aiPlusPros.length}), PRO (${proPros.length}), FREE (${freePros.length})`);
       
@@ -186,6 +196,5 @@ function formatProsForClient(matchedPros, limit = 10) {
 module.exports = {
   matchPros,
   formatProsForClient,
-  calculateDistance,
-  scoreAndSortPros
+  calculateDistance
 };

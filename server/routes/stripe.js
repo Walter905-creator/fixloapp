@@ -136,6 +136,14 @@ router.post('/create-checkout-session', async (req, res) => {
     // Get email, userId, tier, and optional customerId from request body
     const { email, userId, customerId, tier } = req.body;
     
+    // Validate tier if provided
+    if (tier && !['PRO', 'AI_PLUS'].includes(tier)) {
+      return res.status(400).json({
+        error: 'Invalid tier',
+        message: 'Tier must be either "PRO" or "AI_PLUS"'
+      });
+    }
+    
     if (!email) {
       return res.status(400).json({
         error: 'Missing required parameters',
@@ -162,7 +170,14 @@ router.post('/create-checkout-session', async (req, res) => {
     // Get price ID based on tier
     let priceId;
     if (subscriptionTier === 'AI_PLUS') {
-      priceId = process.env.STRIPE_AI_PLUS_PRICE_ID || 'price_ai_plus_monthly';
+      priceId = process.env.STRIPE_AI_PLUS_PRICE_ID;
+      if (!priceId) {
+        console.error('❌ STRIPE_AI_PLUS_PRICE_ID not configured');
+        return res.status(500).json({
+          error: 'AI+ tier not configured',
+          message: 'AI+ subscription is not available at this time. Please contact support.'
+        });
+      }
     } else {
       priceId = process.env.STRIPE_PRICE_ID || 'prod_SaAyX0rd1VWGE0';
     }
@@ -357,9 +372,13 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
             if (session.metadata?.tier === 'AI_PLUS') {
               updateData.subscriptionTier = 'ai_plus';
               console.log(`🌟 Setting AI+ tier for pro ${userId}`);
-            } else {
+            } else if (session.metadata?.tier === 'PRO') {
               updateData.subscriptionTier = 'pro';
               console.log(`⭐ Setting PRO tier for pro ${userId}`);
+            } else {
+              // Default to PRO tier if metadata is missing or invalid
+              updateData.subscriptionTier = 'pro';
+              console.log(`⭐ Setting PRO tier (default) for pro ${userId}`);
             }
             
             // If there's a trial, set the subscription end date
@@ -434,6 +453,10 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
               } else if (subscription.metadata?.tier === 'PRO') {
                 pro.subscriptionTier = 'pro';
                 console.log(`⭐ Maintaining PRO tier for pro ${pro._id}`);
+              } else {
+                // Default to PRO tier for paid subscriptions without metadata
+                pro.subscriptionTier = 'pro';
+                console.log(`⭐ Maintaining PRO tier (default) for pro ${pro._id}`);
               }
             }
             
