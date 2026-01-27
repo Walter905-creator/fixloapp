@@ -411,4 +411,243 @@ Guidelines:
   }
 });
 
+// OPTIONS handler for diagnose endpoint
+router.options("/diagnose", (req, res) => {
+  const requestOrigin = req.headers.origin;
+  console.log(`🎯 OPTIONS /api/ai/diagnose from origin: "${requestOrigin || 'null'}"`);
+  
+  res.header('Access-Control-Allow-Origin', requestOrigin || '*');
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Max-Age', '86400');
+  res.sendStatus(204);
+});
+
+/**
+ * AI Home Repair Diagnosis with Vision Support
+ * POST /api/ai/diagnose
+ * 
+ * Analyzes home repair issues using OpenAI's vision and text capabilities
+ * Returns structured JSON diagnosis with safety recommendations
+ */
+router.post("/diagnose", async (req, res) => {
+  try {
+    const { description, images = [], userId } = req.body;
+    
+    // Input validation
+    if (!description || typeof description !== 'string' || description.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Description is required"
+      });
+    }
+    
+    // Validate images array
+    if (!Array.isArray(images)) {
+      return res.status(400).json({
+        success: false,
+        error: "Images must be an array"
+      });
+    }
+    
+    // Max 5 images validation
+    if (images.length > 5) {
+      return res.status(400).json({
+        success: false,
+        error: "Maximum 5 images allowed"
+      });
+    }
+    
+    // Validate image formats before making API call
+    for (let i = 0; i < images.length; i++) {
+      const image = images[i];
+      const isValidUrl = typeof image === 'string' && (image.startsWith('http://') || image.startsWith('https://'));
+      const isValidBase64 = typeof image === 'string' && image.startsWith('data:image/');
+      
+      if (!isValidUrl && !isValidBase64) {
+        console.error(`❌ Invalid image format at index ${i}:`, typeof image === 'string' ? image.substring(0, 50) : typeof image);
+        return res.status(400).json({
+          success: false,
+          error: `Invalid image format at index ${i}. Images must be URLs (http://, https://) or base64 data URIs (data:image/)`
+        });
+      }
+    }
+    
+    // Check if OpenAI client is available
+    if (!openaiClient) {
+      console.error("❌ OpenAI client not initialized - API key missing");
+      return res.status(503).json({
+        success: false,
+        error: "AI diagnosis service is temporarily unavailable"
+      });
+    }
+    
+    console.log(`🔍 AI Diagnosis request from user: ${userId || 'anonymous'}`);
+    console.log(`   Description: "${description.substring(0, 100)}..."`);
+    console.log(`   Images: ${images.length}`);
+    
+    // System prompt for home repair expert
+    const systemPrompt = `You are a licensed home-repair expert with deep knowledge in plumbing, electrical work, drywall repair, and general handyman tasks.
+
+Your role is to analyze home repair issues and provide structured, safety-focused assessments.
+
+CRITICAL RULES:
+1. Always prioritize safety over DIY convenience
+2. If electrical work involves live circuits, breaker panels, or wiring - set riskLevel to HIGH
+3. If plumbing involves main water lines, gas lines, or structural penetrations - set riskLevel to HIGH
+4. If structural integrity is at risk - set riskLevel to HIGH
+5. When riskLevel is HIGH, you MUST set diyAllowed to false
+6. Only provide DIY steps when it's genuinely safe for an average homeowner
+7. Include clear stop conditions that indicate when to call a professional
+
+Risk Level Guidelines:
+- LOW: Simple repairs, no safety hazards, common household tasks
+- MEDIUM: Some complexity, requires specific tools, minor safety considerations
+- HIGH: Safety hazards present, requires professional expertise, liability concerns
+
+You must respond ONLY with valid JSON in this exact structure:
+{
+  "issue": "clear summary of the problem",
+  "difficulty": <number 1-10>,
+  "riskLevel": "LOW" | "MEDIUM" | "HIGH",
+  "diyAllowed": true | false,
+  "steps": ["step 1", "step 2", ...] or [],
+  "stopConditions": ["condition 1", "condition 2", ...]
+}`;
+
+    // Build message content array (text + images if provided)
+    const messageContent = [
+      {
+        type: "text",
+        text: `Please analyze this home repair issue and provide a structured assessment:\n\n${description}`
+      }
+    ];
+    
+    // Add images to the request if provided
+    for (const image of images) {
+      messageContent.push({
+        type: "image_url",
+        image_url: {
+          url: image
+        }
+      });
+    }
+    
+    // Call OpenAI API with vision support
+    const completion = await openaiClient.chat.completions.create({
+      model: "gpt-4o", // gpt-4o supports vision
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt
+        },
+        {
+          role: "user",
+          content: messageContent
+        }
+      ],
+      response_format: { type: "json_object" },
+      max_tokens: 1500,
+      temperature: 0.3 // Lower temperature for more consistent, safety-focused responses
+    });
+    
+    const rawResponse = completion.choices[0].message.content;
+    console.log(`✅ AI Diagnosis response received`);
+    
+    // Parse the JSON response
+    let diagnosis;
+    try {
+      diagnosis = JSON.parse(rawResponse);
+    } catch (parseError) {
+      console.error("❌ Failed to parse OpenAI JSON response:", parseError.message);
+      return res.status(500).json({
+        success: false,
+        error: "Failed to process diagnosis results"
+      });
+    }
+    
+    // Validate required fields
+    const requiredFields = ['issue', 'difficulty', 'riskLevel', 'diyAllowed', 'steps', 'stopConditions'];
+    const missingFields = requiredFields.filter(field => !(field in diagnosis));
+    
+    if (missingFields.length > 0) {
+      console.error("❌ Missing required fields in diagnosis:", missingFields);
+      return res.status(500).json({
+        success: false,
+        error: "Invalid diagnosis format received"
+      });
+    }
+    
+    // Enforce safety rule: HIGH risk = no DIY
+    if (diagnosis.riskLevel === 'HIGH') {
+      diagnosis.diyAllowed = false;
+      diagnosis.steps = []; // Clear any steps for high-risk scenarios
+      console.log(`⚠️ HIGH risk detected - forcing diyAllowed=false`);
+    }
+    
+    // Validate difficulty range (1-10)
+    // Default to 5 (medium difficulty) if invalid
+    const DEFAULT_DIFFICULTY = 5;
+    if (typeof diagnosis.difficulty !== 'number' || diagnosis.difficulty < 1 || diagnosis.difficulty > 10) {
+      diagnosis.difficulty = Math.max(1, Math.min(10, parseInt(diagnosis.difficulty) || DEFAULT_DIFFICULTY));
+    }
+    
+    // Validate riskLevel enum
+    if (!['LOW', 'MEDIUM', 'HIGH'].includes(diagnosis.riskLevel)) {
+      diagnosis.riskLevel = 'MEDIUM'; // Default to MEDIUM if invalid
+    }
+    
+    // Ensure arrays are arrays
+    if (!Array.isArray(diagnosis.steps)) {
+      diagnosis.steps = [];
+    }
+    if (!Array.isArray(diagnosis.stopConditions)) {
+      diagnosis.stopConditions = [];
+    }
+    
+    // Log successful diagnosis
+    console.log(`✅ Diagnosis complete - Risk: ${diagnosis.riskLevel}, DIY: ${diagnosis.diyAllowed}`);
+    
+    // Return clean JSON response
+    return res.json({
+      success: true,
+      diagnosis: diagnosis,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    // Log error internally but don't expose details
+    console.error("❌ AI Diagnosis error:", error.message);
+    
+    // Handle specific OpenAI API errors without exposing details
+    if (error.status === 401) {
+      return res.status(503).json({
+        success: false,
+        error: "AI diagnosis service authentication failed"
+      });
+    }
+    
+    if (error.status === 429) {
+      return res.status(503).json({
+        success: false,
+        error: "AI diagnosis service is currently busy. Please try again in a moment."
+      });
+    }
+    
+    if (error.status === 400) {
+      return res.status(500).json({
+        success: false,
+        error: "Invalid diagnosis request format"
+      });
+    }
+    
+    // Generic error response - don't expose internal details
+    return res.status(500).json({
+      success: false,
+      error: "AI diagnosis service is temporarily unavailable"
+    });
+  }
+});
+
 module.exports = router;
