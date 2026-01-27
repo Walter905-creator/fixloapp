@@ -8,11 +8,12 @@ const Pro = require('../models/Pro');
  * 1. User has valid JWT token
  * 2. User exists in database
  * 3. User has active AI subscription (aiSubscriptionStatus === 'active')
+ * 4. Subscription hasn't expired (if aiSubscriptionEndDate is set)
  * 
  * Returns:
- * - 401 if no/invalid token
- * - 403 if subscription is inactive or missing
- * - Continues to next middleware if active
+ * - 401 if no/invalid token or user not found
+ * - 403 if subscription is inactive, missing, or expired
+ * - Continues to next middleware if active and valid
  */
 module.exports = async (req, res, next) => {
   try {
@@ -35,11 +36,16 @@ module.exports = async (req, res, next) => {
     const pro = await Pro.findOne({ email: user.email });
     
     if (!pro) {
-      return res.status(403).json({ error: 'AI subscription required' });
+      return res.status(401).json({ error: 'Authentication required' });
     }
 
     // Step 3: Verify active AI subscription
     if (pro.aiSubscriptionStatus !== 'active') {
+      return res.status(403).json({ error: 'AI subscription required' });
+    }
+    
+    // Step 4: Verify subscription hasn't expired (if end date is set)
+    if (pro.aiSubscriptionEndDate && new Date() > pro.aiSubscriptionEndDate) {
       return res.status(403).json({ error: 'AI subscription required' });
     }
 
