@@ -30,7 +30,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
  * @param {string} params.trade - Trade skill required
  * @param {Array<number>} params.coordinates - [longitude, latitude]
  * @param {number} params.maxDistance - Max distance in miles (default: 30)
- * @param {boolean} params.prioritizeAIPlus - Prioritize AI+ subscribers (default: false)
+ * @param {boolean} params.prioritizeAIPlus - Prioritize AI+ subscribers for AI-qualified leads (default: false)
  * @returns {Promise<Array<Object>>} Array of matched pros with distance and scoring
  */
 async function matchPros({ trade, coordinates, maxDistance = 30, prioritizeAIPlus = false }) {
@@ -47,7 +47,7 @@ async function matchPros({ trade, coordinates, maxDistance = 30, prioritizeAIPlu
     const [longitude, latitude] = coordinates;
     const maxDistanceMeters = maxDistance * 1609.34; // Convert miles to meters
 
-    console.log(`🔍 Matching pros: trade=${trade}, location=[${longitude}, ${latitude}], maxDistance=${maxDistance}mi`);
+    console.log(`🔍 Matching pros: trade=${trade}, location=[${longitude}, ${latitude}], maxDistance=${maxDistance}mi, prioritizeAIPlus=${prioritizeAIPlus}`);
 
     // Query pros with geospatial filtering
     const pros = await Pro.find({
@@ -70,74 +70,107 @@ async function matchPros({ trade, coordinates, maxDistance = 30, prioritizeAIPlu
 
     console.log(`✅ Found ${pros.length} pros within ${maxDistance} miles`);
 
-    // Calculate distance and internal scoring for each pro
-    const prosWithMetadata = pros.map(pro => {
-      const proLng = pro.location.coordinates[0];
-      const proLat = pro.location.coordinates[1];
-      const distance = calculateDistance(latitude, longitude, proLat, proLng);
-
-      // Internal scoring (NOT exposed to client)
-      // Factors: subscription tier, rating, completed jobs, verification status, distance
-      let score = 0;
-
-      // Subscription tier scoring
-      if (pro.subscriptionTier === 'ai_plus') {
-        score += 100;
-      } else if (pro.subscriptionTier === 'pro') {
-        score += 50;
-      } else {
-        score += 10;
-      }
-
-      // Rating scoring (0-50 points)
-      const rating = pro.avgRating || pro.rating || 0;
-      score += rating * 10;
-
-      // Experience scoring (0-30 points)
-      const jobsCompleted = Math.min(pro.completedJobs || 0, 30);
-      score += jobsCompleted;
-
-      // Verification bonus (20 points)
-      if (pro.isVerified) {
-        score += 20;
-      }
-
-      // Distance penalty (closer is better, max -30 points)
-      score -= Math.min(distance, 30);
-
-      return {
-        pro,
-        distance: Math.round(distance * 10) / 10, // Round to 1 decimal
-        score,
-        rating: rating
-      };
-    });
-
-    // Sort by score (highest first)
-    prosWithMetadata.sort((a, b) => b.score - a.score);
-
-    // If prioritizeAIPlus is true, ensure AI+ subscribers are at the top
+    // For AI-qualified leads with prioritizeAIPlus=true, implement strict tiering
     if (prioritizeAIPlus) {
-      prosWithMetadata.sort((a, b) => {
-        const tierOrder = { ai_plus: 3, pro: 2, free: 1 };
-        const tierA = tierOrder[a.pro.subscriptionTier] || 0;
-        const tierB = tierOrder[b.pro.subscriptionTier] || 0;
-        
-        if (tierA !== tierB) {
-          return tierB - tierA; // Higher tier first
+      // Separate pros by subscription tier in a single pass (more efficient)
+      const aiPlusPros = [];
+      const proPros = [];
+      const freePros = [];
+      
+      pros.forEach(pro => {
+        if (pro.subscriptionTier === 'ai_plus') {
+          aiPlusPros.push(pro);
+        } else if (pro.subscriptionTier === 'pro') {
+          proPros.push(pro);
+        } else {
+          freePros.push(pro);
         }
-        
-        return b.score - a.score; // Then by score
       });
+      
+      console.log(`📊 Tier breakdown: AI+ (${aiPlusPros.length}), PRO (${proPros.length}), FREE (${freePros.length})`);
+      
+      // AI+ Priority: If AI+ pros are available, ONLY return AI+ pros
+      if (aiPlusPros.length > 0) {
+        console.log(`🌟 AI+ pros available - returning ${aiPlusPros.length} AI+ pros only`);
+        return scoreAndSortPros(aiPlusPros, latitude, longitude);
+      }
+      
+      // Fallback to PRO: If no AI+ pros, return PRO tier pros
+      if (proPros.length > 0) {
+        console.log(`⭐ No AI+ pros available - falling back to ${proPros.length} PRO tier pros`);
+        return scoreAndSortPros(proPros, latitude, longitude);
+      }
+      
+      // Final fallback: If no AI+ or PRO pros, return FREE tier
+      console.log(`⚠️ No AI+ or PRO pros available - falling back to ${freePros.length} FREE tier pros`);
+      return scoreAndSortPros(freePros, latitude, longitude);
     }
-
-    console.log(`🎯 Matched and scored ${prosWithMetadata.length} professionals`);
-
-    return prosWithMetadata;
+    
+    // For non-AI-qualified leads, use standard scoring with tier bonuses
+    return scoreAndSortPros(pros, latitude, longitude);
   } catch (error) {
     console.error('❌ Pro matching error:', error.message);
     throw error;
   }
+}
+
+/**
+ * Score and sort professionals based on multiple criteria
+ * @param {Array} pros - Array of Pro documents
+ * @param {number} latitude - Lead latitude
+ * @param {number} longitude - Lead longitude
+ * @returns {Array<Object>} Scored and sorted pros with metadata
+ */
+function scoreAndSortPros(pros, latitude, longitude) {
+  // Calculate distance and internal scoring for each pro
+  const prosWithMetadata = pros.map(pro => {
+    const proLng = pro.location.coordinates[0];
+    const proLat = pro.location.coordinates[1];
+    const distance = calculateDistance(latitude, longitude, proLat, proLng);
+
+    // Internal scoring (NOT exposed to client)
+    // Factors: subscription tier, rating, completed jobs, verification status, distance
+    let score = 0;
+
+    // Subscription tier scoring
+    if (pro.subscriptionTier === 'ai_plus') {
+      score += 100;
+    } else if (pro.subscriptionTier === 'pro') {
+      score += 50;
+    } else {
+      score += 10;
+    }
+
+    // Rating scoring (0-50 points)
+    const rating = pro.avgRating || pro.rating || 0;
+    score += rating * 10;
+
+    // Experience scoring (0-30 points)
+    const jobsCompleted = Math.min(pro.completedJobs || 0, 30);
+    score += jobsCompleted;
+
+    // Verification bonus (20 points)
+    if (pro.isVerified) {
+      score += 20;
+    }
+
+    // Distance penalty (closer is better, max -30 points)
+    score -= Math.min(distance, 30);
+
+    return {
+      pro,
+      distance: Math.round(distance * 10) / 10, // Round to 1 decimal
+      score,
+      rating: rating
+    };
+  });
+
+  // Sort by score (highest first)
+  prosWithMetadata.sort((a, b) => b.score - a.score);
+
+  console.log(`🎯 Matched and scored ${prosWithMetadata.length} professionals`);
+
+  return prosWithMetadata;
 }
 
 /**
