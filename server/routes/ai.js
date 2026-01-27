@@ -1,6 +1,42 @@
 const express = require("express");
 const axios = require("axios");
+const OpenAI = require("openai");
 const router = express.Router();
+
+// Initialize OpenAI client once at module level for efficiency
+let openaiClient = null;
+if (process.env.OPENAI_API_KEY) {
+  openaiClient = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+  });
+}
+
+/**
+ * OpenAI API Health Check
+ * GET /api/ai/health
+ * 
+ * Verifies connectivity to OpenAI API by calling client.models.list()
+ * Returns { ok: true } on success (200) or { ok: false } on error (500)
+ */
+router.get("/health", async (req, res) => {
+  try {
+    // Check if API key is configured
+    if (!openaiClient) {
+      console.error("❌ OpenAI health check failed: API key not configured");
+      return res.status(500).json({ ok: false });
+    }
+
+    // Test connectivity by listing models
+    await openaiClient.models.list();
+
+    // Success
+    return res.status(200).json({ ok: true });
+  } catch (error) {
+    // Log error for debugging (without exposing API key)
+    console.error("❌ OpenAI health check failed:", error.message);
+    return res.status(500).json({ ok: false });
+  }
+});
 
 // OPTIONS handler for AI endpoints
 router.options("/ask", (req, res) => {
