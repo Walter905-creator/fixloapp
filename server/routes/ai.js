@@ -2,6 +2,7 @@ const express = require("express");
 const axios = require("axios");
 const OpenAI = require("openai");
 const router = express.Router();
+const requireAISubscription = require('../middleware/requireAISubscription');
 
 // Initialize OpenAI client once at module level for efficiency
 let openaiClient = null;
@@ -428,10 +429,11 @@ router.options("/diagnose", (req, res) => {
  * AI Home Repair Diagnosis with Vision Support
  * POST /api/ai/diagnose
  * 
+ * Requires: Active AI Home Expert subscription ($19.99/mo)
  * Analyzes home repair issues using OpenAI's vision and text capabilities
  * Returns structured JSON diagnosis with safety recommendations
  */
-router.post("/diagnose", async (req, res) => {
+router.post("/diagnose", requireAISubscription, async (req, res) => {
   try {
     const { description, images = [], userId } = req.body;
     

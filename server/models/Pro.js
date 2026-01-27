@@ -157,6 +157,23 @@ const proSchema = new mongoose.Schema({
   resumedAt: {
     type: Date
   },
+  
+  // AI Home Expert Subscription ($19.99/mo)
+  aiSubscriptionStatus: {
+    type: String,
+    enum: ['active', 'cancelled', 'pending'],
+    default: 'pending'
+  },
+  aiSubscriptionId: {
+    type: String
+  },
+  aiSubscriptionStartDate: {
+    type: Date
+  },
+  aiSubscriptionEndDate: {
+    type: Date
+  },
+  
   joinedDate: {
     type: Date,
     default: Date.now
