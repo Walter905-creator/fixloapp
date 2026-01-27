@@ -459,6 +459,21 @@ router.post("/diagnose", async (req, res) => {
       });
     }
     
+    // Validate image formats before making API call
+    for (let i = 0; i < images.length; i++) {
+      const image = images[i];
+      const isValidUrl = typeof image === 'string' && (image.startsWith('http://') || image.startsWith('https://'));
+      const isValidBase64 = typeof image === 'string' && image.startsWith('data:image/');
+      
+      if (!isValidUrl && !isValidBase64) {
+        console.error(`❌ Invalid image format at index ${i}:`, typeof image === 'string' ? image.substring(0, 50) : typeof image);
+        return res.status(400).json({
+          success: false,
+          error: `Invalid image format at index ${i}. Images must be URLs (http://, https://) or base64 data URIs (data:image/)`
+        });
+      }
+    }
+    
     // Check if OpenAI client is available
     if (!openaiClient) {
       console.error("❌ OpenAI client not initialized - API key missing");
@@ -511,22 +526,12 @@ You must respond ONLY with valid JSON in this exact structure:
     
     // Add images to the request if provided
     for (const image of images) {
-      // Support both base64 and URL formats
-      if (image.startsWith('http://') || image.startsWith('https://')) {
-        messageContent.push({
-          type: "image_url",
-          image_url: {
-            url: image
-          }
-        });
-      } else if (image.startsWith('data:image/')) {
-        messageContent.push({
-          type: "image_url",
-          image_url: {
-            url: image
-          }
-        });
-      }
+      messageContent.push({
+        type: "image_url",
+        image_url: {
+          url: image
+        }
+      });
     }
     
     // Call OpenAI API with vision support
@@ -581,9 +586,11 @@ You must respond ONLY with valid JSON in this exact structure:
       console.log(`⚠️ HIGH risk detected - forcing diyAllowed=false`);
     }
     
-    // Validate difficulty range
+    // Validate difficulty range (1-10)
+    // Default to 5 (medium difficulty) if invalid
+    const DEFAULT_DIFFICULTY = 5;
     if (typeof diagnosis.difficulty !== 'number' || diagnosis.difficulty < 1 || diagnosis.difficulty > 10) {
-      diagnosis.difficulty = Math.max(1, Math.min(10, parseInt(diagnosis.difficulty) || 5));
+      diagnosis.difficulty = Math.max(1, Math.min(10, parseInt(diagnosis.difficulty) || DEFAULT_DIFFICULTY));
     }
     
     // Validate riskLevel enum
