@@ -91,9 +91,9 @@ export default function HomePage() {
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center py-12 md:py-16 lg:py-20">
             {/* Hero Content */}
             <div className="text-center lg:text-left order-2 lg:order-1">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight text-slate-900">
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight text-slate-900">
                 Fixlo – Find Trusted Home Service Professionals Near You
-              </h1>
+              </h2>
               
               <p className="mt-6 text-lg md:text-xl text-slate-600 max-w-2xl mx-auto lg:mx-0">
                 Fixlo is a trusted home services marketplace connecting homeowners across the United States with verified, background-checked professionals for plumbing, electrical, HVAC, cleaning, junk removal, roofing, carpentry, painting, landscaping, and handyman services. Get reliable help for any home project — fast, easy, and with no hidden fees.
@@ -250,7 +250,7 @@ export default function HomePage() {
           {/* Helper text above Services */}
           <div className="text-center mb-8">
             <p className="text-sm text-slate-600">
-              Not sure which service you need? <a href="/assistant" className="text-slate-900 font-medium hover:underline">Ask Fixlo AI first.</a>
+              Not sure which service you need? <Link to="/assistant" className="text-slate-900 font-medium hover:underline">Ask Fixlo AI first.</Link>
             </p>
           </div>
           
