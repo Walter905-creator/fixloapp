@@ -12,7 +12,8 @@
     "dev": "nodemon index.js",
     "test": "echo \"No tests specified\" && exit 0",
     "seo-agent:daily": "node seo-agent/index.js daily",
-    "seo-agent:weekly": "node seo-agent/index.js weekly"
+    "seo-agent:weekly": "node seo-agent/index.js weekly",
+    "seo-agent:test": "node test-seo-agent.js"
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",
