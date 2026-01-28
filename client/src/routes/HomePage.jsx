@@ -250,7 +250,7 @@ export default function HomePage() {
           {/* Helper text above Services */}
           <div className="text-center mb-8">
             <p className="text-sm text-slate-600">
-              Not sure which service you need? <Link to="/assistant" className="text-slate-900 font-medium hover:underline">Ask Fixlo AI first.</Link>
+              Not sure which service you need? <Link to="/assistant" className="text-slate-900 font-medium hover:underline">Consult Fixlo AI Home Expert.</Link>
             </p>
           </div>
           
