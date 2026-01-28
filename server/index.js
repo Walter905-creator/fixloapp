@@ -385,6 +385,9 @@ app.use("/api", require("./routes/profiles")); // slug lookup
 app.use("/api", require("./routes/share")); // share events/boost logic
 app.use("/api", require("./routes/search")); // boosted search
 
+// SEO Domination Agent (admin only)
+app.use("/api/seo-agent", adminRateLimit, require("./routes/seoAgent")); // autonomous SEO agent
+
 // ----------------------- Stripe: Simple Subscribe endpoint (kept for PricingPage.jsx) -----------------------
 app.post("/api/subscribe", async (req, res) => {
   try {
@@ -882,6 +885,14 @@ async function start() {
       }
     } catch (e) {
       console.warn("⚠️ Social Media Manager initialization skipped:", e?.message || e);
+    }
+
+    // Initialize SEO Agent Scheduler
+    try {
+      const { getSEOAgentScheduler } = require('./services/seo/scheduler');
+      getSEOAgentScheduler().initialize();
+    } catch (e) {
+      console.warn("⚠️ SEO Agent Scheduler initialization skipped:", e?.message || e);
     }
 
     server.listen(PORT, () => {
