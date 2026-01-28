@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
  * 
  * Promotes the new commission-based referral program at /earn.
  * Detects authentication state and shows appropriate CTA.
+ * Updated with professional, premium styling.
  */
 export default function HomeReferralSection() {
   const navigate = useNavigate();
@@ -25,17 +26,17 @@ export default function HomeReferralSection() {
   };
 
   return (
-    <section className="py-12 md:py-16 bg-gradient-to-br from-emerald-50 to-emerald-100">
+    <section className="py-12 md:py-16 bg-slate-50">
       <div className="container-xl">
         <div className="max-w-4xl mx-auto text-center">
           {/* Headline */}
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-slate-900 mb-4">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-slate-900 mb-4">
             Earn Cash for Referring Professionals to Fixlo
           </h2>
 
           {/* Supporting text */}
           <p className="text-lg md:text-xl text-slate-700 mb-4 max-w-3xl mx-auto leading-relaxed">
-            Get paid for every professional you bring to Fixlo. <strong>Unlimited earnings.</strong>
+            Get paid for every professional you bring to Fixlo. Unlimited earnings potential.
           </p>
 
           {/* Public participation message */}
@@ -48,15 +49,19 @@ export default function HomeReferralSection() {
           {/* CTA Button */}
           <button
             onClick={ctaAction}
-            className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
+            className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-sm hover:shadow-md transition-all"
           >
             {ctaText}
           </button>
 
           {/* Additional motivational copy */}
           <div className="mt-12 grid md:grid-cols-3 gap-6 text-left">
-            <div className="bg-white rounded-xl p-6 shadow-sm">
-              <div className="text-3xl mb-3">💸</div>
+            <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200">
+              <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center mb-3">
+                <svg className="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
               <h3 className="text-lg font-semibold text-slate-900 mb-2">
                 Earn 15-20% Commission
               </h3>
@@ -65,8 +70,12 @@ export default function HomeReferralSection() {
               </p>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-sm">
-              <div className="text-3xl mb-3">🚀</div>
+            <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200">
+              <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center mb-3">
+                <svg className="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+              </div>
               <h3 className="text-lg font-semibold text-slate-900 mb-2">
                 No Limits on Earnings
               </h3>
@@ -75,8 +84,12 @@ export default function HomeReferralSection() {
               </p>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-sm">
-              <div className="text-3xl mb-3">✅</div>
+            <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200">
+              <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center mb-3">
+                <svg className="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
               <h3 className="text-lg font-semibold text-slate-900 mb-2">
                 Anyone Can Participate
               </h3>
