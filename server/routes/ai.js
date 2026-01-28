@@ -82,7 +82,7 @@ router.post("/ask", async (req, res) => {
           keywords: ['electrical', 'electrician', 'electric', 'wire', 'wiring', 'outlet', 'switch', 'breaker', 'power', 'voltage', 'amp', 'circuit'],
           response: `**When to hire an electrician:**
 
-🔌 **Always hire a licensed electrician for:**
+**Always hire a licensed electrician for:**
 • Installing new outlets, switches, or fixtures
 • Upgrading electrical panels or wiring
 • Any work involving breaker boxes
@@ -90,24 +90,24 @@ router.post("/ask", async (req, res) => {
 • Troubleshooting electrical problems
 • Any work requiring permits
 
-⚡ **Safety first:**
+**Safety first:**
 • Never work on live electrical systems
 • Turn off power at the breaker before any work
 • If you smell burning or see sparks, call immediately
 • Electrical work can be deadly - when in doubt, hire a pro
 
-💡 **Simple DIY tasks:**
+**Simple DIY tasks:**
 • Changing light bulbs and basic fixtures (with power off)
 • Replacing outlet covers or switch plates
 • Testing GFCI outlets with test/reset buttons
 
-🔧 **Find verified electricians on Fixlo for safe, professional electrical work.**`
+Find verified electricians on Fixlo for safe, professional electrical work.`
         },
         plumbing: {
           keywords: ['plumbing', 'plumber', 'leak', 'pipe', 'water', 'drain', 'toilet', 'faucet', 'sink', 'shower', 'bathtub', 'sewer', 'clog'],
           response: `**Plumbing guidance:**
 
-🚰 **When to call a plumber:**
+**When to call a plumber:**
 • Major leaks or burst pipes
 • Sewer line problems
 • Water heater issues
@@ -115,25 +115,25 @@ router.post("/ask", async (req, res) => {
 • Persistent clogs that won't clear
 • No water pressure throughout house
 
-🔧 **Emergency steps:**
+**Emergency steps:**
 • Turn off main water supply for major leaks
 • Turn off water heater if no hot water
 • Use toilet plunger for simple clogs
 • Check water heater pilot light (gas models)
 
-🛠️ **DIY-friendly tasks:**
+**DIY-friendly tasks:**
 • Unclogging minor drain blockages
 • Replacing toilet flappers
 • Fixing running toilets
 • Changing faucet aerators
 
-💧 **Find reliable plumbers on Fixlo for all your plumbing needs.**`
+Find reliable plumbers on Fixlo for all your plumbing needs.`
         },
         hvac: {
           keywords: ['hvac', 'heating', 'cooling', 'furnace', 'air conditioning', 'ac', 'heat pump', 'thermostat', 'ductwork', 'ventilation'],
           response: `**HVAC system guidance:**
 
-🌡️ **When to call an HVAC professional:**
+**When to call an HVAC professional:**
 • No heating or cooling at all
 • Strange noises or burning smells
 • Installing new systems
@@ -141,91 +141,91 @@ router.post("/ask", async (req, res) => {
 • Refrigerant leaks
 • Annual maintenance and tune-ups
 
-🔧 **Before calling a pro:**
+**Before calling a pro:**
 • Check and replace air filters (monthly)
 • Ensure vents aren't blocked
 • Check thermostat settings and batteries
 • Clear debris around outdoor units
 
-❄️ **Seasonal maintenance:**
+**Seasonal maintenance:**
 • Spring: AC tune-up before summer
 • Fall: Furnace inspection before winter
 • Keep outdoor units clean and clear
 
-🏠 **Connect with certified HVAC specialists through Fixlo.**`
+Connect with certified HVAC specialists through Fixlo.`
         },
         roofing: {
           keywords: ['roof', 'roofing', 'shingle', 'gutter', 'leak', 'attic', 'skylight', 'chimney'],
           response: `**Roofing guidance:**
 
-🏠 **Always hire professionals for:**
+**Always hire professionals for:**
 • Any roof repairs or replacement
 • Working on steep or high roofs
 • Structural damage assessment
 • Installing skylights or vents
 • Major gutter work
 
-⚠️ **Safety warning:**
+**Safety warning:**
 • Roof work is extremely dangerous
 • Falls can be fatal
 • Leave it to insured professionals
 
-🔍 **Signs you need a roofer:**
+**Signs you need a roofer:**
 • Missing or damaged shingles
 • Water stains on ceilings
 • Granules in gutters
 • Sagging roof areas
 
-🛡️ **Find insured roofing contractors on Fixlo.**`
+Find insured roofing contractors on Fixlo.`
         },
         painting: {
           keywords: ['paint', 'painting', 'primer', 'brush', 'roller', 'color', 'wall', 'ceiling', 'exterior'],
           response: `**Painting project guidance:**
 
-🎨 **DIY-friendly painting:**
+**DIY-friendly painting:**
 • Interior walls and ceilings
 • Small exterior touch-ups
 • Furniture and cabinets
 • Preparation and priming
 
-🏠 **Consider hiring professionals for:**
+**Consider hiring professionals for:**
 • Exterior house painting
 • High ceilings or hard-to-reach areas
 • Lead paint removal (pre-1978 homes)
 • Specialty finishes or textures
 
-📋 **Preparation is key:**
+**Preparation is key:**
 • Clean and sand surfaces
 • Use quality primer
 • Protect floors and furniture
 • Choose appropriate paint type
 
-🖌️ **Find skilled painters on Fixlo for professional results.**`
+Find skilled painters on Fixlo for professional results.`
         },
         carpentry: {
           keywords: ['carpentry', 'carpenter', 'wood', 'cabinet', 'deck', 'trim', 'molding', 'framing', 'handyman'],
           response: `**Carpentry and handyman guidance:**
 
-🔨 **Professional carpentry projects:**
+**Professional carpentry projects:**
 • Custom cabinets and built-ins
 • Deck construction
 • Structural framing
 • Complex trim work
 • Kitchen renovations
 
-🛠️ **Handyman-friendly tasks:**
+**Handyman-friendly tasks:**
 • Simple shelving installation
 • Basic trim repairs
 • Minor deck maintenance
 • Furniture assembly
 
-📏 **Planning tips:**
+**Planning tips:**
 • Measure twice, cut once
 • Use quality materials
 • Check local building codes
 • Plan for proper ventilation
 
-🏗️ **Find skilled carpenters and handymen on Fixlo.**`
+Find skilled carpenters and handymen on Fixlo.`
         }
       };
       
@@ -247,55 +247,55 @@ router.post("/ask", async (req, res) => {
         if (isWhenQuestion) {
           fallbackResponse = `**When to hire professionals vs DIY:**
 
-🏠 **Always hire professionals for:**
+**Always hire professionals for:**
 • Electrical work (safety hazard)
 • Major plumbing (water damage risk)
 • Structural work (building integrity)
 • HVAC systems (complex systems)
 • Roofing (safety + expertise needed)
 
-🛠️ **DIY-friendly projects:**
+**DIY-friendly projects:**
 • Painting interior walls
 • Simple landscaping
 • Minor repairs and maintenance
 • Installing basic fixtures (with power off)
 • Cleaning and organizing
 
-💡 **Decision factors:**
+**Decision factors:**
 • Safety requirements
 • Tool/skill requirements
 • Permit needs
 • Insurance considerations
 • Time and complexity
 
-🔧 **Browse Fixlo's network of verified professionals for any project requiring expertise.**`;
+Browse Fixlo's network of verified professionals for any project requiring expertise.`;
         } else if (isHowQuestion) {
           fallbackResponse = `**Home improvement project planning:**
 
-📋 **Before starting any project:**
+**Before starting any project:**
 • Research the scope and requirements
 • Check if permits are needed
 • Get multiple quotes for professional work
 • Understand safety requirements
 • Plan for unexpected issues
 
-🔍 **Research steps:**
+**Research steps:**
 • Watch tutorials for DIY projects
 • Read manufacturer instructions
 • Understand local building codes
 • Consider seasonal timing
 
-💰 **Budgeting tips:**
+**Budgeting tips:**
 • Add 20% buffer for unexpected costs
 • Factor in tool rentals/purchases
 • Compare DIY vs professional costs
 • Consider time investment
 
-🏠 **Find trusted professionals on Fixlo for guidance and quality work.**`;
+Find trusted professionals on Fixlo for guidance and quality work.`;
         } else {
           fallbackResponse = `**Home improvement guidance:**
 
-🏠 **Popular home projects:**
+**Popular home projects:**
 • Kitchen and bathroom updates
 • Painting and decorating
 • Flooring installation
@@ -303,22 +303,22 @@ router.post("/ask", async (req, res) => {
 • Plumbing improvements
 • HVAC maintenance
 
-🔧 **Getting started:**
+**Getting started:**
 • Define your project scope
 • Set a realistic budget
 • Research requirements and permits
 • Decide DIY vs professional help
 • Get multiple quotes
 
-⚡ **Safety-critical work:**
+**Safety-critical work:**
 Always hire licensed professionals for electrical, major plumbing, structural, and roofing work.
 
-🎯 **Find the right professional:**
+**Find the right professional:**
 Browse Fixlo's verified network of home service professionals for reliable, quality work.`;
         }
       }
       
-      fallbackResponse += "\n\n💬 **Need more specific help?** Contact our support team or browse our directory of verified professionals.";
+      fallbackResponse += "\n\nNeed more specific help? Browse our directory of verified professionals.";
       
       return res.json({
         success: true,
@@ -328,32 +328,44 @@ Browse Fixlo's verified network of home service professionals for reliable, qual
       });
     }
     
-    console.log(`🤖 AI Assistant query: "${message.substring(0, 100)}..."`);
+    console.log(`🤖 Fixlo AI Home Expert query: "${message.substring(0, 100)}..."`);
     
-    // Prepare system prompt for home improvement assistance
-    const systemPrompt = `You are Fixlo's AI Assistant, a helpful expert in home improvement and maintenance. 
+    // Professional home repair expert system prompt - NO CHATBOT BEHAVIOR
+    const systemPrompt = `You are Fixlo AI Home Expert, a professional home repair consultant.
+You do NOT behave like a chatbot, demo assistant, or customer support agent.
 
-Your role:
-- Provide practical, safe, and actionable home improvement advice
-- Help users understand what type of professional they might need
-- Explain common home maintenance tasks
-- Suggest when DIY is appropriate vs when to hire a professional
-- Always prioritize safety and recommend professionals for complex electrical, plumbing, or structural work
+Your role is to:
+- Evaluate whether a home project is DIY-safe
+- Ask precise clarifying questions before giving instructions
+- Request photos when visual confirmation is required
+- Provide calm, structured, professional guidance
+- Protect homeowners from unsafe actions
 
-Guidelines:
-- Keep responses concise but helpful (under 300 words)
-- Use a friendly, professional tone
-- Include safety warnings when appropriate
-- Suggest Fixlo professionals when relevant
-- If unsure about something, recommend consulting a professional`;
+Rules:
+- Never say "demo"
+- Never say a human will follow up
+- Never provide step-by-step instructions until enough information is collected
+- Always explain WHY information or photos are needed
+- No emojis, no hype, no casual language
+- If risk is high, stop and recommend a professional calmly
+- Tone must feel like a licensed expert thinking carefully
+
+On the first user message describing a project:
+1. Acknowledge the task professionally
+2. Ask 2-4 specific clarifying questions relevant to the project
+3. Request photos when appropriate
+4. Explain what decision you are trying to make (DIY-safe vs pro required)
+5. Pause and wait for the user's response
+
+Keep responses under 300 words but thorough and professional.`;
 
     const userPrompt = context ? 
       `Context: ${context}\n\nQuestion: ${message}` : 
       message;
     
-    // Call OpenAI API
+    // Call OpenAI API with GPT-4o (multimodal model)
     const openaiResponse = await axios.post("https://api.openai.com/v1/chat/completions", {
-      model: "gpt-3.5-turbo",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
@@ -375,7 +387,7 @@ Guidelines:
     
     const aiResponse = openaiResponse.data.choices[0].message.content;
     
-    console.log(`✅ AI Assistant response generated (${aiResponse.length} characters)`);
+    console.log(`✅ Fixlo AI Home Expert response generated (${aiResponse.length} characters)`);
     
     res.json({
       success: true,
@@ -384,30 +396,30 @@ Guidelines:
     });
     
   } catch (error) {
-    console.error("❌ AI Assistant error:", error.message);
+    console.error("❌ Fixlo AI Home Expert error:", error.message);
     
     // Handle specific OpenAI API errors
     if (error.response && error.response.status === 401) {
       return res.status(503).json({
         success: false,
-        error: "AI assistant authentication failed",
-        fallback: "Please contact our support team for assistance."
+        error: "Home repair expert service authentication failed",
+        fallback: "Please try again later or browse our directory of verified professionals."
       });
     }
     
     if (error.response && error.response.status === 429) {
       return res.status(503).json({
         success: false,
-        error: "AI assistant is currently busy. Please try again in a moment.",
-        fallback: "You can also browse our how-it-works page or contact support."
+        error: "Home repair expert service is currently busy. Please try again in a moment.",
+        fallback: "You can also browse our how-it-works page or find a professional directly."
       });
     }
     
     // Generic error response
     res.status(500).json({
       success: false,
-      error: "AI assistant is temporarily unavailable",
-      fallback: "Please contact our support team for assistance with your home improvement questions."
+      error: "Home repair expert service is temporarily unavailable",
+      fallback: "Browse our directory of verified professionals for immediate assistance with your home repair questions."
     });
   }
 });
@@ -489,8 +501,10 @@ router.post("/diagnose", requireAISubscription, async (req, res) => {
     console.log(`   Description: "${description.substring(0, 100)}..."`);
     console.log(`   Images: ${images.length}`);
     
-    // System prompt for home repair expert
-    const systemPrompt = `You are a licensed home-repair expert with deep knowledge in plumbing, electrical work, drywall repair, and general handyman tasks.
+    // System prompt for professional home repair expert
+    const systemPrompt = `You are Fixlo AI Home Expert, a professional home repair consultant with deep expertise in plumbing, electrical work, drywall repair, and general handyman tasks.
+
+You do NOT behave like a chatbot, demo assistant, or customer support agent.
 
 Your role is to analyze home repair issues and provide structured, safety-focused assessments.
 
@@ -502,6 +516,8 @@ CRITICAL RULES:
 5. When riskLevel is HIGH, you MUST set diyAllowed to false
 6. Only provide DIY steps when it's genuinely safe for an average homeowner
 7. Include clear stop conditions that indicate when to call a professional
+8. Never say "demo", never mention SMS follow-ups or human handoffs
+9. Tone must be calm, professional, and authoritative
 
 Risk Level Guidelines:
 - LOW: Simple repairs, no safety hazards, common household tasks
