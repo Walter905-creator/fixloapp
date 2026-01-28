@@ -4,10 +4,10 @@ import { useAuth } from '../context/AuthContext';
 import logoUrl from '../assets/fixlo-logo.png';
 
 const baseItems = [
+  { to: '/assistant', label: 'AI Home Expert' },
   { to: '/services', label: 'Services' },
   { to: '/how-it-works', label: 'How It Works' },
   { to: '/earn', label: 'Earn' },
-  // { to: '/assistant', label: 'AI Assistant' }, // Hidden per requirements
   { to: '/contact', label: 'Contact' }
   // Removed duplicate 'Pro Dashboard' and 'Join Now' from regular items to create as separate CTA button
 ];
@@ -97,7 +97,7 @@ export default function Navbar() {
           <div className="ml-auto hidden sm:flex items-center gap-3">
             <Link 
               to="/join"
-              className="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700 transition join-now-pulse"
+              className="px-4 py-2 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition"
             >
               Join Now
             </Link>
@@ -184,7 +184,7 @@ export default function Navbar() {
               <Link 
                 to="/join"
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700 transition text-center"
+                className="px-4 py-3 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition text-center"
               >
                 Join Now
               </Link>
