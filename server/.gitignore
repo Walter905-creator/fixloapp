@@ -29,3 +29,6 @@ dist/
 .idea/
 *.swp
 *.swo
+
+# Test files (for manual testing only)
+test-ai-home-*.js
