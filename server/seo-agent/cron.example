@@ -1,0 +1,29 @@
+# Fixlo SEO Agent - Cron Configuration
+# Add these to your server's crontab for autonomous operation
+
+# Edit crontab:
+# crontab -e
+
+# Daily SEO Agent Run - 3:00 AM UTC
+# Analyzes GSC data, creates pages, rewrites meta, expands content
+0 3 * * * cd /path/to/fixloapp/server && /usr/bin/node seo-agent/index.js daily >> logs/seo-agent-daily.log 2>&1
+
+# Weekly SEO Agent Run - Sunday 4:00 AM UTC
+# Evaluates performance, extracts patterns, clones winners
+0 4 * * 0 cd /path/to/fixloapp/server && /usr/bin/node seo-agent/index.js weekly >> logs/seo-agent-weekly.log 2>&1
+
+# Optional: Cleanup old logs (keeps last 30 days)
+0 5 * * 0 find /path/to/fixloapp/server/logs/seo-agent-*.log -mtime +30 -delete
+
+# NOTES:
+# - Replace /path/to/fixloapp/server with actual path
+# - Adjust /usr/bin/node to match your Node.js path (find with: which node)
+# - Ensure logs directory exists: mkdir -p /path/to/fixloapp/server/logs
+# - Test manually before enabling cron: npm run seo-agent:daily
+# - Monitor logs: tail -f logs/seo-agent-daily.log
+
+# Production Deployment on Render:
+# Add build command in render.yaml or dashboard:
+# - Install node-cron package (already in package.json)
+# - Cron jobs can be added to Render's worker service
+# - Or use Render's Cron Jobs feature (paid plans)
