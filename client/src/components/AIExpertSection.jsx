@@ -14,8 +14,8 @@ export default function AIExpertSection() {
   const navigate = useNavigate();
 
   const handleCTA = () => {
-    // Navigate to AI Expert page (or open modal/form as needed)
-    navigate('/ai-expert');
+    // Navigate to contact page for AI Expert inquiries
+    navigate('/contact');
   };
 
   return (
