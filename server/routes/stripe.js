@@ -354,47 +354,77 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
         // Audit log
         console.log(`📝 Audit: Session ${session.id} | Customer: ${session.customer} | Subscription: ${session.subscription} | Time: ${new Date().toISOString()}`);
         
+        // Retrieve subscription to access product metadata
+        let subscriptionTier = null;
+        if (session.subscription) {
+          try {
+            const subscription = await stripe.subscriptions.retrieve(session.subscription, {
+              expand: ['items.data.price.product']
+            });
+            
+            // Check product metadata for tier information
+            const product = subscription.items.data[0]?.price?.product;
+            if (product && typeof product === 'object' && product.metadata) {
+              subscriptionTier = product.metadata.tier;
+              console.log(`📦 Product tier from metadata: ${subscriptionTier}`);
+            }
+          } catch (err) {
+            console.error('❌ Failed to retrieve subscription product metadata:', err.message);
+          }
+        }
+        
         // Update Pro record with subscription details
         const userId = session.metadata?.userId;
         if (userId) {
           try {
             const updateData = {
               stripeCustomerId: session.customer,
-              stripeSubscriptionId: session.subscription,
               stripeSessionId: session.id,
-              paymentStatus: session.subscription ? 'active' : 'pending',
-              isActive: true,
-              subscriptionStartDate: new Date()
+              isActive: true
             };
             
-            // Set subscription tier based on metadata
-            // tier metadata: 'AI_PLUS' or 'PRO' (default)
-            if (session.metadata?.tier === 'AI_PLUS') {
-              updateData.subscriptionTier = 'ai_plus';
-              console.log(`🌟 Setting AI+ tier for pro ${userId}`);
-            } else if (session.metadata?.tier === 'PRO') {
-              updateData.subscriptionTier = 'pro';
-              console.log(`⭐ Setting PRO tier for pro ${userId}`);
+            // Handle AI_HOME tier (Homeowner AI subscription)
+            if (subscriptionTier === 'AI_HOME') {
+              updateData.aiSubscriptionId = session.subscription;
+              updateData.aiSubscriptionStatus = 'active';
+              updateData.aiSubscriptionStartDate = new Date();
+              updateData.aiHomeAccess = true;
+              console.log(`🏠 Setting AI Home Expert access for user ${userId}`);
             } else {
-              // Default to PRO tier if metadata is missing or invalid
-              updateData.subscriptionTier = 'pro';
-              console.log(`⭐ Setting PRO tier (default) for pro ${userId}`);
-            }
-            
-            // If there's a trial, set the subscription end date
-            if (session.subscription) {
-              const subscription = await stripe.subscriptions.retrieve(session.subscription);
-              if (subscription.trial_end) {
-                updateData.subscriptionEndDate = new Date(subscription.trial_end * 1000);
-                console.log(`🎁 Trial ends: ${new Date(subscription.trial_end * 1000).toISOString()}`);
+              // Handle PRO and AI_PLUS tiers (Professional subscriptions)
+              updateData.stripeSubscriptionId = session.subscription;
+              updateData.paymentStatus = session.subscription ? 'active' : 'pending';
+              updateData.subscriptionStartDate = new Date();
+              
+              // Set subscription tier based on metadata or session metadata fallback
+              const tierToUse = subscriptionTier || session.metadata?.tier;
+              if (tierToUse === 'AI_PLUS') {
+                updateData.subscriptionTier = 'ai_plus';
+                console.log(`🌟 Setting AI+ tier for pro ${userId}`);
+              } else if (tierToUse === 'PRO') {
+                updateData.subscriptionTier = 'pro';
+                console.log(`⭐ Setting PRO tier for pro ${userId}`);
+              } else {
+                // Default to PRO tier if metadata is missing or invalid
+                updateData.subscriptionTier = 'pro';
+                console.log(`⭐ Setting PRO tier (default) for pro ${userId}`);
+              }
+              
+              // If there's a trial, set the subscription end date
+              if (session.subscription) {
+                const subscription = await stripe.subscriptions.retrieve(session.subscription);
+                if (subscription.trial_end) {
+                  updateData.subscriptionEndDate = new Date(subscription.trial_end * 1000);
+                  console.log(`🎁 Trial ends: ${new Date(subscription.trial_end * 1000).toISOString()}`);
+                }
               }
             }
             
             const pro = await Pro.findByIdAndUpdate(userId, updateData, { new: true });
             console.log(`✅ Pro ${userId} updated with subscription details`);
             
-            // Check if this pro was referred and complete the referral
-            if (pro && pro.referredByCode && session.subscription) {
+            // Check if this pro was referred and complete the referral (PRO/AI_PLUS only)
+            if (pro && pro.referredByCode && session.subscription && subscriptionTier !== 'AI_HOME') {
               console.log(`🎁 Checking referral completion for pro ${userId}`);
               try {
                 const apiUrl = process.env.API_URL || 'http://localhost:3001';
@@ -433,39 +463,73 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
         // Audit log
         console.log(`📝 Audit: Invoice ${invoice.id} | Customer: ${invoice.customer} | Subscription: ${invoice.subscription} | Amount: ${invoice.amount_paid} | Time: ${new Date().toISOString()}`);
         
+        // Retrieve subscription to access product metadata
+        let subscriptionTier = null;
+        if (invoice.subscription) {
+          try {
+            const subscription = await stripe.subscriptions.retrieve(invoice.subscription, {
+              expand: ['items.data.price.product']
+            });
+            
+            // Check product metadata for tier information
+            const product = subscription.items.data[0]?.price?.product;
+            if (product && typeof product === 'object' && product.metadata) {
+              subscriptionTier = product.metadata.tier;
+              console.log(`📦 Product tier from metadata: ${subscriptionTier}`);
+            }
+          } catch (err) {
+            console.error('❌ Failed to retrieve subscription product metadata:', err.message);
+          }
+        }
+        
         // Update Pro record payment status
         try {
           const pro = await Pro.findOne({ stripeCustomerId: invoice.customer });
           if (pro) {
-            pro.paymentStatus = 'active';
-            pro.isActive = true;
-            
-            // Update subscription dates
-            if (invoice.subscription) {
-              const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
-              pro.subscriptionStartDate = new Date(subscription.current_period_start * 1000);
-              pro.subscriptionEndDate = new Date(subscription.current_period_end * 1000);
+            // Handle AI_HOME tier (Homeowner AI subscription)
+            if (subscriptionTier === 'AI_HOME') {
+              if (invoice.subscription) {
+                const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
+                pro.aiSubscriptionId = invoice.subscription;
+                pro.aiSubscriptionStatus = 'active';
+                pro.aiSubscriptionStartDate = new Date(subscription.current_period_start * 1000);
+                pro.aiSubscriptionEndDate = new Date(subscription.current_period_end * 1000);
+                pro.aiHomeAccess = true;
+                console.log(`🏠 AI Home Expert subscription active for user ${pro._id}`);
+              }
+            } else {
+              // Handle PRO and AI_PLUS tiers (Professional subscriptions)
+              pro.paymentStatus = 'active';
+              pro.isActive = true;
               
-              // Update subscription tier from metadata if available
-              if (subscription.metadata?.tier === 'AI_PLUS') {
-                pro.subscriptionTier = 'ai_plus';
-                console.log(`🌟 Maintaining AI+ tier for pro ${pro._id}`);
-              } else if (subscription.metadata?.tier === 'PRO') {
-                pro.subscriptionTier = 'pro';
-                console.log(`⭐ Maintaining PRO tier for pro ${pro._id}`);
-              } else {
-                // Default to PRO tier for paid subscriptions without metadata
-                pro.subscriptionTier = 'pro';
-                console.log(`⭐ Maintaining PRO tier (default) for pro ${pro._id}`);
+              // Update subscription dates
+              if (invoice.subscription) {
+                const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
+                pro.subscriptionStartDate = new Date(subscription.current_period_start * 1000);
+                pro.subscriptionEndDate = new Date(subscription.current_period_end * 1000);
+                
+                // Update subscription tier from product metadata or subscription metadata fallback
+                const tierToUse = subscriptionTier || subscription.metadata?.tier;
+                if (tierToUse === 'AI_PLUS') {
+                  pro.subscriptionTier = 'ai_plus';
+                  console.log(`🌟 Maintaining AI+ tier for pro ${pro._id}`);
+                } else if (tierToUse === 'PRO') {
+                  pro.subscriptionTier = 'pro';
+                  console.log(`⭐ Maintaining PRO tier for pro ${pro._id}`);
+                } else {
+                  // Default to PRO tier for paid subscriptions without metadata
+                  pro.subscriptionTier = 'pro';
+                  console.log(`⭐ Maintaining PRO tier (default) for pro ${pro._id}`);
+                }
               }
             }
             
             await pro.save();
             console.log(`✅ Pro ${pro._id} payment status updated to active`);
             
-            // Check if this is a referred user completing their first PAID invoice
+            // Check if this is a referred user completing their first PAID invoice (PRO/AI_PLUS only)
             // Only process if this is NOT a $0 invoice (i.e., after trial period)
-            if (pro.referredByCode && invoice.amount_paid > 0) {
+            if (pro.referredByCode && invoice.amount_paid > 0 && subscriptionTier !== 'AI_HOME') {
               console.log(`🎁 Referred user ${pro._id} completed first paid invoice`);
               console.log(`   Amount paid: $${(invoice.amount_paid / 100).toFixed(2)}`);
               console.log(`   Referred by code: ${pro.referredByCode}`);
@@ -598,12 +662,40 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
         // Audit log
         console.log(`📝 Audit: Invoice ${invoice.id} | Customer: ${invoice.customer} | Status: failed | Time: ${new Date().toISOString()}`);
         
+        // Retrieve subscription to access product metadata
+        let subscriptionTier = null;
+        if (invoice.subscription) {
+          try {
+            const subscription = await stripe.subscriptions.retrieve(invoice.subscription, {
+              expand: ['items.data.price.product']
+            });
+            
+            // Check product metadata for tier information
+            const product = subscription.items.data[0]?.price?.product;
+            if (product && typeof product === 'object' && product.metadata) {
+              subscriptionTier = product.metadata.tier;
+              console.log(`📦 Product tier from metadata: ${subscriptionTier}`);
+            }
+          } catch (err) {
+            console.error('❌ Failed to retrieve subscription product metadata:', err.message);
+          }
+        }
+        
         // Update Pro record and notify
         try {
           const pro = await Pro.findOne({ stripeCustomerId: invoice.customer });
           if (pro) {
-            pro.paymentStatus = 'failed';
-            pro.isActive = false;
+            // Handle AI_HOME tier failure
+            if (subscriptionTier === 'AI_HOME') {
+              pro.aiSubscriptionStatus = 'cancelled';
+              pro.aiHomeAccess = false;
+              console.log(`⚠️ AI Home Expert subscription deactivated for user ${pro._id}`);
+            } else {
+              // Handle PRO and AI_PLUS tier failure
+              pro.paymentStatus = 'failed';
+              pro.isActive = false;
+            }
+            
             await pro.save();
             console.log(`⚠️ Pro ${pro._id} payment status updated to failed`);
             
@@ -648,17 +740,117 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
         const subscription = event.data.object;
         console.log(`🗑️ Subscription cancelled: ${subscription.id}`);
         
+        // Retrieve subscription to access product metadata
+        let subscriptionTier = null;
+        try {
+          const expandedSub = await stripe.subscriptions.retrieve(subscription.id, {
+            expand: ['items.data.price.product']
+          });
+          
+          // Check product metadata for tier information
+          const product = expandedSub.items.data[0]?.price?.product;
+          if (product && typeof product === 'object' && product.metadata) {
+            subscriptionTier = product.metadata.tier;
+            console.log(`📦 Product tier from metadata: ${subscriptionTier}`);
+          }
+        } catch (err) {
+          console.error('❌ Failed to retrieve subscription product metadata:', err.message);
+        }
+        
         // Update Pro record
         try {
           const pro = await Pro.findOne({ stripeCustomerId: subscription.customer });
           if (pro) {
-            pro.paymentStatus = 'cancelled';
-            pro.isActive = false;
+            // Handle AI_HOME tier cancellation
+            if (subscriptionTier === 'AI_HOME') {
+              pro.aiSubscriptionStatus = 'cancelled';
+              pro.aiHomeAccess = false;
+              console.log(`✅ AI Home Expert subscription cancelled for user ${pro._id}`);
+            } else {
+              // Handle PRO and AI_PLUS tier cancellation
+              pro.paymentStatus = 'cancelled';
+              pro.isActive = false;
+            }
+            
             await pro.save();
             console.log(`✅ Pro ${pro._id} subscription cancelled`);
           }
         } catch (err) {
           console.error('❌ Failed to update cancelled subscription:', err.message);
+        }
+        break;
+      }
+      
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object;
+        console.log(`🔄 Subscription updated: ${subscription.id}`);
+        console.log(`👤 Customer: ${subscription.customer}, Status: ${subscription.status}`);
+        
+        // Retrieve subscription to access product metadata
+        let subscriptionTier = null;
+        try {
+          const expandedSub = await stripe.subscriptions.retrieve(subscription.id, {
+            expand: ['items.data.price.product']
+          });
+          
+          // Check product metadata for tier information
+          const product = expandedSub.items.data[0]?.price?.product;
+          if (product && typeof product === 'object' && product.metadata) {
+            subscriptionTier = product.metadata.tier;
+            console.log(`📦 Product tier from metadata: ${subscriptionTier}`);
+          }
+        } catch (err) {
+          console.error('❌ Failed to retrieve subscription product metadata:', err.message);
+        }
+        
+        // Update Pro record based on subscription status
+        try {
+          const pro = await Pro.findOne({ stripeCustomerId: subscription.customer });
+          if (pro) {
+            // Handle AI_HOME tier updates
+            if (subscriptionTier === 'AI_HOME') {
+              if (subscription.status === 'active') {
+                pro.aiSubscriptionId = subscription.id;
+                pro.aiSubscriptionStatus = 'active';
+                pro.aiSubscriptionStartDate = new Date(subscription.current_period_start * 1000);
+                pro.aiSubscriptionEndDate = new Date(subscription.current_period_end * 1000);
+                pro.aiHomeAccess = true;
+                console.log(`✅ AI Home Expert subscription updated to active for user ${pro._id}`);
+              } else if (subscription.status === 'canceled' || subscription.status === 'incomplete_expired') {
+                pro.aiSubscriptionStatus = 'cancelled';
+                pro.aiHomeAccess = false;
+                console.log(`✅ AI Home Expert subscription cancelled for user ${pro._id}`);
+              } else if (subscription.status === 'past_due' || subscription.status === 'unpaid') {
+                pro.aiSubscriptionStatus = 'pending';
+                pro.aiHomeAccess = false;
+                console.log(`⚠️ AI Home Expert subscription payment issue for user ${pro._id}`);
+              }
+            } else {
+              // Handle PRO and AI_PLUS tier updates
+              if (subscription.status === 'active') {
+                pro.paymentStatus = 'active';
+                pro.isActive = true;
+                pro.subscriptionStartDate = new Date(subscription.current_period_start * 1000);
+                pro.subscriptionEndDate = new Date(subscription.current_period_end * 1000);
+                console.log(`✅ Pro subscription updated to active for user ${pro._id}`);
+              } else if (subscription.status === 'canceled' || subscription.status === 'incomplete_expired') {
+                pro.paymentStatus = 'cancelled';
+                pro.isActive = false;
+                console.log(`✅ Pro subscription cancelled for user ${pro._id}`);
+              } else if (subscription.status === 'past_due' || subscription.status === 'unpaid') {
+                pro.paymentStatus = 'failed';
+                pro.isActive = false;
+                console.log(`⚠️ Pro subscription payment issue for user ${pro._id}`);
+              }
+            }
+            
+            await pro.save();
+            console.log(`✅ Pro ${pro._id} subscription status updated`);
+          } else {
+            console.warn(`⚠️ No Pro found with customer ID: ${subscription.customer}`);
+          }
+        } catch (err) {
+          console.error('❌ Failed to update subscription status:', err.message);
         }
         break;
       }

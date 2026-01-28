@@ -7,7 +7,7 @@ const Pro = require('../models/Pro');
  * Validates:
  * 1. User has valid JWT token
  * 2. User exists in database
- * 3. User has active AI subscription (aiSubscriptionStatus === 'active')
+ * 3. User has aiHomeAccess flag set to true (indicating active AI_HOME tier subscription)
  * 4. Subscription hasn't expired (if aiSubscriptionEndDate is set)
  * 
  * Returns:
@@ -39,8 +39,8 @@ module.exports = async (req, res, next) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    // Step 3: Verify active AI subscription
-    if (pro.aiSubscriptionStatus !== 'active') {
+    // Step 3: Verify AI Home Expert access flag (set by Stripe webhook when tier === 'AI_HOME')
+    if (!pro.aiHomeAccess) {
       return res.status(403).json({ error: 'AI subscription required' });
     }
     
