@@ -3,6 +3,7 @@ const axios = require("axios");
 const OpenAI = require("openai");
 const router = express.Router();
 const requireAISubscription = require('../middleware/requireAISubscription');
+const crypto = require("crypto");
 
 // Initialize OpenAI client once at module level for efficiency
 let openaiClient = null;
@@ -10,6 +11,147 @@ if (process.env.OPENAI_API_KEY) {
   openaiClient = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
   });
+}
+
+// ==================== PROJECT STATE MANAGEMENT ====================
+// In-memory store for multi-turn project conversations
+// Key: sessionId, Value: ProjectState
+const projectStateStore = new Map();
+
+// Configuration
+const SESSION_TTL = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
+const MAX_SESSIONS = 10000; // Maximum number of sessions to prevent memory exhaustion
+const MAX_CONVERSATION_HISTORY = 20; // Maximum conversation turns to store
+
+// Auto-cleanup: Remove sessions older than 2 hours
+let cleanupInterval = setInterval(() => {
+  const now = Date.now();
+  let cleanedCount = 0;
+  for (const [sessionId, state] of projectStateStore.entries()) {
+    if (now - state.lastUpdated > SESSION_TTL) {
+      projectStateStore.delete(sessionId);
+      cleanedCount++;
+    }
+  }
+  if (cleanedCount > 0) {
+    console.log(`🧹 Cleaned up ${cleanedCount} expired session(s)`);
+  }
+}, 30 * 60 * 1000); // Run cleanup every 30 minutes
+
+// Graceful cleanup on process exit
+process.on('SIGTERM', () => {
+  clearInterval(cleanupInterval);
+  console.log('🧹 Cleared session cleanup interval');
+});
+
+process.on('SIGINT', () => {
+  clearInterval(cleanupInterval);
+  console.log('🧹 Cleared session cleanup interval');
+});
+
+/**
+ * Generate a new session ID
+ */
+function generateSessionId() {
+  return crypto.randomBytes(16).toString('hex');
+}
+
+/**
+ * Deep merge helper for nested objects
+ */
+function deepMerge(target, source) {
+  const output = { ...target };
+  
+  if (isObject(target) && isObject(source)) {
+    Object.keys(source).forEach(key => {
+      if (isObject(source[key])) {
+        if (!(key in target)) {
+          output[key] = source[key];
+        } else {
+          output[key] = deepMerge(target[key], source[key]);
+        }
+      } else {
+        output[key] = source[key];
+      }
+    });
+  }
+  
+  return output;
+}
+
+function isObject(item) {
+  return item && typeof item === 'object' && !Array.isArray(item);
+}
+
+/**
+ * Create or update project state for a session
+ */
+function updateProjectState(sessionId, updates, userId = null) {
+  // Check session limit to prevent memory exhaustion
+  if (!projectStateStore.has(sessionId) && projectStateStore.size >= MAX_SESSIONS) {
+    // Evict oldest session (simple FIFO)
+    const oldestSession = projectStateStore.keys().next().value;
+    projectStateStore.delete(oldestSession);
+    console.log(`⚠️ Session limit reached, evicted oldest session: ${oldestSession}`);
+  }
+  
+  const existingState = projectStateStore.get(sessionId) || {
+    task: null,
+    confirmedValues: {},
+    questionsAsked: [],
+    phase: 'ASSESSMENT',
+    conversationHistory: [],
+    userId: userId, // Associate session with user
+    createdAt: Date.now(),
+    lastUpdated: Date.now()
+  };
+
+  // Deep merge for nested objects like confirmedValues
+  const updatedState = {
+    ...existingState,
+    ...updates,
+    confirmedValues: deepMerge(existingState.confirmedValues, updates.confirmedValues || {}),
+    lastUpdated: Date.now()
+  };
+  
+  // Limit conversation history length to prevent unbounded growth
+  if (updatedState.conversationHistory && updatedState.conversationHistory.length > MAX_CONVERSATION_HISTORY) {
+    updatedState.conversationHistory = updatedState.conversationHistory.slice(-MAX_CONVERSATION_HISTORY);
+    console.log(`⚠️ Conversation history trimmed to ${MAX_CONVERSATION_HISTORY} turns for session ${sessionId}`);
+  }
+
+  projectStateStore.set(sessionId, updatedState);
+  return updatedState;
+}
+
+/**
+ * Get project state for a session with optional userId validation
+ */
+function getProjectState(sessionId, userId = null) {
+  const state = projectStateStore.get(sessionId);
+  
+  // Validate session ownership if userId is provided
+  if (state && userId && state.userId && state.userId !== userId) {
+    console.log(`⚠️ Session ${sessionId} access denied for user ${userId}`);
+    return null; // Deny access to other users' sessions
+  }
+  
+  return state || null;
+}
+
+/**
+ * Serialize project state for OpenAI system prompt
+ */
+function serializeProjectState(state) {
+  if (!state) return null;
+  
+  return {
+    task: state.task,
+    confirmedValues: state.confirmedValues,
+    questionsAsked: state.questionsAsked,
+    phase: state.phase,
+    conversationTurn: state.conversationHistory.length
+  };
 }
 
 /**
@@ -438,16 +580,17 @@ router.options("/diagnose", (req, res) => {
 });
 
 /**
- * AI Home Repair Diagnosis with Vision Support
+ * AI Home Repair Diagnosis with Vision Support and Multi-Turn Conversations
  * POST /api/ai/diagnose
  * 
  * Requires: Active AI Home Expert subscription ($19.99/mo)
+ * Supports multi-turn conversations via sessionId parameter
  * Analyzes home repair issues using OpenAI's vision and text capabilities
  * Returns structured JSON diagnosis with safety recommendations
  */
 router.post("/diagnose", requireAISubscription, async (req, res) => {
   try {
-    const { description, images = [], userId } = req.body;
+    const { description, images = [], userId, sessionId: clientSessionId } = req.body;
     
     // Input validation
     if (!description || typeof description !== 'string' || description.trim().length === 0) {
@@ -501,8 +644,59 @@ router.post("/diagnose", requireAISubscription, async (req, res) => {
     console.log(`   Description: "${description.substring(0, 100)}..."`);
     console.log(`   Images: ${images.length}`);
     
-    // System prompt for professional home repair expert
-    const systemPrompt = `You are Fixlo AI Home Expert, a professional home repair consultant.
+    // ==================== SESSION STATE MANAGEMENT ====================
+    // Get or create session
+    let sessionId = clientSessionId;
+    let projectState = null;
+    
+    if (sessionId) {
+      projectState = getProjectState(sessionId, userId);
+      if (!projectState) {
+        console.log(`⚠️ Session ${sessionId} not found or access denied, creating new session`);
+        sessionId = generateSessionId();
+      } else {
+        console.log(`♻️ Continuing session ${sessionId} (turn ${projectState.conversationHistory.length + 1})`);
+      }
+    } else {
+      // New session
+      sessionId = generateSessionId();
+      console.log(`🆕 Created new session ${sessionId}`);
+    }
+    
+    // Extract task from description if not already set
+    const normalizedDescription = description.toLowerCase();
+    let taskIdentifier = projectState?.task || null;
+    
+    if (!taskIdentifier) {
+      // Attempt to identify task from description - prioritize more specific terms
+      if (normalizedDescription.includes('leak') && !normalizedDescription.includes('faucet leak')) {
+        taskIdentifier = 'plumbing_leak';
+      } else if (normalizedDescription.includes('faucet')) {
+        taskIdentifier = 'faucet_replacement';
+      } else if (normalizedDescription.includes('outlet') || normalizedDescription.includes('electrical')) {
+        taskIdentifier = 'electrical_work';
+      } else if (normalizedDescription.includes('paint')) {
+        taskIdentifier = 'painting';
+      } else {
+        taskIdentifier = 'general_repair';
+      }
+    }
+    
+    // Update project state with current input
+    projectState = updateProjectState(sessionId, {
+      task: taskIdentifier,
+      conversationHistory: [
+        ...(projectState?.conversationHistory || []),
+        {
+          role: 'user',
+          content: description,
+          timestamp: Date.now()
+        }
+      ]
+    }, userId);
+    
+    // System prompt for professional home repair expert with state awareness
+    const systemPromptBase = `You are Fixlo AI Home Expert, a professional home repair consultant.
 
 You are NOT a chatbot, intake form, demo assistant, or customer support agent.
 
@@ -595,40 +789,97 @@ You must respond ONLY with valid JSON in this exact structure:
   "riskLevel": "LOW" | "MEDIUM" | "HIGH",
   "diyAllowed": true | false,
   "steps": ["step 1", "step 2", ...] or [],
-  "stopConditions": ["condition 1", "condition 2", ...]
-}`;
+  "stopConditions": ["condition 1", "condition 2", ...],
+  "needsMoreInfo": true | false,
+  "questions": ["question 1", "question 2", ...] or []
+}
 
-    // Build message content array (text + images if provided)
-    const messageContent = [
+If you need more information before providing guidance, set needsMoreInfo to true and include specific questions.
+If you have enough information, set needsMoreInfo to false and provide the full assessment.`;
+
+    // Add state context if this is a continuing conversation
+    let systemPrompt = systemPromptBase;
+    
+    if (projectState && projectState.conversationHistory.length > 1) {
+      const serializedState = serializeProjectState(projectState);
+      systemPrompt += `\n\n=== CONVERSATION STATE ===
+This is turn ${serializedState.conversationTurn} of an ongoing conversation.
+
+Project Task: ${serializedState.task}
+Current Phase: ${serializedState.phase}
+Questions Already Asked: ${JSON.stringify(serializedState.questionsAsked)}
+Confirmed Values: ${JSON.stringify(serializedState.confirmedValues)}
+
+CRITICAL RULES FOR CONTINUING CONVERSATIONS:
+- DO NOT repeat any questions from questionsAsked
+- DO NOT ask "what is your project" - the task is already known: ${serializedState.task}
+- Move forward logically based on what's already confirmed
+- Only ask for missing information needed for assessment
+- If you just asked questions, wait for ALL answers before asking more
+- Each new question should be clearly different from previous ones
+
+Remember: The user is continuing a conversation about ${serializedState.task}. Move the conversation FORWARD, not backward.`;
+    }
+
+    // Build messages array with conversation history
+    const messages = [
       {
-        type: "text",
-        text: `Please analyze this home repair issue and provide a structured assessment:\n\n${description}`
+        role: "system",
+        content: systemPrompt
       }
     ];
     
-    // Add images to the request if provided
-    for (const image of images) {
-      messageContent.push({
-        type: "image_url",
-        image_url: {
-          url: image
+    // Add conversation history if continuing
+    // NOTE: Images are only attached to the most recent user message.
+    // Previous images from earlier conversation turns are not re-sent to OpenAI
+    // to manage API costs and token limits. The AI's previous analysis of those
+    // images is preserved in the conversation history.
+    if (projectState && projectState.conversationHistory.length > 0) {
+      for (const historyItem of projectState.conversationHistory) {
+        if (historyItem.role === 'user') {
+          // For the current user message, include images
+          if (historyItem === projectState.conversationHistory[projectState.conversationHistory.length - 1]) {
+            const currentMessageContent = [
+              {
+                type: "text",
+                text: historyItem.content
+              }
+            ];
+            
+            // Add images to the most recent user message only
+            for (const image of images) {
+              currentMessageContent.push({
+                type: "image_url",
+                image_url: {
+                  url: image
+                }
+              });
+            }
+            
+            messages.push({
+              role: "user",
+              content: currentMessageContent
+            });
+          } else {
+            // Previous user messages (text only, images not re-sent)
+            messages.push({
+              role: "user",
+              content: historyItem.content
+            });
+          }
+        } else if (historyItem.role === 'assistant') {
+          messages.push({
+            role: "assistant",
+            content: historyItem.content
+          });
         }
-      });
+      }
     }
     
     // Call OpenAI API with vision support
     const completion = await openaiClient.chat.completions.create({
       model: "gpt-4o", // gpt-4o supports vision
-      messages: [
-        {
-          role: "system",
-          content: systemPrompt
-        },
-        {
-          role: "user",
-          content: messageContent
-        }
-      ],
+      messages: messages,
       response_format: { type: "json_object" },
       max_tokens: 1500,
       temperature: 0.3 // Lower temperature for more consistent, safety-focused responses
@@ -649,8 +900,55 @@ You must respond ONLY with valid JSON in this exact structure:
       });
     }
     
-    // Validate required fields
-    const requiredFields = ['issue', 'difficulty', 'riskLevel', 'diyAllowed', 'steps', 'stopConditions'];
+    // Batch all state updates together
+    const stateUpdates = {
+      conversationHistory: [
+        ...projectState.conversationHistory,
+        {
+          role: 'assistant',
+          content: rawResponse,
+          timestamp: Date.now()
+        }
+      ],
+      phase: diagnosis.needsMoreInfo ? 'ASSESSMENT' : (diagnosis.diyAllowed !== undefined ? (diagnosis.diyAllowed ? 'GUIDANCE' : 'STOP') : 'ASSESSMENT')
+    };
+    
+    // Extract and store questions asked
+    if (diagnosis.questions && Array.isArray(diagnosis.questions)) {
+      const newQuestions = diagnosis.questions.filter(q => !projectState.questionsAsked.includes(q));
+      if (newQuestions.length > 0) {
+        stateUpdates.questionsAsked = [...projectState.questionsAsked, ...newQuestions];
+      }
+    }
+    
+    // Extract confirmed values from user responses
+    const confirmedValuesUpdates = {};
+    
+    if (normalizedDescription.includes('kitchen')) {
+      confirmedValuesUpdates.location = 'kitchen';
+    } else if (normalizedDescription.includes('bathroom')) {
+      confirmedValuesUpdates.location = 'bathroom';
+    }
+    
+    if (normalizedDescription.includes('yes') || normalizedDescription.includes('i have') || normalizedDescription.includes('there are')) {
+      // User is likely confirming presence of something previously asked about
+      if (projectState.questionsAsked.length > 0) {
+        const lastQuestion = projectState.questionsAsked[projectState.questionsAsked.length - 1];
+        if (lastQuestion && lastQuestion.toLowerCase().includes('shutoff')) {
+          confirmedValuesUpdates.hasShutoffValves = true;
+        }
+      }
+    }
+    
+    if (Object.keys(confirmedValuesUpdates).length > 0) {
+      stateUpdates.confirmedValues = confirmedValuesUpdates;
+    }
+    
+    // Apply all updates in a single call
+    projectState = updateProjectState(sessionId, stateUpdates, userId);
+    
+    // Validate required fields (some are now optional for multi-turn)
+    const requiredFields = ['issue'];
     const missingFields = requiredFields.filter(field => !(field in diagnosis));
     
     if (missingFields.length > 0) {
@@ -660,6 +958,33 @@ You must respond ONLY with valid JSON in this exact structure:
         error: "Invalid diagnosis format received"
       });
     }
+    
+    // If needsMoreInfo is true, return with questions (not a full diagnosis yet)
+    if (diagnosis.needsMoreInfo) {
+      console.log(`❓ More information needed - ${diagnosis.questions?.length || 0} questions`);
+      return res.json({
+        success: true,
+        sessionId: sessionId,
+        needsMoreInfo: true,
+        issue: diagnosis.issue,
+        questions: diagnosis.questions || [],
+        phase: projectState.phase,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    // Validate fields for complete diagnosis
+    const completeRequiredFields = ['difficulty', 'riskLevel', 'diyAllowed', 'steps', 'stopConditions'];
+    const missingCompleteFields = completeRequiredFields.filter(field => !(field in diagnosis));
+    
+    if (missingCompleteFields.length > 0) {
+      console.error("❌ Missing required fields in complete diagnosis:", missingCompleteFields);
+      return res.status(500).json({
+        success: false,
+        error: "Invalid diagnosis format received"
+      });
+    }
+
     
     // Enforce safety rule: HIGH risk = no DIY
     if (diagnosis.riskLevel === 'HIGH') {
@@ -740,6 +1065,7 @@ You must respond ONLY with valid JSON in this exact structure:
           // Return Pro recommendation mode
           return res.json({
             success: true,
+            sessionId: sessionId,
             mode: 'PRO_RECOMMENDED',
             diagnosis: diagnosis,
             lead: {
@@ -747,6 +1073,7 @@ You must respond ONLY with valid JSON in this exact structure:
               status: lead.status
             },
             matchedPros: prosForClient,
+            phase: projectState.phase,
             timestamp: new Date().toISOString()
           });
         } else {
@@ -762,8 +1089,10 @@ You must respond ONLY with valid JSON in this exact structure:
     // Return clean JSON response (DIY mode or handoff failed)
     return res.json({
       success: true,
+      sessionId: sessionId,
       mode: 'DIY',
       diagnosis: diagnosis,
+      phase: projectState.phase,
       timestamp: new Date().toISOString()
     });
     
