@@ -18,17 +18,36 @@ if (process.env.OPENAI_API_KEY) {
 // Key: sessionId, Value: ProjectState
 const projectStateStore = new Map();
 
-// Auto-cleanup: Remove sessions older than 2 hours
+// Configuration
 const SESSION_TTL = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
-setInterval(() => {
+const MAX_SESSIONS = 10000; // Maximum number of sessions to prevent memory exhaustion
+const MAX_CONVERSATION_HISTORY = 20; // Maximum conversation turns to store
+
+// Auto-cleanup: Remove sessions older than 2 hours
+let cleanupInterval = setInterval(() => {
   const now = Date.now();
+  let cleanedCount = 0;
   for (const [sessionId, state] of projectStateStore.entries()) {
     if (now - state.lastUpdated > SESSION_TTL) {
       projectStateStore.delete(sessionId);
-      console.log(`🧹 Cleaned up expired session: ${sessionId}`);
+      cleanedCount++;
     }
   }
+  if (cleanedCount > 0) {
+    console.log(`🧹 Cleaned up ${cleanedCount} expired session(s)`);
+  }
 }, 30 * 60 * 1000); // Run cleanup every 30 minutes
+
+// Graceful cleanup on process exit
+process.on('SIGTERM', () => {
+  clearInterval(cleanupInterval);
+  console.log('🧹 Cleared session cleanup interval');
+});
+
+process.on('SIGINT', () => {
+  clearInterval(cleanupInterval);
+  console.log('🧹 Cleared session cleanup interval');
+});
 
 /**
  * Generate a new session ID
@@ -38,34 +57,86 @@ function generateSessionId() {
 }
 
 /**
+ * Deep merge helper for nested objects
+ */
+function deepMerge(target, source) {
+  const output = { ...target };
+  
+  if (isObject(target) && isObject(source)) {
+    Object.keys(source).forEach(key => {
+      if (isObject(source[key])) {
+        if (!(key in target)) {
+          output[key] = source[key];
+        } else {
+          output[key] = deepMerge(target[key], source[key]);
+        }
+      } else {
+        output[key] = source[key];
+      }
+    });
+  }
+  
+  return output;
+}
+
+function isObject(item) {
+  return item && typeof item === 'object' && !Array.isArray(item);
+}
+
+/**
  * Create or update project state for a session
  */
-function updateProjectState(sessionId, updates) {
+function updateProjectState(sessionId, updates, userId = null) {
+  // Check session limit to prevent memory exhaustion
+  if (!projectStateStore.has(sessionId) && projectStateStore.size >= MAX_SESSIONS) {
+    // Evict oldest session (simple FIFO)
+    const oldestSession = projectStateStore.keys().next().value;
+    projectStateStore.delete(oldestSession);
+    console.log(`⚠️ Session limit reached, evicted oldest session: ${oldestSession}`);
+  }
+  
   const existingState = projectStateStore.get(sessionId) || {
     task: null,
     confirmedValues: {},
     questionsAsked: [],
     phase: 'ASSESSMENT',
     conversationHistory: [],
+    userId: userId, // Associate session with user
     createdAt: Date.now(),
     lastUpdated: Date.now()
   };
 
+  // Deep merge for nested objects like confirmedValues
   const updatedState = {
     ...existingState,
     ...updates,
+    confirmedValues: deepMerge(existingState.confirmedValues, updates.confirmedValues || {}),
     lastUpdated: Date.now()
   };
+  
+  // Limit conversation history length to prevent unbounded growth
+  if (updatedState.conversationHistory && updatedState.conversationHistory.length > MAX_CONVERSATION_HISTORY) {
+    updatedState.conversationHistory = updatedState.conversationHistory.slice(-MAX_CONVERSATION_HISTORY);
+    console.log(`⚠️ Conversation history trimmed to ${MAX_CONVERSATION_HISTORY} turns for session ${sessionId}`);
+  }
 
   projectStateStore.set(sessionId, updatedState);
   return updatedState;
 }
 
 /**
- * Get project state for a session
+ * Get project state for a session with optional userId validation
  */
-function getProjectState(sessionId) {
-  return projectStateStore.get(sessionId) || null;
+function getProjectState(sessionId, userId = null) {
+  const state = projectStateStore.get(sessionId);
+  
+  // Validate session ownership if userId is provided
+  if (state && userId && state.userId && state.userId !== userId) {
+    console.log(`⚠️ Session ${sessionId} access denied for user ${userId}`);
+    return null; // Deny access to other users' sessions
+  }
+  
+  return state || null;
 }
 
 /**
@@ -579,9 +650,9 @@ router.post("/diagnose", requireAISubscription, async (req, res) => {
     let projectState = null;
     
     if (sessionId) {
-      projectState = getProjectState(sessionId);
+      projectState = getProjectState(sessionId, userId);
       if (!projectState) {
-        console.log(`⚠️ Session ${sessionId} not found, creating new session`);
+        console.log(`⚠️ Session ${sessionId} not found or access denied, creating new session`);
         sessionId = generateSessionId();
       } else {
         console.log(`♻️ Continuing session ${sessionId} (turn ${projectState.conversationHistory.length + 1})`);
@@ -597,13 +668,13 @@ router.post("/diagnose", requireAISubscription, async (req, res) => {
     let taskIdentifier = projectState?.task || null;
     
     if (!taskIdentifier) {
-      // Attempt to identify task from description
-      if (normalizedDescription.includes('faucet')) {
+      // Attempt to identify task from description - prioritize more specific terms
+      if (normalizedDescription.includes('leak') && !normalizedDescription.includes('faucet leak')) {
+        taskIdentifier = 'plumbing_leak';
+      } else if (normalizedDescription.includes('faucet')) {
         taskIdentifier = 'faucet_replacement';
       } else if (normalizedDescription.includes('outlet') || normalizedDescription.includes('electrical')) {
         taskIdentifier = 'electrical_work';
-      } else if (normalizedDescription.includes('leak')) {
-        taskIdentifier = 'plumbing_leak';
       } else if (normalizedDescription.includes('paint')) {
         taskIdentifier = 'painting';
       } else {
@@ -622,7 +693,7 @@ router.post("/diagnose", requireAISubscription, async (req, res) => {
           timestamp: Date.now()
         }
       ]
-    });
+    }, userId);
     
     // System prompt for professional home repair expert with state awareness
     const systemPromptBase = `You are Fixlo AI Home Expert, a professional home repair consultant.
@@ -759,6 +830,10 @@ Remember: The user is continuing a conversation about ${serializedState.task}. M
     ];
     
     // Add conversation history if continuing
+    // NOTE: Images are only attached to the most recent user message.
+    // Previous images from earlier conversation turns are not re-sent to OpenAI
+    // to manage API costs and token limits. The AI's previous analysis of those
+    // images is preserved in the conversation history.
     if (projectState && projectState.conversationHistory.length > 0) {
       for (const historyItem of projectState.conversationHistory) {
         if (historyItem.role === 'user') {
@@ -771,7 +846,7 @@ Remember: The user is continuing a conversation about ${serializedState.task}. M
               }
             ];
             
-            // Add images to the most recent user message
+            // Add images to the most recent user message only
             for (const image of images) {
               currentMessageContent.push({
                 type: "image_url",
@@ -786,7 +861,7 @@ Remember: The user is continuing a conversation about ${serializedState.task}. M
               content: currentMessageContent
             });
           } else {
-            // Previous user messages (text only)
+            // Previous user messages (text only, images not re-sent)
             messages.push({
               role: "user",
               content: historyItem.content
@@ -825,8 +900,8 @@ Remember: The user is continuing a conversation about ${serializedState.task}. M
       });
     }
     
-    // Update project state with assistant response
-    projectState = updateProjectState(sessionId, {
+    // Batch all state updates together
+    const stateUpdates = {
       conversationHistory: [
         ...projectState.conversationHistory,
         {
@@ -835,40 +910,42 @@ Remember: The user is continuing a conversation about ${serializedState.task}. M
           timestamp: Date.now()
         }
       ],
-      phase: diagnosis.needsMoreInfo ? 'ASSESSMENT' : (diagnosis.diyAllowed ? 'GUIDANCE' : 'STOP')
-    });
+      phase: diagnosis.needsMoreInfo ? 'ASSESSMENT' : (diagnosis.diyAllowed !== undefined ? (diagnosis.diyAllowed ? 'GUIDANCE' : 'STOP') : 'ASSESSMENT')
+    };
     
     // Extract and store questions asked
     if (diagnosis.questions && Array.isArray(diagnosis.questions)) {
       const newQuestions = diagnosis.questions.filter(q => !projectState.questionsAsked.includes(q));
       if (newQuestions.length > 0) {
-        projectState = updateProjectState(sessionId, {
-          questionsAsked: [...projectState.questionsAsked, ...newQuestions]
-        });
+        stateUpdates.questionsAsked = [...projectState.questionsAsked, ...newQuestions];
       }
     }
     
     // Extract confirmed values from user responses
-    // Simple extraction - look for common patterns
+    const confirmedValuesUpdates = {};
+    
     if (normalizedDescription.includes('kitchen')) {
-      projectState = updateProjectState(sessionId, {
-        confirmedValues: { ...projectState.confirmedValues, location: 'kitchen' }
-      });
+      confirmedValuesUpdates.location = 'kitchen';
     } else if (normalizedDescription.includes('bathroom')) {
-      projectState = updateProjectState(sessionId, {
-        confirmedValues: { ...projectState.confirmedValues, location: 'bathroom' }
-      });
+      confirmedValuesUpdates.location = 'bathroom';
     }
     
     if (normalizedDescription.includes('yes') || normalizedDescription.includes('i have') || normalizedDescription.includes('there are')) {
       // User is likely confirming presence of something previously asked about
-      const lastQuestion = projectState.questionsAsked[projectState.questionsAsked.length - 1];
-      if (lastQuestion && lastQuestion.toLowerCase().includes('shutoff')) {
-        projectState = updateProjectState(sessionId, {
-          confirmedValues: { ...projectState.confirmedValues, hasShutoffValves: true }
-        });
+      if (projectState.questionsAsked.length > 0) {
+        const lastQuestion = projectState.questionsAsked[projectState.questionsAsked.length - 1];
+        if (lastQuestion && lastQuestion.toLowerCase().includes('shutoff')) {
+          confirmedValuesUpdates.hasShutoffValves = true;
+        }
       }
     }
+    
+    if (Object.keys(confirmedValuesUpdates).length > 0) {
+      stateUpdates.confirmedValues = confirmedValuesUpdates;
+    }
+    
+    // Apply all updates in a single call
+    projectState = updateProjectState(sessionId, stateUpdates, userId);
     
     // Validate required fields (some are now optional for multi-turn)
     const requiredFields = ['issue'];

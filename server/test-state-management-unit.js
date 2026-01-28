@@ -17,22 +17,62 @@ function generateSessionId() {
   return crypto.randomBytes(16).toString('hex');
 }
 
-function updateProjectState(sessionId, updates) {
+function updateProjectState(sessionId, updates, userId = null) {
+  const MAX_SESSIONS = 10000;
+  const MAX_CONVERSATION_HISTORY = 20;
+  
+  // Check session limit to prevent memory exhaustion
+  if (!projectStateStore.has(sessionId) && projectStateStore.size >= MAX_SESSIONS) {
+    // Evict oldest session (simple FIFO)
+    const oldestSession = projectStateStore.keys().next().value;
+    projectStateStore.delete(oldestSession);
+    console.log(`⚠️ Session limit reached, evicted oldest session`);
+  }
+  
   const existingState = projectStateStore.get(sessionId) || {
     task: null,
     confirmedValues: {},
     questionsAsked: [],
     phase: 'ASSESSMENT',
     conversationHistory: [],
+    userId: userId,
     createdAt: Date.now(),
     lastUpdated: Date.now()
   };
 
+  // Helper for deep merge
+  function deepMerge(target, source) {
+    const output = { ...target };
+    
+    if (source && typeof source === 'object' && !Array.isArray(source)) {
+      Object.keys(source).forEach(key => {
+        if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+          if (!(key in target)) {
+            output[key] = source[key];
+          } else {
+            output[key] = deepMerge(target[key], source[key]);
+          }
+        } else {
+          output[key] = source[key];
+        }
+      });
+    }
+    
+    return output;
+  }
+
+  // Deep merge for nested objects like confirmedValues
   const updatedState = {
     ...existingState,
     ...updates,
+    confirmedValues: deepMerge(existingState.confirmedValues, updates.confirmedValues || {}),
     lastUpdated: Date.now()
   };
+  
+  // Limit conversation history length to prevent unbounded growth
+  if (updatedState.conversationHistory && updatedState.conversationHistory.length > MAX_CONVERSATION_HISTORY) {
+    updatedState.conversationHistory = updatedState.conversationHistory.slice(-MAX_CONVERSATION_HISTORY);
+  }
 
   projectStateStore.set(sessionId, updatedState);
   return updatedState;
@@ -125,14 +165,16 @@ test('updateProjectState merges with existing state', () => {
     confirmedValues: { location: 'kitchen' }
   });
   
-  // Update with new data
+  // Update with new data - this should DEEP MERGE confirmedValues
   updateProjectState(sessionId, {
-    confirmedValues: { location: 'kitchen', hasShutoff: true }
+    confirmedValues: { hasShutoff: true }
   });
   
   const state = getProjectState(sessionId);
   assert(state.task === 'plumbing_leak', 'Task should be preserved');
+  assert(state.confirmedValues.location === 'kitchen', 'Existing confirmed value should be preserved');
   assert(state.confirmedValues.hasShutoff === true, 'New confirmed value should be added');
+  assert(Object.keys(state.confirmedValues).length === 2, 'Should have both confirmed values');
 });
 
 test('updateProjectState tracks conversation history', () => {
@@ -215,6 +257,50 @@ test('State store maintains multiple sessions independently', () => {
   assert(state2.task === 'electrical_work', 'Session 2 task should be preserved');
   assert(state1.phase === 'ASSESSMENT', 'Session 1 phase should be independent');
   assert(state2.phase === 'STOP', 'Session 2 phase should be independent');
+});
+
+test('Conversation history is limited to prevent unbounded growth', () => {
+  const sessionId = generateSessionId();
+  const MAX_HISTORY = 20;
+  
+  // Create more than MAX_HISTORY conversation turns
+  const longHistory = [];
+  for (let i = 0; i < 25; i++) {
+    longHistory.push({
+      role: i % 2 === 0 ? 'user' : 'assistant',
+      content: `Message ${i}`,
+      timestamp: Date.now()
+    });
+  }
+  
+  updateProjectState(sessionId, {
+    task: 'test',
+    conversationHistory: longHistory
+  });
+  
+  const state = getProjectState(sessionId);
+  assert(state.conversationHistory.length === MAX_HISTORY, `Should truncate to ${MAX_HISTORY} turns`);
+  assert(state.conversationHistory[0].content === 'Message 5', 'Should keep most recent messages');
+});
+
+test('Deep merge preserves nested confirmed values', () => {
+  const sessionId = generateSessionId();
+  
+  // Set initial nested values
+  updateProjectState(sessionId, {
+    confirmedValues: { location: 'kitchen', details: { type: 'sink' } }
+  });
+  
+  // Add more nested values
+  updateProjectState(sessionId, {
+    confirmedValues: { hasShutoff: true, details: { brand: 'kohler' } }
+  });
+  
+  const state = getProjectState(sessionId);
+  assert(state.confirmedValues.location === 'kitchen', 'Top-level value should be preserved');
+  assert(state.confirmedValues.hasShutoff === true, 'New top-level value should be added');
+  assert(state.confirmedValues.details.type === 'sink', 'Nested value should be preserved');
+  assert(state.confirmedValues.details.brand === 'kohler', 'New nested value should be added');
 });
 
 // Summary
