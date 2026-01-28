@@ -4,7 +4,6 @@ import Schema from "../seo/Schema";
 import { Link, useNavigate } from "react-router-dom";
 import StickyProCTA from "../components/StickyProCTA";
 import ServiceIntakeButton from "../components/ServiceIntakeButton";
-import AIHomeExpertHero from "../components/AIHomeExpertHero";
 import HomeReferralSection from "../components/HomeReferralSection";
 import ReferralSection from "../components/ReferralSection";
 import { useAuth } from "../context/AuthContext";
@@ -81,9 +80,6 @@ export default function HomePage() {
     <>
       <HelmetSEO title={pageTitle} canonicalPathname="/" />
       <Schema />
-      
-      {/* AI Home Expert Hero - Primary entry point ABOVE ALL CONTENT */}
-      <AIHomeExpertHero />
       
       {/* Hero Section */}
       <section className="relative bg-gradient-to-b from-slate-50 to-white overflow-hidden">
@@ -247,13 +243,6 @@ export default function HomePage() {
       <div className="container-xl">
         {/* Services Section */}
         <section className="py-12 md:py-16">
-          {/* Helper text above Services */}
-          <div className="text-center mb-8">
-            <p className="text-sm text-slate-600">
-              Not sure which service you need? <Link to="/assistant" className="text-slate-900 font-medium hover:underline">Consult Fixlo AI Home Expert.</Link>
-            </p>
-          </div>
-          
           <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3 text-center">
             Book trusted home services
           </h2>

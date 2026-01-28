@@ -104,3 +104,7 @@ set-referrer.html
 test-pro-auth-routes.js
 test-admin-access.js
 server/test-admin-access.js
+
+# Generated JavaScript bundles from Vite build
+assets/index-*.js
+assets/index-*.css

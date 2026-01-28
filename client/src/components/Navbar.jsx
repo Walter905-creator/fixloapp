@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import logoUrl from '../assets/fixlo-logo.png';
 
 const baseItems = [
-  { to: '/assistant', label: 'AI Home Expert' },
   { to: '/services', label: 'Services' },
   { to: '/how-it-works', label: 'How It Works' },
   { to: '/earn', label: 'Earn' },
