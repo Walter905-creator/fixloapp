@@ -173,6 +173,11 @@ const proSchema = new mongoose.Schema({
   aiSubscriptionEndDate: {
     type: Date
   },
+  // AI Home Expert access flag (set when user has active AI_HOME tier subscription)
+  aiHomeAccess: {
+    type: Boolean,
+    default: false
+  },
   
   joinedDate: {
     type: Date,
