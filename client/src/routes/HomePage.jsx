@@ -4,6 +4,7 @@ import Schema from "../seo/Schema";
 import { Link, useNavigate } from "react-router-dom";
 import StickyProCTA from "../components/StickyProCTA";
 import ServiceIntakeButton from "../components/ServiceIntakeButton";
+import AIExpertSection from "../components/AIExpertSection";
 import HomeReferralSection from "../components/HomeReferralSection";
 import ReferralSection from "../components/ReferralSection";
 import { useAuth } from "../context/AuthContext";
@@ -81,6 +82,9 @@ export default function HomePage() {
       <HelmetSEO title={pageTitle} canonicalPathname="/" />
       <Schema />
       
+      {/* AI Expert Section - Top of page */}
+      <AIExpertSection />
+      
       {/* Hero Section */}
       <section className="relative bg-gradient-to-b from-slate-50 to-white overflow-hidden">
         <div className="container-xl">
@@ -105,7 +109,7 @@ export default function HomePage() {
                 <div className="flex flex-col sm:flex-row gap-4">
                   <button
                     onClick={() => navigate("/join")}
-                    className="btn-primary text-lg px-8 py-4 shadow-lg hover:shadow-xl transform hover:scale-105"
+                    className="btn-primary text-lg px-8 py-4 shadow-sm hover:shadow-md"
                   >
                     Get Jobs Near Me
                   </button>
@@ -121,7 +125,7 @@ export default function HomePage() {
 
             {/* Hero Image */}
             <div className="order-1 lg:order-2">
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+              <div className="relative rounded-lg overflow-hidden shadow-sm">
                 <img
                   src={HERO_IMG}
                   alt="Professional tradesperson at work"
@@ -153,29 +157,38 @@ export default function HomePage() {
         <div className="container-xl">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-center">
             <div className="flex flex-col items-center gap-2">
-              <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-2xl">
-                ✓
+              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
+                <svg className="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
               </div>
               <p className="text-sm font-semibold text-slate-900">Background-checked professionals</p>
               <p className="text-xs text-slate-600">Every pro undergoes thorough screening</p>
             </div>
             <div className="flex flex-col items-center gap-2">
-              <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-2xl">
-                📍
+              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
+                <svg className="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
               </div>
               <p className="text-sm font-semibold text-slate-900">30-mile radius matching</p>
               <p className="text-xs text-slate-600">Jobs matched by trade and distance</p>
             </div>
             <div className="flex flex-col items-center gap-2">
-              <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-2xl">
-                🔒
+              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
+                <svg className="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
               </div>
               <p className="text-sm font-semibold text-slate-900">No bidding wars, no reselling</p>
               <p className="text-xs text-slate-600">Requests routed privately to nearby pros</p>
             </div>
             <div className="flex flex-col items-center gap-2">
-              <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-2xl">
-                💬
+              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
+                <svg className="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
               </div>
               <p className="text-sm font-semibold text-slate-900">Direct communication</p>
               <p className="text-xs text-slate-600">Homeowners and pros connect directly</p>
@@ -189,7 +202,9 @@ export default function HomePage() {
         <div className="container-xl">
           <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 mb-4">
-              <span className="text-5xl text-amber-500">⭐</span>
+              <svg className="w-12 h-12 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+              </svg>
               <span className="text-4xl font-bold text-slate-900">4.9</span>
             </div>
             <p className="text-lg text-slate-700 mb-6">
@@ -197,10 +212,10 @@ export default function HomePage() {
             </p>
             <div className="flex flex-wrap justify-center gap-6 text-center">
               <div className="px-6 py-3 bg-white rounded-lg border border-slate-200">
-                <p className="text-sm font-medium text-slate-600">🛠 Built for real local service professionals</p>
+                <p className="text-sm font-medium text-slate-600">Built for real local service professionals</p>
               </div>
               <div className="px-6 py-3 bg-white rounded-lg border border-slate-200">
-                <p className="text-sm font-medium text-slate-600">📈 Expanding city by city</p>
+                <p className="text-sm font-medium text-slate-600">Expanding city by city</p>
               </div>
             </div>
           </div>
@@ -438,13 +453,13 @@ export default function HomePage() {
         </section>
 
         {/* How Fixlo Works - 3 Steps */}
-        <section className="py-12 md:py-16 bg-slate-50 -mx-4 px-4 md:rounded-2xl">
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-10 text-center">
+        <section className="py-12 md:py-16 bg-slate-50 -mx-4 px-4 md:rounded-lg">
+          <h2 className="text-3xl md:text-4xl font-semibold text-slate-900 mb-10 text-center">
             How Fixlo Works
           </h2>
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-3xl font-bold text-emerald-700 mx-auto mb-4">
+              <div className="w-16 h-16 rounded-lg bg-slate-100 flex items-center justify-center text-2xl font-semibold text-slate-900 mx-auto mb-4">
                 1
               </div>
               <h3 className="text-xl font-semibold text-slate-900 mb-3">Homeowner submits a request</h3>
@@ -454,7 +469,7 @@ export default function HomePage() {
             </div>
             
             <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-3xl font-bold text-emerald-700 mx-auto mb-4">
+              <div className="w-16 h-16 rounded-lg bg-slate-100 flex items-center justify-center text-2xl font-semibold text-slate-900 mx-auto mb-4">
                 2
               </div>
               <h3 className="text-xl font-semibold text-slate-900 mb-3">Request matched by trade + distance</h3>
@@ -464,7 +479,7 @@ export default function HomePage() {
             </div>
             
             <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-3xl font-bold text-emerald-700 mx-auto mb-4">
+              <div className="w-16 h-16 rounded-lg bg-slate-100 flex items-center justify-center text-2xl font-semibold text-slate-900 mx-auto mb-4">
                 3
               </div>
               <h3 className="text-xl font-semibold text-slate-900 mb-3">Local pro contacts homeowner directly</h3>
@@ -477,8 +492,8 @@ export default function HomePage() {
 
         {/* Founder-Led Trust Section */}
         <section className="py-12 md:py-16">
-          <div className="card p-8 bg-gradient-to-r from-blue-50 to-indigo-50 max-w-4xl mx-auto">
-            <h2 className="text-2xl font-bold text-slate-900 mb-4 text-center">Built to Fix a Broken System</h2>
+          <div className="card p-8 bg-slate-50 max-w-4xl mx-auto">
+            <h2 className="text-2xl font-semibold text-slate-900 mb-4 text-center">Built to Fix a Broken System</h2>
             <p className="text-slate-700 mb-4">
               Fixlo was created to solve the problems that plague traditional lead marketplaces: expensive pay-per-lead models that pressure professionals to compete on price alone, lead reselling that sends the same job to dozens of contractors, and bidding systems that create a race to the bottom.
             </p>
@@ -492,32 +507,44 @@ export default function HomePage() {
         </section>
 
         {/* Community Growth Section */}
-        <section className="py-12 md:py-16 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white -mx-4 px-4 md:rounded-2xl">
+        <section className="py-12 md:py-16 bg-slate-800 text-white -mx-4 px-4 md:rounded-lg">
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-8">
+            <h2 className="text-3xl md:text-4xl font-semibold mb-8">
               Growing a better home services community
             </h2>
             <div className="grid md:grid-cols-3 gap-8">
               <div>
-                <div className="text-5xl mb-3">📋</div>
+                <div className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center mx-auto mb-3">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                </div>
                 <p className="text-lg font-semibold">Daily service requests</p>
-                <p className="text-sm text-white/80 mt-2">Homeowners submit requests every day</p>
+                <p className="text-sm text-slate-300 mt-2">Homeowners submit requests every day</p>
               </div>
               <div>
-                <div className="text-5xl mb-3">📱</div>
+                <div className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center mx-auto mb-3">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                </div>
                 <p className="text-lg font-semibold">Instant job alerts via SMS</p>
-                <p className="text-sm text-white/80 mt-2">Pros notified immediately when matched</p>
+                <p className="text-sm text-slate-300 mt-2">Pros notified immediately when matched</p>
               </div>
               <div>
-                <div className="text-5xl mb-3">🗺️</div>
+                <div className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center mx-auto mb-3">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                  </svg>
+                </div>
                 <p className="text-lg font-semibold">Expanding nationwide</p>
-                <p className="text-sm text-white/80 mt-2">Adding new cities and professionals regularly</p>
+                <p className="text-sm text-slate-300 mt-2">Adding new cities and professionals regularly</p>
               </div>
             </div>
             <div className="mt-10">
               <button
                 onClick={() => navigate("/join")}
-                className="inline-flex items-center rounded-2xl px-8 py-4 text-lg font-semibold bg-white text-emerald-700 shadow-lg hover:shadow-xl transform hover:scale-105"
+                className="inline-flex items-center rounded-lg px-8 py-4 text-lg font-semibold bg-white text-slate-900 shadow-sm hover:shadow-md transition-shadow"
               >
                 Join as a Professional
               </button>
@@ -529,33 +556,49 @@ export default function HomePage() {
       {/* Trust & Info Links Section */}
       <section className="py-12 md:py-16 bg-slate-50">
         <div className="container-xl">
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-8 text-center">
+          <h2 className="text-3xl md:text-4xl font-semibold text-slate-900 mb-8 text-center">
             Why Choose Fixlo
           </h2>
           <div className="grid md:grid-cols-4 gap-6">
             <Link to="/how-it-works" className="card p-6 hover:shadow-lg transition-shadow">
-              <div className="text-3xl mb-3">📋</div>
+              <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center mb-3">
+                <svg className="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
               <h3 className="text-lg font-semibold text-slate-900 mb-2">How It Works</h3>
               <p className="text-sm text-slate-600">
                 Learn how Fixlo connects you with trusted professionals in minutes
               </p>
             </Link>
             <Link to="/join" className="card p-6 hover:shadow-lg transition-shadow">
-              <div className="text-3xl mb-3">🔧</div>
+              <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center mb-3">
+                <svg className="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
               <h3 className="text-lg font-semibold text-slate-900 mb-2">For Professionals</h3>
               <p className="text-sm text-slate-600">
                 Join our network and get unlimited job leads with no commission fees
               </p>
             </Link>
             <Link to="/contact" className="card p-6 hover:shadow-lg transition-shadow">
-              <div className="text-3xl mb-3">💬</div>
+              <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center mb-3">
+                <svg className="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
               <h3 className="text-lg font-semibold text-slate-900 mb-2">Contact Us</h3>
               <p className="text-sm text-slate-600">
                 Have questions? Our support team is here to help you
               </p>
             </Link>
             <Link to="/about-walter-arevalo" className="card p-6 hover:shadow-lg transition-shadow">
-              <div className="text-3xl mb-3">👤</div>
+              <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center mb-3">
+                <svg className="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
               <h3 className="text-lg font-semibold text-slate-900 mb-2">About Fixlo</h3>
               <p className="text-sm text-slate-600">
                 Learn about our mission to revolutionize home services

@@ -24,9 +24,9 @@
 @layer components {
   .container-xl { @apply max-w-6xl mx-auto px-4; }
 
-  .card { @apply bg-white border border-slate-200 rounded-2xl shadow-sm transition-transform duration-200 hover:-translate-y-0.5; }
+  .card { @apply bg-white border border-slate-200 rounded-lg shadow-sm transition-shadow duration-200; }
 
-  .btn { @apply inline-flex items-center justify-center font-semibold rounded-xl px-4 py-2 transition-all duration-200; }
+  .btn { @apply inline-flex items-center justify-center font-semibold rounded-lg px-4 py-2 transition-all duration-200; }
 
   /* Red (Find a Pro, Request Quotes, etc.) */
   .btn-primary { @apply btn bg-brand text-white hover:bg-brand-dark; }
@@ -37,20 +37,4 @@
   .btn-ghost { @apply btn border border-slate-300 text-slate-700 hover:bg-slate-50; }
 
   .pill { @apply inline-flex items-center gap-2 rounded-full border border-slate-300 px-3 py-1 text-sm text-slate-700; }
-}
-
-/* Custom pulse animation for Join Now button */
-@keyframes joinNowPulse {
-  0%, 100% { 
-    transform: scale(1); 
-    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.7); /* green-600 with opacity */
-  }
-  50% { 
-    transform: scale(1.05); 
-    box-shadow: 0 0 15px 3px rgba(22, 163, 74, 0.5); /* green-600 with opacity */
-  }
-}
-
-.join-now-pulse {
-  animation: joinNowPulse 2s infinite;
 }
