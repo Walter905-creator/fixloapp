@@ -20,6 +20,9 @@ class ContentGenerator {
       this.openai = new OpenAI({
         apiKey: process.env.OPENAI_API_KEY
       });
+      console.log('✅ OpenAI initialized for SEO content generation');
+    } else {
+      console.warn('⚠️ OPENAI_API_KEY not set - content generation will not work');
     }
   }
 
@@ -107,7 +110,7 @@ Make it specific to ${locationName} where possible (mention local factors).`;
    * 
    * Generate ONE title/meta variant optimized for CTR
    */
-  async generateMeta(url, service, city, state = null, currentMetrics) {
+  async generateMeta(url, service, city, state = null, currentMetrics = {}) {
     if (!this.isConfigured()) {
       throw new Error('OpenAI not configured');
     }
@@ -115,6 +118,10 @@ Make it specific to ${locationName} where possible (mention local factors).`;
     const location = state ? `${city}, ${state}` : city;
     const locationName = city.replace(/-/g, ' ');
     const serviceName = service.replace(/-/g, ' ');
+    
+    // Provide defaults for metrics
+    const ctr = currentMetrics.ctr || 0;
+    const position = currentMetrics.position || 10;
 
     const systemPrompt = `You are an expert SEO meta tag optimizer for Fixlo.
 
@@ -131,11 +138,12 @@ Guidelines:
 - Be specific and benefit-focused
 - NO clickbait or misleading claims`;
 
-    const userPrompt = `Current page: ${url}
+    const userPrompt = url 
+      ? `Current page: ${url}
 Service: ${serviceName}
 Location: ${locationName}
-Current CTR: ${(currentMetrics.ctr * 100).toFixed(2)}%
-Current Position: ${currentMetrics.position.toFixed(1)}
+Current CTR: ${(ctr * 100).toFixed(2)}%
+Current Position: ${position.toFixed(1)}
 
 Generate ONE optimized meta title and description in JSON format:
 {
@@ -143,7 +151,16 @@ Generate ONE optimized meta title and description in JSON format:
   "metaDescription": "..."
 }
 
-Focus on improving CTR from current ${(currentMetrics.ctr * 100).toFixed(2)}%.`;
+Focus on improving CTR from current ${(ctr * 100).toFixed(2)}%.`
+      : `New page for: ${serviceName} in ${locationName}
+
+Generate ONE optimized meta title and description in JSON format:
+{
+  "title": "...",
+  "metaDescription": "..."
+}
+
+Focus on high CTR and compelling copy.`;
 
     try {
       const response = await this.openai.chat.completions.create({

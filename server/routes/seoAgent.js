@@ -10,6 +10,14 @@ const GSCQueryDaily = require('../models/GSCQueryDaily');
 // Middleware to check if user is admin
 // TODO: Implement proper admin authentication
 const requireAdmin = (req, res, next) => {
+  // Check if SEO_AGENT_API_KEY is configured
+  if (!process.env.SEO_AGENT_API_KEY) {
+    return res.status(500).json({ 
+      error: 'Server configuration error',
+      message: 'SEO_AGENT_API_KEY not configured'
+    });
+  }
+  
   // For now, require API key
   const apiKey = req.headers['x-api-key'] || req.query.apiKey;
   if (!apiKey || apiKey !== process.env.SEO_AGENT_API_KEY) {
@@ -84,7 +92,17 @@ router.post('/run', requireAdmin, async (req, res) => {
  */
 router.post('/sync-gsc', requireAdmin, async (req, res) => {
   try {
-    const { days = 7 } = req.body;
+    let { days = 7 } = req.body;
+    
+    // Validate days parameter
+    days = parseInt(days, 10);
+    if (isNaN(days) || days < 1 || days > 30) {
+      return res.status(400).json({ 
+        error: 'Invalid days parameter',
+        message: 'Days must be between 1 and 30'
+      });
+    }
+    
     const gscClient = getGSCClient();
     
     const results = await gscClient.syncLastNDays(days);
@@ -115,11 +133,11 @@ router.get('/actions', requireAdmin, async (req, res) => {
     if (actionType) query.actionType = actionType;
     if (status) query.status = status;
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
 
     const actions = await SEOAgentAction.find(query)
       .sort({ createdAt: -1 })
-      .limit(parseInt(limit))
+      .limit(parseInt(limit, 10))
       .skip(skip);
 
     const total = await SEOAgentAction.countDocuments(query);
@@ -127,10 +145,10 @@ router.get('/actions', requireAdmin, async (req, res) => {
     res.json({
       actions,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page: parseInt(page, 10),
+        limit: parseInt(limit, 10),
         total,
-        pages: Math.ceil(total / parseInt(limit))
+        pages: Math.ceil(total / parseInt(limit, 10))
       }
     });
   } catch (error) {
@@ -179,11 +197,11 @@ router.get('/pages', requireAdmin, async (req, res) => {
     if (isWinner !== undefined) query.isWinner = isWinner === 'true';
     if (isDead !== undefined) query.isDead = isDead === 'true';
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
 
     const pages = await SEOPageMapping.find(query)
       .sort({ 'currentMetrics.clicks': -1 })
-      .limit(parseInt(limit))
+      .limit(parseInt(limit, 10))
       .skip(skip);
 
     const total = await SEOPageMapping.countDocuments(query);
@@ -191,10 +209,10 @@ router.get('/pages', requireAdmin, async (req, res) => {
     res.json({
       pages,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page: parseInt(page, 10),
+        limit: parseInt(limit, 10),
         total,
-        pages: Math.ceil(total / parseInt(limit))
+        pages: Math.ceil(total / parseInt(limit, 10))
       }
     });
   } catch (error) {

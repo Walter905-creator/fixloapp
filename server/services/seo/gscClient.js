@@ -226,27 +226,21 @@ class GSCClient {
 
   /**
    * Submit URL for indexing
+   * Note: This uses the Indexing API (not Search Console API)
+   * Requires separate setup: https://developers.google.com/search/apis/indexing-api/v3/quickstart
    */
   async submitUrlForIndexing(url) {
-    if (!this.isConfigured()) {
-      throw new Error('GSC client not initialized');
-    }
-
-    try {
-      // Use URL Inspection API to request indexing
-      const response = await this.searchConsole.urlInspection.index.inspect({
-        requestBody: {
-          inspectionUrl: url,
-          siteUrl: this.siteUrl
-        }
-      });
-
-      console.log(`✅ Submitted ${url} for indexing`);
-      return response.data;
-    } catch (error) {
-      console.error(`❌ Failed to submit ${url} for indexing:`, error.message);
-      throw error;
-    }
+    // Indexing API requires separate service account setup
+    // For now, we'll log and skip actual submission
+    // TODO: Implement proper Indexing API integration
+    console.log(`📝 URL ready for indexing: ${url}`);
+    console.log('⚠️ Note: Indexing API requires separate setup from Search Console API');
+    
+    return {
+      url,
+      message: 'URL logged for manual submission',
+      status: 'pending'
+    };
   }
 
   /**

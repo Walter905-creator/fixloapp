@@ -308,63 +308,69 @@ class SEOAgent {
   async checkAutoStop() {
     console.log('🔍 Checking auto-stop conditions...');
 
-    // Get organic clicks for last 14 days vs previous 14 days
-    const endDate = new Date();
-    const midDate = new Date(endDate);
-    midDate.setDate(midDate.getDate() - PERFORMANCE_LOOKBACK_DAYS);
-    const startDate = new Date(midDate);
-    startDate.setDate(startDate.getDate() - PERFORMANCE_LOOKBACK_DAYS);
+    try {
+      // Get organic clicks for last 14 days vs previous 14 days
+      const endDate = new Date();
+      const midDate = new Date(endDate);
+      midDate.setDate(midDate.getDate() - PERFORMANCE_LOOKBACK_DAYS);
+      const startDate = new Date(midDate);
+      startDate.setDate(startDate.getDate() - PERFORMANCE_LOOKBACK_DAYS);
 
-    const GSCPageDaily = require('../../models/GSCPageDaily');
+      const GSCPageDaily = require('../../models/GSCPageDaily');
 
-    const recentClicks = await GSCPageDaily.aggregate([
-      {
-        $match: {
-          date: { $gte: midDate, $lte: endDate }
+      const recentClicks = await GSCPageDaily.aggregate([
+        {
+          $match: {
+            date: { $gte: midDate, $lte: endDate }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            totalClicks: { $sum: '$clicks' }
+          }
         }
-      },
-      {
-        $group: {
-          _id: null,
-          totalClicks: { $sum: '$clicks' }
+      ]);
+
+      const previousClicks = await GSCPageDaily.aggregate([
+        {
+          $match: {
+            date: { $gte: startDate, $lt: midDate }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            totalClicks: { $sum: '$clicks' }
+          }
         }
+      ]);
+
+      if (recentClicks.length === 0 || previousClicks.length === 0) {
+        console.log('⚠️ Insufficient data for auto-stop check');
+        return null;
       }
-    ]);
 
-    const previousClicks = await GSCPageDaily.aggregate([
-      {
-        $match: {
-          date: { $gte: startDate, $lt: midDate }
-        }
-      },
-      {
-        $group: {
-          _id: null,
-          totalClicks: { $sum: '$clicks' }
-        }
+      const recentTotal = recentClicks[0].totalClicks;
+      const previousTotal = previousClicks[0].totalClicks;
+
+      if (previousTotal === 0) {
+        return null; // No baseline to compare
       }
-    ]);
 
-    if (recentClicks.length === 0 || previousClicks.length === 0) {
-      console.log('⚠️ Insufficient data for auto-stop check');
+      const dropPercentage = (previousTotal - recentTotal) / previousTotal;
+
+      if (dropPercentage > AUTO_STOP_CLICK_DROP_THRESHOLD) {
+        return `Organic clicks dropped ${(dropPercentage * 100).toFixed(1)}% over ${PERFORMANCE_LOOKBACK_DAYS} days`;
+      }
+
+      console.log('✅ Auto-stop check passed');
+      return null;
+    } catch (error) {
+      console.error('❌ Auto-stop check failed:', error.message);
+      // Don't block agent run if auto-stop check fails
       return null;
     }
-
-    const recentTotal = recentClicks[0].totalClicks;
-    const previousTotal = previousClicks[0].totalClicks;
-
-    if (previousTotal === 0) {
-      return null; // No baseline to compare
-    }
-
-    const dropPercentage = (previousTotal - recentTotal) / previousTotal;
-
-    if (dropPercentage > AUTO_STOP_CLICK_DROP_THRESHOLD) {
-      return `Organic clicks dropped ${(dropPercentage * 100).toFixed(1)}% over ${PERFORMANCE_LOOKBACK_DAYS} days`;
-    }
-
-    console.log('✅ Auto-stop check passed');
-    return null;
   }
 
   /**
