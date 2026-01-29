@@ -3,8 +3,13 @@
 
 const fs = require('fs');
 const path = require('path');
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 const { validateProposal } = require('../safety/validator');
+
+// Generate UUID v4 without external dependency
+function generateUUID() {
+  return crypto.randomUUID();
+}
 const { checkProposalLimit, recordProposal } = require('../safety/rateLimiter');
 const { log } = require('../utils/logger');
 
@@ -79,7 +84,7 @@ async function feedOpportunity(opportunity, options = {}) {
   
   // Write proposal file
   try {
-    const proposalId = uuidv4();
+    const proposalId = generateUUID();
     const filename = `proposal-${proposalId}.json`;
     const filepath = path.join(PENDING_DIR, filename);
     
