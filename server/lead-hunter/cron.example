@@ -1,0 +1,64 @@
+# Fixlo Lead Hunter - Cron Job Examples
+# Copy to your crontab and adjust paths as needed
+
+# ============================================================================
+# PHASE 1: OBSERVER MODE ONLY (Week 1-2)
+# ============================================================================
+# Run observer mode daily at 2am UTC
+# Safe, read-only intelligence gathering
+0 2 * * * cd /path/to/fixloapp/server && node lead-hunter/index.js observer >> logs/lead-hunter-cron.log 2>&1
+
+# ============================================================================
+# PHASE 2: ADD TUNING MODE (Week 3-4)
+# ============================================================================
+# Keep observer mode daily
+0 2 * * * cd /path/to/fixloapp/server && node lead-hunter/index.js observer >> logs/lead-hunter-cron.log 2>&1
+
+# Add tuning mode weekly (Sunday at 4am UTC)
+0 4 * * 0 cd /path/to/fixloapp/server && node lead-hunter/index.js tuning >> logs/lead-hunter-cron.log 2>&1
+
+# ============================================================================
+# PHASE 3: ENABLE GUARDED MODE (Week 5+)
+# ============================================================================
+# Observer mode first
+0 2 * * * cd /path/to/fixloapp/server && node lead-hunter/index.js observer >> logs/lead-hunter-cron.log 2>&1
+
+# Guarded mode after observer (3am UTC)
+# IMPORTANT: Requires LEAD_HUNTER_MODE=guarded in .env
+0 3 * * * cd /path/to/fixloapp/server && LEAD_HUNTER_MODE=guarded node lead-hunter/index.js guarded >> logs/lead-hunter-cron.log 2>&1
+
+# Tuning mode weekly
+0 4 * * 0 cd /path/to/fixloapp/server && node lead-hunter/index.js tuning >> logs/lead-hunter-cron.log 2>&1
+
+# ============================================================================
+# LOG ROTATION (Optional but Recommended)
+# ============================================================================
+# Compress and archive old logs monthly
+0 5 1 * * cd /path/to/fixloapp/server/logs && gzip -f lead-hunter-*.log.$(date -d "last month" +\%Y-\%m-*)
+
+# Delete logs older than 90 days
+0 6 1 * * find /path/to/fixloapp/server/logs -name "lead-hunter-*.log.gz" -mtime +90 -delete
+
+# ============================================================================
+# MONITORING (Optional)
+# ============================================================================
+# Daily report: Count opportunities found
+0 8 * * * cd /path/to/fixloapp/server && cat logs/lead-hunter-opportunities-$(date +\%Y-\%m-\%d).json | grep -o '"priority":"HIGH"' | wc -l >> logs/lead-hunter-metrics.log
+
+# Weekly report: Email tuning recommendations
+0 9 * * 1 cd /path/to/fixloapp/server && cat logs/lead-hunter-tuning-$(date -d "yesterday" +\%Y-\%m-\%d).json | mail -s "Lead Hunter Weekly Tuning Report" admin@fixloapp.com
+
+# ============================================================================
+# NOTES
+# ============================================================================
+# 1. Replace /path/to/fixloapp/server with your actual server path
+# 2. Ensure LEAD_HUNTER_MODE=guarded is in .env before enabling guarded mode
+# 3. Start with observer mode only for 1-2 weeks
+# 4. Monitor logs regularly: tail -f logs/lead-hunter-cron.log
+# 5. Review generated JSON files before enabling guarded mode
+# 6. Adjust MAX_DAILY_FEEDS based on performance
+#
+# Recommended Timeline:
+#   Week 1-2: Observer only
+#   Week 3-4: Observer + Tuning
+#   Week 5+:  All modes (after validation)
