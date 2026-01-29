@@ -1,9 +1,22 @@
 import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, Navigate, useLocation } from 'react-router-dom';
 import HelmetSEO from '../seo/HelmetSEO';
+import HreflangTags from '../seo/HreflangTags';
 import { ServiceSchema } from '../seo/Schema';
 import { makeTitle, makeDescription, slugify } from '../utils/seo';
 import { API_BASE, IS_HOLIDAY_SEASON } from '../utils/config';
+
+// Supported countries for international SEO
+const SUPPORTED_COUNTRIES = ['us', 'ca', 'uk', 'au', 'ar'];
+
+// Country configuration
+const COUNTRY_CONFIG = {
+  us: { code: 'us', name: 'United States', servicesPath: 'services' },
+  ca: { code: 'ca', name: 'Canada', servicesPath: 'services' },
+  uk: { code: 'uk', name: 'United Kingdom', servicesPath: 'services' },
+  au: { code: 'au', name: 'Australia', servicesPath: 'services' },
+  ar: { code: 'ar', name: 'Argentina', servicesPath: 'servicios' }
+};
 
 // Holiday-specific service benefits
 const holidayBenefits = {
@@ -40,13 +53,33 @@ function formatServiceName(slug) {
   return slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
-export default function ServicePage(){
-  const { service, city } = useParams();
+export default function ServicePage({ legacy = false }){
+  const { country, service, city } = useParams();
+  const location = useLocation();
+  
+  // Handle legacy routes - redirect to US country path
+  if (legacy) {
+    const s = slugify(service || '');
+    const c = city ? slugify(city) : undefined;
+    const redirectPath = `/us/services/${s}${c ? '/' + c : ''}`;
+    return <Navigate to={redirectPath} replace />;
+  }
+  
+  // Validate country parameter
+  const countryCode = country ? country.toLowerCase() : 'us';
+  if (!SUPPORTED_COUNTRIES.includes(countryCode)) {
+    // Invalid country - redirect to US
+    const s = slugify(service || '');
+    const c = city ? slugify(city) : undefined;
+    return <Navigate to={`/us/services/${s}${c ? '/' + c : ''}`} replace />;
+  }
+  
+  const countryInfo = COUNTRY_CONFIG[countryCode];
   const s = slugify(service || '');
   const c = city ? slugify(city) : undefined;
-  const title = makeTitle({ service: s, city: c });
-  const desc = makeDescription({ service: s, city: c });
-  const canonical = `/services/${s}${c ? '/'+c : ''}`;
+  const title = makeTitle({ service: s, city: c, country: countryCode });
+  const desc = makeDescription({ service: s, city: c, country: countryCode });
+  const canonical = `/${countryCode}/${countryInfo.servicesPath}/${s}${c ? '/'+c : ''}`;
   
   // Format display names
   const serviceName = s ? s.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Home Services';
@@ -54,7 +87,8 @@ export default function ServicePage(){
   
   return (<>
     <HelmetSEO title={title} description={desc} canonicalPathname={canonical} />
-    <ServiceSchema service={s} city={c} />
+    <HreflangTags service={s} city={c} />
+    <ServiceSchema service={s} city={c} country={countryCode} />
     <div className="container-xl py-8">
       {/* Breadcrumb Navigation */}
       <nav className="mb-4 text-sm text-slate-600" aria-label="Breadcrumb">
@@ -68,7 +102,7 @@ export default function ServicePage(){
           </li>
           <li>&rsaquo;</li>
           <li>
-            <Link to={`/services/${s}`} className="hover:text-brand">{serviceName}</Link>
+            <Link to={`/${countryCode}/${countryInfo.servicesPath}/${s}`} className="hover:text-brand">{serviceName}</Link>
           </li>
           {c && (
             <>
@@ -198,7 +232,7 @@ export default function ServicePage(){
             {relatedServices[s].map(relatedService => (
               <Link
                 key={relatedService}
-                to={c ? `/services/${relatedService}/${c}` : `/services/${relatedService}`}
+                to={c ? `/${countryCode}/${countryInfo.servicesPath}/${relatedService}/${c}` : `/${countryCode}/${countryInfo.servicesPath}/${relatedService}`}
                 className="text-brand hover:underline font-medium"
               >
                 {formatServiceName(relatedService)} {c && `in ${cityName}`}

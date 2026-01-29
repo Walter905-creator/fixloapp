@@ -49,9 +49,12 @@ export default function Schema() {
  * ServiceSchema component for service pages
  * Provides LocalBusiness and Service JSON-LD for service/city pages
  */
-export function ServiceSchema({ service, city }) {
+export function ServiceSchema({ service, city, country = 'us' }) {
   const serviceName = service ? service.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Home Services';
   const cityName = city ? city.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Your Area';
+  
+  // Country-specific URL path
+  const servicesPath = country === 'ar' ? 'servicios' : 'services';
   
   // Extract state if part of city (e.g., "new-york-ny" -> "New York, NY")
   let displayCity = cityName;
@@ -66,7 +69,7 @@ export function ServiceSchema({ service, city }) {
     "@type": "LocalBusiness",
     "name": `Fixlo – ${serviceName} in ${displayCity}${state ? ', ' + state : ''}${IS_HOLIDAY_SEASON ? ' – Holiday Services' : ''}`,
     "description": serviceDescription,
-    "url": `https://www.fixloapp.com/services/${service}${city ? '/' + city : ''}`,
+    "url": `https://www.fixloapp.com/${country}/${servicesPath}/${service}${city ? '/' + city : ''}`,
     "image": "https://www.fixloapp.com/cover.png",
     "priceRange": "$$",
     "telephone": "+1-256-488-1814",
