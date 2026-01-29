@@ -47,22 +47,18 @@ const competitorPages = [
   'thumbtack-alternatives'
 ];
 
-// Countries for global expansion
-const countries = [
-  { code: 'us', name: 'United States' },
-  { code: 'ca', name: 'Canada' },
-  { code: 'gb', name: 'United Kingdom' },
-  { code: 'au', name: 'Australia' },
-  { code: 'nz', name: 'New Zealand' },
-  { code: 'es', name: 'Spain' },
-  { code: 'mx', name: 'Mexico' },
-  { code: 'br', name: 'Brazil' },
-  { code: 'co', name: 'Colombia' },
-  { code: 'cl', name: 'Chile' },
-  { code: 'ar', name: 'Argentina' }
+// Countries for global expansion - INTERNATIONAL SEO
+// Limited to priority countries for initial rollout
+const priorityCountries = [
+  { code: 'us', name: 'United States', servicesPath: 'services' },
+  { code: 'ca', name: 'Canada', servicesPath: 'services' },
+  { code: 'uk', name: 'United Kingdom', servicesPath: 'services' },
+  { code: 'au', name: 'Australia', servicesPath: 'services' },
+  { code: 'ar', name: 'Argentina', servicesPath: 'servicios' }
 ];
 
 // Major cities to include in sitemap (limit to avoid too many URLs)
+// Focus on top US cities for now - international cities can be added later
 const majorCities = [
   'miami',
   'new-york',
@@ -74,26 +70,11 @@ const majorCities = [
   'san-antonio',
   'san-diego',
   'dallas',
-  'san-jose',
   'austin',
-  'jacksonville',
-  'fort-worth',
-  'columbus',
-  'charlotte',
-  'san-francisco',
-  'indianapolis',
   'seattle',
   'denver',
-  'washington',
   'boston',
-  'nashville',
-  'atlanta',
-  'portland',
-  'las-vegas',
-  'detroit',
-  'baltimore',
-  'memphis',
-  'louisville'
+  'atlanta'
 ];
 
 // Most important service/city combinations for SEO
@@ -102,11 +83,7 @@ const priorityServiceCities = [
   { service: 'electrical', cities: ['new-york', 'los-angeles', 'chicago', 'miami', 'denver'] },
   { service: 'hvac', cities: ['houston', 'phoenix', 'miami', 'atlanta', 'dallas'] },
   { service: 'cleaning', cities: ['new-york', 'chicago', 'los-angeles', 'san-francisco', 'boston'] },
-  { service: 'landscaping', cities: ['miami', 'phoenix', 'dallas', 'san-diego', 'austin'] },
-  { service: 'roofing', cities: ['houston', 'miami', 'denver', 'seattle', 'portland'] },
-  { service: 'carpentry', cities: ['seattle', 'portland', 'denver', 'austin', 'charlotte'] },
-  { service: 'painting', cities: ['san-diego', 'phoenix', 'austin', 'nashville', 'charlotte'] },
-  { service: 'handyman', cities: ['austin', 'denver', 'nashville', 'charlotte', 'atlanta'] }
+  { service: 'landscaping', cities: ['miami', 'phoenix', 'dallas', 'san-diego', 'austin'] }
 ];
 
 function generateSitemap() {
@@ -197,6 +174,39 @@ function generateSitemap() {
   \n`;
   });
 
+  // INTERNATIONAL SEO: Add country-specific service pages
+  // Loop order: country → service → city (as specified in requirements)
+  console.log(`🌍 Adding international SEO URLs for ${priorityCountries.length} countries...`);
+  
+  let countryUrlCount = 0;
+  priorityCountries.forEach(country => {
+    // Add service category pages per country
+    services.forEach(service => {
+      sitemap += `  <url>
+    <loc>${baseUrl}/${country.code}/${country.servicesPath}/${service}</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  \n`;
+      countryUrlCount++;
+    });
+    
+    // Add priority service/city combinations per country
+    priorityServiceCities.forEach(({ service, cities }) => {
+      cities.forEach(city => {
+        sitemap += `  <url>
+    <loc>${baseUrl}/${country.code}/${country.servicesPath}/${service}/${city}</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  \n`;
+        countryUrlCount++;
+      });
+    });
+  });
+
   // REMOVED: Priority service/city combinations (these cause Soft 404 as they're not prerendered)
   // REMOVED: High-priority trend pages (these cause Soft 404 as they're not prerendered)
   // REMOVED: Competitor alternatives pages (these cause Soft 404 as they're not prerendered)
@@ -208,12 +218,13 @@ function generateSitemap() {
   const sitemapPath = path.join(__dirname, 'sitemap.xml');
   fs.writeFileSync(sitemapPath, sitemap);
   
-  const totalUrls = 1 + 7 + 1 + services.length; // homepage + 7 main pages + services page + service categories
+  const totalUrls = 1 + 7 + 1 + services.length + countryUrlCount; // homepage + 7 main pages + services page + service categories + country URLs
   
   console.log(`✅ Sitemap generated with:`);
   console.log(`   - ${services.length} service category pages`);
   console.log(`   - 7 main pages (how-it-works, contact, signup, etc.)`);
   console.log(`   - Homepage and services overview`);
+  console.log(`   - ${countryUrlCount} international SEO URLs (${priorityCountries.length} countries)`);
   console.log(`📍 Total URLs: ${totalUrls}`);
   console.log(`📝 Sitemap saved to: ${sitemapPath}`);
   console.log(`⚠️  Removed non-rendered URLs to prevent Soft 404 errors`);

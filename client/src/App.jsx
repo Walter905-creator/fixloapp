@@ -49,8 +49,16 @@ export default function App(){
     <Routes>
       <Route path="/" element={<HomePage/>}/>
       <Route path="/services" element={<ServicesPage/>}/>
-      <Route path="/services/:service" element={<ServicePage/>}/>
-      <Route path="/services/:service/:city" element={<ServicePage/>}/>
+      
+      {/* Country-aware service routes (international SEO) */}
+      <Route path="/:country/services/:service/:city" element={<ServicePage/>}/>
+      <Route path="/:country/services/:service" element={<ServicePage/>}/>
+      <Route path="/:country/servicios/:service/:city" element={<ServicePage/>}/>
+      <Route path="/:country/servicios/:service" element={<ServicePage/>}/>
+      
+      {/* Legacy service routes - redirect to US country path */}
+      <Route path="/services/:service" element={<ServicePage legacy/>}/>
+      <Route path="/services/:service/:city" element={<ServicePage legacy/>}/>
       
       {/* Trend-based SEO landing pages */}
       <Route path="/:trend/:service" element={<TrendServicePage/>}/>

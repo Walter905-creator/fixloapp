@@ -16,28 +16,33 @@ if (process.env.OPENAI_API_KEY) {
  * @param {Object} decision - The CREATE_PAGE decision object
  */
 async function createPage(decision) {
-  const { service, city, state, data } = decision;
+  const { service, city, state, data, country = 'us' } = decision;
   
-  console.log(`📝 Creating page: ${service} in ${city}, ${state}`);
+  console.log(`📝 Creating page: ${service} in ${city}, ${state} (${country.toUpperCase()})`);
   
   try {
     // Generate page content using LLM
     const content = await generatePageContent(service, city, state, data);
     
-    // Save page to database
-    const slug = `/services/${service}-in-${city.toLowerCase().replace(/\s+/g, '-')}`;
+    // Determine services path based on country
+    const servicesPath = country === 'ar' ? 'servicios' : 'services';
+    
+    // Save page to database with country-aware slug
+    const slug = `/${country}/${servicesPath}/${service}-in-${city.toLowerCase().replace(/\s+/g, '-')}`;
     await savePageToCMS({
       slug,
       service,
       city,
       state,
+      country,
       content,
-      schema: buildSchema(service, city, state),
+      schema: buildSchema(service, city, state, country),
       metadata: {
         createdBy: 'seo-agent',
         sourceQuery: data.query,
         sourceImpressions: data.impressions,
         sourcePosition: data.position,
+        country: country,
       },
     });
     
@@ -144,7 +149,9 @@ async function savePageToCMS(pageData) {
 /**
  * Build structured data schema for the page
  */
-function buildSchema(service, city, state) {
+function buildSchema(service, city, state, country = 'us') {
+  const servicesPath = country === 'ar' ? 'servicios' : 'services';
+  
   return {
     '@context': 'https://schema.org',
     '@type': 'Service',
@@ -161,7 +168,7 @@ function buildSchema(service, city, state) {
     provider: {
       '@type': 'Organization',
       name: 'Fixlo',
-      url: 'https://www.fixloapp.com',
+      url: `https://www.fixloapp.com/${country}/${servicesPath}`,
     },
   };
 }
