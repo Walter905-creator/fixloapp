@@ -32,3 +32,9 @@ dist/
 
 # Test files (for manual testing only)
 test-ai-home-*.js
+
+# Lead Hunter generated files
+logs/lead-hunter-*.log
+logs/lead-hunter-*.json
+locks/lead-hunter-*.lock
+proposals/
