@@ -33,14 +33,22 @@ function generateServiceAlternates(service, city) {
   const alternates = [];
 
   COUNTRIES.forEach(country => {
+    // For service+city pages, only generate alternates for US until 
+    // proper international city data is available
+    if (city && country.code !== 'us') {
+      // Skip city-specific alternates for non-US countries to avoid
+      // geographically incorrect URLs (e.g., /ca/services/plumbing/miami)
+      return;
+    }
+    
     if (city) {
-      // Service + city page: /:country/services/:service/:city
+      // Service + city page: /:country/services/:service/:city (US only for now)
       alternates.push({
         hreflang: country.hreflang,
         href: `${baseUrl}/${country.pathPrefix}/${country.servicesPath}/${service}/${city}`
       });
     } else {
-      // Service only page: /:country/services/:service
+      // Service only page: /:country/services/:service (all countries)
       alternates.push({
         hreflang: country.hreflang,
         href: `${baseUrl}/${country.pathPrefix}/${country.servicesPath}/${service}`

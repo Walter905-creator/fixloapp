@@ -192,19 +192,22 @@ function generateSitemap() {
       countryUrlCount++;
     });
     
-    // Add priority service/city combinations per country
-    priorityServiceCities.forEach(({ service, cities }) => {
-      cities.forEach(city => {
-        sitemap += `  <url>
+    // Add service/city combinations ONLY for US
+    // International cities should be added later with proper geographic data
+    if (country.code === 'us') {
+      priorityServiceCities.forEach(({ service, cities }) => {
+        cities.forEach(city => {
+          sitemap += `  <url>
     <loc>${baseUrl}/${country.code}/${country.servicesPath}/${service}/${city}</loc>
     <lastmod>${currentDate}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   \n`;
-        countryUrlCount++;
+          countryUrlCount++;
+        });
       });
-    });
+    }
   });
 
   // REMOVED: Priority service/city combinations (these cause Soft 404 as they're not prerendered)

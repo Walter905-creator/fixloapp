@@ -41,6 +41,19 @@ cities.forEach(city => {
   }
 });
 
+// Check that non-US countries DON'T have US city combinations (geographic accuracy)
+const nonUSCountries = ['ca', 'uk', 'au', 'ar'];
+nonUSCountries.forEach(country => {
+  const servicesPath = country === 'ar' ? 'servicios' : 'services';
+  cities.forEach(city => {
+    const url = `https://www.fixloapp.com/${country}/${servicesPath}/plumbing/${city}`;
+    if (sitemap.includes(url)) {
+      console.log(`  ❌ Non-US country ${country.toUpperCase()} should NOT have US cities: ${url}`);
+      sitemapPassed = false;
+    }
+  });
+});
+
 // Check Argentina uses 'servicios' path
 if (!sitemap.includes('https://www.fixloapp.com/ar/servicios/plumbing')) {
   console.log(`  ❌ Argentina should use 'servicios' path`);
