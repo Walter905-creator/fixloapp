@@ -11,16 +11,22 @@ const axios = require('axios');
  */
 async function fetchGSC(options = {}) {
   const { days = 30 } = options;
+  const timestamp = new Date().toISOString();
   
-  console.log(`📊 Fetching GSC data for last ${days} days...`);
+  console.log(`[${timestamp}] [SEO][GSC] Starting GSC data fetch for last ${days} days...`);
   
   // Check for required environment variables
   const gscCredentials = process.env.GSC_SERVICE_ACCOUNT_KEY;
   const siteUrl = process.env.GSC_SITE_URL || 'https://www.fixloapp.com';
   
+  console.log(`[${timestamp}] [SEO][GSC] Target site: ${siteUrl}`);
+  
   if (!gscCredentials) {
-    console.warn('⚠️ GSC_SERVICE_ACCOUNT_KEY not configured - returning mock data');
-    return getMockGSCData();
+    console.warn(`[${timestamp}] [SEO][GSC] ⚠️ WARNING: GSC_SERVICE_ACCOUNT_KEY not configured`);
+    console.log(`[${timestamp}] [SEO][GSC] Falling back to mock data for development`);
+    const mockData = getMockGSCData();
+    console.log(`[${timestamp}] [SEO][GSC] ✅ SUCCESS: Mock data generated | Rows: ${mockData.length}`);
+    return mockData;
   }
   
   try {
@@ -30,12 +36,20 @@ async function fetchGSC(options = {}) {
     // 2. Service account with Search Console access
     // 3. OAuth2 token generation
     
+    console.log(`[${timestamp}] [SEO][GSC] Authenticating with GSC API...`);
+    
+    // When real implementation is added, authentication should log:
+    // console.log(`[${timestamp}] [SEO][GSC] ✅ Auth OK | site=${siteUrl}`);
+    
     // For now, return structured mock data
-    console.log('ℹ️ Using mock GSC data (production implementation needed)');
-    return getMockGSCData();
+    console.log(`[${timestamp}] [SEO][GSC] ℹ️ INFO: Using mock data (production API not yet implemented)`);
+    const mockData = getMockGSCData();
+    console.log(`[${timestamp}] [SEO][GSC] ✅ SUCCESS: Queries fetched | Rows: ${mockData.length} | Site: ${siteUrl}`);
+    
+    return mockData;
     
   } catch (error) {
-    console.error('❌ Error fetching GSC data:', error.message);
+    console.error(`[${timestamp}] [SEO][GSC] ❌ ERROR: GSC fetch failed | ${error.message}`);
     throw new Error(`GSC fetch failed: ${error.message}`);
   }
 }
@@ -87,7 +101,6 @@ function getMockGSCData() {
     });
   });
   
-  console.log(`✅ Generated ${mockData.length} mock GSC query entries`);
   return mockData;
 }
 

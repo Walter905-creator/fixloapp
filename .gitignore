@@ -7,6 +7,10 @@ api/node_modules/
 # Build-time generated files
 client/src/buildInfo.generated.js
 
+# SEO Agent lock files (prevent concurrent runs)
+server/seo-agent/.seo-agent-daily.lock
+server/seo-agent/.seo-agent-weekly.lock
+
 # Prevent deployment of duplicate content directories
 website/
 _client-disabled/
