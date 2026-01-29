@@ -325,8 +325,7 @@ function runDoctor() {
   console.log('\n═══════════════════════════════════════════════════════════════');
   if (allChecksPass) {
     console.log('\n✅ Lead Hunter is correctly installed and ready to use!\n');
-    console.log('Quick start:');
-    console.log('  cd /server');
+    console.log('Quick start (from /server directory):');
     console.log('  npm run lead-hunter:observer');
     console.log('\nFor more information, run:');
     console.log('  npm run lead-hunter:help\n');
