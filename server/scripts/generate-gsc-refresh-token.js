@@ -4,6 +4,13 @@ import readline from 'readline';
 const CLIENT_ID = process.env.GSC_CLIENT_ID;
 const CLIENT_SECRET = process.env.GSC_CLIENT_SECRET;
 
+// Exit with an error if required environment variables are missing
+if (!CLIENT_ID || !CLIENT_SECRET) {
+  console.error('❌ Error: Missing required environment variables');
+  console.error('Please set GSC_CLIENT_ID and GSC_CLIENT_SECRET before running this script');
+  process.exit(1);
+}
+
 const REDIRECT_URI = 'http://localhost';
 
 const oauth2Client = new google.auth.OAuth2(
