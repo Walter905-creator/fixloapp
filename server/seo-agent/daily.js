@@ -178,7 +178,6 @@ module.exports = {
 if (require.main === module) {
   runDaily()
     .then(() => {
-      console.log('✅ Daily SEO agent run completed successfully');
       process.exit(0);
     })
     .catch((error) => {

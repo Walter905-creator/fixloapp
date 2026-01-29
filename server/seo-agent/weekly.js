@@ -117,7 +117,6 @@ module.exports = {
 if (require.main === module) {
   runWeekly()
     .then(() => {
-      console.log('✅ Weekly SEO agent run completed successfully');
       process.exit(0);
     })
     .catch((error) => {
