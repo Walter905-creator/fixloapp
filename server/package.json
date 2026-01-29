@@ -11,9 +11,9 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "test": "echo \"No tests specified\" && exit 0",
-    "seo-agent:daily": "node seo-agent/index.js daily",
-    "seo-agent:weekly": "node seo-agent/index.js weekly",
-    "seo-agent:test": "node test-seo-agent.js"
+    "seo-agent:daily": "node seo-agent/daily.js",
+    "seo-agent:weekly": "node seo-agent/weekly.js",
+    "seo-agent:test": "node scripts/generate-gsc-refresh-token.js"
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",
