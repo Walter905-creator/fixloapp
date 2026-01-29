@@ -1,5 +1,10 @@
 // Lock Manager for SEO Agent
 // Prevents concurrent runs and provides stale lock recovery
+//
+// NOTE: This module is designed for single-mode-per-process usage.
+// Signal handlers are set up once per process and reference the mode
+// passed to setupLockCleanup(). This is ideal for cron jobs that exit
+// after each run. Do not reuse with different modes in long-running processes.
 
 const fs = require('fs');
 const path = require('path');
@@ -64,51 +69,64 @@ function checkLock(mode) {
 
 /**
  * Acquire a lock for the given mode
- * Uses atomic file operations to prevent race conditions
+ * Uses atomic file operations with retry to prevent race conditions
  * @param {string} mode - 'daily' or 'weekly'
  * @returns {boolean} true if lock acquired, false if already locked
  */
 function acquireLock(mode) {
   const lockFile = getLockFile(mode);
-  const lockStatus = checkLock(mode);
+  const maxRetries = 3;
   
-  // If lock is stale, remove it first
-  if (lockStatus.exists && lockStatus.stale) {
-    const ageMinutes = Math.floor(lockStatus.age / (60 * 1000));
-    console.log(`🔄 [LOCK] Recovering from stale lock (age: ${ageMinutes} minutes)`);
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const lockStatus = checkLock(mode);
+    
+    // If lock is stale, remove it first
+    if (lockStatus.exists && lockStatus.stale) {
+      const ageMinutes = Math.floor(lockStatus.age / (60 * 1000));
+      console.log(`🔄 [LOCK] Recovering from stale lock (age: ${ageMinutes} minutes)`);
+      try {
+        fs.unlinkSync(lockFile);
+      } catch (error) {
+        // Ignore errors if file was already removed by another process
+        if (error.code !== 'ENOENT') {
+          console.error(`❌ [LOCK] Failed to remove stale lock: ${error.message}`);
+        }
+      }
+    }
+    
+    // Try to create lock file atomically using 'wx' flag (write + exclusive)
+    // This will fail if file already exists, preventing race conditions
     try {
-      fs.unlinkSync(lockFile);
+      const timestamp = Date.now().toString();
+      const fd = fs.openSync(lockFile, 'wx');
+      fs.writeSync(fd, timestamp);
+      fs.closeSync(fd);
+      console.log(`✅ [LOCK] Lock acquired for ${mode} agent`);
+      return true;
     } catch (error) {
-      // Ignore errors if file was already removed
-      if (error.code !== 'ENOENT') {
-        console.error(`❌ [LOCK] Failed to remove stale lock: ${error.message}`);
+      if (error.code === 'EEXIST') {
+        // Lock file exists - check if it's actually fresh or we hit a race
+        const currentLockStatus = checkLock(mode);
+        if (currentLockStatus.exists && !currentLockStatus.stale) {
+          // Fresh lock from another process
+          const ageMinutes = Math.floor(currentLockStatus.age / (60 * 1000));
+          console.log(`🔒 [LOCK] ${mode} agent is already running (lock age: ${ageMinutes} minutes)`);
+          return false;
+        }
+        // Stale lock detected, retry (TOCTOU race condition handling)
+        if (attempt < maxRetries - 1) {
+          console.log(`🔄 [LOCK] Retry attempt ${attempt + 1}/${maxRetries}`);
+          continue;
+        }
       }
+      // Other errors are unexpected
+      console.error(`❌ [LOCK] Failed to create lock file: ${error.message}`);
+      throw error;
     }
   }
   
-  // Try to create lock file atomically using 'wx' flag (write + exclusive)
-  // This will fail if file already exists, preventing race conditions
-  try {
-    const timestamp = Date.now().toString();
-    const fd = fs.openSync(lockFile, 'wx');
-    fs.writeSync(fd, timestamp);
-    fs.closeSync(fd);
-    console.log(`✅ [LOCK] Lock acquired for ${mode} agent`);
-    return true;
-  } catch (error) {
-    if (error.code === 'EEXIST') {
-      // Lock file exists - another process is running
-      const currentLockStatus = checkLock(mode);
-      if (currentLockStatus.exists && !currentLockStatus.stale) {
-        const ageMinutes = Math.floor(currentLockStatus.age / (60 * 1000));
-        console.log(`🔒 [LOCK] ${mode} agent is already running (lock age: ${ageMinutes} minutes)`);
-      }
-      return false;
-    }
-    // Other errors are unexpected
-    console.error(`❌ [LOCK] Failed to create lock file: ${error.message}`);
-    throw error;
-  }
+  // Should not reach here, but just in case
+  return false;
 }
 
 /**
@@ -132,6 +150,10 @@ function releaseLock(mode) {
 /**
  * Ensure lock is released on process exit
  * @param {string} mode - 'daily' or 'weekly'
+ * 
+ * NOTE: This sets up process-wide signal handlers.
+ * The mode parameter is captured in closures for cleanup.
+ * Handlers are only set up once per process to avoid duplicates.
  */
 function setupLockCleanup(mode) {
   // Only set up handlers once to avoid duplicates
