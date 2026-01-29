@@ -7,6 +7,13 @@ const { decideCloneWinners } = require('./decisions/decideCloneWinners');
 const { createPage } = require('./actions/createPage');
 
 /**
+ * Get current timestamp in ISO format for logging
+ */
+function getTimestamp() {
+  return new Date().toISOString();
+}
+
+/**
  * Weekly SEO Agent Run
  * 
  * Flow:
@@ -15,52 +22,49 @@ const { createPage } = require('./actions/createPage');
  * 3. Clone successful patterns to new locations
  */
 async function runWeekly() {
-  const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] 🚀 Starting weekly SEO agent run...`);
-  console.log(`[${timestamp}] [SEO][WEEKLY] Running autonomous learning loop`);
+  console.log(`[${getTimestamp()}] 🚀 Starting weekly SEO agent run...`);
+  console.log(`[${getTimestamp()}] [SEO][WEEKLY] Running autonomous learning loop`);
   const startTime = Date.now();
   
   try {
     // Step 1: Evaluate performance
-    console.log(`\n[${timestamp}] 📍 Step 1: Evaluating weekly performance`);
-    console.log(`[${timestamp}] [SEO][WEEKLY] Reading stored performance data from daily runs...`);
+    console.log(`\n[${getTimestamp()}] 📍 Step 1: Evaluating weekly performance`);
+    console.log(`[${getTimestamp()}] [SEO][WEEKLY] Reading stored performance data from daily runs...`);
     const report = await evaluateWeekly();
     
-    console.log(`[${timestamp}] [SEO][WEEKLY] ✅ Performance data loaded`);
-    console.log(`[${timestamp}] 📊 Evaluation summary:`);
+    console.log(`[${getTimestamp()}] [SEO][WEEKLY] ✅ Performance data loaded`);
+    console.log(`[${getTimestamp()}] 📊 Evaluation summary:`);
     console.log(`   Total pages analyzed: ${report.totalPages}`);
     console.log(`   Winners: ${report.winners}`);
     console.log(`   Losers: ${report.losers}`);
     console.log(`   Average CTR change: ${(report.avgCTRChange * 100).toFixed(2)}%`);
     
     // Step 2: Extract patterns
-    const timestamp2 = new Date().toISOString();
-    console.log(`\n[${timestamp2}] 📍 Step 2: Extracting winning patterns`);
-    console.log(`[${timestamp2}] [SEO][WEEKLY] Analyzing top performers for patterns...`);
+    console.log(`\n[${getTimestamp()}] 📍 Step 2: Extracting winning patterns`);
+    console.log(`[${getTimestamp()}] [SEO][WEEKLY] Analyzing top performers for patterns...`);
     const patterns = await extractPatterns(report);
     
-    console.log(`[${timestamp2}] [SEO][WEEKLY] ✅ Pattern extraction complete`);
-    console.log(`[${timestamp2}] 🔍 Patterns detected: ${patterns.winners.length}`);
+    console.log(`[${getTimestamp()}] [SEO][WEEKLY] ✅ Pattern extraction complete`);
+    console.log(`[${getTimestamp()}] 🔍 Patterns detected: ${patterns.winners.length}`);
     
     if (patterns.winners.length > 0) {
-      console.log(`[${timestamp2}] [SEO][WEEKLY] Winning patterns identified:`);
+      console.log(`[${getTimestamp()}] [SEO][WEEKLY] Winning patterns identified:`);
       patterns.winners.forEach(w => {
         console.log(`   - ${w.pattern}: CTR ${(w.avgCTR * 100).toFixed(2)}%, Position ${w.avgPosition.toFixed(1)}, Impressions: ${w.totalImpressions}`);
         console.log(`     Target cities for expansion: ${w.targetCities.length} cities`);
       });
     } else {
-      console.log(`[${timestamp2}] [SEO][WEEKLY] ℹ️ No winning patterns detected this week`);
+      console.log(`[${getTimestamp()}] [SEO][WEEKLY] ℹ️ No winning patterns detected this week`);
     }
     
     // Step 3: Clone winners
-    const timestamp3 = new Date().toISOString();
-    console.log(`\n[${timestamp3}] 📍 Step 3: Deciding which patterns to clone`);
+    console.log(`\n[${getTimestamp()}] 📍 Step 3: Deciding which patterns to clone`);
     const cloneDecisions = decideCloneWinners(patterns);
     
-    console.log(`[${timestamp3}] [SEO][WEEKLY] Actions queued: ${cloneDecisions.length}`);
+    console.log(`[${getTimestamp()}] [SEO][WEEKLY] Actions queued: ${cloneDecisions.length}`);
     
     if (cloneDecisions.length > 0) {
-      console.log(`[${timestamp3}] [SEO][WEEKLY] Queued actions breakdown:`);
+      console.log(`[${getTimestamp()}] [SEO][WEEKLY] Queued actions breakdown:`);
       const actionTypes = cloneDecisions.reduce((acc, d) => {
         const type = d.action || 'REPLICATION';
         acc[type] = (acc[type] || 0) + 1;
@@ -72,25 +76,22 @@ async function runWeekly() {
     }
     
     // Step 4: Execute cloning
-    const timestamp4 = new Date().toISOString();
-    console.log(`\n[${timestamp4}] 📍 Step 4: Executing pattern cloning`);
-    console.log(`[${timestamp4}] [SEO][WEEKLY] Running autonomous replication...`);
+    console.log(`\n[${getTimestamp()}] 📍 Step 4: Executing pattern cloning`);
+    console.log(`[${getTimestamp()}] [SEO][WEEKLY] Running autonomous replication...`);
     const results = await executeCloning(cloneDecisions);
     
     // Step 5: Log results
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-    const timestamp5 = new Date().toISOString();
-    console.log(`\n[${timestamp5}] 📊 Weekly Report:`);
+    console.log(`\n[${getTimestamp()}] 📊 Weekly Report:`);
     console.log(`   Patterns cloned: ${results.success}`);
     console.log(`   Failed: ${results.failed}`);
     console.log(`   Duration: ${duration}s`);
     
-    console.log(`\n[${timestamp5}] [SEO][WEEKLY] ✅ Autonomous learning loop completed`);
-    console.log(`[${timestamp5}] ✅ Weekly SEO agent run completed successfully`);
+    console.log(`\n[${getTimestamp()}] [SEO][WEEKLY] ✅ Autonomous learning loop completed`);
+    console.log(`[${getTimestamp()}] ✅ Weekly SEO agent run completed successfully`);
     
   } catch (error) {
-    const errorTimestamp = new Date().toISOString();
-    console.error(`\n[${errorTimestamp}] [SEO][WEEKLY] ❌ ERROR: Weekly SEO agent run failed | ${error.message}`);
+    console.error(`\n[${getTimestamp()}] [SEO][WEEKLY] ❌ ERROR: Weekly SEO agent run failed | ${error.message}`);
     throw error;
   }
 }

@@ -9,13 +9,13 @@ const { acquireLock, releaseLock, setupLockCleanup } = require('./utils/lockMana
 const mode = process.argv[2];
 
 async function main() {
-  console.log(`🤖 Fixlo SEO Agent starting in ${mode} mode...`);
-  
-  // Validate mode
+  // Validate mode first before any logging
   if (mode !== 'daily' && mode !== 'weekly') {
     console.error('❌ Invalid SEO agent mode. Use "daily" or "weekly"');
     process.exit(1);
   }
+  
+  console.log(`🤖 Fixlo SEO Agent starting in ${mode} mode...`);
   
   // Setup lock cleanup handlers
   setupLockCleanup(mode);

@@ -13,6 +13,9 @@ const WEEKLY_LOCK_FILE = path.join(LOCK_DIR, '.seo-agent-weekly.lock');
 const DAILY_STALE_THRESHOLD = 2 * 60 * 60 * 1000; // 2 hours
 const WEEKLY_STALE_THRESHOLD = 6 * 60 * 60 * 1000; // 6 hours
 
+// Track if cleanup handlers are already set up
+let cleanupHandlersSet = false;
+
 /**
  * Get lock file path for a given mode
  */
@@ -61,6 +64,7 @@ function checkLock(mode) {
 
 /**
  * Acquire a lock for the given mode
+ * Uses atomic file operations to prevent race conditions
  * @param {string} mode - 'daily' or 'weekly'
  * @returns {boolean} true if lock acquired, false if already locked
  */
@@ -68,26 +72,40 @@ function acquireLock(mode) {
   const lockFile = getLockFile(mode);
   const lockStatus = checkLock(mode);
   
-  // Check if lock exists and is not stale
-  if (lockStatus.exists && !lockStatus.stale) {
-    const ageMinutes = Math.floor(lockStatus.age / (60 * 1000));
-    console.log(`🔒 [LOCK] ${mode} agent is already running (lock age: ${ageMinutes} minutes)`);
-    return false;
-  }
-  
-  // If lock is stale, log recovery
+  // If lock is stale, remove it first
   if (lockStatus.exists && lockStatus.stale) {
     const ageMinutes = Math.floor(lockStatus.age / (60 * 1000));
     console.log(`🔄 [LOCK] Recovering from stale lock (age: ${ageMinutes} minutes)`);
+    try {
+      fs.unlinkSync(lockFile);
+    } catch (error) {
+      // Ignore errors if file was already removed
+      if (error.code !== 'ENOENT') {
+        console.error(`❌ [LOCK] Failed to remove stale lock: ${error.message}`);
+      }
+    }
   }
   
-  // Create lock file with current timestamp
+  // Try to create lock file atomically using 'wx' flag (write + exclusive)
+  // This will fail if file already exists, preventing race conditions
   try {
     const timestamp = Date.now().toString();
-    fs.writeFileSync(lockFile, timestamp, 'utf8');
+    const fd = fs.openSync(lockFile, 'wx');
+    fs.writeSync(fd, timestamp);
+    fs.closeSync(fd);
     console.log(`✅ [LOCK] Lock acquired for ${mode} agent`);
     return true;
   } catch (error) {
+    if (error.code === 'EEXIST') {
+      // Lock file exists - another process is running
+      const currentLockStatus = checkLock(mode);
+      if (currentLockStatus.exists && !currentLockStatus.stale) {
+        const ageMinutes = Math.floor(currentLockStatus.age / (60 * 1000));
+        console.log(`🔒 [LOCK] ${mode} agent is already running (lock age: ${ageMinutes} minutes)`);
+      }
+      return false;
+    }
+    // Other errors are unexpected
     console.error(`❌ [LOCK] Failed to create lock file: ${error.message}`);
     throw error;
   }
@@ -116,34 +134,35 @@ function releaseLock(mode) {
  * @param {string} mode - 'daily' or 'weekly'
  */
 function setupLockCleanup(mode) {
-  // Handle normal exit
-  process.on('exit', () => {
-    releaseLock(mode);
-  });
+  // Only set up handlers once to avoid duplicates
+  if (cleanupHandlersSet) {
+    return;
+  }
+  cleanupHandlersSet = true;
   
   // Handle SIGINT (Ctrl+C)
-  process.on('SIGINT', () => {
+  process.once('SIGINT', () => {
     console.log('\n⚠️ [LOCK] Received SIGINT, cleaning up...');
     releaseLock(mode);
-    process.exit(130);
+    // Don't call process.exit() - let Node.js handle it naturally
   });
   
   // Handle SIGTERM (kill command)
-  process.on('SIGTERM', () => {
+  process.once('SIGTERM', () => {
     console.log('\n⚠️ [LOCK] Received SIGTERM, cleaning up...');
     releaseLock(mode);
-    process.exit(143);
+    // Don't call process.exit() - let Node.js handle it naturally
   });
   
   // Handle uncaught exceptions
-  process.on('uncaughtException', (error) => {
+  process.once('uncaughtException', (error) => {
     console.error('❌ [LOCK] Uncaught exception:', error);
     releaseLock(mode);
     process.exit(1);
   });
   
   // Handle unhandled promise rejections
-  process.on('unhandledRejection', (reason, promise) => {
+  process.once('unhandledRejection', (reason, promise) => {
     console.error('❌ [LOCK] Unhandled rejection at:', promise, 'reason:', reason);
     releaseLock(mode);
     process.exit(1);
