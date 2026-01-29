@@ -1,5 +1,5 @@
-import { google } from 'googleapis';
-import readline from 'readline';
+const { google } = require('googleapis');
+const readline = require('readline');
 
 const CLIENT_ID = process.env.GSC_CLIENT_ID;
 const CLIENT_SECRET = process.env.GSC_CLIENT_SECRET;

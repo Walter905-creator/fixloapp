@@ -112,3 +112,17 @@ async function executeCloning(decisions) {
 module.exports = {
   runWeekly,
 };
+
+// Execute when run directly
+if (require.main === module) {
+  runWeekly()
+    .then(() => {
+      console.log('✅ Weekly SEO agent run completed successfully');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('❌ SEO Agent failed:', error.message);
+      console.error(error.stack);
+      process.exit(1);
+    });
+}

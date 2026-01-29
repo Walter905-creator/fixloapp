@@ -173,3 +173,17 @@ function logFinalReport(results, duration) {
 module.exports = {
   runDaily,
 };
+
+// Execute when run directly
+if (require.main === module) {
+  runDaily()
+    .then(() => {
+      console.log('✅ Daily SEO agent run completed successfully');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('❌ SEO Agent failed:', error.message);
+      console.error(error.stack);
+      process.exit(1);
+    });
+}
