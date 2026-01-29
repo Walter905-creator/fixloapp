@@ -13,7 +13,12 @@
     "test": "echo \"No tests specified\" && exit 0",
     "seo-agent:daily": "node seo-agent/daily.js",
     "seo-agent:weekly": "node seo-agent/weekly.js",
-    "seo-agent:test": "node scripts/generate-gsc-refresh-token.js"
+    "seo-agent:test": "node scripts/generate-gsc-refresh-token.js",
+    "lead-hunter:observer": "node lead-hunter/index.js observer",
+    "lead-hunter:tuning": "node lead-hunter/index.js tuning",
+    "lead-hunter:guarded": "node lead-hunter/index.js guarded",
+    "lead-hunter:help": "node lead-hunter/index.js help",
+    "lead-hunter:doctor": "node lead-hunter/index.js doctor"
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",

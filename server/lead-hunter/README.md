@@ -2,6 +2,40 @@
 
 **Autonomous intelligence system for opportunity detection** - Advisory role, safe by default.
 
+## ⚡ Quick Start
+
+**Run commands from `/server` directory:**
+
+```bash
+cd /path/to/server
+
+# Check system health
+npm run lead-hunter:doctor
+
+# Run observer mode (default, safe)
+npm run lead-hunter:observer
+
+# Run tuning mode
+npm run lead-hunter:tuning
+
+# Run guarded mode (requires opt-in)
+npm run lead-hunter:guarded
+
+# Get help
+npm run lead-hunter:help
+```
+
+**Expected output files:**
+- Logs: `/server/logs/lead-hunter-*.log`
+- Opportunities: `/server/logs/lead-hunter-opportunities-*.json`
+- Proposals: `/server/proposals/pending/proposal-*.json` (guarded mode only)
+
+**Common mistakes:**
+- ❌ Running from wrong directory → Run from `/server` directory
+- ❌ Module not found errors → Ensure you're in `/server` directory
+- ❌ Guarded mode won't start → Set `LEAD_HUNTER_MODE=guarded` in `.env`
+- ❌ Lock already exists → Another instance is running or stale lock file
+
 ## Overview
 
 The Fixlo Lead Hunter is a companion system to the SEO Agent that:
