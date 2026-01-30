@@ -30,7 +30,7 @@ export default function Success() {
         title="Payment Successful - Fixlo" 
         canonicalPathname="/success" 
         description="Payment successful! Your Fixlo professional account is now active. Start receiving service requests and grow your business."
-        noindex={true}
+        robots="noindex, nofollow"
       />
       <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center p-5">
         <div className="max-w-lg bg-white rounded-3xl p-10 text-center shadow-2xl">
