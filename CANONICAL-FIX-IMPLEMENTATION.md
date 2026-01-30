@@ -105,10 +105,10 @@ All titles and descriptions now include Service + City + State/Country for bette
 
 **Implementation:**
 - File: `client/src/utils/seo.js`
-- Lines 9-29: City-to-state mapping for 16 major US cities
-- Lines 31-38: Country display names
-- Lines 40-89: Enhanced `makeTitle()` function
-- Lines 91-119: Enhanced `makeDescription()` function
+- Lines 25-43: City-to-state mapping for 16 major US cities
+- Lines 45-52: Country display names
+- Lines 54-86: Enhanced `makeTitle()` function
+- Lines 88-115: Enhanced `makeDescription()` function
 
 **Title Format Examples:**
 ```
