@@ -94,13 +94,13 @@ const SmsNotificationSchema = new mongoose.Schema({
     type: Date
   }
 }, {
-  timestamps: true,
-  // Auto-delete notifications older than 90 days
-  expireAfterSeconds: 7776000 // 90 days
+  timestamps: true
 });
 
+// TTL index: Auto-delete notifications older than 90 days
+SmsNotificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 7776000 }); // 90 days
+
 // Index for efficient lookups
-SmsNotificationSchema.index({ createdAt: 1 });
 SmsNotificationSchema.index({ notificationType: 1, status: 1 });
 
 /**

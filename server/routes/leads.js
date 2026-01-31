@@ -120,7 +120,7 @@ router.post('/', async (req, res) => {
           location: { type: 'Point', coordinates: [lng, lat] },
           city: city || '',
           state: state || '',
-          smsConsent: smsConsent !== false // Default to true unless explicitly false
+          smsConsent: smsConsent === true // Explicit opt-in required for TCPA compliance
         });
         
         // 6️⃣ LOG CRITICAL EVENTS

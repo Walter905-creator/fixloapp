@@ -321,7 +321,7 @@ async function sendProLeadAlert(pro, lead) {
     userId: pro._id,
     userModel: 'Pro',
     smsConsent: pro.smsConsent,
-    smsOptOut: false, // Pros don't have opt-out on Pro model
+    smsOptOut: pro.smsOptOut || false, // Pros may have opt-out field; check if exists
     whatsappOptIn: pro.whatsappOptIn,
     country: pro.country || 'US'
   });
