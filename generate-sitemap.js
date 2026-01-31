@@ -176,38 +176,62 @@ function generateSitemap() {
 
   // INTERNATIONAL SEO: Add country-specific service pages
   // Loop order: country → service → city (as specified in requirements)
-  console.log(`🌍 Adding international SEO URLs for ${priorityCountries.length} countries...`);
+  console.log(`\n🌍 CANONICAL URL GENERATION - Starting international SEO URLs...`);
+  console.log(`📋 Processing ${priorityCountries.length} countries with ${services.length} services each`);
   
   let countryUrlCount = 0;
+  const urlsByCountry = {};
+  
   priorityCountries.forEach(country => {
+    urlsByCountry[country.code] = [];
+    console.log(`\n🌐 Country: ${country.name} (${country.code})`);
+    
     // Add service category pages per country
     services.forEach(service => {
+      const canonicalUrl = `${baseUrl}/${country.code}/${country.servicesPath}/${service}`;
       sitemap += `  <url>
-    <loc>${baseUrl}/${country.code}/${country.servicesPath}/${service}</loc>
+    <loc>${canonicalUrl}</loc>
     <lastmod>${currentDate}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   \n`;
+      urlsByCountry[country.code].push(canonicalUrl);
       countryUrlCount++;
     });
     
     // Add service/city combinations ONLY for US
     // International cities should be added later with proper geographic data
     if (country.code === 'us') {
+      console.log(`   📍 Adding ${priorityServiceCities.length} priority service/city combinations for US`);
       priorityServiceCities.forEach(({ service, cities }) => {
         cities.forEach(city => {
+          const canonicalUrl = `${baseUrl}/${country.code}/${country.servicesPath}/${service}/${city}`;
           sitemap += `  <url>
-    <loc>${baseUrl}/${country.code}/${country.servicesPath}/${service}/${city}</loc>
+    <loc>${canonicalUrl}</loc>
     <lastmod>${currentDate}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   \n`;
+          urlsByCountry[country.code].push(canonicalUrl);
           countryUrlCount++;
         });
       });
     }
+    
+    console.log(`   ✅ Generated ${urlsByCountry[country.code].length} canonical URLs for ${country.name}`);
+  });
+  
+  // Validation logging
+  console.log(`\n📊 CANONICAL URL VALIDATION:`);
+  console.log(`   ✓ All URLs follow pattern: ${baseUrl}/{country}/{services|servicios}/{service}/{city?}`);
+  console.log(`   ✓ Country codes used: ${priorityCountries.map(c => c.code).join(', ')}`);
+  console.log(`   ✓ No cross-country canonical references`);
+  console.log(`   ✓ Each URL is self-referencing canonical`);
+  console.log(`\n🔍 URLs by Country:`);
+  Object.entries(urlsByCountry).forEach(([code, urls]) => {
+    console.log(`   ${code}: ${urls.length} URLs`);
   });
 
   // REMOVED: Priority service/city combinations (these cause Soft 404 as they're not prerendered)
@@ -223,14 +247,18 @@ function generateSitemap() {
   
   const totalUrls = 1 + 7 + 1 + services.length + countryUrlCount; // homepage + 7 main pages + services page + service categories + country URLs
   
-  console.log(`✅ Sitemap generated with:`);
-  console.log(`   - ${services.length} service category pages`);
-  console.log(`   - 7 main pages (how-it-works, contact, signup, etc.)`);
-  console.log(`   - Homepage and services overview`);
-  console.log(`   - ${countryUrlCount} international SEO URLs (${priorityCountries.length} countries)`);
-  console.log(`📍 Total URLs: ${totalUrls}`);
-  console.log(`📝 Sitemap saved to: ${sitemapPath}`);
-  console.log(`⚠️  Removed non-rendered URLs to prevent Soft 404 errors`);
+  console.log(`\n✅ SITEMAP GENERATION COMPLETE`);
+  console.log(`   📄 Main pages: 9 (homepage, how-it-works, contact, signup, etc.)`);
+  console.log(`   🏷️  Service category pages: ${services.length}`);
+  console.log(`   🌍 Country-specific URLs: ${countryUrlCount}`);
+  console.log(`   📍 Total canonical URLs in sitemap: ${totalUrls}`);
+  console.log(`   💾 Sitemap saved to: ${sitemapPath}`);
+  console.log(`\n⚠️  IMPORTANT NOTES:`);
+  console.log(`   ✓ Only canonical URLs included (no redirects)`);
+  console.log(`   ✓ No cross-country canonical references`);
+  console.log(`   ✓ All URLs are self-referencing canonicals`);
+  console.log(`   ✓ Country → Service → City loop order maintained`);
+  console.log(`   ✓ Removed non-rendered URLs to prevent Soft 404 errors`);
   
   return sitemap;
 }

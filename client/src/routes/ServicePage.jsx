@@ -53,6 +53,108 @@ function formatServiceName(slug) {
   return slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
+// City-specific content to reduce duplicate content signals
+const citySpecificContent = {
+  'miami': {
+    intro: 'Miami\'s tropical climate and coastal location create unique home maintenance needs. From hurricane preparedness to humidity control, local professionals understand the specific challenges South Florida homeowners face.',
+    pricing: 'Competitive rates reflecting Miami\'s diverse neighborhoods, from Brickell high-rises to Coral Gables estates.',
+    trust: 'Serving Miami-Dade County with bilingual professionals who understand both English and Spanish-speaking communities.'
+  },
+  'new-york': {
+    intro: 'New York City\'s diverse boroughs and historic buildings require experienced professionals who navigate complex building codes and co-op board requirements with ease.',
+    pricing: 'Transparent pricing for all five boroughs, with professionals experienced in Manhattan apartments, Brooklyn brownstones, and Queens multi-family homes.',
+    trust: 'Licensed contractors familiar with NYC Department of Buildings regulations and landmark preservation requirements.'
+  },
+  'los-angeles': {
+    intro: 'Los Angeles\' sprawling metro area spans from beach communities to valley suburbs, each with distinct architecture and climate considerations.',
+    pricing: 'Fair pricing across LA County, from Santa Monica to Pasadena, with professionals who understand California building standards.',
+    trust: 'Licensed, bonded contractors familiar with California\'s strict seismic safety codes and energy efficiency requirements.'
+  },
+  'chicago': {
+    intro: 'Chicago\'s extreme weather—from harsh winters to humid summers—demands reliable home systems and experienced professionals who can handle seasonal challenges.',
+    pricing: 'Competitive rates for Chicagoland area homes, from downtown condos to suburban single-family residences.',
+    trust: 'Experienced professionals who understand Chicago\'s unique building codes and the challenges of older construction in historic neighborhoods.'
+  },
+  'houston': {
+    intro: 'Houston\'s humid subtropical climate and rapid growth require professionals experienced with modern construction and climate-appropriate solutions.',
+    pricing: 'Affordable rates across Greater Houston, from inner loop neighborhoods to suburban communities in Harris and Fort Bend counties.',
+    trust: 'Licensed Texas contractors who prioritize energy efficiency and moisture control in the Gulf Coast climate.'
+  },
+  'phoenix': {
+    intro: 'Phoenix\'s extreme heat and desert climate create specific demands for cooling systems, landscaping, and outdoor living spaces.',
+    pricing: 'Competitive pricing throughout the Valley of the Sun, from Scottsdale to Glendale, with specialists in desert-climate solutions.',
+    trust: 'Arizona-licensed professionals experienced in water conservation, heat management, and desert landscaping requirements.'
+  },
+  'austin': {
+    intro: 'Austin\'s booming tech scene and rapid growth have created demand for professionals who work efficiently in both established and newly developed neighborhoods.',
+    pricing: 'Fair rates across Austin metro area, from downtown condos to suburban homes in Round Rock and Cedar Park.',
+    trust: 'Texas-licensed professionals familiar with Austin\'s unique building requirements and commitment to energy efficiency.'
+  },
+  'atlanta': {
+    intro: 'Atlanta\'s humid subtropical climate and diverse neighborhoods require experienced professionals who understand both historic preservation and modern construction.',
+    pricing: 'Competitive pricing throughout Metro Atlanta, from Midtown high-rises to suburban communities in Fulton and Cobb counties.',
+    trust: 'Georgia-licensed contractors experienced with the region\'s clay soil conditions and humidity challenges.'
+  },
+  'seattle': {
+    intro: 'Seattle\'s rainy climate and hilly terrain create unique challenges for roofing, drainage, and moisture control that local professionals navigate expertly.',
+    pricing: 'Transparent pricing across Seattle metro area, from Capitol Hill apartments to Eastside suburban homes.',
+    trust: 'Washington-licensed contractors familiar with the Pacific Northwest\'s moisture management and seismic requirements.'
+  },
+  'boston': {
+    intro: 'Boston\'s historic architecture and harsh New England winters require specialists who respect preservation standards while ensuring modern comfort.',
+    pricing: 'Competitive rates across Greater Boston, from Back Bay brownstones to suburban homes in Cambridge and Brookline.',
+    trust: 'Massachusetts-licensed professionals experienced with historic building codes and cold climate construction requirements.'
+  },
+  'dallas': {
+    intro: 'Dallas\' hot summers and occasional winter storms demand reliable home systems and professionals who can handle Texas\' variable weather.',
+    pricing: 'Fair pricing throughout DFW Metroplex, from Dallas urban neighborhoods to suburbs in Plano, Frisco, and Fort Worth.',
+    trust: 'Texas-licensed contractors experienced with energy-efficient cooling solutions and the region\'s clay soil foundation challenges.'
+  },
+  'san-diego': {
+    intro: 'San Diego\'s mild climate and coastal location create ideal conditions for outdoor living, but also require attention to moisture and salt air effects.',
+    pricing: 'Competitive rates across San Diego County, from downtown to coastal communities and inland suburbs.',
+    trust: 'California-licensed professionals familiar with coastal building codes and energy efficiency standards.'
+  },
+  'denver': {
+    intro: 'Denver\'s high altitude, intense sun, and dramatic temperature swings require professionals experienced with Colorado\'s unique environmental conditions.',
+    pricing: 'Fair pricing throughout Metro Denver, from downtown lofts to mountain-adjacent suburbs in Aurora and Lakewood.',
+    trust: 'Colorado-licensed contractors who understand high-altitude HVAC requirements and rapid weather changes.'
+  },
+  'philadelphia': {
+    intro: 'Philadelphia\'s rich history and diverse housing stock—from colonial homes to modern apartments—requires versatile, knowledgeable professionals.',
+    pricing: 'Competitive rates across Philadelphia metro area, from Center City to suburbs in Delaware and Montgomery counties.',
+    trust: 'Pennsylvania-licensed contractors experienced with historic preservation and the city\'s rowhouse construction.'
+  },
+  'san-antonio': {
+    intro: 'San Antonio\'s hot climate and historic missions require professionals who balance modern efficiency with respect for the city\'s cultural heritage.',
+    pricing: 'Affordable rates throughout San Antonio metro area, from downtown to suburbs in Bexar County.',
+    trust: 'Texas-licensed professionals experienced with energy-efficient cooling and the region\'s limestone foundation conditions.'
+  },
+  'san-francisco': {
+    intro: 'San Francisco\'s microclimates, seismic requirements, and Victorian architecture demand highly specialized professional expertise.',
+    pricing: 'Transparent pricing across San Francisco Bay Area, reflecting the region\'s high standards and complex building codes.',
+    trust: 'California-licensed contractors experienced with seismic retrofitting, historic preservation, and strict city regulations.'
+  }
+};
+
+// Get city-specific content, with generic fallback
+function getCityContent(city) {
+  if (!city) {
+    return {
+      intro: 'Local professionals in your area understand the unique needs of your community and are ready to help with your home service needs.',
+      pricing: 'Competitive pricing from vetted professionals who provide transparent quotes.',
+      trust: 'All contractors in our network are background-checked and maintain high standards of workmanship.'
+    };
+  }
+  
+  return citySpecificContent[city] || {
+    intro: `Local professionals in ${formatServiceName(city)} are experienced with the area's specific needs and building requirements.`,
+    pricing: `Competitive rates from trusted professionals serving ${formatServiceName(city)} and surrounding areas.`,
+    trust: `Licensed, background-checked contractors familiar with ${formatServiceName(city)}'s local codes and regulations.`
+  };
+}
+
+
 export default function ServicePage({ legacy = false }){
   const { country, service, city } = useParams();
   const location = useLocation();
@@ -84,6 +186,9 @@ export default function ServicePage({ legacy = false }){
   // Format display names
   const serviceName = s ? s.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Home Services';
   const cityName = c ? c.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'your area';
+  
+  // Get city-specific content for uniqueness
+  const cityContent = getCityContent(c);
   
   return (<>
     <HelmetSEO title={title} description={desc} canonicalPathname={canonical} />
@@ -183,6 +288,26 @@ export default function ServicePage({ legacy = false }){
           </p>
         </div>
       </div>
+      
+      {/* City-Specific Local Context - Reduces duplicate content signals */}
+      {c && (
+        <div className="card p-6 mt-6 mb-6 bg-slate-50 border-l-4 border-brand">
+          <h3 className="text-lg font-semibold mb-4 text-slate-900">
+            {serviceName} Services in {cityName}: Local Expertise
+          </h3>
+          <div className="space-y-4 text-slate-700">
+            <p className="leading-relaxed">
+              <strong>Why Local Matters:</strong> {cityContent.intro}
+            </p>
+            <p className="leading-relaxed">
+              <strong>Pricing & Value:</strong> {cityContent.pricing}
+            </p>
+            <p className="leading-relaxed">
+              <strong>Trust & Credentials:</strong> {cityContent.trust}
+            </p>
+          </div>
+        </div>
+      )}
       
       {/* Testimonial Section for Trust */}
       <div className="card p-6 mt-6 mb-6 bg-gradient-to-r from-emerald-50 to-blue-50">

@@ -22,18 +22,55 @@ const holidayKeywordMap = {
   'junk-removal': 'Post-Holiday Cleanup'
 };
 
-export function makeTitle({ service, city, state }){ 
+// City to state mapping for major US cities
+const cityStateMap = {
+  'miami': 'FL',
+  'new-york': 'NY',
+  'los-angeles': 'CA',
+  'chicago': 'IL',
+  'houston': 'TX',
+  'phoenix': 'AZ',
+  'philadelphia': 'PA',
+  'san-antonio': 'TX',
+  'san-diego': 'CA',
+  'dallas': 'TX',
+  'austin': 'TX',
+  'seattle': 'WA',
+  'denver': 'CO',
+  'boston': 'MA',
+  'atlanta': 'GA',
+  'san-francisco': 'CA'
+};
+
+// Country display names
+const countryDisplayNames = {
+  'us': 'United States',
+  'ca': 'Canada',
+  'uk': 'United Kingdom',
+  'au': 'Australia',
+  'ar': 'Argentina'
+};
+
+export function makeTitle({ service, city, state, country = 'us' }){ 
   const baseService = titleCase(service || '');
-  const location = city ? titleCase(city) : state ? titleCase(state) : '';
+  const cityDisplay = city ? titleCase(city) : '';
+  const stateDisplay = state || (city && cityStateMap[city]) || '';
+  
+  // Build location string with city, state for US or city, country for international
+  let location = '';
+  if (cityDisplay && stateDisplay && country === 'us') {
+    location = `${cityDisplay}, ${stateDisplay}`;
+  } else if (cityDisplay && country !== 'us') {
+    location = `${cityDisplay}, ${countryDisplayNames[country] || country.toUpperCase()}`;
+  } else if (cityDisplay) {
+    location = cityDisplay;
+  } else if (stateDisplay) {
+    location = stateDisplay;
+  }
   
   if (IS_HOLIDAY_SEASON && service) {
     const holidayService = holidayKeywordMap[service];
-    if (city) {
-      return holidayService 
-        ? `${holidayService} in ${location} | Fixlo`
-        : `${baseService} in ${location} | Holiday Services | Fixlo`;
-    }
-    if (state) {
+    if (location) {
       return holidayService 
         ? `${holidayService} in ${location} | Fixlo`
         : `${baseService} in ${location} | Holiday Services | Fixlo`;
@@ -43,14 +80,27 @@ export function makeTitle({ service, city, state }){
       : `${baseService} | Holiday Services | Fixlo`;
   }
   
-  if(service && city) return `${baseService} in ${location} | Fixlo`; 
-  if(service && state) return `${baseService} in ${location} | Fixlo`; 
+  if(service && location) return `${baseService} in ${location} | Fixlo`; 
   if(service) return `${baseService} Near You | Fixlo`; 
   return 'Fixlo – Book Trusted Home Services'; 
 }
 
-export function makeDescription({ service, city, state }){ 
-  const where = city ? titleCase(city) : state ? titleCase(state) : 'your area'; 
+export function makeDescription({ service, city, state, country = 'us' }){ 
+  const cityDisplay = city ? titleCase(city) : '';
+  const stateDisplay = state || (city && cityStateMap[city]) || '';
+  
+  // Build location string
+  let where = 'your area';
+  if (cityDisplay && stateDisplay && country === 'us') {
+    where = `${cityDisplay}, ${stateDisplay}`;
+  } else if (cityDisplay && country !== 'us') {
+    where = `${cityDisplay}, ${countryDisplayNames[country] || country.toUpperCase()}`;
+  } else if (cityDisplay) {
+    where = cityDisplay;
+  } else if (stateDisplay) {
+    where = stateDisplay;
+  }
+  
   const what = service ? titleCase(service) : 'Home Services'; 
   
   if (IS_HOLIDAY_SEASON) {
