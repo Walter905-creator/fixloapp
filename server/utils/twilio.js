@@ -229,4 +229,5 @@ module.exports = {
   sendWhatsAppMessage,
   normalizeE164,
   isUSPhoneNumber,
+  getTwilioClient,
 };
