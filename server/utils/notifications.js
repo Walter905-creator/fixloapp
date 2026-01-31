@@ -2,16 +2,20 @@
  * Notification Service for Fixlo
  * Handles SMS, WhatsApp, and Email notifications to professionals
  * 
+ * UPDATED: Now uses centralized SMS sender with idempotency protection
+ * 
  * COMPLIANCE RULES:
  * 1. USA professionals: SMS + Email only (existing behavior)
  * 2. Non-US professionals with WhatsApp opt-in: WhatsApp + Email
  * 3. Non-US professionals without opt-in: Email only
  * 4. All WhatsApp messages are transactional only (job leads)
  * 5. WhatsApp requires explicit user opt-in
+ * 6. Idempotency: No duplicate SMS per lead-pro pair
  */
 
-const { sendSms, sendWhatsAppMessage, isUSPhoneNumber } = require('./twilio');
+const { sendProLeadAlert } = require('./smsSender');
 const { sendLeadNotificationEmail, isEmailEnabled } = require('./email');
+const { isUSPhoneNumber } = require('./twilio');
 
 /**
  * Notify a professional about a new lead
@@ -60,18 +64,28 @@ async function notifyProOfLead(pro, lead) {
     // USA: SMS + Email (existing behavior - DO NOT BREAK)
     console.log('🇺🇸 USA Pro - Using SMS + Email');
     
-    // Send SMS if pro has SMS consent
+    // Send SMS if pro has SMS consent using centralized sender with idempotency
     if (pro.smsConsent) {
       results.sms.attempted = true;
       try {
-        console.log(`📲 Sending job SMS to pro: ${pro.phone}`); // LOG PHONE BEFORE SENDING
-        const smsBody = `[${leadData.service}] ${leadData.location} – Contact: ${leadData.customerName} ${leadData.customerPhone}`;
-        await sendSms(pro.phone, smsBody);
-        results.sms.success = true;
-        console.log(`✅ SMS notification sent to ${pro.phone}`);
+        console.log(`📲 Sending job SMS to pro via centralized sender`);
+        const smsResult = await sendProLeadAlert(pro, lead);
+        
+        if (smsResult.success) {
+          results.sms.success = true;
+          console.log(`✅ SMS notification sent successfully (SID: ${smsResult.messageId})`);
+        } else {
+          results.sms.error = smsResult.reason || smsResult.error;
+          // Don't log as error if it's idempotent skip
+          if (smsResult.idempotent) {
+            console.log(`⏭️ SMS already sent - idempotency check prevented duplicate`);
+          } else {
+            console.error(`❌ SMS notification failed: ${results.sms.error}`);
+          }
+        }
       } catch (error) {
         results.sms.error = error.message;
-        console.error(`❌ SMS notification failed for ${pro.phone}:`, error.message);
+        console.error(`❌ SMS notification error:`, error.message);
       }
     } else {
       console.log(`⏭️ Pro ${pro._id} has not consented to SMS`);
@@ -94,21 +108,28 @@ async function notifyProOfLead(pro, lead) {
     // NON-US: WhatsApp (if opted-in) + Email
     console.log('🌍 International Pro - Using WhatsApp + Email');
 
-    // Send WhatsApp if pro has opted in
+    // Send WhatsApp if pro has opted in using centralized sender with idempotency
     if (pro.whatsappOptIn) {
       results.whatsapp.attempted = true;
       try {
-        const templateData = {
-          service: leadData.service,
-          location: leadData.location,
-          budget: leadData.budget
-        };
-        await sendWhatsAppMessage(pro.phone, templateData);
-        results.whatsapp.success = true;
-        console.log(`✅ WhatsApp notification sent to ${pro.phone}`);
+        console.log(`💬 Sending WhatsApp via centralized sender`);
+        const whatsappResult = await sendProLeadAlert(pro, lead);
+        
+        if (whatsappResult.success) {
+          results.whatsapp.success = true;
+          console.log(`✅ WhatsApp notification sent successfully (SID: ${whatsappResult.messageId})`);
+        } else {
+          results.whatsapp.error = whatsappResult.reason || whatsappResult.error;
+          // Don't log as error if it's idempotent skip
+          if (whatsappResult.idempotent) {
+            console.log(`⏭️ WhatsApp already sent - idempotency check prevented duplicate`);
+          } else {
+            console.error(`❌ WhatsApp notification failed: ${results.whatsapp.error}`);
+          }
+        }
       } catch (error) {
         results.whatsapp.error = error.message;
-        console.error(`❌ WhatsApp notification failed for ${pro.phone}:`, error.message);
+        console.error(`❌ WhatsApp notification error:`, error.message);
         // Continue to email fallback
       }
     } else {
