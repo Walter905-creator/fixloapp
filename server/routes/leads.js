@@ -6,6 +6,7 @@ const Pro = require('../models/Pro');
 const { geocodeAddress } = require('../utils/geocode');
 const { sendSms, normalizeE164 } = require('../utils/twilio');
 const { notifyProOfLead } = require('../utils/notifications');
+const { sendHomeownerConfirmation } = require('../utils/smsSender');
 const { getPriorityConfig, hasPriorityRouting, getDelayMs } = require('../config/priorityRouting');
 
 function milesToMeters(mi) { return mi * 1609.344; }
@@ -116,11 +117,27 @@ router.post('/', async (req, res) => {
           address: leadAddress.trim(),
           description: description ? description.trim() : '',
           status: 'pending',
-          location: { type: 'Point', coordinates: [lng, lat] }
+          location: { type: 'Point', coordinates: [lng, lat] },
+          city: city || '',
+          state: state || '',
+          smsConsent: smsConsent === true // Explicit opt-in required for TCPA compliance
         });
         
         // 6️⃣ LOG CRITICAL EVENTS
         console.log('💾 Job saved:', savedLead._id);
+        
+        // Send homeowner confirmation SMS with idempotency protection
+        try {
+          const confirmationResult = await sendHomeownerConfirmation(savedLead);
+          if (confirmationResult.success) {
+            console.log(`✅ Homeowner confirmation SMS sent (SID: ${confirmationResult.messageId})`);
+          } else {
+            console.log(`⏭️ Homeowner confirmation SMS skipped: ${confirmationResult.reason}`);
+          }
+        } catch (confirmError) {
+          // Don't fail lead submission if confirmation SMS fails
+          console.error('❌ Homeowner confirmation SMS error:', confirmError.message);
+        }
       } else {
         console.warn('⚠️ Database not connected, lead not saved');
       }

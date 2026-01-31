@@ -18,7 +18,8 @@
     "lead-hunter:tuning": "node lead-hunter/index.js tuning",
     "lead-hunter:guarded": "node lead-hunter/index.js guarded",
     "lead-hunter:help": "node lead-hunter/index.js help",
-    "lead-hunter:doctor": "node lead-hunter/index.js doctor"
+    "lead-hunter:doctor": "node lead-hunter/index.js doctor",
+    "sms:doctor": "node scripts/sms-doctor.js"
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",
