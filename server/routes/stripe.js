@@ -4,6 +4,7 @@ const axios = require('axios');
 const Pro = require('../models/Pro');
 const JobRequest = require('../models/JobRequest');
 const Referral = require('../models/Referral');
+const EarlyAccessSpots = require('../models/EarlyAccessSpots');
 const { applyReferralFreeMonth, hasExistingReward } = require('../services/applyReferralFreeMonth');
 
 // Initialize Stripe with validation
@@ -134,7 +135,7 @@ router.post('/create-checkout-session', async (req, res) => {
     console.log('🔔 Stripe checkout session requested');
     
     // Get email, userId, tier, and optional customerId from request body
-    const { email, userId, customerId, tier } = req.body;
+    const { email, userId, customerId, tier, useEarlyAccessPrice } = req.body;
     
     // Validate tier if provided
     if (tier && !['PRO', 'AI_PLUS'].includes(tier)) {
@@ -164,10 +165,10 @@ router.post('/create-checkout-session', async (req, res) => {
     const clientUrl = process.env.YOUR_DOMAIN || process.env.CLIENT_URL || 'https://www.fixloapp.com';
     
     // Determine subscription tier and price ID
-    // tier can be: 'PRO' (default, $59.99) or 'AI_PLUS' ($99)
+    // tier can be: 'PRO' (default, $59.99 or $179.99) or 'AI_PLUS' ($99)
     const subscriptionTier = tier === 'AI_PLUS' ? 'AI_PLUS' : 'PRO';
     
-    // Get price ID based on tier
+    // Get price ID based on tier and early access availability
     let priceId;
     if (subscriptionTier === 'AI_PLUS') {
       priceId = process.env.STRIPE_AI_PLUS_PRICE_ID;
@@ -179,7 +180,38 @@ router.post('/create-checkout-session', async (req, res) => {
         });
       }
     } else {
-      priceId = process.env.STRIPE_PRICE_ID || 'prod_SaAyX0rd1VWGE0';
+      // For PRO tier, check if early access is available and requested
+      if (useEarlyAccessPrice) {
+        // Check early access availability
+        const EarlyAccessSpots = require('../models/EarlyAccessSpots');
+        const spotsInstance = await EarlyAccessSpots.getInstance();
+        
+        if (spotsInstance.isEarlyAccessAvailable()) {
+          // Use early access price ($59.99)
+          priceId = process.env.STRIPE_EARLY_ACCESS_PRICE_ID || process.env.STRIPE_PRICE_ID || 'prod_SaAyX0rd1VWGE0';
+          console.log(`🎫 Using early access price: ${priceId} (${spotsInstance.spotsRemaining} spots remaining)`);
+        } else {
+          // Early access full, use standard price
+          priceId = process.env.STRIPE_STANDARD_PRICE_ID;
+          if (!priceId) {
+            console.error('❌ STRIPE_STANDARD_PRICE_ID not configured');
+            return res.status(500).json({
+              error: 'Standard pricing not configured',
+              message: 'Please contact support for pricing information.'
+            });
+          }
+          console.log(`💰 Using standard price: ${priceId} (early access full)`);
+        }
+      } else {
+        // Use standard price ($179.99)
+        priceId = process.env.STRIPE_STANDARD_PRICE_ID;
+        if (!priceId) {
+          // Fallback to old price ID if standard not configured
+          priceId = process.env.STRIPE_PRICE_ID || 'prod_SaAyX0rd1VWGE0';
+          console.warn('⚠️ STRIPE_STANDARD_PRICE_ID not configured, using fallback');
+        }
+        console.log(`💰 Using standard price: ${priceId}`);
+      }
     }
     
     console.log(`💰 Creating checkout session for tier: ${subscriptionTier} with price ID: ${priceId}`);
@@ -422,6 +454,38 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
             
             const pro = await Pro.findByIdAndUpdate(userId, updateData, { new: true });
             console.log(`✅ Pro ${userId} updated with subscription details`);
+            
+            // Check if this is an early access subscription ($59.99) and decrement spots
+            if (session.subscription && subscriptionTier !== 'AI_HOME') {
+              try {
+                const subscription = await stripe.subscriptions.retrieve(session.subscription, {
+                  expand: ['items.data.price']
+                });
+                
+                const priceAmount = subscription.items.data[0]?.price?.unit_amount;
+                const priceId = subscription.items.data[0]?.price?.id;
+                
+                // Check if this is the early access price ($59.99 = 5999 cents)
+                // Also check for the early access price ID from environment
+                const earlyAccessPriceId = process.env.STRIPE_EARLY_ACCESS_PRICE_ID;
+                const isEarlyAccessPrice = (priceAmount === 5999) || (earlyAccessPriceId && priceId === earlyAccessPriceId);
+                
+                if (isEarlyAccessPrice) {
+                  console.log(`🎫 New early access subscription detected, decrementing spots...`);
+                  const spotsInstance = await EarlyAccessSpots.getInstance();
+                  await spotsInstance.decrementSpots('subscription_created', {
+                    subscriptionId: session.subscription,
+                    userId: userId,
+                    priceId: priceId,
+                    amount: priceAmount
+                  });
+                  console.log(`✅ Early access spots decremented. ${spotsInstance.spotsRemaining} spots remaining.`);
+                }
+              } catch (spotErr) {
+                console.error('❌ Failed to decrement early access spots:', spotErr.message);
+                // Don't fail the webhook if spot decrement fails
+              }
+            }
             
             // Check if this pro was referred and complete the referral (PRO/AI_PLUS only)
             if (pro && pro.referredByCode && session.subscription && subscriptionTier !== 'AI_HOME') {

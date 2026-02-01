@@ -363,6 +363,7 @@ app.use("/api", require("./routes/reviewCapture")); // capture via magic links
 app.use("/api", require("./routes/ipinfo")); // IP info proxy
 app.use("/api/country", require("./routes/country")); // Country detection for global expansion
 app.use("/api/pricing", require("./routes/pricing")); // International pricing engine
+app.use("/api/pricing-status", require("./routes/pricingStatus")); // Early access pricing status
 app.use("/api/compliance", require("./routes/compliance")); // Legal & tax compliance
 app.use("/api/ai", require("./routes/ai")); // AI assistant
 app.use("/api/contact", require("./routes/contact")); // contact form
