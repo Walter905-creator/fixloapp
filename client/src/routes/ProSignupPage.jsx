@@ -327,11 +327,6 @@ export default function ProSignupPage(){
             )}
           </p>
         )}
-        {!pricingStatus && (
-          <p className="text-xs text-slate-600 mt-4 text-center">
-            $29.99/month subscription includes background check, lead notifications, and platform access.
-          </p>
-        )}
       </div>
     </div>
     <StickyProCTA />

@@ -183,7 +183,6 @@ router.post('/create-checkout-session', async (req, res) => {
       // For PRO tier, check if early access is available and requested
       if (useEarlyAccessPrice) {
         // Check early access availability
-        const EarlyAccessSpots = require('../models/EarlyAccessSpots');
         const spotsInstance = await EarlyAccessSpots.getInstance();
         
         if (spotsInstance.isEarlyAccessAvailable()) {
@@ -456,7 +455,8 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
             console.log(`✅ Pro ${userId} updated with subscription details`);
             
             // Check if this is an early access subscription ($59.99) and decrement spots
-            if (session.subscription && subscriptionTier !== 'AI_HOME') {
+            // Only for PRO tier (not AI_PLUS or other tiers)
+            if (session.subscription && subscriptionTier === 'PRO') {
               try {
                 const subscription = await stripe.subscriptions.retrieve(session.subscription, {
                   expand: ['items.data.price']
