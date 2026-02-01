@@ -6,6 +6,7 @@ import StickyProCTA from "../components/StickyProCTA";
 import ServiceIntakeButton from "../components/ServiceIntakeButton";
 import HomeReferralSection from "../components/HomeReferralSection";
 import ReferralSection from "../components/ReferralSection";
+import HomePricingBlock from "../components/HomePricingBlock";
 import { useAuth } from "../context/AuthContext";
 import { detectUserCountry } from "../utils/countryDetection";
 import { IS_HOLIDAY_SEASON } from "../utils/config";
@@ -190,6 +191,13 @@ export default function HomePage() {
               <p className="text-xs text-slate-600">Homeowners and pros connect directly</p>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Fixlo Pro Pricing Section */}
+      <section className="py-12 md:py-16 bg-white">
+        <div className="container-xl">
+          <HomePricingBlock />
         </div>
       </section>
 
