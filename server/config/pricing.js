@@ -5,8 +5,13 @@
 
 // Base pricing in USD (US market)
 const BASE_PRICING = {
-  proMonthlySubscription: 59.99,
-  proAnnualSubscription: 599.99, // 2 months free
+  // Early Access pricing (price-locked for existing subscribers)
+  proMonthlySubscriptionEarlyAccess: 59.99,
+  
+  // Standard pricing (for new users after early access ends)
+  proMonthlySubscription: 179.99,
+  
+  proAnnualSubscription: 599.99, // 2 months free (will be updated later)
   aiPlusMonthlySubscription: 99.00 // AI+ tier with priority lead access
 };
 
