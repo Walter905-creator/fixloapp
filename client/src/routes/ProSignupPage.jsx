@@ -12,6 +12,7 @@ export default function ProSignupPage(){
   const [referralValid, setReferralValid] = useState(false);
   const [referrerName, setReferrerName] = useState('');
   const [referralCodeFromLink, setReferralCodeFromLink] = useState(false);
+  const [pricingStatus, setPricingStatus] = useState(null);
   
   const stripeUrlRaw = STRIPE_CHECKOUT_URL;
   const [country, setCountry] = React.useState('US'); // Default to US
@@ -34,6 +35,24 @@ export default function ProSignupPage(){
     }
     detectCountry();
   }, []);
+  
+  // Fetch pricing status
+  React.useEffect(() => {
+    async function loadPricingStatus() {
+      try {
+        const response = await fetch(`${API_BASE}/api/pricing-status?countryCode=${country}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setPricingStatus(data.data);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load pricing status:', error);
+      }
+    }
+    loadPricingStatus();
+  }, [country]);
 
   const isUSUser = country === 'US';
 
@@ -139,9 +158,54 @@ export default function ProSignupPage(){
     <div className="container-xl py-8">
       <h1 className="text-2xl font-extrabold">Join Fixlo as a Professional</h1>
       
+      {/* Early Access Pricing Banner */}
+      {pricingStatus?.earlyAccessAvailable && (
+        <div className="mt-6 p-5 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+              🎯
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-green-900 mb-1">Early Access Special</h3>
+              <p className="text-sm text-green-800 mb-2">
+                {pricingStatus.message}
+              </p>
+              <div className="mt-3 p-3 bg-white border border-green-300 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-slate-600 font-medium">Your Price Today</div>
+                    <div className="text-3xl font-bold text-green-600">{pricingStatus.currentPriceFormatted}/month</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-slate-600 font-medium">Regular Price</div>
+                    <div className="text-2xl font-bold text-slate-400 line-through">{pricingStatus.nextPriceFormatted}/month</div>
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center gap-2 text-xs text-green-700 font-semibold">
+                  <span className="inline-block px-2 py-1 bg-green-100 rounded">🔒 Price locked for life</span>
+                  <span>•</span>
+                  <span>{pricingStatus.earlyAccessSpotsRemaining} spots remaining</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Standard Pricing (when early access is full) */}
+      {pricingStatus && !pricingStatus.earlyAccessAvailable && (
+        <div className="mt-6 p-5 bg-blue-50 border border-blue-200 rounded-xl">
+          <h3 className="text-lg font-bold text-blue-900 mb-1">Fixlo Pro Membership</h3>
+          <p className="text-sm text-blue-800 mb-2">
+            Early access has ended. Join at the standard price.
+          </p>
+          <div className="text-3xl font-bold text-blue-600">{pricingStatus.currentPriceFormatted}/month</div>
+        </div>
+      )}
+      
       {/* Referral Banner - Subtle confirmation */}
       {referralValid && referralCode && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg" role="status" aria-live="polite">
+        <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg" role="status" aria-live="polite">
           <div className="flex items-center gap-2">
             <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
@@ -253,9 +317,21 @@ export default function ProSignupPage(){
             Continue to Payment & Background Check
           </button>
         </form>
-        <p className="text-xs text-slate-600 mt-4 text-center">
-          $29.99/month subscription includes background check, lead notifications, and platform access.
-        </p>
+        {pricingStatus && (
+          <p className="text-xs text-slate-600 mt-4 text-center">
+            {pricingStatus.currentPriceFormatted}/month subscription includes background check, lead notifications, and platform access.
+            {pricingStatus.earlyAccessAvailable && (
+              <span className="block mt-1 text-green-600 font-semibold">
+                🔒 Price locked for life while subscription remains active
+              </span>
+            )}
+          </p>
+        )}
+        {!pricingStatus && (
+          <p className="text-xs text-slate-600 mt-4 text-center">
+            $29.99/month subscription includes background check, lead notifications, and platform access.
+          </p>
+        )}
       </div>
     </div>
     <StickyProCTA />
