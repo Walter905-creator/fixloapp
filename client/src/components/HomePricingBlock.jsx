@@ -1,6 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE } from '../utils/config';
+
+/**
+ * Benefits list shared between early access and standard pricing
+ */
+const PRICING_BENEFITS = [
+  {
+    icon: (
+      <svg className="w-6 h-6 text-emerald-600 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+      </svg>
+    ),
+    title: 'Unlimited leads',
+    description: 'No per-lead charges'
+  },
+  {
+    icon: (
+      <svg className="w-6 h-6 text-emerald-600 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+      </svg>
+    ),
+    title: 'Local matching',
+    description: '30-mile radius'
+  },
+  {
+    icon: (
+      <svg className="w-6 h-6 text-emerald-600 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+      </svg>
+    ),
+    title: 'No bidding wars',
+    description: 'Direct connections'
+  }
+];
 
 /**
  * HomePricingBlock - Displays Fixlo Pro pricing on homepage
@@ -13,35 +46,35 @@ export default function HomePricingBlock() {
   const [error, setError] = useState(null);
   const [pricingData, setPricingData] = useState(null);
 
-  useEffect(() => {
-    const fetchPricingStatus = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const response = await fetch(`${API_BASE}/api/pricing-status`);
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch pricing: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        
-        if (result.success && result.data) {
-          setPricingData(result.data);
-        } else {
-          throw new Error(result.error || 'Invalid pricing data');
-        }
-      } catch (err) {
-        console.error('Error fetching pricing status:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
+  const fetchPricingStatus = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch(`${API_BASE}/api/pricing-status`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch pricing: ${response.status}`);
       }
-    };
-
-    fetchPricingStatus();
+      
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        setPricingData(result.data);
+      } else {
+        throw new Error(result.error || 'Invalid pricing data');
+      }
+    } catch (err) {
+      console.error('Error fetching pricing status:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchPricingStatus();
+  }, [fetchPricingStatus]);
 
   // Loading state
   if (loading) {
@@ -63,7 +96,7 @@ export default function HomePricingBlock() {
         <p className="text-red-800 font-semibold mb-2">Unable to load pricing</p>
         <p className="text-red-600 text-sm">{error}</p>
         <button 
-          onClick={() => window.location.reload()}
+          onClick={fetchPricingStatus}
           className="mt-4 text-sm text-red-700 hover:text-red-900 underline"
         >
           Try again
@@ -136,33 +169,15 @@ export default function HomePricingBlock() {
 
             {/* Benefits */}
             <div className="mt-8 grid md:grid-cols-3 gap-4 text-left">
-              <div className="flex items-start gap-3">
-                <svg className="w-6 h-6 text-emerald-600 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <div>
-                  <p className="font-semibold text-slate-900">Unlimited leads</p>
-                  <p className="text-sm text-slate-600">No per-lead charges</p>
+              {PRICING_BENEFITS.map((benefit, idx) => (
+                <div key={idx} className="flex items-start gap-3">
+                  {benefit.icon}
+                  <div>
+                    <p className="font-semibold text-slate-900">{benefit.title}</p>
+                    <p className="text-sm text-slate-600">{benefit.description}</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <svg className="w-6 h-6 text-emerald-600 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <div>
-                  <p className="font-semibold text-slate-900">Local matching</p>
-                  <p className="text-sm text-slate-600">30-mile radius</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <svg className="w-6 h-6 text-emerald-600 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <div>
-                  <p className="font-semibold text-slate-900">No bidding wars</p>
-                  <p className="text-sm text-slate-600">Direct connections</p>
-                </div>
-              </div>
+              ))}
             </div>
           </>
         ) : (
@@ -214,33 +229,15 @@ export default function HomePricingBlock() {
 
             {/* Benefits */}
             <div className="mt-8 grid md:grid-cols-3 gap-4 text-left">
-              <div className="flex items-start gap-3">
-                <svg className="w-6 h-6 text-emerald-600 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <div>
-                  <p className="font-semibold text-slate-900">Unlimited leads</p>
-                  <p className="text-sm text-slate-600">No per-lead charges</p>
+              {PRICING_BENEFITS.map((benefit, idx) => (
+                <div key={idx} className="flex items-start gap-3">
+                  {benefit.icon}
+                  <div>
+                    <p className="font-semibold text-slate-900">{benefit.title}</p>
+                    <p className="text-sm text-slate-600">{benefit.description}</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <svg className="w-6 h-6 text-emerald-600 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <div>
-                  <p className="font-semibold text-slate-900">Local matching</p>
-                  <p className="text-sm text-slate-600">30-mile radius</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <svg className="w-6 h-6 text-emerald-600 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <div>
-                  <p className="font-semibold text-slate-900">No bidding wars</p>
-                  <p className="text-sm text-slate-600">Direct connections</p>
-                </div>
-              </div>
+              ))}
             </div>
           </>
         )}
