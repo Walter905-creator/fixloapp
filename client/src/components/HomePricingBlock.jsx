@@ -169,8 +169,8 @@ export default function HomePricingBlock() {
 
             {/* Benefits */}
             <div className="mt-8 grid md:grid-cols-3 gap-4 text-left">
-              {PRICING_BENEFITS.map((benefit, idx) => (
-                <div key={idx} className="flex items-start gap-3">
+              {PRICING_BENEFITS.map((benefit) => (
+                <div key={benefit.title} className="flex items-start gap-3">
                   {benefit.icon}
                   <div>
                     <p className="font-semibold text-slate-900">{benefit.title}</p>
@@ -229,8 +229,8 @@ export default function HomePricingBlock() {
 
             {/* Benefits */}
             <div className="mt-8 grid md:grid-cols-3 gap-4 text-left">
-              {PRICING_BENEFITS.map((benefit, idx) => (
-                <div key={idx} className="flex items-start gap-3">
+              {PRICING_BENEFITS.map((benefit) => (
+                <div key={benefit.title} className="flex items-start gap-3">
                   {benefit.icon}
                   <div>
                     <p className="font-semibold text-slate-900">{benefit.title}</p>
