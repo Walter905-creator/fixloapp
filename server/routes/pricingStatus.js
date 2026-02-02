@@ -44,7 +44,7 @@ router.get('/', async (req, res) => {
           message: `Fixlo Pro is ${standardPriceFormatted}/month.`
         },
         timestamp: new Date().toISOString(),
-        note: 'Database temporarily unavailable - showing standard pricing'
+        note: 'Database temporarily unavailable. Showing standard pricing'
       });
     }
     
