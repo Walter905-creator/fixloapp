@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const EarlyAccessSpots = require('../models/EarlyAccessSpots');
 const { calculatePrice, formatPrice } = require('../config/pricing');
 
@@ -19,6 +20,34 @@ const { calculatePrice, formatPrice } = require('../config/pricing');
  */
 router.get('/', async (req, res) => {
   try {
+    // Check database connection before accessing MongoDB
+    if (mongoose.connection.readyState !== 1) {
+      console.log('⚠️ Database not connected, returning default pricing status');
+      
+      // Get country code from query param or default to US
+      const countryCode = req.query.countryCode || 'US';
+      
+      // Calculate prices for the country (without database access)
+      const standardPrice = calculatePrice('proMonthlySubscription', countryCode);
+      const standardPriceFormatted = formatPrice(standardPrice.amount, standardPrice.currency);
+      
+      return res.json({
+        success: true,
+        data: {
+          earlyAccessSpotsRemaining: 0,
+          earlyAccessAvailable: false,
+          currentPrice: standardPrice.amount,
+          nextPrice: standardPrice.amount,
+          currentPriceFormatted: standardPriceFormatted,
+          nextPriceFormatted: standardPriceFormatted,
+          currency: standardPrice.currency,
+          message: `Fixlo Pro is ${standardPriceFormatted}/month.`
+        },
+        timestamp: new Date().toISOString(),
+        note: 'Database temporarily unavailable. Showing standard pricing'
+      });
+    }
+    
     // Get or create early access spots instance
     const spotsInstance = await EarlyAccessSpots.getInstance();
     
@@ -79,6 +108,16 @@ router.get('/', async (req, res) => {
  */
 router.post('/daily-decrement', async (req, res) => {
   try {
+    // Check database connection before accessing MongoDB
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: 'Database not connected',
+        message: 'Daily decrement requires database connection',
+        timestamp: new Date().toISOString()
+      });
+    }
+    
     // Optional: Add API key validation here
     const apiKey = req.headers['x-api-key'];
     const expectedKey = process.env.PRICING_API_KEY;
