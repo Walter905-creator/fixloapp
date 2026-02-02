@@ -67,7 +67,7 @@ export default function HomePricingBlock() {
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
       refreshInterval: 30000, // Refresh every 30 seconds
-      dedupingInterval: 10000 // Prevent duplicate requests within 10 seconds
+      dedupingInterval: 15000 // Prevent duplicate requests within 15 seconds
     }
   );
 
