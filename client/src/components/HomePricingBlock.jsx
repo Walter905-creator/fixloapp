@@ -123,47 +123,29 @@ export default function HomePricingBlock() {
         {/* Early Access Available */}
         {earlyAccessAvailable ? (
           <>
-            {/* Heading */}
-            <h3 className="text-3xl md:text-4xl font-bold text-slate-900 mb-6">
-              Special Early Access Offer
+            {/* Heading with emoji */}
+            <h3 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+              🚀 Early Access – Just {currentPriceFormatted}!
             </h3>
 
-            {/* Early Access Price - Visually Dominant */}
-            <div className="mb-2">
-              <div className="text-6xl md:text-7xl font-extrabold text-emerald-600">
-                {currentPriceFormatted}
-                <span className="text-2xl md:text-3xl font-semibold text-slate-600">/month</span>
-              </div>
-            </div>
-
-            {/* Regular Price Comparison - Direct Under */}
-            <p className="text-xl text-slate-600 mb-4">
-              Regular price: <span className="line-through text-slate-500">{nextPriceFormatted}/month</span>
-            </p>
-
-            {/* Urgency Copy */}
-            <p className="text-lg font-semibold text-slate-900 mb-3">
-              Lock this price now before it increases
+            {/* Urgency Message */}
+            <p className="text-lg text-slate-700 mb-6">
+              Get in early before the price jumps to {nextPriceFormatted}. Limited spots left!
             </p>
 
             {/* Spots Remaining (Optional) */}
             {earlyAccessSpotsRemaining > 0 && (
-              <div className="inline-block px-4 py-2 bg-amber-100 border-2 border-amber-400 rounded-lg mb-4">
+              <div className="inline-block px-4 py-2 bg-amber-100 border-2 border-amber-400 rounded-lg mb-6">
                 <p className="text-amber-900 font-bold text-base">
                   Only {earlyAccessSpotsRemaining} spots remaining
                 </p>
               </div>
             )}
 
-            {/* Price Lock Guarantee */}
-            <p className="text-sm text-slate-600 mb-6 italic">
-              Price locked while subscription remains active
-            </p>
-
             {/* CTA Button */}
             <button
               onClick={() => navigate('/join')}
-              className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-emerald-600 rounded-lg shadow-lg hover:bg-emerald-700 transition-colors"
+              className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-emerald-600 rounded-lg shadow-lg hover:bg-emerald-700 transition-colors mb-6"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -186,29 +168,20 @@ export default function HomePricingBlock() {
           </>
         ) : (
           <>
-            {/* Standard Pricing (Early Access Ended) */}
-            {/* Standard Price */}
-            <div className="mb-3">
-              <div className="text-5xl md:text-6xl font-extrabold text-slate-900">
-                {currentPriceFormatted}
-                <span className="text-2xl md:text-3xl font-semibold text-slate-600">/month</span>
-              </div>
-            </div>
-
-            {/* Subtext */}
-            <p className="text-lg text-slate-600 mb-6">
-              Standard pricing now in effect
-            </p>
+            {/* Standard Pricing */}
+            <h3 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+              Join Fixlo Pro – {currentPriceFormatted}
+            </h3>
 
             {/* Description */}
-            <p className="text-slate-700 mb-6">
+            <p className="text-lg text-slate-700 mb-6">
               Get unlimited job leads with no per-lead charges. Join our network of verified professionals today.
             </p>
 
             {/* CTA Button */}
             <button
               onClick={() => navigate('/join')}
-              className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-slate-900 rounded-lg shadow-lg hover:bg-slate-800 transition-colors"
+              className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-slate-900 rounded-lg shadow-lg hover:bg-slate-800 transition-colors mb-6"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
