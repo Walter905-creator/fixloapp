@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import useSWR from 'swr';
 import { API_BASE } from '../utils/config';
 
 /**
@@ -36,48 +37,41 @@ const PRICING_BENEFITS = [
 ];
 
 /**
+ * Fetcher function for SWR
+ */
+const fetcher = async (url) => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch pricing: ${response.status}`);
+  }
+  const result = await response.json();
+  if (!result.success || !result.data) {
+    throw new Error(result.error || 'Invalid pricing data');
+  }
+  return result.data;
+};
+
+/**
  * HomePricingBlock - Displays Fixlo Pro pricing on homepage
  * Fetches pricing data from /api/pricing-status and conditionally displays
- * early access or standard pricing
+ * early access or standard pricing using SWR for client-side fetching
  */
 export default function HomePricingBlock() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [pricingData, setPricingData] = useState(null);
-
-  const fetchPricingStatus = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await fetch(`${API_BASE}/api/pricing-status`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch pricing: ${response.status}`);
-      }
-      
-      const result = await response.json();
-      
-      if (result.success && result.data) {
-        setPricingData(result.data);
-      } else {
-        throw new Error(result.error || 'Invalid pricing data');
-      }
-    } catch (err) {
-      console.error('Error fetching pricing status:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
+  
+  // Use SWR for client-side data fetching
+  const { data: pricingData, error, isLoading } = useSWR(
+    `${API_BASE}/api/pricing-status`,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      refreshInterval: 60000 // Refresh every 60 seconds
     }
-  }, []);
-
-  useEffect(() => {
-    fetchPricingStatus();
-  }, [fetchPricingStatus]);
+  );
 
   // Loading state
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="card p-8 text-center bg-gradient-to-br from-emerald-50 to-blue-50">
         <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
@@ -94,13 +88,7 @@ export default function HomePricingBlock() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <p className="text-red-800 font-semibold mb-2">Unable to load pricing</p>
-        <p className="text-red-600 text-sm">{error}</p>
-        <button 
-          onClick={fetchPricingStatus}
-          className="mt-4 text-sm text-red-700 hover:text-red-900 underline"
-        >
-          Try again
-        </button>
+        <p className="text-red-600 text-sm">{error.message || error}</p>
       </div>
     );
   }
@@ -112,9 +100,7 @@ export default function HomePricingBlock() {
 
   const { 
     earlyAccessAvailable, 
-    earlyAccessSpotsRemaining, 
-    currentPriceFormatted, 
-    nextPriceFormatted 
+    currentPriceFormatted
   } = pricingData;
 
   return (
@@ -123,24 +109,18 @@ export default function HomePricingBlock() {
         {/* Early Access Available */}
         {earlyAccessAvailable ? (
           <>
-            {/* Heading with emoji */}
+            {/* Heading with price */}
             <h3 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-              🚀 Early Access – Just {currentPriceFormatted}!
+              Join Now Fixlo Pro for only {currentPriceFormatted} — lock your price before it changes to $179.99
             </h3>
 
-            {/* Urgency Message */}
-            <p className="text-lg text-slate-700 mb-6">
-              Get in early before the price jumps to {nextPriceFormatted}. Limited spots left!
+            {/* Description */}
+            <p className="text-lg text-slate-700 mb-3">
+              Get unlimited job leads with no per-lead charges.
             </p>
-
-            {/* Spots Remaining (Optional) */}
-            {earlyAccessSpotsRemaining > 0 && (
-              <div className="inline-block px-4 py-2 bg-amber-100 border-2 border-amber-400 rounded-lg mb-6">
-                <p className="text-amber-900 font-bold text-base">
-                  Only {earlyAccessSpotsRemaining} spots remaining
-                </p>
-              </div>
-            )}
+            <p className="text-lg text-slate-700 mb-6">
+              Join our network of verified professionals today.
+            </p>
 
             {/* CTA Button */}
             <button
@@ -148,9 +128,9 @@ export default function HomePricingBlock() {
               className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-emerald-600 rounded-lg shadow-lg hover:bg-emerald-700 transition-colors mb-6"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              Lock My {currentPriceFormatted} Price
+              Join Fixlo Pro
             </button>
 
             {/* Benefits */}
@@ -170,12 +150,15 @@ export default function HomePricingBlock() {
           <>
             {/* Standard Pricing */}
             <h3 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-              Join Fixlo Pro – {currentPriceFormatted}
+              Fixlo Pro – {currentPriceFormatted}
             </h3>
 
             {/* Description */}
+            <p className="text-lg text-slate-700 mb-3">
+              Get unlimited job leads with no per-lead charges.
+            </p>
             <p className="text-lg text-slate-700 mb-6">
-              Get unlimited job leads with no per-lead charges. Join our network of verified professionals today.
+              Join our network of verified professionals today.
             </p>
 
             {/* CTA Button */}
