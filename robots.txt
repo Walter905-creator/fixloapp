@@ -1,13 +1,6 @@
 User-agent: *
 Allow: /
 
-# Allow international SEO paths
-Allow: /us/
-Allow: /ca/
-Allow: /uk/
-Allow: /au/
-Allow: /ar/
-
 # Block admin routes from indexing
 Disallow: /admin
 Disallow: /admin/
