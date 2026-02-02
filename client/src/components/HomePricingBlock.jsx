@@ -100,7 +100,8 @@ export default function HomePricingBlock() {
 
   const { 
     earlyAccessAvailable, 
-    currentPriceFormatted
+    currentPriceFormatted,
+    nextPriceFormatted
   } = pricingData;
 
   return (
@@ -111,7 +112,7 @@ export default function HomePricingBlock() {
           <>
             {/* Heading with price */}
             <h3 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-              Join Now Fixlo Pro for only {currentPriceFormatted} — lock your price before it changes to $179.99
+              Join Now Fixlo Pro for only {currentPriceFormatted} — lock your price before it changes to {nextPriceFormatted}
             </h3>
 
             {/* Description */}
