@@ -123,37 +123,41 @@ export default function HomePricingBlock() {
         {/* Early Access Available */}
         {earlyAccessAvailable ? (
           <>
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-full text-sm font-semibold mb-4">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              Early Access Price
-            </div>
-
             {/* Heading */}
-            <h3 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">
-              Join Fixlo Pro
+            <h3 className="text-3xl md:text-4xl font-bold text-slate-900 mb-6">
+              Special Early Access Offer
             </h3>
 
-            {/* Early Access Price */}
-            <div className="mb-4">
-              <div className="text-5xl md:text-6xl font-extrabold text-emerald-700">
+            {/* Early Access Price - Visually Dominant */}
+            <div className="mb-2">
+              <div className="text-6xl md:text-7xl font-extrabold text-emerald-600">
                 {currentPriceFormatted}
                 <span className="text-2xl md:text-3xl font-semibold text-slate-600">/month</span>
               </div>
             </div>
 
-            {/* Spots Remaining */}
-            <div className="inline-block px-4 py-2 bg-amber-100 border-2 border-amber-400 rounded-lg mb-4">
-              <p className="text-amber-900 font-bold text-lg">
-                Only {earlyAccessSpotsRemaining} spots left!
-              </p>
-            </div>
+            {/* Regular Price Comparison - Direct Under */}
+            <p className="text-xl text-slate-600 mb-4">
+              Regular price: <span className="line-through text-slate-500">{nextPriceFormatted}/month</span>
+            </p>
 
-            {/* Future Price Warning */}
-            <p className="text-slate-700 mb-6">
-              Lock in this price forever. <span className="font-semibold text-slate-900">Then {nextPriceFormatted}/month</span> for new members.
+            {/* Urgency Copy */}
+            <p className="text-lg font-semibold text-slate-900 mb-3">
+              Lock this price now before it increases
+            </p>
+
+            {/* Spots Remaining (Optional) */}
+            {earlyAccessSpotsRemaining > 0 && (
+              <div className="inline-block px-4 py-2 bg-amber-100 border-2 border-amber-400 rounded-lg mb-4">
+                <p className="text-amber-900 font-bold text-base">
+                  Only {earlyAccessSpotsRemaining} spots remaining
+                </p>
+              </div>
+            )}
+
+            {/* Price Lock Guarantee */}
+            <p className="text-sm text-slate-600 mb-6 italic">
+              Price locked while subscription remains active
             </p>
 
             {/* CTA Button */}
@@ -164,7 +168,7 @@ export default function HomePricingBlock() {
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
-              Lock My Price
+              Lock My {currentPriceFormatted} Price
             </button>
 
             {/* Benefits */}
@@ -183,33 +187,18 @@ export default function HomePricingBlock() {
         ) : (
           <>
             {/* Standard Pricing (Early Access Ended) */}
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-full text-sm font-semibold mb-4">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-              </svg>
-              Current Pricing
-            </div>
-
-            {/* Heading */}
-            <h3 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">
-              Join Fixlo Pro
-            </h3>
-
             {/* Standard Price */}
-            <div className="mb-4">
+            <div className="mb-3">
               <div className="text-5xl md:text-6xl font-extrabold text-slate-900">
                 {currentPriceFormatted}
                 <span className="text-2xl md:text-3xl font-semibold text-slate-600">/month</span>
               </div>
             </div>
 
-            {/* Status Message */}
-            <div className="inline-block px-4 py-2 bg-slate-100 border-2 border-slate-300 rounded-lg mb-4">
-              <p className="text-slate-900 font-semibold text-lg">
-                Pro pricing now in effect
-              </p>
-            </div>
+            {/* Subtext */}
+            <p className="text-lg text-slate-600 mb-6">
+              Standard pricing now in effect
+            </p>
 
             {/* Description */}
             <p className="text-slate-700 mb-6">
@@ -224,7 +213,7 @@ export default function HomePricingBlock() {
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              Join Now
+              Join Fixlo Pro
             </button>
 
             {/* Benefits */}
