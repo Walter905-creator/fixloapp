@@ -112,15 +112,15 @@ export default function HomePricingBlock() {
           <>
             {/* Heading with price */}
             <h3 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-              Join Now Fixlo Pro for only {currentPriceFormatted} — lock your price before it changes to {nextPriceFormatted}
+              Lock in Fixlo Pro at {currentPriceFormatted}/month — Before it jumps to {nextPriceFormatted}!
             </h3>
 
             {/* Description */}
             <p className="text-lg text-slate-700 mb-3">
-              Get unlimited job leads with no per-lead charges.
+              <span className="font-semibold text-emerald-600">Limited time offer:</span> Get unlimited job leads with no per-lead charges at this special introductory price.
             </p>
             <p className="text-lg text-slate-700 mb-6">
-              Join our network of verified professionals today.
+              Join our network of verified professionals today and lock in this rate before the price increase!
             </p>
 
             {/* CTA Button */}
@@ -131,7 +131,7 @@ export default function HomePricingBlock() {
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              Join Fixlo Pro
+              Lock in {currentPriceFormatted}/month Now
             </button>
 
             {/* Benefits */}
