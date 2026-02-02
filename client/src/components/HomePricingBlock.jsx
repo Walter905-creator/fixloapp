@@ -64,9 +64,10 @@ export default function HomePricingBlock() {
     `${API_BASE}/api/pricing-status`,
     fetcher,
     {
-      revalidateOnFocus: false,
+      revalidateOnFocus: true,
       revalidateOnReconnect: true,
-      refreshInterval: 60000 // Refresh every 60 seconds
+      refreshInterval: 30000, // Refresh every 30 seconds
+      dedupingInterval: 15000 // Prevent duplicate requests within 15 seconds
     }
   );
 
