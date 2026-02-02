@@ -112,4 +112,6 @@ server/test-admin-access.js
 # Generated JavaScript bundles from Vite build
 assets/index-*.js
 assets/index-*.css
-/tmp/
+
+# Temporary files
+tmp/
