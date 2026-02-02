@@ -11,6 +11,7 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "test": "echo \"No tests specified\" && exit 0",
+    "reset-early-access": "node scripts/reset-early-access.js",
     "seo-agent:daily": "node seo-agent/daily.js",
     "seo-agent:weekly": "node seo-agent/weekly.js",
     "seo-agent:test": "node scripts/generate-gsc-refresh-token.js",
