@@ -8,6 +8,7 @@ const scheduler = require('../scheduler');
 const analyticsService = require('../analytics');
 const adminService = require('../admin');
 const postingService = require('../posting');
+const dailyPoster = require('../scheduler/dailyPoster');
 const adminAuth = require('../../../middleware/adminAuth');
 
 /**
@@ -1438,6 +1439,204 @@ router.get('/scheduler/status', async (req, res) => {
     return res.status(500).json({
       success: false,
       error: 'Failed to get scheduler status',
+      details: error.message,
+      requestId
+    });
+  }
+});
+
+// ==================== Daily Poster Routes ====================
+
+/**
+ * POST /api/social/daily-poster/start
+ * Start the daily poster for automatic daily posts
+ */
+router.post('/daily-poster/start', async (req, res) => {
+  const requestId = Date.now().toString(36);
+
+  try {
+    const result = dailyPoster.start();
+
+    // Log action
+    await SocialAuditLog.logAction({
+      actorId: req.user?.id || 'admin',
+      actorType: 'admin',
+      action: 'daily_poster_start',
+      status: 'success',
+      description: 'Started daily poster for automated daily posts'
+    });
+
+    return res.status(200).json({
+      ...result,
+      requestId
+    });
+
+  } catch (error) {
+    console.error('[daily-poster-start] Error:', error.message);
+
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to start daily poster',
+      details: error.message,
+      requestId
+    });
+  }
+});
+
+/**
+ * POST /api/social/daily-poster/stop
+ * Stop the daily poster
+ */
+router.post('/daily-poster/stop', async (req, res) => {
+  const requestId = Date.now().toString(36);
+
+  try {
+    const result = dailyPoster.stop();
+
+    // Log action
+    await SocialAuditLog.logAction({
+      actorId: req.user?.id || 'admin',
+      actorType: 'admin',
+      action: 'daily_poster_stop',
+      status: 'success',
+      description: 'Stopped daily poster'
+    });
+
+    return res.status(200).json({
+      ...result,
+      requestId
+    });
+
+  } catch (error) {
+    console.error('[daily-poster-stop] Error:', error.message);
+
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to stop daily poster',
+      details: error.message,
+      requestId
+    });
+  }
+});
+
+/**
+ * GET /api/social/daily-poster/status
+ * Get daily poster status
+ */
+router.get('/daily-poster/status', (req, res) => {
+  const requestId = Date.now().toString(36);
+
+  try {
+    const status = dailyPoster.getStatus();
+
+    return res.status(200).json({
+      success: true,
+      ...status,
+      requestId
+    });
+
+  } catch (error) {
+    console.error('[daily-poster-status] Error:', error.message);
+
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to get daily poster status',
+      details: error.message,
+      requestId
+    });
+  }
+});
+
+/**
+ * POST /api/social/daily-poster/generate-now
+ * Generate and schedule a post immediately (manual trigger)
+ */
+router.post('/daily-poster/generate-now', async (req, res) => {
+  const requestId = Date.now().toString(36);
+
+  try {
+    const { platform, theme } = req.body;
+
+    const post = await dailyPoster.generateNow({ platform, theme });
+
+    // Log action
+    await SocialAuditLog.logAction({
+      actorId: req.user?.id || 'admin',
+      actorType: 'admin',
+      action: 'daily_post_manual_generation',
+      status: 'success',
+      description: `Manually generated daily post for ${platform}`,
+      metadata: {
+        postId: post._id,
+        platform
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Daily post generated successfully',
+      post: {
+        id: post._id,
+        platform: post.platform,
+        content: post.content,
+        scheduledFor: post.scheduledFor,
+        status: post.status
+      },
+      requestId
+    });
+
+  } catch (error) {
+    console.error('[daily-poster-generate-now] Error:', error.message);
+
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to generate daily post',
+      details: error.message,
+      requestId
+    });
+  }
+});
+
+/**
+ * POST /api/social/daily-poster/config
+ * Update daily poster configuration
+ */
+router.post('/daily-poster/config', async (req, res) => {
+  const requestId = Date.now().toString(36);
+
+  try {
+    const { generateTime, publishTime, requiresApproval, defaultCity } = req.body;
+
+    const result = dailyPoster.updateConfig({
+      generateTime,
+      publishTime,
+      requiresApproval,
+      defaultCity
+    });
+
+    // Log action
+    await SocialAuditLog.logAction({
+      actorId: req.user?.id || 'admin',
+      actorType: 'admin',
+      action: 'daily_poster_config_update',
+      status: 'success',
+      description: 'Updated daily poster configuration',
+      metadata: {
+        updated: result.updated
+      }
+    });
+
+    return res.status(200).json({
+      ...result,
+      requestId
+    });
+
+  } catch (error) {
+    console.error('[daily-poster-config] Error:', error.message);
+
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to update daily poster configuration',
       details: error.message,
       requestId
     });
