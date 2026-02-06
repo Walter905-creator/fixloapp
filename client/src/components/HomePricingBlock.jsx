@@ -12,7 +12,7 @@ export default function HomePricingBlock() {
       <div className="max-w-2xl mx-auto text-center">
         {/* Static Pricing Block */}
         <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-          Join Now Fixlo Pro for only $59.99 — lock your price before it changes to $179.99
+          Join Fixlo Pro Now for only $59.99 — lock your price before it changes to $179.99
         </h2>
 
         <p className="text-lg text-slate-700 mb-3">
