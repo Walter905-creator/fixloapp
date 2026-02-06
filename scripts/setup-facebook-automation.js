@@ -45,10 +45,9 @@ async function main() {
   log.header('═══════════════════════════════════════════════════════════');
   
   console.log('\nThis wizard will help you set up automated posting to your Facebook Business page.');
-  console.log('\nYour Facebook Business Details:');
-  console.log('  • Business ID: 209925905542846');
-  console.log('  • Asset ID: 209920418876728');
-  console.log('  • URL: https://business.facebook.com/latest/home?asset_id=209920418876728&business_id=209925905542846');
+  console.log('\nYour Facebook Business URL:');
+  console.log('  • https://business.facebook.com/latest/home');
+  console.log('  • (Replace with your actual Business Manager URL)');
   
   const proceed = await question('\nProceed with setup? (yes/no): ');
   if (proceed.toLowerCase() !== 'yes' && proceed.toLowerCase() !== 'y') {

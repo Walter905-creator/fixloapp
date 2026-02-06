@@ -233,13 +233,13 @@ class DailyPoster {
     const generatedContent = await contentGenerator.generatePost(contentParams);
     
     if (!generatedContent || !generatedContent.content) {
-      throw new Error('Content generation failed');
+      throw new Error(`Content generation failed for ${theme.contentType}${theme.service ? ` (${theme.service})` : ''}`);
     }
     
     // Calculate publish time (today at specified time)
     const publishDate = new Date();
     const [hours, minutes] = this.config.publishTime.split(':');
-    publishDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    publishDate.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
     
     // If publish time has already passed today, schedule for tomorrow
     if (publishDate < new Date()) {
@@ -359,10 +359,20 @@ class DailyPoster {
    * Get current status
    */
   getStatus() {
+    let nextRunInfo = null;
+    
+    if (this.cronJob && this.isEnabled) {
+      // Parse cron schedule to provide helpful info
+      nextRunInfo = `Daily at ${this.config.generateTime} (generate) and ${this.config.publishTime} (publish)`;
+    }
+    
     return {
       isEnabled: this.isEnabled,
       config: this.config,
-      nextRunTime: this.cronJob ? 'Based on cron schedule' : null
+      nextRunInfo,
+      message: this.isEnabled 
+        ? 'Daily poster is active. Posts will be generated and scheduled daily.'
+        : 'Daily poster is not running. Call POST /api/social/daily-poster/start to enable.'
     };
   }
 }

@@ -1450,8 +1450,10 @@ router.get('/scheduler/status', async (req, res) => {
 /**
  * POST /api/social/daily-poster/start
  * Start the daily poster for automatic daily posts
+ * 
+ * Requires admin authentication
  */
-router.post('/daily-poster/start', async (req, res) => {
+router.post('/daily-poster/start', adminAuth, async (req, res) => {
   const requestId = Date.now().toString(36);
 
   try {
@@ -1486,8 +1488,10 @@ router.post('/daily-poster/start', async (req, res) => {
 /**
  * POST /api/social/daily-poster/stop
  * Stop the daily poster
+ * 
+ * Requires admin authentication
  */
-router.post('/daily-poster/stop', async (req, res) => {
+router.post('/daily-poster/stop', adminAuth, async (req, res) => {
   const requestId = Date.now().toString(36);
 
   try {
@@ -1550,8 +1554,10 @@ router.get('/daily-poster/status', (req, res) => {
 /**
  * POST /api/social/daily-poster/generate-now
  * Generate and schedule a post immediately (manual trigger)
+ * 
+ * Requires admin authentication
  */
-router.post('/daily-poster/generate-now', async (req, res) => {
+router.post('/daily-poster/generate-now', adminAuth, async (req, res) => {
   const requestId = Date.now().toString(36);
 
   try {
@@ -1600,8 +1606,10 @@ router.post('/daily-poster/generate-now', async (req, res) => {
 /**
  * POST /api/social/daily-poster/config
  * Update daily poster configuration
+ * 
+ * Requires admin authentication
  */
-router.post('/daily-poster/config', async (req, res) => {
+router.post('/daily-poster/config', adminAuth, async (req, res) => {
   const requestId = Date.now().toString(36);
 
   try {

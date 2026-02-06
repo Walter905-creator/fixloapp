@@ -3,10 +3,10 @@
 ## 🎯 What Was Requested
 
 **Original Request:** Enable automation for creating posts to Facebook Business page
-- Business ID: 209925905542846
-- Asset ID: 209920418876728
 
 **New Requirement:** Allow daily posts
+
+**Note:** This implementation is generic and works with any Facebook Business page. Configure your specific Business ID and Asset ID in the Meta app settings.
 
 ## ✅ What Was Delivered
 
@@ -100,7 +100,7 @@ curl https://fixloapp.com/api/social/connect/meta_facebook/url
 
 # Open the returned URL in browser
 # Complete OAuth authorization
-# Select your Facebook Business page (Asset ID: 209920418876728)
+# Select your Facebook Business page
 
 # Verify connection
 curl https://fixloapp.com/api/social/force-status

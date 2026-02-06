@@ -5,9 +5,11 @@
 This guide walks you through enabling automated posting to your Facebook Business page. The Fixlo app includes a production-ready social media automation system that can automatically create and publish posts to Facebook and Instagram.
 
 **Your Facebook Business Details:**
-- Business ID: 209925905542846
-- Asset ID: 209920418876728
-- Business Manager URL: https://business.facebook.com/latest/home?asset_id=209920418876728&business_id=209925905542846
+- Business ID: YOUR_BUSINESS_ID
+- Asset ID: YOUR_ASSET_ID  
+- Business Manager URL: https://business.facebook.com/latest/home
+
+**Note:** Replace YOUR_BUSINESS_ID and YOUR_ASSET_ID with your actual Facebook Business identifiers.
 
 ---
 
