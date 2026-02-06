@@ -35,7 +35,7 @@ Before starting, ensure you have:
 4. Fill in app details:
    - **App Name:** Fixlo Social Manager
    - **App Contact Email:** Your email
-   - **Business Account:** Select your business (ID: 209925905542846)
+   - **Business Account:** Select your business (or leave blank)
 5. Click **"Create App"**
 
 ### 1.2 Add Required Products
@@ -156,7 +156,7 @@ curl https://fixloapp.com/api/social/connect/meta_facebook/url
 
 1. Click the authorization URL
 2. Log in with Facebook account that manages your Business Page
-3. Select your Facebook Business Page (Asset ID: 209920418876728)
+3. Select your Facebook Business Page
 4. Grant requested permissions
 5. You'll be redirected back to Fixlo
 

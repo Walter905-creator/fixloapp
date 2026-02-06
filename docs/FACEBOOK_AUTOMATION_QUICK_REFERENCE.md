@@ -213,6 +213,6 @@ GET /api/social/admin/audit-logs
 ---
 
 **Your Facebook Business:**
-- Business ID: 209925905542846
-- Asset ID: 209920418876728
-- URL: https://business.facebook.com/latest/home?asset_id=209920418876728&business_id=209925905542846
+- Business ID: YOUR_BUSINESS_ID
+- Asset ID: YOUR_ASSET_ID
+- URL: https://business.facebook.com/latest/home
