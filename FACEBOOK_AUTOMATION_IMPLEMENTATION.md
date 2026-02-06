@@ -293,10 +293,9 @@ Once configured, your Facebook Business page will:
 5. ✅ Track performance automatically
 6. ✅ Operate with zero manual intervention
 
-**Your Facebook Business Details:**
-- Business ID: 209925905542846
-- Asset ID: 209920418876728
-- Page URL: https://business.facebook.com/latest/home?asset_id=209920418876728&business_id=209925905542846
+**Your Facebook Business Page:**
+- Connect via OAuth flow
+- Business Manager: https://business.facebook.com/latest/home
 
 ---
 
