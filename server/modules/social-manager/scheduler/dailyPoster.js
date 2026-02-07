@@ -14,6 +14,8 @@ class DailyPoster {
   constructor() {
     this.isEnabled = false;
     this.cronJob = null;
+    this.lastRun = null;
+    this.lastResult = null;
     this.config = {
       // When to generate posts (defaults to 6 AM daily)
       generateTime: process.env.SOCIAL_DAILY_POST_GENERATE_TIME || '0 6 * * *',
@@ -31,6 +33,9 @@ class DailyPoster {
       // City/location for localized content
       defaultCity: process.env.SOCIAL_DAILY_POST_CITY || 'Miami',
       
+      // City rotation mode: 'single' (one city), 'rotating' (rotate cities), 'usa' (all USA cities)
+      cityMode: process.env.SOCIAL_DAILY_POST_CITY_MODE || 'single',
+      
       // Platform targeting
       platforms: ['meta_facebook', 'meta_instagram']
     };
@@ -39,7 +44,8 @@ class DailyPoster {
       generateTime: this.config.generateTime,
       publishTime: this.config.publishTime,
       requiresApproval: this.config.requiresApproval,
-      defaultCity: this.config.defaultCity
+      defaultCity: this.config.defaultCity,
+      cityMode: this.config.cityMode
     });
   }
   
@@ -48,7 +54,7 @@ class DailyPoster {
    */
   start() {
     if (this.isEnabled) {
-      console.warn('[Daily Poster] Already running');
+      console.warn('⚠️ Daily Poster already running');
       return { success: true, message: 'Daily poster already running' };
     }
     
@@ -59,7 +65,10 @@ class DailyPoster {
     
     this.isEnabled = true;
     
-    console.info('[Daily Poster] Started - will generate posts at:', this.config.generateTime);
+    // Clear, explicit logging for cron registration
+    console.info('⏰ Daily post generation scheduled:', this.config.generateTime);
+    console.info('⏰ Daily post publish time:', this.config.publishTime);
+    console.info('🚀 Facebook Daily Poster initialized (enabled=true)');
     
     return {
       success: true,
@@ -77,7 +86,7 @@ class DailyPoster {
    */
   stop() {
     if (!this.isEnabled) {
-      console.warn('[Daily Poster] Not running');
+      console.warn('⚠️ Daily Poster not running');
       return { success: true, message: 'Daily poster not running' };
     }
     
@@ -87,7 +96,7 @@ class DailyPoster {
     }
     
     this.isEnabled = false;
-    console.info('[Daily Poster] Stopped');
+    console.info('🛑 Facebook Daily Poster stopped');
     
     return {
       success: true,
@@ -99,7 +108,10 @@ class DailyPoster {
    * Generate and schedule today's post
    */
   async generateDailyPost() {
-    console.info('[Daily Poster] Generating daily post...');
+    const timestamp = new Date().toISOString();
+    this.lastRun = timestamp;
+    
+    console.info('✍️ Generating daily Facebook post...', { timestamp });
     
     try {
       // Get active social accounts
@@ -110,21 +122,34 @@ class DailyPoster {
       });
       
       if (accounts.length === 0) {
-        console.warn('[Daily Poster] No active accounts found');
+        console.warn('⚠️ No active Facebook/Instagram accounts found');
+        this.lastResult = 'error';
         return;
       }
       
-      console.info(`[Daily Poster] Found ${accounts.length} active account(s)`);
+      console.info(`✅ Found ${accounts.length} active account(s)`);
       
       // Get today's content theme (rotate through content types)
       const theme = this.selectDailyTheme();
+      const city = this.getCurrentCity();
+      
+      console.info(`✍️ Generating daily Facebook post for city: ${city}`, {
+        theme: theme.contentType,
+        service: theme.service,
+        topic: theme.topic
+      });
       
       // Generate content for each platform
+      let successCount = 0;
+      let failureCount = 0;
+      
       for (const account of accounts) {
         try {
-          await this.createPostForAccount(account, theme);
+          await this.createPostForAccount(account, theme, city);
+          successCount++;
         } catch (error) {
-          console.error(`[Daily Poster] Failed to create post for ${account.platform}:`, error.message);
+          failureCount++;
+          console.error(`❌ Failed to create post for ${account.platform}:`, error.message);
           
           // Log error but continue with other accounts
           await SocialAuditLog.logAction({
@@ -140,10 +165,17 @@ class DailyPoster {
         }
       }
       
-      console.info('[Daily Poster] Daily post generation complete');
+      if (successCount > 0) {
+        console.info(`✅ Daily post generation complete: ${successCount} succeeded, ${failureCount} failed`);
+        this.lastResult = 'success';
+      } else {
+        console.error(`❌ Daily post generation failed: all ${failureCount} attempts failed`);
+        this.lastResult = 'error';
+      }
       
     } catch (error) {
-      console.error('[Daily Poster] Fatal error generating daily post:', error);
+      console.error('❌ Fatal error generating daily post:', error);
+      this.lastResult = 'error';
     }
   }
   
@@ -200,10 +232,24 @@ class DailyPoster {
   }
   
   /**
+   * Get current city based on cityMode
+   */
+  getCurrentCity() {
+    // For now, just return default city
+    // In future, could implement rotation logic
+    return this.config.defaultCity;
+  }
+  
+  /**
    * Create a scheduled post for a specific account
    */
-  async createPostForAccount(account, theme) {
-    console.info(`[Daily Poster] Creating post for ${account.platform} (${account.platformUsername})`);
+  async createPostForAccount(account, theme, city) {
+    // Redact account details for logging
+    const redactedPageId = account.platformAccountId 
+      ? `***${account.platformAccountId.slice(-4)}` 
+      : 'unknown';
+    
+    console.info(`📤 Publishing Facebook post to page: ${redactedPageId} (${account.platform})`);
     
     // Determine platform for content generation
     const platform = account.platform;
@@ -212,7 +258,7 @@ class DailyPoster {
     const contentParams = {
       platform,
       contentType: theme.contentType,
-      city: this.config.defaultCity,
+      city: city || this.config.defaultCity,
       includeHashtags: platform === 'meta_instagram', // Hashtags for Instagram
       includeCallToAction: true
     };
@@ -259,16 +305,19 @@ class DailyPoster {
       metadata: {
         generationType: 'daily_auto',
         theme: theme,
-        city: this.config.defaultCity
+        city: city || this.config.defaultCity
       }
     });
     
     await scheduledPost.save();
     
-    console.info(`[Daily Poster] Post scheduled for ${publishDate.toISOString()}`, {
-      postId: scheduledPost._id,
+    // Redact post ID for logging
+    const redactedPostId = scheduledPost._id ? `***${String(scheduledPost._id).slice(-4)}` : 'unknown';
+    
+    console.info(`✅ Facebook post scheduled successfully (postId: ${redactedPostId})`, {
+      platform: scheduledPost.platform,
       status: scheduledPost.status,
-      scheduledFor: publishDate
+      scheduledFor: publishDate.toISOString()
     });
     
     // Log action
@@ -294,23 +343,39 @@ class DailyPoster {
    * Generate a post immediately (manual trigger)
    */
   async generateNow(options = {}) {
-    console.info('[Daily Poster] Manual post generation triggered');
+    console.info('✍️ Manual post generation triggered', options);
     
-    const theme = options.theme || this.selectDailyTheme();
-    const platform = options.platform || 'meta_facebook';
-    
-    // Find account for specified platform
-    const account = await SocialAccount.findOne({
-      platform,
-      isActive: true,
-      isTokenValid: true
-    });
-    
-    if (!account) {
-      throw new Error(`No active ${platform} account found`);
+    try {
+      const theme = options.theme || this.selectDailyTheme();
+      const platform = options.platform || 'meta_facebook';
+      const city = options.city || this.getCurrentCity();
+      
+      // Find account for specified platform
+      const account = await SocialAccount.findOne({
+        platform,
+        isActive: true,
+        isTokenValid: true
+      });
+      
+      if (!account) {
+        const errorMsg = `No active ${platform} account found`;
+        console.error(`❌ ${errorMsg}`);
+        throw new Error(errorMsg);
+      }
+      
+      const post = await this.createPostForAccount(account, theme, city);
+      
+      console.info('✅ Manual post generation successful', {
+        postId: post._id,
+        platform: post.platform,
+        scheduledFor: post.scheduledFor
+      });
+      
+      return post;
+    } catch (error) {
+      console.error('❌ Manual post generation failed:', error.message);
+      throw error;
     }
-    
-    return await this.createPostForAccount(account, theme);
   }
   
   /**
@@ -367,7 +432,14 @@ class DailyPoster {
     }
     
     return {
-      isEnabled: this.isEnabled,
+      enabled: this.isEnabled,
+      running: this.isEnabled,
+      generationCron: this.config.generateTime,
+      publishTime: this.config.publishTime,
+      cityMode: this.config.cityMode,
+      currentCity: this.getCurrentCity(),
+      lastRun: this.lastRun,
+      lastResult: this.lastResult,
       config: this.config,
       nextRunInfo,
       message: this.isEnabled 

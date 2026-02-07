@@ -9,6 +9,7 @@
 
 const routes = require('./routes');
 const scheduler = require('./scheduler');
+const dailyPoster = require('./scheduler/dailyPoster');
 const models = require('./models');
 const { contentGenerator } = require('./content');
 const analyticsService = require('./analytics');
@@ -64,6 +65,14 @@ async function initialize(options = {}) {
       if (automationEnabled) {
         console.log('🚀 Social automation ENABLED');
         console.log('📅 Scheduler running');
+        
+        // Auto-start daily poster if automation is enabled
+        try {
+          dailyPoster.start();
+        } catch (dpError) {
+          console.log('ℹ️ Daily poster not auto-started:', dpError.message);
+          console.log('   Use POST /api/social/daily-poster/start to start manually');
+        }
       } else {
         console.log('⚠️ Social automation DISABLED (scheduler started but posting blocked)');
       }
@@ -80,6 +89,7 @@ async function initialize(options = {}) {
   return {
     routes,
     scheduler,
+    dailyPoster,
     models,
     contentGenerator,
     analyticsService,
@@ -94,6 +104,14 @@ async function initialize(options = {}) {
 async function shutdown() {
   console.log('🛑 Shutting down Social Media Manager...');
   
+  // Stop daily poster
+  try {
+    dailyPoster.stop();
+  } catch (error) {
+    console.warn('⚠️ Error stopping daily poster:', error.message);
+  }
+  
+  // Stop scheduler
   scheduler.stop();
   
   console.log('✅ Social Media Manager shut down');
@@ -104,6 +122,7 @@ module.exports = {
   shutdown,
   routes,
   scheduler,
+  dailyPoster,
   models,
   contentGenerator,
   analyticsService,

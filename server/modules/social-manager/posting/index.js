@@ -38,6 +38,9 @@ class PostingService {
   async publishPost(scheduledPost) {
     const { platform, accountId } = scheduledPost;
     
+    // Redact post ID for logging
+    const redactedPostId = scheduledPost._id ? `***${String(scheduledPost._id).slice(-4)}` : 'unknown';
+    
     try {
       // Mark as publishing
       await scheduledPost.markAsPublishing();
@@ -59,6 +62,16 @@ class PostingService {
       if (!account.isTokenValid) {
         throw new Error('Account token is invalid - re-authorization required');
       }
+      
+      // Redact account details for logging
+      const redactedPageId = account.platformAccountId 
+        ? `***${account.platformAccountId.slice(-4)}` 
+        : 'unknown';
+      
+      console.info(`📤 Publishing Facebook post to page: ${redactedPageId}`, {
+        platform,
+        postId: redactedPostId
+      });
       
       // Get decrypted access token
       const accessToken = await tokenEncryption.retrieveToken(account.accessTokenRef);
@@ -106,6 +119,17 @@ class PostingService {
       });
       await metric.save();
       
+      // Redact platform post ID for logging
+      const redactedPlatformPostId = result.platformPostId 
+        ? `***${String(result.platformPostId).slice(-4)}` 
+        : 'unknown';
+      
+      console.info(`✅ Facebook post published successfully (postId: ${redactedPlatformPostId})`, {
+        platform,
+        postId: redactedPostId,
+        url: result.platformPostUrl
+      });
+      
       // Log success
       await SocialAuditLog.logAction({
         actorId: scheduledPost.ownerId,
@@ -123,6 +147,11 @@ class PostingService {
         ...result
       };
     } catch (error) {
+      console.error(`❌ Facebook post failed: ${error.message}`, {
+        platform,
+        postId: redactedPostId
+      });
+      
       // Mark as failed
       await scheduledPost.markAsFailed(error.message);
       
