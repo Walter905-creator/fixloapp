@@ -124,7 +124,7 @@ class PostingService {
         ? `***${String(result.platformPostId).slice(-4)}` 
         : 'unknown';
       
-      console.info(`✅ Facebook post published successfully (postId: ${redactedPlatformPostId})`, {
+      console.info(`✅ Facebook post published successfully (platformPostId: ${redactedPlatformPostId})`, {
         platform,
         postId: redactedPostId,
         url: result.platformPostUrl

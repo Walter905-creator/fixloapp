@@ -135,8 +135,9 @@ class DailyPoster {
       
       console.info(`✍️ Generating daily Facebook post for city: ${city}`, {
         theme: theme.contentType,
-        service: theme.service,
-        topic: theme.topic
+        ...(theme.service && { service: theme.service }),
+        ...(theme.topic && { topic: theme.topic }),
+        ...(theme.season && { season: theme.season })
       });
       
       // Generate content for each platform
@@ -365,8 +366,11 @@ class DailyPoster {
       
       const post = await this.createPostForAccount(account, theme, city);
       
+      // Redact post ID for logging
+      const redactedPostId = post._id ? `***${String(post._id).slice(-4)}` : 'unknown';
+      
       console.info('✅ Manual post generation successful', {
-        postId: post._id,
+        postId: redactedPostId,
         platform: post.platform,
         scheduledFor: post.scheduledFor
       });

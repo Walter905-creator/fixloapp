@@ -70,7 +70,7 @@ async function initialize(options = {}) {
         try {
           dailyPoster.start();
         } catch (dpError) {
-          console.log('ℹ️ Daily poster not auto-started:', dpError.message);
+          console.warn('⚠️ Daily poster not auto-started:', dpError.message);
           console.log('   Use POST /api/social/daily-poster/start to start manually');
         }
       } else {
