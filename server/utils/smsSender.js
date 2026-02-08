@@ -54,6 +54,12 @@ const SMS_TEMPLATES = {
       `Nuevo cliente para ${data.service} en ${data.city}. Revisa tu panel de Fixlo. Responde STOP para cancelar.`,
     pt: (data) =>
       `Novo cliente para ${data.service} em ${data.city}. Verifique seu painel Fixlo. Responda STOP para cancelar.`
+  },
+  
+  // Owner notification for new leads (Charlotte)
+  owner: {
+    en: (data) =>
+      `Fixlo Owner Alert: New ${data.service} lead in ${data.city}. Customer: ${data.customerName} (${data.customerPhone}). Address: ${data.address}.`
   }
 };
 
@@ -120,11 +126,11 @@ async function sendNonReferralSms(options) {
   }
   
   // Validate notification type
-  if (!['lead', 'homeowner', 'pro'].includes(notificationType)) {
+  if (!['lead', 'homeowner', 'pro', 'owner'].includes(notificationType)) {
     console.error(`❌ Invalid notification type: ${notificationType}`);
     return {
       success: false,
-      reason: `Invalid notificationType. Must be: lead, homeowner, or pro`
+      reason: `Invalid notificationType. Must be: lead, homeowner, pro, or owner`
     };
   }
   
@@ -335,11 +341,71 @@ async function sendLeadNotification(pro, lead) {
   return sendProLeadAlert(pro, lead);
 }
 
+/**
+ * Send owner notification for new lead in Charlotte
+ * Owner phone is always US-based, no consent check required (business owner)
+ */
+async function sendOwnerNotification(ownerPhone, lead) {
+  if (!ownerPhone || !lead) {
+    return { success: false, reason: 'Missing owner phone or lead data' };
+  }
+  
+  // Owner notifications bypass consent checks as they are business notifications
+  // Use direct SMS sending for owner (not using sendNonReferralSms to avoid consent checks)
+  try {
+    const message = SMS_TEMPLATES.owner.en({
+      service: lead.trade || lead.serviceType || 'Service Request',
+      city: lead.city || 'Unknown City',
+      customerName: lead.name || 'Customer',
+      customerPhone: lead.phone || 'N/A',
+      address: lead.address || 'Address not provided'
+    });
+    
+    console.log(`📢 Sending owner notification to ${SmsNotification.maskPhoneNumber(ownerPhone)}`);
+    
+    const result = await sendSms(ownerPhone, message);
+    
+    // Record notification for tracking (optional)
+    try {
+      await SmsNotification.recordNotification({
+        notificationType: 'owner',
+        leadId: lead._id,
+        userId: 'owner',
+        userModel: 'JobRequest',
+        phoneNumberMasked: SmsNotification.maskPhoneNumber(ownerPhone),
+        status: 'sent',
+        twilioSid: result.sid,
+        twilioStatus: result.status
+      });
+    } catch (recordError) {
+      console.warn('⚠️ Failed to record owner notification:', recordError.message);
+    }
+    
+    console.log(`✅ Owner notification sent successfully (SID: ${result.sid})`);
+    
+    return {
+      success: true,
+      messageId: result.sid,
+      channel: 'sms',
+      notificationType: 'owner'
+    };
+  } catch (error) {
+    console.error(`❌ Failed to send owner notification:`, error.message);
+    
+    return {
+      success: false,
+      error: error.message,
+      errorCode: error.code
+    };
+  }
+}
+
 module.exports = {
   sendNonReferralSms,
   sendHomeownerConfirmation,
   sendProLeadAlert,
   sendLeadNotification,
+  sendOwnerNotification,
   detectLanguage,
   SMS_TEMPLATES
 };
