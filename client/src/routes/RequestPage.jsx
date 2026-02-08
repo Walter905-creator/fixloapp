@@ -58,7 +58,7 @@ export default function RequestPage() {
       <div className="min-h-screen bg-slate-50 py-8">
         <div className="container-xl">
           <ServiceIntakeModal
-            key={`${city}-${service}`}
+            key={city || service ? `${city}-${service}` : 'default'}
             open={true}
             onClose={handleClose}
             defaultCity={city}
