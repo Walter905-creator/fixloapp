@@ -6,7 +6,7 @@
  */
 
 console.log('🧪 Testing Owner Notification System for Charlotte Leads\n');
-console.log('=' .repeat(60));
+console.log('='.repeat(60));
 
 // Mock lead data for Charlotte
 const charlotteLead = {
@@ -183,7 +183,7 @@ try {
 
 console.log('\n' + '='.repeat(60));
 console.log('\n📊 Test Summary');
-console.log('=' .repeat(60));
+console.log('='.repeat(60));
 console.log('\nTest Results:');
 console.log('  ✓ Priority configuration for Charlotte exists');
 console.log('  ✓ Owner phone number matches Walter Arevalo (516-444-9953)');
