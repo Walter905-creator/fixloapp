@@ -40,6 +40,7 @@ import EarnPage from './routes/EarnPage.jsx';
 import EarnStartPage from './routes/EarnStartPage.jsx';
 import EarnDashboardPage from './routes/EarnDashboardPage.jsx';
 import ReferralSignInPage from './routes/ReferralSignInPage.jsx';
+import RequestPage from './routes/RequestPage.jsx';
 export default function App(){
   return (<>
     <MetaPixelTracker />
@@ -73,6 +74,7 @@ export default function App(){
       <Route path="/assistant" element={<AssistantPage/>}/>
       <Route path="/contact" element={<ContactPage/>}/>
       <Route path="/pricing" element={<PricingPage/>}/>
+      <Route path="/request" element={<RequestPage/>}/>
       <Route path="/country/:countryCode" element={<CountryPage/>}/>
       <Route path="/signup" element={<SignupPage/>}/>
       <Route path="/pro/signup" element={<ProSignupPage/>}/>

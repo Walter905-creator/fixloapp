@@ -189,7 +189,7 @@ function PaymentForm({ formData, onSuccess, onError }) {
   );
 }
 
-export default function ServiceIntakeModal({ open, onClose, defaultCity, defaultService }) {
+export default function ServiceIntakeModal({ open, onClose, defaultCity, defaultService, customHeading }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     serviceType: defaultService ? defaultService.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '',
@@ -737,7 +737,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-slate-200 p-6 z-10">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-slate-900">Charlotte Home Service Request</h2>
+            <h2 className="text-2xl font-bold text-slate-900">{customHeading || 'Charlotte Home Service Request'}</h2>
             <button
               onClick={onClose}
               className="text-slate-400 hover:text-slate-600 text-2xl leading-none"
