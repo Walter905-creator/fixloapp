@@ -27,12 +27,12 @@ export default function RequestPage() {
     const serviceParam = searchParams.get('service');
 
     if (cityParam) {
-      setCity(cityParam);
-      
-      // Generate dynamic heading based on city
-      // Convert "charlotte-nc" to "Charlotte"
+      // Extract city name without state suffix (e.g., "charlotte-nc" -> "charlotte")
       const cityName = cityParam.split('-')[0];
       const formattedCity = cityName.charAt(0).toUpperCase() + cityName.slice(1);
+      
+      // Pass just the city name to the modal
+      setCity(cityName);
       setHeading(`${formattedCity} Home Service Request`);
     }
 
@@ -58,6 +58,7 @@ export default function RequestPage() {
       <div className="min-h-screen bg-slate-50 py-8">
         <div className="container-xl">
           <ServiceIntakeModal
+            key={`${city}-${service}`}
             open={true}
             onClose={handleClose}
             defaultCity={city}
