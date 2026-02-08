@@ -6,7 +6,7 @@ const Pro = require('../models/Pro');
 const { geocodeAddress } = require('../utils/geocode');
 const { sendSms, normalizeE164 } = require('../utils/twilio');
 const { notifyProOfLead } = require('../utils/notifications');
-const { sendHomeownerConfirmation } = require('../utils/smsSender');
+const { sendHomeownerConfirmation, sendOwnerNotification } = require('../utils/smsSender');
 const { getPriorityConfig, hasPriorityRouting, getDelayMs } = require('../config/priorityRouting');
 
 function milesToMeters(mi) { return mi * 1609.344; }
@@ -163,6 +163,20 @@ Reply ACCEPT to take this job first.`;
         console.log('📲 Sending SMS to:', priorityConfig.phone);
         await sendSms(priorityConfig.phone, priorityMessage);
         console.log('✅ Priority SMS sent to:', priorityConfig.phone);
+        
+        // Send owner notification for Charlotte leads
+        try {
+          console.log(`📢 Sending owner notification for ${city} lead`);
+          const ownerNotificationResult = await sendOwnerNotification(priorityConfig.phone, savedLead);
+          if (ownerNotificationResult.success) {
+            console.log(`✅ Owner notification sent successfully (SID: ${ownerNotificationResult.messageId})`);
+          } else {
+            console.log(`⚠️ Owner notification failed: ${ownerNotificationResult.reason || ownerNotificationResult.error}`);
+          }
+        } catch (ownerNotifyError) {
+          console.error('❌ Owner notification error:', ownerNotifyError.message);
+          // Don't fail lead processing if owner notification fails
+        }
         
         // Mark lead as priority notified
         if (mongoose.connection.readyState === 1) {
