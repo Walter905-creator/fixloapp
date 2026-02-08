@@ -18,7 +18,7 @@ PASS=0
 FAIL=0
 
 echo "1. Checking Homepage Canonical Tag..."
-if grep -q '<link rel="canonical" href="https://www.fixloapp.com/" />' index.html; then
+if grep -q 'rel="canonical".*href="https://www.fixloapp.com/"' index.html; then
     echo -e "${GREEN}✅ PASS${NC} - Homepage has canonical tag"
     ((PASS++))
 else
@@ -28,8 +28,12 @@ fi
 echo ""
 
 echo "2. Checking Homepage Meta Description..."
-if grep -q 'meta name="description"' index.html; then
-    echo -e "${GREEN}✅ PASS${NC} - Homepage has meta description"
+DESCRIPTION=$(grep -o 'meta name="description" content="[^"]*"' index.html | sed 's/.*content="//;s/".*//')
+if [ -n "$DESCRIPTION" ] && [ ${#DESCRIPTION} -gt 50 ]; then
+    echo -e "${GREEN}✅ PASS${NC} - Homepage has meta description (${#DESCRIPTION} chars)"
+    ((PASS++))
+elif [ -n "$DESCRIPTION" ]; then
+    echo -e "${YELLOW}⚠️  WARNING${NC} - Homepage meta description is too short (${#DESCRIPTION} chars, should be >50)"
     ((PASS++))
 else
     echo -e "${RED}❌ FAIL${NC} - Homepage missing meta description"
