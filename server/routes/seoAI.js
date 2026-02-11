@@ -46,18 +46,29 @@ router.get('/health', async (req, res) => {
   try {
     resetDailyStatsIfNeeded();
     
-    // Get total pages from database
-    const totalPages = await SEOPage.countDocuments();
-    stats.totalPages = totalPages;
+    // Get total pages from database (with fallback if DB not connected)
+    let totalPages = stats.totalPages;
+    try {
+      const mongoose = require('mongoose');
+      if (mongoose.connection.readyState === 1) {
+        totalPages = await SEOPage.countDocuments();
+        stats.totalPages = totalPages;
+      } else {
+        console.warn('[SEO_AI_API] Database not connected, using cached stats');
+      }
+    } catch (dbError) {
+      console.warn('[SEO_AI_API] Database query failed:', dbError.message);
+    }
     
     res.json({
       running: stats.running,
       pagesGeneratedToday: stats.pagesGeneratedToday,
-      totalPages: stats.totalPages,
+      totalPages: totalPages,
       lastRun: stats.lastRun,
       errors: stats.errors,
       openaiConfigured: !!process.env.OPENAI_API_KEY,
-      gscConfigured: !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
+      gscConfigured: !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      databaseConnected: require('mongoose').connection.readyState === 1
     });
   } catch (error) {
     console.error('[SEO_AI_API] ❌ Health check failed:', error);
