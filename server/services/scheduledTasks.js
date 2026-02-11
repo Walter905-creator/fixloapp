@@ -1,10 +1,11 @@
 const cron = require('node-cron');
 const { releaseStaleAuthorizations } = require('./autoReleaseService');
 const { verify30DayReferrals } = require('./commissionVerification');
+const { huntLeads } = require('./aiLeadHunter');
 
 /**
  * Scheduled tasks service
- * Manages cron jobs for operational safeguards
+ * Manages cron jobs for operational safeguards and AI automation
  */
 
 let scheduledTasks = [];
@@ -65,6 +66,64 @@ function startScheduledTasks() {
     console.log('ℹ️ Commission verification task not scheduled (REFERRALS_ENABLED=false)');
   }
 
+  // Task 3: AI Lead Hunter
+  // Runs every 15 minutes
+  const leadHunterTask = cron.schedule('*/15 * * * *', async () => {
+    console.log('[LEAD_HUNTER] ⏰ Running scheduled task');
+    try {
+      const result = await huntLeads();
+      console.log('[LEAD_HUNTER] ✅ Task completed:', result);
+    } catch (error) {
+      console.error('[LEAD_HUNTER] ❌ Task failed:', error.message);
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York'
+  });
+
+  scheduledTasks.push({
+    name: 'ai-lead-hunter',
+    task: leadHunterTask,
+    schedule: '*/15 * * * *',
+    description: 'AI-powered lead detection and distribution'
+  });
+
+  // Task 4: SEO AI Engine
+  // Runs daily at 3:30 AM
+  const seoAITask = cron.schedule('30 3 * * *', async () => {
+    console.log('[SEO_AI] ⏰ Running scheduled task');
+    try {
+      const { runSEOAgent } = require('./seo/seoAgent');
+      const { updateStats } = require('../routes/seoAI');
+      
+      const result = await runSEOAgent({ maxPages: 20 });
+      console.log('[SEO_AI] ✅ Task completed');
+      console.log(`[SEO_AI] Pages generated: ${result.pagesGenerated || 0}`);
+      console.log(`[SEO_AI] Skipped duplicates: ${result.skippedDuplicates || 0}`);
+      
+      // Update stats
+      if (updateStats) {
+        updateStats(result.pagesGenerated || 0, false);
+      }
+    } catch (error) {
+      console.error('[SEO_AI] ❌ Task failed:', error.message);
+      const { updateStats } = require('../routes/seoAI');
+      if (updateStats) {
+        updateStats(0, true);
+      }
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York'
+  });
+
+  scheduledTasks.push({
+    name: 'seo-ai-engine',
+    task: seoAITask,
+    schedule: '30 3 * * *',
+    description: 'SEO AI Engine - Generate optimized service pages'
+  });
+
   console.log(`✅ Scheduled ${scheduledTasks.length} tasks`);
   scheduledTasks.forEach(t => {
     console.log(`  - ${t.name}: ${t.schedule} - ${t.description}`);
@@ -104,6 +163,11 @@ async function triggerTask(taskName) {
       return await releaseStaleAuthorizations();
     case 'verify-30day-commission-referrals':
       return await verify30DayReferrals();
+    case 'ai-lead-hunter':
+      return await huntLeads();
+    case 'seo-ai-engine':
+      const { runSEOAgent } = require('./seo/seoAgent');
+      return await runSEOAgent({ maxPages: 20 });
     default:
       throw new Error(`Unknown task: ${taskName}`);
   }
