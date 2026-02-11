@@ -107,7 +107,7 @@ function startScheduledTasks() {
     
     try {
       const { runSEOAgent } = require('./seo/seoAgent');
-      const { updateStats } = require('../routes/seoAI');
+      const { updateStats } = require('./seoAIStats');
       
       const result = await runSEOAgent({ maxPages: 20 });
       const duration = ((Date.now() - startTime) / 1000).toFixed(2);
@@ -117,9 +117,7 @@ function startScheduledTasks() {
       console.log(`[SEO_AI] Completed in ${duration}s`);
       
       // Update stats
-      if (updateStats) {
-        updateStats(result.pagesGenerated || 0, false);
-      }
+      updateStats(result.pagesGenerated || 0, false);
       
       if (result.errors && result.errors.length > 0) {
         console.log(`[SEO_AI] Errors: ${result.errors.length}`);
@@ -129,10 +127,8 @@ function startScheduledTasks() {
       console.error('[SEO_AI] Errors: 1');
       
       // Update stats with error
-      const { updateStats } = require('../routes/seoAI');
-      if (updateStats) {
-        updateStats(0, true);
-      }
+      const { updateStats } = require('./seoAIStats');
+      updateStats(0, true);
       // Don't throw - keep server running
     }
   }, {

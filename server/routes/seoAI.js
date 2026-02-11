@@ -2,49 +2,17 @@ const express = require('express');
 const router = express.Router();
 const requireAuth = require('../middleware/requireAuth');
 const SEOPage = require('../models/SEOPage');
+const { getStats, resetDailyStatsIfNeeded } = require('../services/seoAIStats');
 
 /**
  * SEO AI Engine Routes
  * Monitoring and control endpoints for the SEO automation system
  */
 
-// Track execution stats
-let stats = {
-  lastRun: null,
-  pagesGeneratedToday: 0,
-  totalPages: 0,
-  running: false,
-  errors: 0,
-  lastResetDate: new Date().toDateString()
-};
-
-/**
- * Reset daily stats if needed
- */
-function resetDailyStatsIfNeeded() {
-  const today = new Date().toDateString();
-  if (stats.lastResetDate !== today) {
-    stats.pagesGeneratedToday = 0;
-    stats.lastResetDate = today;
-  }
-}
-
-/**
- * Update stats after SEO run
- */
-function updateStats(pagesGenerated, hadErrors = false) {
-  resetDailyStatsIfNeeded();
-  stats.lastRun = new Date();
-  stats.pagesGeneratedToday += pagesGenerated;
-  if (hadErrors) {
-    stats.errors++;
-  }
-}
-
 // Health check endpoint (public for monitoring)
 router.get('/health', async (req, res) => {
   try {
-    resetDailyStatsIfNeeded();
+    const stats = getStats();
     
     // Get total pages from database (with fallback if DB not connected)
     let totalPages = stats.totalPages;
@@ -52,7 +20,6 @@ router.get('/health', async (req, res) => {
       const mongoose = require('mongoose');
       if (mongoose.connection.readyState === 1) {
         totalPages = await SEOPage.countDocuments();
-        stats.totalPages = totalPages;
       } else {
         console.warn('[SEO_AI_API] Database not connected, using cached stats');
       }
@@ -117,6 +84,7 @@ router.post('/run', requireAuth, async (req, res) => {
       return res.status(403).json({ error: 'Forbidden: Admin access required' });
     }
 
+    const stats = getStats();
     if (stats.running) {
       return res.status(429).json({ 
         error: 'SEO AI Engine is already running',
@@ -128,8 +96,9 @@ router.post('/run', requireAuth, async (req, res) => {
     
     // Import and run SEO agent
     const { runSEOAgent } = require('../services/seo/seoAgent');
+    const { setRunning, updateStats } = require('../services/seoAIStats');
     
-    stats.running = true;
+    setRunning(true);
     
     try {
       const result = await runSEOAgent();
@@ -143,12 +112,11 @@ router.post('/run', requireAuth, async (req, res) => {
     } catch (error) {
       updateStats(0, true);
       throw error;
-    } finally {
-      stats.running = false;
     }
   } catch (error) {
     console.error('[SEO_AI_API] ❌ Manual run failed:', error);
-    stats.running = false;
+    const { setRunning } = require('../services/seoAIStats');
+    setRunning(false);
     res.status(500).json({ 
       error: 'Manual run failed',
       message: error.message 
@@ -165,7 +133,7 @@ router.get('/stats', requireAuth, async (req, res) => {
       return res.status(403).json({ error: 'Forbidden: Admin access required' });
     }
 
-    resetDailyStatsIfNeeded();
+    const stats = getStats();
     
     // Get additional stats
     const totalPages = await SEOPage.countDocuments();
@@ -190,7 +158,4 @@ router.get('/stats', requireAuth, async (req, res) => {
   }
 });
 
-// Export for use by scheduler
 module.exports = router;
-module.exports.updateStats = updateStats;
-module.exports.stats = stats;

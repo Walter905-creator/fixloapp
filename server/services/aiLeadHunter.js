@@ -289,13 +289,14 @@ async function processLead(leadData) {
     aiQualified: true,
     priority: classification.urgency === 'Same day' ? 'HIGH' : 
               classification.urgency === 'Within 48 hours' ? 'MEDIUM' : 'LOW',
-    // Placeholder contact info (would come from real source)
-    name: 'AI Lead',
-    email: 'lead@fixloapp.com',
-    phone: '+10000000000',
-    address: classification.city || 'Unknown',
+    // Contact info should come from real lead source
+    // These are placeholders - actual implementation should validate and use real data
+    name: leadData.name || 'Pending Contact Info',
+    email: leadData.email || `lead-${Date.now()}@fixloapp.com`,
+    phone: leadData.phone || null,
+    address: classification.city || leadData.address || 'Unknown',
     termsAccepted: true,
-    smsConsent: true
+    smsConsent: !!leadData.phone
   });
   
   await newLead.save();
