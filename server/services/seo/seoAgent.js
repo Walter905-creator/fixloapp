@@ -433,7 +433,15 @@ async function runSEOAgent(options = {}) {
     };
   } catch (error) {
     console.error('[SEO_AI] ❌ Error:', error.message);
-    throw error;
+    
+    // Return error info but don't throw - keep cron running
+    return {
+      success: false,
+      pagesGenerated: 0,
+      skippedDuplicates: 0,
+      totalActions: 0,
+      errors: [{ message: error.message, stack: error.stack }]
+    };
   }
 }
 

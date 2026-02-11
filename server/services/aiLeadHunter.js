@@ -74,7 +74,12 @@ async function classifyLead(text) {
   }
 
   try {
-    const completion = await openai.chat.completions.create({
+    // Wrap in timeout promise
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('OpenAI request timeout')), 10000)
+    );
+
+    const classificationPromise = openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [
         {
@@ -102,6 +107,7 @@ Respond in JSON format:
       max_tokens: 200
     });
 
+    const completion = await Promise.race([classificationPromise, timeoutPromise]);
     const response = completion.choices[0].message.content.trim();
     const parsed = JSON.parse(response);
     
@@ -113,7 +119,11 @@ Respond in JSON format:
     };
     
   } catch (error) {
-    console.error('[LEAD_HUNTER] ❌ OpenAI classification failed:', error.message);
+    if (error.message === 'OpenAI request timeout') {
+      console.error('[LEAD_HUNTER] ⏱️ OpenAI timeout (10s exceeded)');
+    } else {
+      console.error('[LEAD_HUNTER] ❌ OpenAI classification failed:', error.message);
+    }
     stats.errors++;
     
     // Fallback: basic keyword matching
@@ -225,11 +235,23 @@ async function notifyPro(pro, lead) {
   try {
     const message = `🔔 New Fixlo Lead!\n\nService: ${lead.trade}\nLocation: ${lead.city || lead.address}\nUrgency: ${lead.urgency}\n\nLog in to view details.`;
     
-    await sendSMS(pro.phone, message);
+    // Wrap in timeout
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Twilio SMS timeout')), 10000)
+    );
+    
+    const smsPromise = sendSMS(pro.phone, message);
+    await Promise.race([smsPromise, timeoutPromise]);
+    
     console.log(`[LEAD_HUNTER] ✅ SMS sent to ${pro.name}`);
     return true;
   } catch (error) {
-    console.error(`[LEAD_HUNTER] ❌ Failed to send SMS to ${pro.name}:`, error.message);
+    if (error.message === 'Twilio SMS timeout') {
+      console.error(`[LEAD_HUNTER] ⏱️ SMS timeout to ${pro.name}`);
+    } else {
+      console.error(`[LEAD_HUNTER] ❌ Failed to send SMS to ${pro.name}:`, error.message);
+    }
+    // Don't increment stats.errors for SMS failures - not critical
     return false;
   }
 }
@@ -306,13 +328,17 @@ async function processLead(leadData) {
 async function huntLeads() {
   if (stats.running) {
     console.log('[LEAD_HUNTER] ⏳ Already running, skipping...');
-    return stats;
+    return {
+      success: false,
+      leadsProcessed: 0,
+      message: 'Already running',
+      skipped: true
+    };
   }
   
   stats.running = true;
   stats.lastRun = new Date();
-  
-  console.log('[LEAD_HUNTER] 🎯 Started');
+  let leadsProcessed = 0;
   
   try {
     // TODO: Implement actual lead source integration
@@ -328,14 +354,22 @@ async function huntLeads() {
     
     return {
       success: true,
-      leadsProcessed: 0,
-      message: 'Ready for lead sources'
+      leadsProcessed: leadsProcessed,
+      message: 'Ready for lead sources',
+      errors: 0
     };
     
   } catch (error) {
     console.error('[LEAD_HUNTER] ❌ Error:', error.message);
     stats.errors++;
-    throw error;
+    
+    // Return error but don't throw - keep cron running
+    return {
+      success: false,
+      leadsProcessed: 0,
+      message: error.message,
+      errors: 1
+    };
   } finally {
     stats.running = false;
   }
