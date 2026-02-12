@@ -837,15 +837,85 @@ app.use(errorHandler);
 // ----------------------- DB Connect & Server Start -----------------------
 async function start() {
   // Support both MONGODB_URI (standard) and MONGO_URI (legacy) for backwards compatibility
-  const MONGO_URI =
-    process.env.MONGODB_URI || 
-    process.env.MONGO_URI || 
-    "mongodb://127.0.0.1:27017/fixloapp";
+  // Trim whitespace to prevent hidden character issues
+  const rawMongoURI = process.env.MONGODB_URI || process.env.MONGO_URI;
+  const MONGO_URI = rawMongoURI ? rawMongoURI.trim() : "mongodb://127.0.0.1:27017/fixloapp";
   const PORT = process.env.PORT || 10000;
+
+  // ============================================================================
+  // MONGODB CONNECTION DEBUG LOGGING
+  // ============================================================================
+  console.log("\n" + "=".repeat(80));
+  console.log("🔍 MONGODB CONNECTION DEBUG");
+  console.log("=".repeat(80));
+  console.log(`📍 NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
+  console.log(`📍 Mongoose Version: ${mongoose.version}`);
+  console.log(`📍 MONGODB_URI exists: ${!!process.env.MONGODB_URI}`);
+  console.log(`📍 MONGO_URI exists: ${!!process.env.MONGO_URI}`);
+  console.log(`📍 MONGODB_URI length: ${process.env.MONGODB_URI?.length || 0}`);
+  console.log(`📍 MONGO_URI length: ${process.env.MONGO_URI?.length || 0}`);
+  
+  // Sanitize URI for logging (mask password)
+  let sanitizedURI = MONGO_URI;
+  try {
+    if (MONGO_URI.includes('://') && MONGO_URI.includes('@')) {
+      const parts = MONGO_URI.split('://');
+      const protocol = parts[0];
+      const rest = parts[1];
+      const atIndex = rest.indexOf('@');
+      const credentials = rest.substring(0, atIndex);
+      const hostAndDb = rest.substring(atIndex);
+      
+      // Mask password in credentials
+      if (credentials.includes(':')) {
+        const username = credentials.split(':')[0];
+        sanitizedURI = `${protocol}://${username}:****${hostAndDb}`;
+      }
+    }
+  } catch (e) {
+    sanitizedURI = '[URI parsing failed]';
+  }
+  
+  console.log(`📍 Sanitized URI: ${sanitizedURI}`);
+  
+  // Parse connection components
+  try {
+    const urlObj = new URL(MONGO_URI.replace('mongodb+srv://', 'http://').replace('mongodb://', 'http://'));
+    console.log(`📍 Parsed Username: ${urlObj.username || 'none'}`);
+    console.log(`📍 Parsed Host: ${urlObj.hostname || 'none'}`);
+    console.log(`📍 Parsed Database: ${urlObj.pathname.substring(1).split('?')[0] || 'none'}`);
+  } catch (e) {
+    console.error(`❌ URI parsing error: ${e.message}`);
+  }
+  
+  // Validate URI format
+  if (!MONGO_URI.startsWith('mongodb://') && !MONGO_URI.startsWith('mongodb+srv://')) {
+    console.error('❌ MALFORMED URI: Must start with mongodb:// or mongodb+srv://');
+    console.error('📋 Expected format: mongodb+srv://username:password@cluster.mongodb.net/database?retryWrites=true&w=majority');
+  }
+  
+  // Check for common issues
+  if (rawMongoURI !== MONGO_URI) {
+    console.warn('⚠️ Whitespace trimmed from MONGODB_URI');
+  }
+  
+  console.log("=".repeat(80) + "\n");
+  // ============================================================================
 
   try {
     mongoose.set("strictQuery", true);
-    await mongoose.connect(MONGO_URI, { maxPoolSize: 10 });
+    
+    // Add explicit connection options for better diagnostics
+    const connectionOptions = {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 10000, // 10 seconds
+      socketTimeoutMS: 45000, // 45 seconds
+      family: 4 // Force IPv4
+    };
+    
+    console.log('🔌 Attempting MongoDB connection with options:', JSON.stringify(connectionOptions, null, 2));
+    
+    await mongoose.connect(MONGO_URI, connectionOptions);
     console.log("✅ MongoDB connected");
     console.log(`📊 Database: ${MONGO_URI.includes('@') ? MONGO_URI.split('@')[1] : 'local'}`);
 
@@ -866,6 +936,7 @@ async function start() {
     }
 
     // Start scheduled tasks for operational safeguards
+    // IMPORTANT: Only start after successful DB connection
     try {
       const { startScheduledTasks } = require('./services/scheduledTasks');
       startScheduledTasks();
@@ -905,7 +976,64 @@ async function start() {
       console.log(`🚀 Fixlo API listening on port ${PORT}`);
     });
   } catch (err) {
-    console.error("❌ DB connection failed:", err.message);
+    // ============================================================================
+    // MONGODB CONNECTION ERROR DIAGNOSTICS
+    // ============================================================================
+    console.log("\n" + "=".repeat(80));
+    console.error("❌ MONGODB CONNECTION FAILED - DETAILED DIAGNOSTICS");
+    console.log("=".repeat(80));
+    console.error(`📍 Error Name: ${err.name || 'Unknown'}`);
+    console.error(`📍 Error Message: ${err.message || 'No message'}`);
+    console.error(`📍 Error Code: ${err.code || 'No code'}`);
+    
+    // Log error reason if available (MongoDB-specific)
+    if (err.reason) {
+      console.error(`📍 Error Reason: ${JSON.stringify(err.reason, null, 2)}`);
+    }
+    
+    // Log full stack trace
+    console.error(`📍 Stack Trace:\n${err.stack || 'No stack trace'}`);
+    
+    // Check for specific authentication errors
+    if (err.message && err.message.includes('Authentication failed')) {
+      console.error('\n⚠️ AUTHENTICATION ERROR DETECTED');
+      console.error('Possible causes:');
+      console.error('  1. Incorrect username or password in MONGODB_URI');
+      console.error('  2. User does not have access to the specified database');
+      console.error('  3. Authentication mechanism mismatch (SCRAM-SHA-1 vs SCRAM-SHA-256)');
+      console.error('  4. IP whitelist not configured in MongoDB Atlas');
+      console.error('  5. Password contains special characters that need URL encoding');
+    }
+    
+    // Additional diagnostic for connection timeout
+    if (err.message && (err.message.includes('timeout') || err.message.includes('ETIMEDOUT'))) {
+      console.error('\n⚠️ CONNECTION TIMEOUT DETECTED');
+      console.error('Possible causes:');
+      console.error('  1. MongoDB server is unreachable (check network)');
+      console.error('  2. IP address not whitelisted in MongoDB Atlas');
+      console.error('  3. Firewall blocking connection');
+    }
+    
+    // Test connection WITHOUT database name
+    console.log("\n" + "-".repeat(80));
+    console.log("🧪 ATTEMPTING CONNECTION WITHOUT DATABASE NAME");
+    console.log("-".repeat(80));
+    try {
+      const uriWithoutDb = MONGO_URI.replace(/\/[^/?]+(\?|$)/, '/$1');
+      console.log(`Trying: ${sanitizedURI.replace(/\/[^/?]+(\?|$)/, '/$1')}`);
+      await mongoose.createConnection(uriWithoutDb, {
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 10000,
+        family: 4
+      });
+      console.log('✅ Connection works WITHOUT database name - database access issue');
+    } catch (testErr) {
+      console.error(`❌ Connection also fails without database: ${testErr.message}`);
+    }
+    
+    console.log("=".repeat(80) + "\n");
+    // ============================================================================
+    
     console.warn("⚠️ Starting server without database connection");
     
     // Start server even without database
