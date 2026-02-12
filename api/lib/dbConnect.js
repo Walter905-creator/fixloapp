@@ -20,7 +20,7 @@
  */
 
 const mongoose = require('mongoose');
-const { sanitizeMongoURI, parseMongoURI } = require('../server/lib/mongoUtils');
+const { sanitizeMongoURI, parseMongoURI } = require('../../server/lib/mongoUtils');
 
 /**
  * Global cache for MongoDB connection

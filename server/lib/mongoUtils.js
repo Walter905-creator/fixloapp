@@ -81,9 +81,32 @@ function removeMongoDBName(uri) {
       return uri;
     }
     
-    // Remove the database name (path segment between @ and ?)
-    // Match the pattern: /database_name followed by ? or end of string
-    return uri.replace(/\/[^/?]+(\?|$)/, '/$1');
+    // Find the @ symbol which marks the end of credentials
+    const atIndex = uri.lastIndexOf('@');
+    if (atIndex === -1) {
+      // No credentials, database comes after host
+      return uri;
+    }
+    
+    // Everything after @ is host/database/options
+    const beforeAt = uri.substring(0, atIndex + 1);
+    const afterAt = uri.substring(atIndex + 1);
+    
+    // Find the first / after @ which starts the database path
+    const slashIndex = afterAt.indexOf('/');
+    if (slashIndex === -1) {
+      // No database path, return as-is
+      return uri;
+    }
+    
+    // Find the ? which starts query parameters
+    const queryIndex = afterAt.indexOf('?');
+    
+    // Reconstruct: protocol + credentials + host + / + query
+    const host = afterAt.substring(0, slashIndex);
+    const query = queryIndex !== -1 ? afterAt.substring(queryIndex) : '';
+    
+    return beforeAt + host + '/' + query;
   } catch (e) {
     return uri; // Return original on error
   }
