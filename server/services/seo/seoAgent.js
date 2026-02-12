@@ -395,7 +395,58 @@ function getSEOAgent() {
   return seoAgentInstance;
 }
 
+/**
+ * Wrapper function to run SEO Agent with options
+ * Used by CRON scheduler and manual triggers
+ */
+async function runSEOAgent(options = {}) {
+  const agent = getSEOAgent();
+  const maxPages = options.maxPages || 20;
+  
+  console.log('[SEO_AI] Started');
+  console.log(`[SEO_AI] Max pages to generate: ${maxPages}`);
+  
+  try {
+    const result = await agent.run();
+    
+    const pagesGenerated = result.actions?.filter(a => 
+      a.actionType === 'create_page' && a.status === 'success'
+    ).length || 0;
+    
+    const skippedDuplicates = result.actions?.filter(a => 
+      a.status === 'skipped' || a.status === 'duplicate'
+    ).length || 0;
+    
+    console.log(`[SEO_AI] Pages generated: ${pagesGenerated}`);
+    console.log(`[SEO_AI] Skipped duplicates: ${skippedDuplicates}`);
+    
+    if (result.errors && result.errors.length > 0) {
+      console.log(`[SEO_AI] Errors: ${result.errors.length}`);
+    }
+    
+    return {
+      success: true,
+      pagesGenerated,
+      skippedDuplicates,
+      totalActions: result.actions?.length || 0,
+      errors: result.errors || []
+    };
+  } catch (error) {
+    console.error('[SEO_AI] ❌ Error:', error.message);
+    
+    // Return error info but don't throw - keep cron running
+    return {
+      success: false,
+      pagesGenerated: 0,
+      skippedDuplicates: 0,
+      totalActions: 0,
+      errors: [{ message: error.message, stack: error.stack }]
+    };
+  }
+}
+
 module.exports = {
   SEOAgent,
-  getSEOAgent
+  getSEOAgent,
+  runSEOAgent
 };

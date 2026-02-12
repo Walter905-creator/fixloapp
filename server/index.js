@@ -323,6 +323,11 @@ app.use("/api/cloudinary", require("./routes/cloudinary")); // POST /api/cloudin
 
 app.use("/api/admin", adminRateLimit, require("./routes/admin"));
 app.use("/api/admin", adminRateLimit, require("./routes/adminJobs")); // Admin job management
+
+// AI Automation Routes
+app.use("/api/lead-hunter", generalRateLimit, require("./routes/leadHunter")); // AI Lead Hunter
+app.use("/api/seo-ai", generalRateLimit, require("./routes/seoAI")); // SEO AI Engine
+
 app.use("/api/auth", authRateLimit, require("./routes/auth"));
 app.use("/api/pro-auth", authRateLimit, require("./routes/proAuth"));
 

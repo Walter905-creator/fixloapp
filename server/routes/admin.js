@@ -388,4 +388,42 @@ router.post('/run-data-retention', async (req, res) => {
   }
 });
 
+// ✅ Get scheduled tasks status
+router.get('/scheduled-tasks', async (req, res) => {
+  try {
+    const { getTasksStatus } = require('../services/scheduledTasks');
+    const tasks = getTasksStatus();
+    res.json({
+      success: true,
+      tasks
+    });
+  } catch (error) {
+    console.error('Error fetching scheduled tasks:', error);
+    res.status(500).json({ error: 'Failed to fetch scheduled tasks' });
+  }
+});
+
+// ✅ Manually trigger a scheduled task
+router.post('/scheduled-tasks/:taskName/trigger', async (req, res) => {
+  try {
+    const { triggerTask } = require('../services/scheduledTasks');
+    const { taskName } = req.params;
+    
+    console.log(`🚀 Manually triggering task: ${taskName}`);
+    const result = await triggerTask(taskName);
+    
+    res.json({
+      success: true,
+      task: taskName,
+      result
+    });
+  } catch (error) {
+    console.error(`Error triggering task ${req.params.taskName}:`, error);
+    res.status(500).json({ 
+      error: 'Failed to trigger task',
+      message: error.message 
+    });
+  }
+});
+
 module.exports = router;
