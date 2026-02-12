@@ -192,6 +192,17 @@ async function dbConnect() {
       console.error('[dbConnect]   3. Firewall blocking connection');
     }
     
+    // Additional diagnostic for DNS issues
+    if (error.code && (error.code === 'EREFUSED' || error.code === 'ENOTFOUND' || error.message.includes('querySrv'))) {
+      console.error('[dbConnect] ⚠️ DNS RESOLUTION ERROR DETECTED');
+      console.error('[dbConnect] Possible causes:');
+      console.error('[dbConnect]   1. DNS server cannot resolve MongoDB Atlas hostname');
+      console.error('[dbConnect]   2. Network connectivity issues');
+      console.error('[dbConnect]   3. Temporary DNS server failure');
+      console.error('[dbConnect]   4. Incorrect MongoDB Atlas cluster hostname');
+      console.error('[dbConnect]   5. Corporate/sandbox DNS restrictions');
+    }
+    
     console.log('[dbConnect] ' + "=".repeat(70));
     // ============================================================================
     

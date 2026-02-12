@@ -1014,6 +1014,22 @@ async function start() {
       console.error('  3. Firewall blocking connection');
     }
     
+    // Additional diagnostic for DNS issues
+    if (err.code && (err.code === 'EREFUSED' || err.code === 'ENOTFOUND' || err.message.includes('querySrv'))) {
+      console.error('\n⚠️ DNS RESOLUTION ERROR DETECTED');
+      console.error('Possible causes:');
+      console.error('  1. DNS server cannot resolve MongoDB Atlas hostname');
+      console.error('  2. Network connectivity issues');
+      console.error('  3. Temporary DNS server failure');
+      console.error('  4. Incorrect MongoDB Atlas cluster hostname');
+      console.error('  5. Corporate/sandbox DNS restrictions');
+      console.error('\n💡 SOLUTIONS:');
+      console.error('  - Try using standard connection string (mongodb://) instead of SRV (mongodb+srv://)');
+      console.error('  - Verify cluster hostname in MongoDB Atlas dashboard');
+      console.error('  - Check network/firewall settings');
+      console.error('  - Ensure environment has external DNS access');
+    }
+    
     // Test connection WITHOUT database name
     console.log("\n" + "-".repeat(80));
     console.log("🧪 ATTEMPTING CONNECTION WITHOUT DATABASE NAME");
@@ -1021,12 +1037,13 @@ async function start() {
     try {
       const uriWithoutDb = MONGO_URI.replace(/\/[^/?]+(\?|$)/, '/$1');
       console.log(`Trying: ${sanitizedURI.replace(/\/[^/?]+(\?|$)/, '/$1')}`);
-      await mongoose.createConnection(uriWithoutDb, {
+      const testConnection = await mongoose.createConnection(uriWithoutDb, {
         serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 10000,
         family: 4
-      });
+      }).asPromise();
       console.log('✅ Connection works WITHOUT database name - database access issue');
+      await testConnection.close();
     } catch (testErr) {
       console.error(`❌ Connection also fails without database: ${testErr.message}`);
     }
