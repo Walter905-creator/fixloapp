@@ -28,6 +28,7 @@ const sanitizeInput = require("./middleware/sanitization");
 const shield = require("./middleware/shield");
 const errorHandler = require("./middleware/errorHandler");
 const { privacyAuditLogger } = require("./middleware/privacyAudit");
+const { sanitizeMongoURI, parseMongoURI, removeMongoDBName } = require("./lib/mongoUtils");
 const {
   generalRateLimit,
   authRateLimit,
@@ -856,36 +857,17 @@ async function start() {
   console.log(`📍 MONGO_URI length: ${process.env.MONGO_URI?.length || 0}`);
   
   // Sanitize URI for logging (mask password)
-  let sanitizedURI = MONGO_URI;
-  try {
-    if (MONGO_URI.includes('://') && MONGO_URI.includes('@')) {
-      const parts = MONGO_URI.split('://');
-      const protocol = parts[0];
-      const rest = parts[1];
-      const atIndex = rest.indexOf('@');
-      const credentials = rest.substring(0, atIndex);
-      const hostAndDb = rest.substring(atIndex);
-      
-      // Mask password in credentials
-      if (credentials.includes(':')) {
-        const username = credentials.split(':')[0];
-        sanitizedURI = `${protocol}://${username}:****${hostAndDb}`;
-      }
-    }
-  } catch (e) {
-    sanitizedURI = '[URI parsing failed]';
-  }
-  
+  const sanitizedURI = sanitizeMongoURI(MONGO_URI);
   console.log(`📍 Sanitized URI: ${sanitizedURI}`);
   
   // Parse connection components
-  try {
-    const urlObj = new URL(MONGO_URI.replace('mongodb+srv://', 'http://').replace('mongodb://', 'http://'));
-    console.log(`📍 Parsed Username: ${urlObj.username || 'none'}`);
-    console.log(`📍 Parsed Host: ${urlObj.hostname || 'none'}`);
-    console.log(`📍 Parsed Database: ${urlObj.pathname.substring(1).split('?')[0] || 'none'}`);
-  } catch (e) {
-    console.error(`❌ URI parsing error: ${e.message}`);
+  const parsed = parseMongoURI(MONGO_URI);
+  if (parsed.error) {
+    console.error(`❌ URI parsing error: ${parsed.error}`);
+  } else {
+    console.log(`📍 Parsed Username: ${parsed.username}`);
+    console.log(`📍 Parsed Host: ${parsed.host}`);
+    console.log(`📍 Parsed Database: ${parsed.database}`);
   }
   
   // Validate URI format
@@ -1035,8 +1017,9 @@ async function start() {
     console.log("🧪 ATTEMPTING CONNECTION WITHOUT DATABASE NAME");
     console.log("-".repeat(80));
     try {
-      const uriWithoutDb = MONGO_URI.replace(/\/[^/?]+(\?|$)/, '/$1');
-      console.log(`Trying: ${sanitizedURI.replace(/\/[^/?]+(\?|$)/, '/$1')}`);
+      const uriWithoutDb = removeMongoDBName(MONGO_URI);
+      const sanitizedTestUri = sanitizeMongoURI(uriWithoutDb);
+      console.log(`Trying: ${sanitizedTestUri}`);
       const testConnection = await mongoose.createConnection(uriWithoutDb, {
         serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 10000,

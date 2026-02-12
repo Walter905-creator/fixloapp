@@ -20,6 +20,7 @@
  */
 
 const mongoose = require('mongoose');
+const { sanitizeMongoURI, parseMongoURI } = require('./mongoUtils');
 
 /**
  * Global cache for MongoDB connection
@@ -86,36 +87,17 @@ async function dbConnect() {
   }
 
   // Sanitize URI for logging (mask password)
-  let sanitizedURI = MONGO_URI;
-  try {
-    if (MONGO_URI.includes('://') && MONGO_URI.includes('@')) {
-      const parts = MONGO_URI.split('://');
-      const protocol = parts[0];
-      const rest = parts[1];
-      const atIndex = rest.indexOf('@');
-      const credentials = rest.substring(0, atIndex);
-      const hostAndDb = rest.substring(atIndex);
-      
-      // Mask password in credentials
-      if (credentials.includes(':')) {
-        const username = credentials.split(':')[0];
-        sanitizedURI = `${protocol}://${username}:****${hostAndDb}`;
-      }
-    }
-  } catch (e) {
-    sanitizedURI = '[URI parsing failed]';
-  }
-  
+  const sanitizedURI = sanitizeMongoURI(MONGO_URI);
   console.log(`[dbConnect] 📍 Sanitized URI: ${sanitizedURI}`);
   
   // Parse connection components
-  try {
-    const urlObj = new URL(MONGO_URI.replace('mongodb+srv://', 'http://').replace('mongodb://', 'http://'));
-    console.log(`[dbConnect] 📍 Parsed Username: ${urlObj.username || 'none'}`);
-    console.log(`[dbConnect] 📍 Parsed Host: ${urlObj.hostname || 'none'}`);
-    console.log(`[dbConnect] 📍 Parsed Database: ${urlObj.pathname.substring(1).split('?')[0] || 'none'}`);
-  } catch (e) {
-    console.error(`[dbConnect] ❌ URI parsing error: ${e.message}`);
+  const parsed = parseMongoURI(MONGO_URI);
+  if (parsed.error) {
+    console.error(`[dbConnect] ❌ URI parsing error: ${parsed.error}`);
+  } else {
+    console.log(`[dbConnect] 📍 Parsed Username: ${parsed.username}`);
+    console.log(`[dbConnect] 📍 Parsed Host: ${parsed.host}`);
+    console.log(`[dbConnect] 📍 Parsed Database: ${parsed.database}`);
   }
   
   // Validate URI format
