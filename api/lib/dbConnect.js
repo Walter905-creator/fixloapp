@@ -20,6 +20,7 @@
  */
 
 const mongoose = require('mongoose');
+const { sanitizeMongoURI, parseMongoURI } = require('../../server/lib/mongoUtils');
 
 /**
  * Global cache for MongoDB connection
@@ -61,18 +62,62 @@ async function dbConnect() {
 
   // Get MongoDB URI from environment variables
   // Support both MONGODB_URI (standard) and MONGO_URI (legacy)
-  const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
+  // Trim whitespace to prevent hidden character issues
+  const rawMongoURI = process.env.MONGO_URI || process.env.MONGODB_URI;
+  const MONGO_URI = rawMongoURI ? rawMongoURI.trim() : null;
+
+  // ============================================================================
+  // MONGODB CONNECTION DEBUG LOGGING
+  // ============================================================================
+  console.log('[dbConnect] ' + "=".repeat(70));
+  console.log('[dbConnect] 🔍 MONGODB CONNECTION DEBUG (Serverless API)');
+  console.log('[dbConnect] ' + "=".repeat(70));
+  console.log(`[dbConnect] 📍 NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
+  console.log(`[dbConnect] 📍 Mongoose Version: ${mongoose.version}`);
+  console.log(`[dbConnect] 📍 MONGODB_URI exists: ${!!process.env.MONGODB_URI}`);
+  console.log(`[dbConnect] 📍 MONGO_URI exists: ${!!process.env.MONGO_URI}`);
+  console.log(`[dbConnect] 📍 MONGODB_URI length: ${process.env.MONGODB_URI?.length || 0}`);
+  console.log(`[dbConnect] 📍 MONGO_URI length: ${process.env.MONGO_URI?.length || 0}`);
 
   if (!MONGO_URI) {
     console.error('[dbConnect] ❌ MONGO_URI or MONGODB_URI environment variable is not set');
     console.error('[dbConnect] Configure MONGO_URI in Vercel environment variables');
+    console.log('[dbConnect] ' + "=".repeat(70));
     return null;
   }
 
-  console.log('[dbConnect] Initiating MongoDB connection...');
+  // Sanitize URI for logging (mask password)
+  const sanitizedURI = sanitizeMongoURI(MONGO_URI);
+  console.log(`[dbConnect] 📍 Sanitized URI: ${sanitizedURI}`);
+  
+  // Parse connection components
+  const parsed = parseMongoURI(MONGO_URI);
+  if (parsed.error) {
+    console.error(`[dbConnect] ❌ URI parsing error: ${parsed.error}`);
+  } else {
+    console.log(`[dbConnect] 📍 Parsed Username: ${parsed.username}`);
+    console.log(`[dbConnect] 📍 Parsed Host: ${parsed.host}`);
+    console.log(`[dbConnect] 📍 Parsed Database: ${parsed.database}`);
+  }
+  
+  // Validate URI format
+  if (!MONGO_URI.startsWith('mongodb://') && !MONGO_URI.startsWith('mongodb+srv://')) {
+    console.error('[dbConnect] ❌ MALFORMED URI: Must start with mongodb:// or mongodb+srv://');
+    console.error('[dbConnect] 📋 Expected format: mongodb+srv://username:password@cluster.mongodb.net/database?retryWrites=true&w=majority');
+  }
+  
+  // Check for common issues
+  if (rawMongoURI !== MONGO_URI) {
+    console.warn('[dbConnect] ⚠️ Whitespace trimmed from MONGODB_URI');
+  }
+  
+  console.log('[dbConnect] ' + "=".repeat(70));
+  // ============================================================================
 
-  // Create new connection promise
-  globalThis.__mongoClientPromise = mongoose.connect(MONGO_URI, {
+  console.log('[dbConnect] 🔌 Initiating MongoDB connection...');
+
+  // Connection options optimized for serverless with explicit diagnostics
+  const connectionOptions = {
     // Connection pool settings optimized for serverless
     maxPoolSize: 10,
     minPoolSize: 1,
@@ -80,11 +125,69 @@ async function dbConnect() {
     // Timeout settings for serverless environment
     serverSelectionTimeoutMS: 10000, // 10 seconds
     socketTimeoutMS: 45000, // 45 seconds
-  }).then(() => {
+    family: 4 // Force IPv4
+  };
+  
+  console.log('[dbConnect] 📍 Connection Options:', JSON.stringify(connectionOptions, null, 2));
+
+  // Create new connection promise
+  globalThis.__mongoClientPromise = mongoose.connect(MONGO_URI, connectionOptions).then(() => {
     console.log('[dbConnect] ✅ MongoDB connected successfully');
     globalThis.__mongoClient = mongoose.connection;
     return mongoose.connection;
   }).catch((error) => {
+    // ============================================================================
+    // MONGODB CONNECTION ERROR DIAGNOSTICS
+    // ============================================================================
+    console.log('[dbConnect] ' + "=".repeat(70));
+    console.error('[dbConnect] ❌ MONGODB CONNECTION FAILED - DETAILED DIAGNOSTICS');
+    console.log('[dbConnect] ' + "=".repeat(70));
+    console.error(`[dbConnect] 📍 Error Name: ${error.name || 'Unknown'}`);
+    console.error(`[dbConnect] 📍 Error Message: ${error.message || 'No message'}`);
+    console.error(`[dbConnect] 📍 Error Code: ${error.code || 'No code'}`);
+    
+    // Log error reason if available (MongoDB-specific)
+    if (error.reason) {
+      console.error(`[dbConnect] 📍 Error Reason: ${JSON.stringify(error.reason, null, 2)}`);
+    }
+    
+    // Log full stack trace
+    console.error(`[dbConnect] 📍 Stack Trace:\n${error.stack || 'No stack trace'}`);
+    
+    // Check for specific authentication errors
+    if (error.message && error.message.includes('Authentication failed')) {
+      console.error('[dbConnect] ⚠️ AUTHENTICATION ERROR DETECTED');
+      console.error('[dbConnect] Possible causes:');
+      console.error('[dbConnect]   1. Incorrect username or password in MONGODB_URI');
+      console.error('[dbConnect]   2. User does not have access to the specified database');
+      console.error('[dbConnect]   3. Authentication mechanism mismatch (SCRAM-SHA-1 vs SCRAM-SHA-256)');
+      console.error('[dbConnect]   4. IP whitelist not configured in MongoDB Atlas');
+      console.error('[dbConnect]   5. Password contains special characters that need URL encoding');
+    }
+    
+    // Additional diagnostic for connection timeout
+    if (error.message && (error.message.includes('timeout') || error.message.includes('ETIMEDOUT'))) {
+      console.error('[dbConnect] ⚠️ CONNECTION TIMEOUT DETECTED');
+      console.error('[dbConnect] Possible causes:');
+      console.error('[dbConnect]   1. MongoDB server is unreachable (check network)');
+      console.error('[dbConnect]   2. IP address not whitelisted in MongoDB Atlas');
+      console.error('[dbConnect]   3. Firewall blocking connection');
+    }
+    
+    // Additional diagnostic for DNS issues
+    if (error.code && (error.code === 'EREFUSED' || error.code === 'ENOTFOUND' || error.message.includes('querySrv'))) {
+      console.error('[dbConnect] ⚠️ DNS RESOLUTION ERROR DETECTED');
+      console.error('[dbConnect] Possible causes:');
+      console.error('[dbConnect]   1. DNS server cannot resolve MongoDB Atlas hostname');
+      console.error('[dbConnect]   2. Network connectivity issues');
+      console.error('[dbConnect]   3. Temporary DNS server failure');
+      console.error('[dbConnect]   4. Incorrect MongoDB Atlas cluster hostname');
+      console.error('[dbConnect]   5. Corporate/sandbox DNS restrictions');
+    }
+    
+    console.log('[dbConnect] ' + "=".repeat(70));
+    // ============================================================================
+    
     console.error('[dbConnect] ❌ MongoDB connection failed:', error.message);
     globalThis.__mongoClientPromise = null;
     globalThis.__mongoClient = null;
