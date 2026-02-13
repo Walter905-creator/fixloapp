@@ -10,13 +10,10 @@ Activates Walter Arevalo as a Pro in the MongoDB database.
 **Usage:**
 ```bash
 # Set your MongoDB connection string
-MONGODB_URI="your_mongodb_connection_string" npm run activate-owner-pro
-
-# Or use the server environment variable name
 MONGO_URI="your_mongodb_connection_string" npm run activate-owner-pro
 
 # Optionally specify database name (defaults to 'fixlo')
-MONGODB_URI="your_connection" MONGODB_DB="your_db" npm run activate-owner-pro
+MONGO_URI="your_connection" MONGODB_DB="your_db" npm run activate-owner-pro
 ```
 
 **Features:**

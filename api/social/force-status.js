@@ -33,16 +33,16 @@ async function connectToDatabase() {
   connectionAttempted = true;
 
   try {
-    const MONGODB_URI = process.env.MONGODB_URI;
-    
-    if (!MONGODB_URI) {
-      console.warn('[force-status] MONGODB_URI not configured');
+    const MONGO_URI = process.env.MONGO_URI;
+
+    if (!MONGO_URI) {
+      console.warn('[force-status] MONGO_URI not configured');
       return null;
     }
 
     console.log('[force-status] Attempting database connection...');
     
-    await mongoose.connect(MONGODB_URI, {
+    await mongoose.connect(MONGO_URI, {
       serverSelectionTimeoutMS: 5000, // 5 second timeout
       socketTimeoutMS: 10000,
       maxPoolSize: 10, // Maximum 10 connections in pool
@@ -131,7 +131,7 @@ module.exports = async (req, res) => {
         connectedAt: null,
         isTokenValid: false,
         tokenExpiresAt: null,
-        message: 'Database connection unavailable - configure MONGODB_URI environment variable',
+        message: 'Database connection unavailable - configure MONGO_URI environment variable',
         requestId,
       });
     }

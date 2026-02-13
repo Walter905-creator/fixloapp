@@ -24,7 +24,7 @@ async function testDatabaseConnectionCheck() {
   const MONGO_URI = process.env.MONGO_URI;
   console.log(`  MONGODB_URI: ${MONGODB_URI ? '✅ Set' : '❌ Not set'}`);
   console.log(`  MONGO_URI: ${MONGO_URI ? '✅ Set' : '❌ Not set'}`);
-  console.log(`  Fallback: ${!MONGODB_URI && !MONGO_URI ? '✅ Will use local MongoDB' : 'Not needed'}`);
+  console.log(`  Fallback: ${!MONGO_URI ? '✅ Will use local MongoDB' : 'Not needed'}`);
   
   // Test 3: Check Cloudinary configuration
   console.log('\nTest 3: Cloudinary configuration');

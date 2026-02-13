@@ -9,7 +9,7 @@ This directory contains a one-time database update script to add a phone number 
 **Purpose:** Add phone number "+15164449953" to the Pro user with email "pro4u.improvements@gmail.com"
 
 **What it does:**
-- Connects to MongoDB using the `MONGODB_URI` environment variable
+- Connects to MongoDB using the `MONGO_URI` environment variable
 - Finds the Pro user with the specified email address
 - Validates that the phone number is not already in use by another user
 - Updates the phone number field
@@ -33,7 +33,7 @@ This directory contains a one-time database update script to add a phone number 
 ### 1. Ensure environment variables are set
 Make sure your `.env` file in the `server/` directory contains:
 ```bash
-MONGODB_URI=your_mongodb_connection_string
+MONGO_URI=your_mongodb_connection_string
 ```
 
 ### 2. Run the script
@@ -138,9 +138,9 @@ The script only updates the phone number field. If you need to change it back, y
 
 ## Troubleshooting
 
-### "MONGODB_URI not found in environment variables"
+### "MONGO_URI not found in environment variables"
 - Ensure `.env` file exists in `server/` directory
-- Check that `MONGODB_URI` is properly set in `.env`
+- Check that `MONGO_URI` is properly set in `.env`
 - Try running from the `server/` directory: `cd server && node scripts/updateProPhone.js`
 
 ### "Pro user with email ... not found"

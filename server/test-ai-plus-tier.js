@@ -86,7 +86,7 @@ async function testLeadPrioritization() {
   
   try {
     // Connect to MongoDB to create test pros
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/fixlo';
+    const mongoUri = process.env.MONGO_URI;
     console.log('\n📦 Connecting to MongoDB...');
     await mongoose.connect(mongoUri);
     console.log('✅ Connected to MongoDB');
