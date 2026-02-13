@@ -87,6 +87,13 @@ async function testLeadPrioritization() {
   try {
     // Connect to MongoDB to create test pros
     const mongoUri = process.env.MONGO_URI;
+    
+    if (!mongoUri) {
+      console.error('❌ MONGO_URI not found in environment variables');
+      console.error('❌ FATAL ERROR: Set MONGO_URI environment variable');
+      process.exit(1);
+    }
+    
     console.log('\n📦 Connecting to MongoDB...');
     await mongoose.connect(mongoUri);
     console.log('✅ Connected to MongoDB');

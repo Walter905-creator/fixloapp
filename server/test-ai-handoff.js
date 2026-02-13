@@ -13,6 +13,12 @@ const mongoose = require('mongoose');
 // Test configuration
 const MONGO_URI = process.env.MONGO_URI;
 
+if (!MONGO_URI) {
+  console.error('❌ MONGO_URI not found in environment variables');
+  console.error('❌ FATAL ERROR: Set MONGO_URI environment variable to run tests');
+  process.exit(1);
+}
+
 console.log('🧪 Testing AI → Pro Handoff Functionality\n');
 
 // Helper to connect to MongoDB
