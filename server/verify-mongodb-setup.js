@@ -113,8 +113,10 @@ if (fs.existsSync(indexPath)) {
     console.log('⚠️  MongoDB connection code not found in index.js');
   }
   
-  if (indexContent.includes('MONGO_URI')) {
-    console.log('✅ Environment variable usage found in index.js');
+  if (indexContent.includes('process.env.MONGO_URI')) {
+    console.log('✅ MONGO_URI environment variable usage found in index.js');
+  } else {
+    console.log('⚠️  MONGO_URI environment variable usage not found in index.js');
   }
   console.log('');
 }

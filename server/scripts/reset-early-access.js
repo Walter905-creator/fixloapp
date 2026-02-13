@@ -48,10 +48,7 @@ async function resetEarlyAccess() {
     }
     
     console.log('🔌 Connecting to MongoDB...');
-    await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(process.env.MONGO_URI);
     console.log('✅ MongoDB connected');
     
     // Get or create the EarlyAccessSpots instance
