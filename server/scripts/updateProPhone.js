@@ -19,11 +19,12 @@ const Pro = require('../models/Pro');
 
 async function updateProPhone() {
   try {
-    // Connect to MongoDB
-    const MONGO_URI = process.env.MONGODB_URI;
+    // Connect to MongoDB - ONLY using MONGO_URI
+    const MONGO_URI = process.env.MONGO_URI;
     
     if (!MONGO_URI) {
-      console.error('❌ MONGODB_URI not found in environment variables');
+      console.error('❌ MONGO_URI not found in environment variables');
+      console.error('❌ FATAL ERROR: Set MONGO_URI environment variable');
       process.exit(1);
     }
     
