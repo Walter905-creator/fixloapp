@@ -16,10 +16,10 @@ const { MongoClient, ServerApiVersion } = require('mongodb');
 require('dotenv').config();
 
 // Get the MongoDB URI from environment variables
-const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
+const uri = process.env.MONGO_URI;
 
 if (!uri) {
-  console.error('❌ ERROR: MONGODB_URI not found in environment variables');
+  console.error('❌ ERROR: MONGO_URI not found in environment variables');
   process.exit(1);
 }
 

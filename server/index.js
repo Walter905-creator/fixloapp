@@ -837,24 +837,31 @@ app.use(errorHandler);
 
 // ----------------------- DB Connect & Server Start -----------------------
 async function start() {
-  // Support both MONGODB_URI (standard) and MONGO_URI (legacy) for backwards compatibility
-  // Trim whitespace to prevent hidden character issues
-  const rawMongoURI = process.env.MONGODB_URI || process.env.MONGO_URI;
-  const MONGO_URI = rawMongoURI ? rawMongoURI.trim() : "mongodb://127.0.0.1:27017/fixloapp";
   const PORT = process.env.PORT || 10000;
 
   // ============================================================================
-  // MONGODB CONNECTION DEBUG LOGGING
+  // MONGODB CONNECTION - USING ONLY MONGO_URI
   // ============================================================================
   console.log("\n" + "=".repeat(80));
   console.log("🔍 MONGODB CONNECTION DEBUG");
   console.log("=".repeat(80));
   console.log(`📍 NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
   console.log(`📍 Mongoose Version: ${mongoose.version}`);
-  console.log(`📍 MONGODB_URI exists: ${!!process.env.MONGODB_URI}`);
-  console.log(`📍 MONGO_URI exists: ${!!process.env.MONGO_URI}`);
-  console.log(`📍 MONGODB_URI length: ${process.env.MONGODB_URI?.length || 0}`);
-  console.log(`📍 MONGO_URI length: ${process.env.MONGO_URI?.length || 0}`);
+  
+  // Explicit logging before connection
+  console.log(`Using Mongo URI: ${process.env.MONGO_URI ? "MONGO_URI" : "NOT FOUND"}`);
+  
+  // Fatal error if MONGO_URI does not exist
+  if (!process.env.MONGO_URI) {
+    console.error("❌ MONGO_URI is missing.");
+    console.error("❌ FATAL ERROR: Cannot start server without MONGO_URI environment variable.");
+    console.error("📋 Set MONGO_URI in your environment variables.");
+    console.log("=".repeat(80) + "\n");
+    process.exit(1);
+  }
+  
+  // Use ONLY MONGO_URI - no fallbacks, no defaults
+  const MONGO_URI = process.env.MONGO_URI.trim();
   
   // Sanitize URI for logging (mask password)
   const sanitizedURI = sanitizeMongoURI(MONGO_URI);
@@ -874,11 +881,9 @@ async function start() {
   if (!MONGO_URI.startsWith('mongodb://') && !MONGO_URI.startsWith('mongodb+srv://')) {
     console.error('❌ MALFORMED URI: Must start with mongodb:// or mongodb+srv://');
     console.error('📋 Expected format: mongodb+srv://username:password@cluster.mongodb.net/database?retryWrites=true&w=majority');
-  }
-  
-  // Check for common issues
-  if (rawMongoURI !== MONGO_URI) {
-    console.warn('⚠️ Whitespace trimmed from MONGODB_URI');
+    console.error('❌ FATAL ERROR: Invalid MongoDB URI format.');
+    console.log("=".repeat(80) + "\n");
+    process.exit(1);
   }
   
   console.log("=".repeat(80) + "\n");

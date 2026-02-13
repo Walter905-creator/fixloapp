@@ -60,7 +60,7 @@ async function main() {
   log.step(1, 'Checking Environment Variables');
   
   const requiredEnvVars = {
-    'MONGODB_URI': 'MongoDB connection string',
+    'MONGO_URI': 'MongoDB connection string',
     'JWT_SECRET': 'JWT authentication secret',
     'SOCIAL_META_CLIENT_ID': 'Meta app ID (from Facebook Developers)',
     'SOCIAL_META_CLIENT_SECRET': 'Meta app secret (from Facebook Developers)',

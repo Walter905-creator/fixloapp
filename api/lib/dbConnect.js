@@ -7,8 +7,8 @@
  * Features:
  * - Uses globalThis.__mongoClient and globalThis.__mongoClientPromise for caching
  * - Reuses Mongoose (already in project dependencies)
- * - Supports both MONGO_URI and MONGODB_URI environment variables
- * - Logs clear errors if environment variables are missing
+ * - Uses ONLY MONGO_URI environment variable (no fallbacks)
+ * - Logs clear errors if environment variable is missing
  * - Reuses existing connection if already connected
  * 
  * Usage:
@@ -60,31 +60,29 @@ async function dbConnect() {
     }
   }
 
-  // Get MongoDB URI from environment variables
-  // Support both MONGODB_URI (standard) and MONGO_URI (legacy)
-  // Trim whitespace to prevent hidden character issues
-  const rawMongoURI = process.env.MONGO_URI || process.env.MONGODB_URI;
-  const MONGO_URI = rawMongoURI ? rawMongoURI.trim() : null;
-
   // ============================================================================
-  // MONGODB CONNECTION DEBUG LOGGING
+  // MONGODB CONNECTION - USING ONLY MONGO_URI
   // ============================================================================
   console.log('[dbConnect] ' + "=".repeat(70));
   console.log('[dbConnect] 🔍 MONGODB CONNECTION DEBUG (Serverless API)');
   console.log('[dbConnect] ' + "=".repeat(70));
   console.log(`[dbConnect] 📍 NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
   console.log(`[dbConnect] 📍 Mongoose Version: ${mongoose.version}`);
-  console.log(`[dbConnect] 📍 MONGODB_URI exists: ${!!process.env.MONGODB_URI}`);
-  console.log(`[dbConnect] 📍 MONGO_URI exists: ${!!process.env.MONGO_URI}`);
-  console.log(`[dbConnect] 📍 MONGODB_URI length: ${process.env.MONGODB_URI?.length || 0}`);
-  console.log(`[dbConnect] 📍 MONGO_URI length: ${process.env.MONGO_URI?.length || 0}`);
+  
+  // Explicit logging before connection
+  console.log(`[dbConnect] Using Mongo URI: ${process.env.MONGO_URI ? "MONGO_URI" : "NOT FOUND"}`);
 
-  if (!MONGO_URI) {
-    console.error('[dbConnect] ❌ MONGO_URI or MONGODB_URI environment variable is not set');
+  // Fatal error if MONGO_URI does not exist
+  if (!process.env.MONGO_URI) {
+    console.error('[dbConnect] ❌ MONGO_URI is missing.');
+    console.error('[dbConnect] ❌ FATAL ERROR: Cannot connect without MONGO_URI environment variable.');
     console.error('[dbConnect] Configure MONGO_URI in Vercel environment variables');
     console.log('[dbConnect] ' + "=".repeat(70));
     return null;
   }
+
+  // Use ONLY MONGO_URI - no fallbacks, no defaults
+  const MONGO_URI = process.env.MONGO_URI.trim();
 
   // Sanitize URI for logging (mask password)
   const sanitizedURI = sanitizeMongoURI(MONGO_URI);
@@ -104,11 +102,9 @@ async function dbConnect() {
   if (!MONGO_URI.startsWith('mongodb://') && !MONGO_URI.startsWith('mongodb+srv://')) {
     console.error('[dbConnect] ❌ MALFORMED URI: Must start with mongodb:// or mongodb+srv://');
     console.error('[dbConnect] 📋 Expected format: mongodb+srv://username:password@cluster.mongodb.net/database?retryWrites=true&w=majority');
-  }
-  
-  // Check for common issues
-  if (rawMongoURI !== MONGO_URI) {
-    console.warn('[dbConnect] ⚠️ Whitespace trimmed from MONGODB_URI');
+    console.error('[dbConnect] ❌ FATAL ERROR: Invalid MongoDB URI format.');
+    console.log('[dbConnect] ' + "=".repeat(70));
+    return null;
   }
   
   console.log('[dbConnect] ' + "=".repeat(70));

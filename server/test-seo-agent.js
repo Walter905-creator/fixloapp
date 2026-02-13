@@ -257,14 +257,14 @@ async function testSEOAgent() {
   // Test 1: MongoDB Connection
   console.log('1️⃣ Testing MongoDB connection...');
   try {
-    if (process.env.MONGODB_URI) {
-      await mongoose.connect(process.env.MONGODB_URI, {
+    if (process.env.MONGO_URI) {
+      await mongoose.connect(process.env.MONGO_URI, {
         serverSelectionTimeoutMS: 5000
       });
       tests.mongodb = true;
       console.log('   ✅ MongoDB connected');
     } else {
-      console.log('   ⚠️ MONGODB_URI not set');
+      console.log('   ⚠️ MONGO_URI not set');
     }
   } catch (error) {
     console.log('   ❌ MongoDB connection failed:', error.message);

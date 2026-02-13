@@ -11,14 +11,20 @@
 const mongoose = require('mongoose');
 
 // Test configuration
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/fixlo';
+const MONGO_URI = process.env.MONGO_URI;
+
+if (!MONGO_URI) {
+  console.error('❌ MONGO_URI not found in environment variables');
+  console.error('❌ FATAL ERROR: Set MONGO_URI environment variable to run tests');
+  process.exit(1);
+}
 
 console.log('🧪 Testing AI → Pro Handoff Functionality\n');
 
 // Helper to connect to MongoDB
 async function connectDB() {
   try {
-    await mongoose.connect(MONGODB_URI);
+    await mongoose.connect(MONGO_URI);
     console.log('✅ Connected to MongoDB');
     return true;
   } catch (error) {
@@ -358,7 +364,7 @@ async function runAllTests() {
     process.exit(0);
   } else if (!dbConnected) {
     console.log('\n⚠️ Some tests skipped due to database unavailability\n');
-    console.log('To run all tests, ensure MongoDB is running and MONGODB_URI is configured.\n');
+    console.log('To run all tests, ensure MongoDB is running and MONGO_URI is configured.\n');
     process.exit(0);
   } else {
     console.log('\n❌ Some tests failed!\n');

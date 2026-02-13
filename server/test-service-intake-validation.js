@@ -18,13 +18,10 @@ async function testDatabaseConnectionCheck() {
   };
   console.log(`  Current state: ${states[mongoose.connection.readyState]} (${mongoose.connection.readyState})`);
   
-  // Test 2: Verify MONGODB_URI support
-  console.log('\nTest 2: MongoDB URI environment variable support');
-  const MONGODB_URI = process.env.MONGODB_URI;
+  // Test 2: Verify MONGO_URI support
+  console.log('\n2️⃣ MongoDB URI environment variable support');
   const MONGO_URI = process.env.MONGO_URI;
-  console.log(`  MONGODB_URI: ${MONGODB_URI ? '✅ Set' : '❌ Not set'}`);
   console.log(`  MONGO_URI: ${MONGO_URI ? '✅ Set' : '❌ Not set'}`);
-  console.log(`  Fallback: ${!MONGODB_URI && !MONGO_URI ? '✅ Will use local MongoDB' : 'Not needed'}`);
   
   // Test 3: Check Cloudinary configuration
   console.log('\nTest 3: Cloudinary configuration');
