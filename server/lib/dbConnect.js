@@ -102,6 +102,9 @@ async function dbConnect() {
   if (!MONGO_URI.startsWith('mongodb://') && !MONGO_URI.startsWith('mongodb+srv://')) {
     console.error('[dbConnect] ❌ MALFORMED URI: Must start with mongodb:// or mongodb+srv://');
     console.error('[dbConnect] 📋 Expected format: mongodb+srv://username:password@cluster.mongodb.net/database?retryWrites=true&w=majority');
+    console.error('[dbConnect] ❌ FATAL ERROR: Invalid MongoDB URI format.');
+    console.log('[dbConnect] ' + "=".repeat(70));
+    return null;
   }
   
   console.log('[dbConnect] ' + "=".repeat(70));

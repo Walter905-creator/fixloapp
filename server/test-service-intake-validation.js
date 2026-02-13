@@ -22,7 +22,6 @@ async function testDatabaseConnectionCheck() {
   console.log('\n2️⃣ MongoDB URI environment variable support');
   const MONGO_URI = process.env.MONGO_URI;
   console.log(`  MONGO_URI: ${MONGO_URI ? '✅ Set' : '❌ Not set'}`);
-  console.log(`  Fallback: ${!MONGO_URI ? '✅ Will use local MongoDB' : 'Not needed'}`);
   
   // Test 3: Check Cloudinary configuration
   console.log('\nTest 3: Cloudinary configuration');
