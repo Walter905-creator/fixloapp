@@ -900,10 +900,11 @@ async function start() {
       family: 4 // Force IPv4
     };
     
-    console.log('🔌 Attempting MongoDB connection with options:', JSON.stringify(connectionOptions, null, 2));
+    console.log("Connecting to Mongo...");
+    console.log('🔌 Connection options:', JSON.stringify(connectionOptions, null, 2));
     
     await mongoose.connect(MONGO_URI, connectionOptions);
-    console.log("✅ MongoDB connected");
+    console.log("✅ MongoDB CONNECTED");
     console.log(`📊 Database: ${MONGO_URI.includes('@') ? MONGO_URI.split('@')[1] : 'local'}`);
 
     // (Optional) Index optimization/cleanup
@@ -967,7 +968,7 @@ async function start() {
     // MONGODB CONNECTION ERROR DIAGNOSTICS
     // ============================================================================
     console.log("\n" + "=".repeat(80));
-    console.error("❌ MONGODB CONNECTION FAILED - DETAILED DIAGNOSTICS");
+    console.error("❌ MongoDB FAILED:", err.message);
     console.log("=".repeat(80));
     console.error(`📍 Error Name: ${err.name || 'Unknown'}`);
     console.error(`📍 Error Message: ${err.message || 'No message'}`);
@@ -1039,12 +1040,9 @@ async function start() {
     console.log("=".repeat(80) + "\n");
     // ============================================================================
     
-    console.warn("⚠️ Starting server without database connection");
-    
-    // Start server even without database
-    server.listen(PORT, () => {
-      console.log(`🚀 Fixlo API listening on port ${PORT} (DB-less mode)`);
-    });
+    console.error("❌ FATAL: Cannot start server without MongoDB connection");
+    console.error("❌ Server startup FAILED");
+    process.exit(1);
   }
 }
 
