@@ -1,6 +1,6 @@
 const cron = require('node-cron');
-const { getSEOAgent } = require('./seo/seoAgent');
-const { getGSCClient } = require('./seo/gscClient');
+const { getSEOAgent } = require('./seoAgent');
+const { getGSCClient } = require('./gscClient');
 
 /**
  * SEO Agent Scheduler

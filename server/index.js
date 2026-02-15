@@ -953,11 +953,16 @@ async function start() {
     }
 
     // Initialize SEO Agent Scheduler
+    console.log('Initializing SEO Agent Scheduler...');
     try {
       const { getSEOAgentScheduler } = require('./services/seo/scheduler');
+      console.log('SEO Agent module loaded successfully');
       getSEOAgentScheduler().initialize();
-    } catch (e) {
-      console.warn("⚠️ SEO Agent Scheduler initialization skipped:", e?.message || e);
+    } catch (err) {
+      console.error('SEO Agent module failed to load:', err.message);
+      console.error('Stack trace:', err.stack);
+      console.error('❌ FATAL: SEO Agent Scheduler initialization failed - exiting');
+      process.exit(1);
     }
 
     server.listen(PORT, () => {
