@@ -11,6 +11,7 @@ class GSCClient {
     this.auth = null;
     this.searchConsole = null;
     this.siteUrl = process.env.GSC_SITE_URL || 'sc-domain:fixloapp.com';
+    this.credentialsChecked = false;
   }
 
   /**
@@ -20,7 +21,11 @@ class GSCClient {
     try {
       // Check if credentials are available
       if (!process.env.GSC_CLIENT_EMAIL || !process.env.GSC_PRIVATE_KEY) {
-        console.warn('⚠️ GSC credentials not found. Set GSC_CLIENT_EMAIL and GSC_PRIVATE_KEY');
+        // Log once at startup only
+        if (!this.credentialsChecked) {
+          console.log('ℹ️ GSC integration disabled (credentials not configured)');
+          this.credentialsChecked = true;
+        }
         return false;
       }
 
@@ -188,7 +193,14 @@ class GSCClient {
     if (!this.isConfigured()) {
       await this.initialize();
       if (!this.isConfigured()) {
-        throw new Error('GSC client could not be initialized');
+        // Return gracefully without throwing
+        return {
+          pages: 0,
+          queries: 0,
+          errors: [],
+          skipped: true,
+          reason: 'GSC credentials not configured'
+        };
       }
     }
 

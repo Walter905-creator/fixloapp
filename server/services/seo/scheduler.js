@@ -30,13 +30,23 @@ class SEOAgentScheduler {
     // Daily GSC data sync at 6:00 AM UTC
     this.jobs.push(
       cron.schedule('0 6 * * *', async () => {
-        console.log('📊 Running scheduled GSC data sync...');
+        console.log('[GSC_SYNC] Started');
+        const startTime = Date.now();
         try {
           const gscClient = getGSCClient();
-          await gscClient.syncLastNDays(7);
-          console.log('✅ Scheduled GSC sync complete');
+          const result = await gscClient.syncLastNDays(7);
+          const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+          
+          if (result.skipped) {
+            console.log(`[GSC_SYNC] Skipped (${result.reason})`);
+          } else {
+            console.log(`[GSC_SYNC] Synced ${result.pages} pages, ${result.queries} queries`);
+            console.log(`[GSC_SYNC] Completed in ${duration}s`);
+          }
         } catch (error) {
-          console.error('❌ Scheduled GSC sync failed:', error.message);
+          const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+          console.error(`[GSC_SYNC] Failed: ${error.message}`);
+          console.log(`[GSC_SYNC] Completed in ${duration}s`);
         }
       }, {
         timezone: 'UTC'
@@ -46,13 +56,29 @@ class SEOAgentScheduler {
     // Daily agent run at 7:00 AM UTC (after data sync)
     this.jobs.push(
       cron.schedule('0 7 * * *', async () => {
-        console.log('🤖 Running scheduled SEO agent...');
+        console.log('[SEO_AGENT] Started');
+        const startTime = Date.now();
         try {
           const agent = getSEOAgent();
+          
+          // Check if already running
+          if (agent.isRunning) {
+            console.log('[SEO_AGENT] Already running, skipping');
+            return;
+          }
+          
           const results = await agent.run();
-          console.log('✅ Scheduled agent run complete:', results);
+          const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+          
+          const actionsCount = results.actions?.length || 0;
+          const errorsCount = results.errors?.length || 0;
+          
+          console.log(`[SEO_AGENT] Actions: ${actionsCount}, Errors: ${errorsCount}`);
+          console.log(`[SEO_AGENT] Completed in ${duration}s`);
         } catch (error) {
-          console.error('❌ Scheduled agent run failed:', error.message);
+          const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+          console.error(`[SEO_AGENT] Failed: ${error.message}`);
+          console.log(`[SEO_AGENT] Completed in ${duration}s`);
         }
       }, {
         timezone: 'UTC'
@@ -62,13 +88,17 @@ class SEOAgentScheduler {
     // Weekly winner analysis on Mondays at 8:00 AM UTC
     this.jobs.push(
       cron.schedule('0 8 * * 1', async () => {
-        console.log('🏆 Running weekly winner analysis...');
+        console.log('[WINNER_ANALYSIS] Started');
+        const startTime = Date.now();
         try {
           const agent = getSEOAgent();
           await agent.decisionEngine.checkCloneWinners();
-          console.log('✅ Weekly winner analysis complete');
+          const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+          console.log(`[WINNER_ANALYSIS] Completed in ${duration}s`);
         } catch (error) {
-          console.error('❌ Weekly winner analysis failed:', error.message);
+          const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+          console.error(`[WINNER_ANALYSIS] Failed: ${error.message}`);
+          console.log(`[WINNER_ANALYSIS] Completed in ${duration}s`);
         }
       }, {
         timezone: 'UTC'
