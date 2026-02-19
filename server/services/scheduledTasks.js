@@ -19,12 +19,17 @@ function startScheduledTasks() {
   // Task 1: Auto-release stale payment authorizations
   // Runs daily at 3 AM
   const autoReleaseTask = cron.schedule('0 3 * * *', async () => {
-    console.log('⏰ Running scheduled task: Auto-release stale authorizations');
+    console.log('[AUTO_RELEASE] Started');
+    const startTime = Date.now();
     try {
       const result = await releaseStaleAuthorizations();
-      console.log('✅ Auto-release task completed:', result);
+      const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+      console.log(`[AUTO_RELEASE] Released: ${result.released || 0} authorizations`);
+      console.log(`[AUTO_RELEASE] Completed in ${duration}s`);
     } catch (error) {
-      console.error('❌ Auto-release task failed:', error);
+      const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+      console.error(`[AUTO_RELEASE] Failed: ${error.message}`);
+      console.log(`[AUTO_RELEASE] Completed in ${duration}s`);
     }
   }, {
     scheduled: true,
@@ -44,12 +49,17 @@ function startScheduledTasks() {
   
   if (referralsEnabled) {
     const commissionVerificationTask = cron.schedule('0 4 * * *', async () => {
-      console.log('⏰ Running scheduled task: Verify 30-day commission referrals');
+      console.log('[COMMISSION_VERIFY] Started');
+      const startTime = Date.now();
       try {
         const result = await verify30DayReferrals();
-        console.log('✅ Commission verification task completed:', result);
+        const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+        console.log(`[COMMISSION_VERIFY] Verified: ${result.verified || 0} referrals`);
+        console.log(`[COMMISSION_VERIFY] Completed in ${duration}s`);
       } catch (error) {
-        console.error('❌ Commission verification task failed:', error);
+        const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+        console.error(`[COMMISSION_VERIFY] Failed: ${error.message}`);
+        console.log(`[COMMISSION_VERIFY] Completed in ${duration}s`);
       }
     }, {
       scheduled: true,
@@ -83,8 +93,9 @@ function startScheduledTasks() {
         console.log(`[LEAD_HUNTER] Errors: ${result.errors}`);
       }
     } catch (error) {
-      console.error('[LEAD_HUNTER] ❌ Task failed:', error.message);
-      console.error('[LEAD_HUNTER] Errors: 1');
+      const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+      console.error(`[LEAD_HUNTER] Failed: ${error.message}`);
+      console.log(`[LEAD_HUNTER] Completed in ${duration}s`);
       // Don't throw - keep server running
     }
   }, {
@@ -113,7 +124,9 @@ function startScheduledTasks() {
       const duration = ((Date.now() - startTime) / 1000).toFixed(2);
       
       console.log(`[SEO_AI] Pages generated: ${result.pagesGenerated || 0}`);
-      console.log(`[SEO_AI] Skipped duplicates: ${result.skippedDuplicates || 0}`);
+      if (result.skippedDuplicates > 0) {
+        console.log(`[SEO_AI] Skipped duplicates: ${result.skippedDuplicates}`);
+      }
       console.log(`[SEO_AI] Completed in ${duration}s`);
       
       // Update stats
@@ -123,8 +136,9 @@ function startScheduledTasks() {
         console.log(`[SEO_AI] Errors: ${result.errors.length}`);
       }
     } catch (error) {
-      console.error('[SEO_AI] ❌ Task failed:', error.message);
-      console.error('[SEO_AI] Errors: 1');
+      const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+      console.error(`[SEO_AI] Failed: ${error.message}`);
+      console.log(`[SEO_AI] Completed in ${duration}s`);
       
       // Update stats with error
       const { updateStats } = require('./seoAIStats');

@@ -61,10 +61,21 @@ class SEOAgent {
       console.log('📊 Syncing Google Search Console data...');
       try {
         results.dataSync = await this.gscClient.syncLastNDays(7);
-        console.log(`✅ Synced ${results.dataSync.pages} page records, ${results.dataSync.queries} query records`);
+        
+        // Only log if actually synced data
+        if (!results.dataSync.skipped) {
+          console.log(`✅ Synced ${results.dataSync.pages} page records, ${results.dataSync.queries} query records`);
+        } else {
+          console.log(`ℹ️ GSC sync skipped: ${results.dataSync.reason}`);
+        }
+        
+        // Don't add GSC configuration issues to errors array
+        if (results.dataSync.errors && results.dataSync.errors.length > 0 && !results.dataSync.skipped) {
+          console.warn(`⚠️ GSC sync had ${results.dataSync.errors.length} errors during data fetch`);
+        }
       } catch (error) {
-        console.error('❌ Failed to sync GSC data:', error.message);
-        results.errors.push({ step: 'data_sync', error: error.message });
+        // Only log, don't add to errors array - this is non-critical
+        console.warn(`⚠️ GSC sync issue: ${error.message}`);
         // Continue anyway - may have existing data
       }
 

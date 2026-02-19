@@ -23,7 +23,8 @@ let stats = {
   lastRun: null,
   leadsGenerated: 0,
   errors: 0,
-  running: false
+  running: false,
+  startupLogged: false
 };
 
 // In-memory duplicate detection (last 1000 leads)
@@ -342,16 +343,18 @@ async function huntLeads() {
   let leadsProcessed = 0;
   
   try {
+    // Log once at startup about passive mode
+    if (!stats.startupLogged) {
+      console.log('[LEAD_HUNTER] Running in passive mode (no external sources configured)');
+      stats.startupLogged = true;
+    }
+    
     // TODO: Implement actual lead source integration
     // Examples:
     // - Pull from external APIs (HomeAdvisor, Thumbtack, etc.)
     // - Scrape job boards
     // - Process email leads
     // - Social media monitoring
-    
-    // For now, just log that we're ready
-    console.log('[LEAD_HUNTER] ℹ️ Lead source integration not yet configured');
-    console.log('[LEAD_HUNTER] ℹ️ Service ready for external lead ingestion');
     
     return {
       success: true,
