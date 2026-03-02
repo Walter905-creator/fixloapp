@@ -75,6 +75,7 @@ export default function App(){
       <Route path="/contact" element={<ContactPage/>}/>
       <Route path="/pricing" element={<PricingPage/>}/>
       <Route path="/request" element={<RequestPage/>}/>
+      <Route path="/charlotte" element={<Navigate to="/request?city=charlotte-nc" replace/>}/>
       <Route path="/country/:countryCode" element={<CountryPage/>}/>
       <Route path="/signup" element={<SignupPage/>}/>
       <Route path="/pro/signup" element={<ProSignupPage/>}/>

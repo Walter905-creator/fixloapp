@@ -153,6 +153,13 @@ function generateSitemap() {
     <priority>0.7</priority>
   </url>
 
+  <url>
+    <loc>${baseUrl}/charlotte</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
   <!-- Main services page -->
   <url>
     <loc>${baseUrl}/services</loc>
