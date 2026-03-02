@@ -6,6 +6,8 @@ const mongoose = require('mongoose');
 const JobRequest = require('../models/JobRequest');
 const Pro = require('../models/Pro');
 const { geocodeAddress } = require('../utils/geocoding');
+const { sendOwnerNotification } = require('../utils/smsSender');
+const { getPriorityConfig } = require('../config/priorityRouting');
 
 // Constants
 const VISIT_FEE_AMOUNT = parseInt(process.env.VISIT_FEE_AMOUNT || '150', 10);
@@ -165,6 +167,23 @@ router.post('/', async (req, res) => {
 
       // 6️⃣ LOG CRITICAL EVENTS
       console.log('💾 Job saved:', requestId, '| ID:', savedLead._id);
+
+      // Send owner notification for Charlotte leads
+      const priorityConfig = getPriorityConfig(city);
+      if (priorityConfig) {
+        try {
+          console.log(`📢 Sending owner notification for ${city} lead`);
+          const ownerResult = await sendOwnerNotification(priorityConfig.phone, savedLead);
+          if (ownerResult.success) {
+            console.log(`✅ Owner notification sent successfully (SID: ${ownerResult.messageId})`);
+          } else {
+            console.log(`⚠️ Owner notification skipped: ${ownerResult.reason || ownerResult.error}`);
+          }
+        } catch (ownerErr) {
+          // Don't fail lead processing if owner notification fails
+          console.error('❌ Owner notification error:', ownerErr.message);
+        }
+      }
     }
 
     // ---------- Notify Pros ----------
