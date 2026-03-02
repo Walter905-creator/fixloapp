@@ -564,29 +564,25 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
       case 6:
         return (
           <div className="space-y-4">
-            <h3 className="text-xl font-bold text-slate-900">Service Pricing & Terms</h3>
+            <h3 className="text-xl font-bold text-slate-900">Service Visit & Estimate</h3>
             <div className="bg-slate-50 p-6 rounded-lg space-y-3 text-slate-800">
               <p className="font-semibold text-lg">Please review and accept:</p>
               <ul className="space-y-2 text-sm">
                 <li className="flex items-start">
                   <span className="font-semibold mr-2">•</span>
-                  <span><strong>On-site estimate visit:</strong> $150</span>
+                  <span><strong>Professional on-site evaluation:</strong> $150 flat fee</span>
                 </li>
                 <li className="flex items-start">
                   <span className="font-semibold mr-2">•</span>
-                  <span>This $150 visit fee will be <strong>fully waived</strong> if you approve and move forward with the repair or project</span>
+                  <span>You will receive a detailed quote before any repair begins</span>
                 </li>
                 <li className="flex items-start">
                   <span className="font-semibold mr-2">•</span>
-                  <span>Approved work is billed at <strong>$150 per hour + materials</strong></span>
+                  <span>No additional work will start without your approval</span>
                 </li>
                 <li className="flex items-start">
                   <span className="font-semibold mr-2">•</span>
-                  <span><strong>2-hour minimum</strong> labor charge applies</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="font-semibold mr-2">•</span>
-                  <span>Materials are billed separately and itemized on the invoice</span>
+                  <span>Materials (if needed) will be itemized in the final invoice</span>
                 </li>
               </ul>
             </div>
@@ -599,7 +595,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
                 className="mt-1 h-5 w-5 text-brand border-slate-300 rounded focus:ring-brand"
               />
               <span className="text-slate-700">
-                I understand and agree to the pricing terms above
+                I understand and agree to the $150 service visit fee.
               </span>
             </label>
             {errors.termsAccepted && <p className="text-red-600 text-sm">{errors.termsAccepted}</p>}
