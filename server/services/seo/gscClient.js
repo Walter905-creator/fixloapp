@@ -19,8 +19,26 @@ class GSCClient {
    */
   async initialize() {
     try {
+      // Resolve credentials: support JSON service account key or individual env vars
+      let clientEmail = process.env.GSC_CLIENT_EMAIL;
+      let privateKey = process.env.GSC_PRIVATE_KEY;
+
+      if (process.env.GSC_SERVICE_ACCOUNT_KEY) {
+        try {
+          const serviceAccount = JSON.parse(process.env.GSC_SERVICE_ACCOUNT_KEY);
+          if (!serviceAccount.client_email || !serviceAccount.private_key) {
+            console.error('❌ GSC_SERVICE_ACCOUNT_KEY is missing required fields: client_email and/or private_key');
+          } else {
+            clientEmail = clientEmail || serviceAccount.client_email;
+            privateKey = privateKey || serviceAccount.private_key;
+          }
+        } catch (parseError) {
+          console.error('❌ Failed to parse GSC_SERVICE_ACCOUNT_KEY as JSON. Ensure it contains a valid service account key with client_email and private_key fields:', parseError.message);
+        }
+      }
+
       // Check if credentials are available
-      if (!process.env.GSC_CLIENT_EMAIL || !process.env.GSC_PRIVATE_KEY) {
+      if (!clientEmail || !privateKey) {
         // Log once at startup only
         if (!this.credentialsChecked) {
           console.log('ℹ️ GSC integration disabled (credentials not configured)');
@@ -31,8 +49,8 @@ class GSCClient {
 
       // Create JWT auth client
       this.auth = new google.auth.JWT({
-        email: process.env.GSC_CLIENT_EMAIL,
-        key: process.env.GSC_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        email: clientEmail,
+        key: privateKey.replace(/\\n/g, '\n'),
         scopes: ['https://www.googleapis.com/auth/webmasters.readonly']
       });
 
