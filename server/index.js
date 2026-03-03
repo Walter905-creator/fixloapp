@@ -450,6 +450,7 @@ app.post("/api/pro-signup", async (req, res) => {
   try {
     const { ENABLE_BG_CHECKS } = require('./config/flags');
     const { isCheckrEnabled, createCandidateAndInvitation, parseFullName, formatDobForCheckr } = require('./utils/checkr');
+    const { normalizePhoneToE164 } = require('./utils/phoneNormalizer');
     const { name, email, phone, trade, location, dob, role, termsConsent, smsConsent, ssn, zipcode } =
       req.body || {};
 
@@ -460,6 +461,16 @@ app.post("/api/pro-signup", async (req, res) => {
           "Name, email, phone, trade, location, and date of birth are required",
       });
     }
+
+    // Normalize phone to E.164 format so login lookup always matches
+    const phoneNorm = normalizePhoneToE164(phone.trim());
+    if (!phoneNorm.success) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid phone number format. Please use a valid phone number (e.g. +12025551234)."
+      });
+    }
+    const normalizedPhone = phoneNorm.phone;
 
     const birthDate = new Date(dob);
     const age = Math.floor(
@@ -515,7 +526,7 @@ app.post("/api/pro-signup", async (req, res) => {
         
         checkrData = await createCandidateAndInvitation({
           email: email.toLowerCase(),
-          phone: phone.trim(),
+          phone: normalizedPhone,
           firstName,
           lastName,
           dob: dobFormatted,
@@ -538,7 +549,7 @@ app.post("/api/pro-signup", async (req, res) => {
     const pro = await Pro.create({
       name: name.trim(),
       email: email.toLowerCase(),
-      phone: phone.trim(),
+      phone: normalizedPhone,
       trade: tradeNormalized,
       location: String(location).trim(),
       role: role || "pro",
@@ -596,6 +607,7 @@ app.post("/api/signup/pro", async (req, res) => {
   try {
     const { ENABLE_BG_CHECKS } = require('./config/flags');
     const { isCheckrEnabled, createCandidateAndInvitation, parseFullName, formatDobForCheckr } = require('./utils/checkr');
+    const { normalizePhoneToE164 } = require('./utils/phoneNormalizer');
     const { name, email, phone, trade, location, dob, role, termsConsent, smsConsent, ssn, zipcode } =
       req.body || {};
 
@@ -606,6 +618,16 @@ app.post("/api/signup/pro", async (req, res) => {
           "Name, email, phone, trade, location, and date of birth are required",
       });
     }
+
+    // Normalize phone to E.164 format so login lookup always matches
+    const phoneNorm = normalizePhoneToE164(phone.trim());
+    if (!phoneNorm.success) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid phone number format. Please use a valid phone number (e.g. +12025551234)."
+      });
+    }
+    const normalizedPhone = phoneNorm.phone;
 
     const birthDate = new Date(dob);
     const age = Math.floor(
@@ -661,7 +683,7 @@ app.post("/api/signup/pro", async (req, res) => {
         
         checkrData = await createCandidateAndInvitation({
           email: email.toLowerCase(),
-          phone: phone.trim(),
+          phone: normalizedPhone,
           firstName,
           lastName,
           dob: dobFormatted,
@@ -684,7 +706,7 @@ app.post("/api/signup/pro", async (req, res) => {
     const pro = await Pro.create({
       name: name.trim(),
       email: email.toLowerCase(),
-      phone: phone.trim(),
+      phone: normalizedPhone,
       trade: tradeNormalized,
       location: String(location).trim(),
       role: role || "pro",
