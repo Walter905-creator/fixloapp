@@ -1,0 +1,225 @@
+// routes/pro.js — Pro SaaS auth & dashboard
+const router = require('express').Router();
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
+const Pro = require('../models/Pro');
+const JobRequest = require('../models/JobRequest');
+const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
+
+function requireJwtSecret() {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) throw new Error('JWT_SECRET is not set');
+  return secret;
+}
+
+// Auth middleware — verifies token and attaches req.user
+function requireAuth(req, res, next) {
+  const raw = req.headers.authorization || '';
+  const token = raw.startsWith('Bearer ') ? raw.slice(7) : null;
+  if (!token) return res.status(401).json({ error: 'Missing token' });
+
+  try {
+    const decoded = jwt.verify(token, requireJwtSecret());
+    req.user = decoded;
+    return next();
+  } catch {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+}
+
+// Subscription gate — must come after requireAuth; always checks DB for freshness
+async function requireActiveSubscription(req, res, next) {
+  try {
+    const pro = await Pro.findById(req.user.id).select('subscriptionActive');
+    if (!pro) return res.status(404).json({ error: 'Pro account not found' });
+    if (!pro.subscriptionActive) {
+      return res.status(403).json({
+        error: 'Subscription inactive',
+        subscriptionActive: false,
+        message: 'Your subscription is inactive. Please renew to access leads.'
+      });
+    }
+    // Attach fresh subscription status to request
+    req.user.subscriptionActive = pro.subscriptionActive;
+    return next();
+  } catch (err) {
+    console.error('Subscription gate error:', err);
+    return res.status(500).json({ error: 'Server error checking subscription' });
+  }
+}
+
+// POST /api/pro/register
+router.post('/register', async (req, res) => {
+  const { name, phone, trade, password } = req.body || {};
+
+  if (!name || !phone || !trade || !password) {
+    return res.status(400).json({ error: 'name, phone, trade, and password are required' });
+  }
+
+  if (password.length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters' });
+  }
+
+  if (mongoose.connection.readyState !== 1) {
+    return res.status(503).json({ error: 'Registration temporarily unavailable. Please try again later.' });
+  }
+
+  try {
+    const normResult = normalizePhoneToE164(phone);
+    if (!normResult.success) {
+      return res.status(400).json({ error: 'Invalid phone number format' });
+    }
+    const normalizedPhone = normResult.phone;
+
+    const existing = await Pro.findOne({ phone: normalizedPhone });
+    if (existing) {
+      return res.status(409).json({ error: 'A pro account with this phone number already exists' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const pro = await Pro.create({
+      name: name.trim(),
+      phone: normalizedPhone,
+      trade,
+      password: passwordHash,
+      // Required fields with defaults for this simplified registration flow
+      email: `${normalizedPhone.replace(/\D/g, '')}@noemail.fixlo.internal`,
+      dob: new Date('1990-01-01'),
+      location: {
+        address: 'United States',
+        coordinates: [-74.006, 40.7128]
+      }
+    });
+
+    const token = jwt.sign(
+      { id: pro._id, phone: pro.phone, role: 'pro', subscriptionActive: pro.subscriptionActive },
+      requireJwtSecret(),
+      { expiresIn: '7d' }
+    );
+
+    return res.status(201).json({
+      token,
+      pro: {
+        id: pro._id,
+        name: pro.name,
+        phone: pro.phone,
+        trade: pro.trade,
+        subscriptionActive: pro.subscriptionActive
+      }
+    });
+  } catch (err) {
+    console.error('Pro register error:', err);
+    return res.status(500).json({ error: 'Server error during registration' });
+  }
+});
+
+// POST /api/pro/login
+router.post('/login', async (req, res) => {
+  const { phone, password } = req.body || {};
+
+  if (!phone || !password) {
+    return res.status(400).json({ error: 'Phone number and password are required' });
+  }
+
+  if (mongoose.connection.readyState !== 1) {
+    return res.status(503).json({ error: 'Login temporarily unavailable. Please try again later.' });
+  }
+
+  try {
+    const normResult = normalizePhoneToE164(phone);
+    if (!normResult.success) {
+      return res.status(400).json({ error: 'Invalid phone number format' });
+    }
+    const normalizedPhone = normResult.phone;
+
+    const pro = await Pro.findOne({ phone: normalizedPhone });
+    if (!pro) return res.status(401).json({ error: 'Invalid credentials' });
+
+    if (!pro.password) {
+      return res.status(403).json({
+        error: 'Password not set. Please reset your password.',
+        requiresPasswordReset: true
+      });
+    }
+
+    const ok = await bcrypt.compare(password, pro.password);
+    if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
+
+    const token = jwt.sign(
+      { id: pro._id, phone: pro.phone, role: 'pro', subscriptionActive: pro.subscriptionActive },
+      requireJwtSecret(),
+      { expiresIn: '7d' }
+    );
+
+    return res.json({
+      token,
+      pro: {
+        id: pro._id,
+        name: pro.name,
+        phone: pro.phone,
+        trade: pro.trade,
+        subscriptionActive: pro.subscriptionActive
+      }
+    });
+  } catch (err) {
+    console.error('Pro login error:', err);
+    return res.status(500).json({ error: 'Server error during login' });
+  }
+});
+
+// GET /api/pro/dashboard — requires auth + active subscription
+router.get('/dashboard', requireAuth, requireActiveSubscription, async (req, res) => {
+  try {
+    const pro = await Pro.findById(req.user.id).select('-password');
+    if (!pro) return res.status(404).json({ error: 'Pro account not found' });
+
+    const leads = await JobRequest.find({ assignedProId: pro._id })
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .select('trade name phone email address city description status createdAt scheduledDate');
+
+    return res.json({
+      name: pro.name,
+      trade: pro.trade,
+      subscriptionActive: pro.subscriptionActive,
+      leads
+    });
+  } catch (err) {
+    console.error('Pro dashboard error:', err);
+    return res.status(500).json({ error: 'Server error fetching dashboard' });
+  }
+});
+
+// POST /api/pro/billing-portal — creates Stripe billing portal session
+router.post('/billing-portal', requireAuth, async (req, res) => {
+  try {
+    const stripe = process.env.STRIPE_SECRET_KEY
+      ? require('stripe')(process.env.STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' })
+      : null;
+
+    if (!stripe) {
+      return res.status(503).json({ error: 'Payment system not configured' });
+    }
+
+    const pro = await Pro.findById(req.user.id).select('stripeCustomerId');
+    if (!pro) return res.status(404).json({ error: 'Pro account not found' });
+    if (!pro.stripeCustomerId) {
+      return res.status(400).json({ error: 'No billing account found. Please subscribe first.' });
+    }
+
+    const clientUrl = process.env.CLIENT_URL || 'https://www.fixloapp.com';
+    const session = await stripe.billingPortal.sessions.create({
+      customer: pro.stripeCustomerId,
+      return_url: `${clientUrl}/pro/dashboard`
+    });
+
+    return res.json({ url: session.url });
+  } catch (err) {
+    console.error('Billing portal error:', err);
+    return res.status(500).json({ error: 'Failed to create billing portal session' });
+  }
+});
+
+module.exports = router;

@@ -186,6 +186,7 @@ router.post('/jobs/:id/assign', async (req, res) => {
       {
         status: 'assigned',
         assignedTo: proId,
+        assignedProId: proId,
         assignedAt: new Date()
       },
       { new: true }

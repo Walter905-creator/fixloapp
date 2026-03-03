@@ -332,6 +332,11 @@ app.use("/api/seo-ai", generalRateLimit, require("./routes/seoAI")); // SEO AI E
 app.use("/api/auth", authRateLimit, require("./routes/auth"));
 app.use("/api/pro-auth", authRateLimit, require("./routes/proAuth"));
 
+app.use("/api/pros", generalRateLimit, require("./routes/proRoutes")); // auth & mgmt
+
+app.use("/api/pro", generalRateLimit, require("./routes/proJobs")); // professional jobs
+app.use("/api/pro", authRateLimit, require("./routes/pro")); // SaaS Pro register/login/dashboard
+
 // Social Media Manager (admin only - protected with requireAuth in routes)
 try {
   const socialManagerRoutes = require("./modules/social-manager/routes");
@@ -342,10 +347,6 @@ try {
 }
 
 app.use("/api/subscription", generalRateLimit, require("./routes/subscription")); // Subscription pause/resume
-
-app.use("/api/pros", generalRateLimit, require("./routes/proRoutes")); // auth & mgmt
-
-app.use("/api/pro", generalRateLimit, require("./routes/proJobs")); // professional jobs
 
 app.use("/api/pro/jobs", generalRateLimit, require("./routes/proJobs")); // professional job management
 app.use("/api/contractor", generalRateLimit, require("./routes/contractor")); // contractor workflow

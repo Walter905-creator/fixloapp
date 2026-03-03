@@ -80,7 +80,9 @@ export default function App(){
       <Route path="/country/:countryCode" element={<CountryPage/>}/>
       <Route path="/signup" element={<SignupPage/>}/>
       <Route path="/pro/signup" element={<ProSignupPage/>}/>
+      <Route path="/pro/register" element={<ProSignupPage/>}/>
       <Route path="/pro/sign-in" element={<ProSignInPage/>}/>
+      <Route path="/pro/login" element={<ProSignInPage/>}/>
       <Route path="/pro/forgot-password" element={<ProForgotPasswordPage/>}/>
       <Route path="/pro/reset-password" element={<ProResetPasswordPage/>}/>
       

@@ -232,6 +232,10 @@ const JobRequestSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Pro'
   },
+  assignedProId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Pro'
+  },
   assignedAt: {
     type: Date
   },
@@ -298,6 +302,7 @@ const JobRequestSchema = new mongoose.Schema({
 JobRequestSchema.index({ trade: 1, createdAt: -1 });
 JobRequestSchema.index({ status: 1, createdAt: -1 });
 JobRequestSchema.index({ assignedTo: 1, createdAt: -1 }); // For Pro leads query
+JobRequestSchema.index({ assignedProId: 1, createdAt: -1 }); // For Pro SaaS dashboard leads
 
 // Create 2dsphere index for geospatial queries
 JobRequestSchema.index({ location: '2dsphere' });
