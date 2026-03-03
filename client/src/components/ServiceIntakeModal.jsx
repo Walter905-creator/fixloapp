@@ -57,12 +57,10 @@ function PaymentForm({ formData, onSuccess, onError }) {
       }
 
       // PHASE 1: Create service request
-      // 1️⃣ FRONTEND — ALWAYS SEND EMAIL (with fallback)
       const payload = {
         serviceType: formData.serviceType === 'Other' ? formData.otherServiceType : formData.serviceType,
         fullName: formData.name,
-        phone: normalizedPhone, // Use normalized E.164 format
-        email: formData.email || `no-reply+${Date.now()}@fixloapp.com`, // Email with fallback
+        phone: normalizedPhone,
         city: formData.city,
         state: formData.state,
         smsConsent: formData.smsConsent || false,
@@ -110,7 +108,6 @@ function PaymentForm({ formData, onSuccess, onError }) {
             card: elements.getElement(CardElement),
             billing_details: {
               name: formData.name,
-              email: formData.email,
               phone: formData.phone,
               address: {
                 line1: formData.address,
@@ -202,7 +199,6 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
     urgency: 'Flexible',
     photos: [],
     name: '',
-    email: '',
     phone: '',
     termsAccepted: false,
     smsConsent: false,
@@ -271,9 +267,6 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
     if (step === 7) {
       if (!formData.name) {
         newErrors.name = 'Name is required';
-      }
-      if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-        newErrors.email = 'Valid email is required';
       }
       // Validate phone can be normalized to E.164
       if (!formData.phone) {
@@ -350,7 +343,6 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
       submitData.append('zip', data.zip);
       submitData.append('urgency', data.urgency);
       submitData.append('name', data.name);
-      submitData.append('email', data.email);
       submitData.append('phone', data.phone);
       submitData.append('termsAccepted', data.termsAccepted);
       submitData.append('smsConsent', data.smsConsent || false);
@@ -616,16 +608,6 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
             />
             {errors.name && <p className="text-red-600 text-sm">{errors.name}</p>}
             
-            <input
-              type="email"
-              placeholder="Email Address"
-              value={formData.email}
-              onChange={(e) => handleInputChange('email', e.target.value)}
-              className="input w-full"
-              required
-            />
-            {errors.email && <p className="text-red-600 text-sm">{errors.email}</p>}
-            
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">+1</span>
               <input
@@ -668,20 +650,17 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-slate-900">Request Submitted and Payment Authorized Successfully!</h3>
-              <p className="text-slate-600">
-                Thank you for your service request. We'll contact you shortly to schedule your on-site estimate visit.
-              </p>
+              <h3 className="text-2xl font-bold text-slate-900">Request Submitted Successfully 🎉</h3>
               <div className="bg-green-50 p-4 rounded-lg space-y-2 text-sm text-slate-800">
                 <p className="font-semibold text-green-800">✓ Service request created</p>
-                <p className="font-semibold text-green-800">✓ Payment authorization completed</p>
-                <p className="text-slate-600 mt-2">Your card has NOT been charged - only authorized for the visit fee.</p>
+                <p className="font-semibold text-green-800">✓ Visit fee authorized (card not charged)</p>
               </div>
-              {formData.email && (
-                <p className="text-sm text-slate-500">
-                  You'll receive a confirmation email at {formData.email}
-                </p>
-              )}
+              <p className="text-slate-600">
+                We've notified a verified Fixlo Pro in your area.
+              </p>
+              <p className="text-slate-700 font-medium">
+                📞 Expect a call or text shortly to confirm your estimate visit.
+              </p>
               <button
                 onClick={onClose}
                 className="btn-primary mt-4"

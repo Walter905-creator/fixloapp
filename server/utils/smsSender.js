@@ -353,13 +353,26 @@ async function sendOwnerNotification(ownerPhone, lead) {
   // Owner notifications bypass consent checks as they are business notifications
   // Use direct SMS sending for owner (not using sendNonReferralSms to avoid consent checks)
   try {
-    const message = SMS_TEMPLATES.owner.en({
-      service: lead.trade || lead.serviceType || 'Service Request',
-      city: lead.city || 'Unknown City',
-      customerName: lead.name || 'Customer',
-      customerPhone: lead.phone || 'N/A',
-      address: lead.address || 'Address not provided'
-    });
+    const service = lead.trade || lead.serviceType || 'Service Request';
+    const city = lead.city || 'Unknown City';
+    const state = lead.state || 'N/A';
+    const name = lead.name || 'Customer';
+    const phone = lead.phone || 'N/A';
+    const description = lead.description || 'No details provided';
+    const address = lead.address || 'Address not provided';
+    const preferredTime = lead.preferredTime || lead.urgency || 'Not specified';
+
+    const message =
+      `🚨 NEW FIXLO LEAD 🚨\n\n` +
+      `Service: ${service}\n` +
+      `Location: ${city}, ${state}\n` +
+      `Customer: ${name}\n` +
+      `Phone: ${phone}\n\n` +
+      `Project Details:\n"${description}"\n\n` +
+      `Address:\n${address}\n\n` +
+      `Preferred Time:\n${preferredTime}\n\n` +
+      `Lead ID: ${lead._id}\n` +
+      `Received: ${new Date().toLocaleString()}`;
     
     console.log(`📢 Sending owner notification to ${SmsNotification.maskPhoneNumber(ownerPhone)}`);
     
