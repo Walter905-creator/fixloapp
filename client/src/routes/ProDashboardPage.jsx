@@ -13,25 +13,54 @@ export default function ProDashboardPage(){
   const [proData, setProData] = React.useState(null);
   const [showSettings, setShowSettings] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
+  const [subscriptionActive, setSubscriptionActive] = React.useState(null);
+  const [billingLoading, setBillingLoading] = React.useState(false);
   
   const displayName = user?.name || user?.phone || 'Pro User';
+  
+  function getToken() {
+    return localStorage.getItem('fixlo_token') || '';
+  }
   
   React.useEffect(()=>{
     async function load(){
       if(!api) { setLoaded(true); return; }
+      const token = getToken();
+      const authHeaders = token
+        ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+        : { 'Content-Type': 'application/json' };
+
       try{
-        // Load leads
-        const leadsRes = await fetch(`${api}/api/pros/leads`, { credentials:'include' });
-        if(leadsRes.ok){
-          const data = await leadsRes.json();
-          setLeads(Array.isArray(data) ? data : (data?.leads || []));
-        }
-        
-        // Load pro profile data
-        const profileRes = await fetch(`${api}/api/pros/dashboard`, { credentials:'include' });
-        if(profileRes.ok){
-          const data = await profileRes.json();
-          setProData(data.pro);
+        // Try SaaS dashboard endpoint first (requires subscriptionActive)
+        const dashRes = await fetch(`${api}/api/pro/dashboard`, {
+          headers: authHeaders
+        });
+
+        if(dashRes.ok){
+          const data = await dashRes.json();
+          setProData(data);
+          setLeads(Array.isArray(data.leads) ? data.leads : []);
+          setSubscriptionActive(data.subscriptionActive);
+        } else if(dashRes.status === 403){
+          // Subscription inactive
+          const data = await dashRes.json();
+          setSubscriptionActive(false);
+          setProData(data);
+        } else {
+          // Fall back to legacy dashboard
+          const profileRes = await fetch(`${api}/api/pros/dashboard`, { credentials:'include', headers: authHeaders });
+          if(profileRes.ok){
+            const data = await profileRes.json();
+            setProData(data.pro);
+            setSubscriptionActive(data.pro?.paymentStatus === 'active' || data.pro?.subscriptionActive || false);
+          }
+
+          // Load leads from legacy endpoint
+          const leadsRes = await fetch(`${api}/api/pros/leads`, { credentials:'include', headers: authHeaders });
+          if(leadsRes.ok){
+            const data = await leadsRes.json();
+            setLeads(Array.isArray(data) ? data : (data?.leads || []));
+          }
         }
       }catch(e){
         console.error('Failed to load dashboard:', e);
@@ -40,6 +69,31 @@ export default function ProDashboardPage(){
     }
     load();
   }, [api]);
+  
+  async function openBillingPortal(){
+    setBillingLoading(true);
+    try{
+      const token = getToken();
+      const res = await fetch(`${api}/api/pro/billing-portal`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if(res.ok){
+        const data = await res.json();
+        if(data.url) window.location.href = data.url;
+      } else {
+        alert('Could not open billing portal. Please contact support.');
+      }
+    }catch(e){
+      console.error('Billing portal error:', e);
+      alert('Could not open billing portal. Please try again.');
+    }finally{
+      setBillingLoading(false);
+    }
+  }
   
   async function handleUpdateNotifications(e){
     e.preventDefault();
@@ -50,10 +104,14 @@ export default function ProDashboardPage(){
     const wantsNotifications = formData.get('wantsNotifications') === 'on';
     
     try{
+      const token = getToken();
       const res = await fetch(`${api}/api/pros/settings`, {
         method: 'PATCH',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ whatsappOptIn, wantsNotifications })
       });
       
@@ -81,14 +139,45 @@ export default function ProDashboardPage(){
       <div className="mb-4 p-4 bg-brand/10 rounded-lg flex justify-between items-center">
         <p className="text-sm font-semibold text-slate-700">
           Logged in as: <span className="text-brand">{displayName} (Pro)</span>
+          {subscriptionActive !== null && (
+            <span className={`ml-3 inline-block px-2 py-0.5 rounded text-xs font-semibold ${subscriptionActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+              {subscriptionActive ? 'Active' : 'Inactive'}
+            </span>
+          )}
         </p>
-        <button 
-          onClick={() => setShowSettings(!showSettings)}
-          className="text-sm text-brand hover:underline"
-        >
-          {showSettings ? 'Close Settings' : 'Notification Settings'}
-        </button>
+        <div className="flex gap-3 items-center">
+          <button 
+            onClick={openBillingPortal}
+            disabled={billingLoading}
+            className="text-sm text-brand hover:underline disabled:opacity-50"
+          >
+            {billingLoading ? 'Loading...' : 'Manage Billing'}
+          </button>
+          <button 
+            onClick={() => setShowSettings(!showSettings)}
+            className="text-sm text-brand hover:underline"
+          >
+            {showSettings ? 'Close Settings' : 'Notification Settings'}
+          </button>
+        </div>
       </div>
+
+      {/* Subscription inactive banner */}
+      {subscriptionActive === false && (
+        <div className="mb-6 p-5 bg-red-50 border border-red-200 rounded-xl">
+          <h2 className="font-semibold text-red-900 mb-1">Subscription Inactive</h2>
+          <p className="text-sm text-red-800 mb-3">
+            Your subscription is inactive. Please renew to access leads.
+          </p>
+          <button
+            onClick={openBillingPortal}
+            disabled={billingLoading}
+            className="btn-primary disabled:opacity-50"
+          >
+            {billingLoading ? 'Loading...' : 'Renew Subscription'}
+          </button>
+        </div>
+      )}
       
       {showSettings && proData && (
         <div className="card p-5 mb-4">
@@ -150,12 +239,15 @@ export default function ProDashboardPage(){
       <div className="grid md:grid-cols-3 gap-4 mt-4">
         <div className="card p-5 md:col-span-2">
           <h3 className="font-semibold">Leads</h3>
-          {!loaded ? <div className="text-sm text-slate-400">Loading...</div> :
+          {subscriptionActive === false ? (
+            <p className="text-sm text-slate-500 mt-2 italic">Subscribe to start receiving leads.</p>
+          ) : !loaded ? <div className="text-sm text-slate-400">Loading...</div> :
             (leads.length ? (
               <ul className="mt-2 space-y-2">
                 {leads.map((l,i)=>(<li key={i} className="border border-white/10 rounded-xl p-3">
-                  <div className="font-semibold">{l.service || 'Service'}</div>
+                  <div className="font-semibold">{l.trade || l.service || 'Service'}</div>
                   <div className="text-sm text-slate-400">{l.name || '—'} • {l.phone || ''} • {l.city || ''}</div>
+                  {l.description && <div className="text-xs text-slate-500 mt-1">{l.description}</div>}
                 </li>))}
               </ul>
             ) : <div className="text-sm text-slate-400">No leads yet.</div>)

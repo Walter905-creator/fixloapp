@@ -425,6 +425,7 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
               // Handle PRO and AI_PLUS tiers (Professional subscriptions)
               updateData.stripeSubscriptionId = session.subscription;
               updateData.paymentStatus = session.subscription ? 'active' : 'pending';
+              updateData.subscriptionActive = true;
               updateData.subscriptionStartDate = new Date();
               
               // Set subscription tier based on metadata or session metadata fallback
@@ -834,6 +835,7 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
               // Handle PRO and AI_PLUS tier cancellation
               pro.paymentStatus = 'cancelled';
               pro.isActive = false;
+              pro.subscriptionActive = false;
             }
             
             await pro.save();

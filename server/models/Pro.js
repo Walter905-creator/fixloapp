@@ -128,6 +128,10 @@ const proSchema = new mongoose.Schema({
   stripeSessionId: {
     type: String
   },
+  subscriptionActive: {
+    type: Boolean,
+    default: false
+  },
   stripeCustomerId: {
     type: String
   },
