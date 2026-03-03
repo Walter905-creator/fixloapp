@@ -8,10 +8,10 @@ export default function ProResetPasswordPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const tokenFromUrl = searchParams.get('token');
-  const phoneFromUrl = searchParams.get('phone'); // For backward compatibility
-  const phoneFromState = location.state?.phone; // Preferred: from navigation state
+  const phoneFromUrl = searchParams.get('phone');
+  const phoneFromState = location.state?.phone;
 
+  const [phone, setPhone] = useState(phoneFromState || phoneFromUrl || '');
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -61,39 +61,21 @@ export default function ProResetPasswordPage() {
 
     try {
       const url = `${api}/api/pro-auth/reset-password`;
-      const payload = {
-        newPassword: password
-      };
-      
-      // Use token from URL if available, otherwise use the code entered
-      if (tokenFromUrl) {
-        payload.token = tokenFromUrl;
-      } else {
-        payload.code = code;
-      }
-      
-      // Include phone number if available (for logging/tracking purposes)
-      const phone = phoneFromState || phoneFromUrl;
-      if (phone) {
-        payload.phone = phone;
-      }
-
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ phone, code, newPassword: password })
       });
 
       const data = await res.json();
 
       if (res.ok) {
         setMessage('Password reset successful! Redirecting to sign in...');
-        // Clear form state after success
         setCode('');
         setPassword('');
         setConfirmPassword('');
         setTimeout(() => {
-          navigate('/pro/sign-in');
+          navigate('/pro/login');
         }, 2000);
       } else {
         setError(data.error || 'Failed to reset password');
@@ -138,9 +120,7 @@ export default function ProResetPasswordPage() {
         <div className="max-w-md mx-auto">
           <h1 className="text-2xl font-extrabold mb-2">Reset your password</h1>
           <p className="text-slate-600 mb-6">
-            {tokenFromUrl 
-              ? 'Enter your new password below.' 
-              : 'Enter the code sent to your phone and choose a new password.'}
+            Enter the code sent to your phone and choose a new password.
           </p>
 
           {message && (
@@ -157,26 +137,39 @@ export default function ProResetPasswordPage() {
 
           <div className="card p-6">
             <form onSubmit={handleSubmit} className="space-y-4">
-              {!tokenFromUrl && (
-                <div>
-                  <label className="block text-sm font-medium text-slate-800 mb-1">
-                    Reset Code
-                  </label>
-                  <input
-                    type="text"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter 6-digit code"
-                    maxLength="6"
-                    required
-                    disabled={loading}
-                  />
-                  <p className="mt-1 text-xs text-slate-500">
-                    Enter the 6-digit code sent to your phone
-                  </p>
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-medium text-slate-800 mb-1">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="(555) 123-4567"
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-800 mb-1">
+                  Reset Code
+                </label>
+                <input
+                  type="text"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter 6-digit code"
+                  maxLength="6"
+                  required
+                  disabled={loading}
+                />
+                <p className="mt-1 text-xs text-slate-500">
+                  Enter the 6-digit code sent to your phone
+                </p>
+              </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-800 mb-1">

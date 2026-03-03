@@ -68,7 +68,6 @@ router.post('/login', async (req, res) => {
 // Request password reset via SMS
 router.post('/request-password-reset', async (req, res) => {
   const { phone } = req.body || {};
-  const isDemoMode = process.env.NODE_ENV !== 'production';
   
   if (!phone) {
     return res.status(400).json({ error: 'Phone number is required' });
@@ -79,65 +78,40 @@ router.post('/request-password-reset', async (req, res) => {
     const normalizationResult = normalizePhoneToE164(phone);
     
     if (!normalizationResult.success) {
-      console.error('❌ Password reset: Phone normalization failed');
-      console.error(`   Original phone: ${normalizationResult.original}`);
-      console.error(`   Error: ${normalizationResult.error}`);
       return res.status(400).json({ 
         error: 'Invalid phone number format. Please use a valid phone number.' 
       });
     }
     
     const normalizedPhone = normalizationResult.phone;
-    
-    console.log('🔐 Password reset requested');
-    console.log(`   Original phone: ${normalizationResult.original}`);
-    console.log(`   Normalized E.164: ${normalizedPhone}`);
-    console.log(`   Mode: ${isDemoMode ? 'DEMO' : 'PRODUCTION'}`);
-    
     const pro = await Pro.findOne({ phone: normalizedPhone });
     
-    // Always return success to prevent phone enumeration
-    // Even if user doesn't exist, we return success
+    // Always return generic success to prevent phone enumeration
     if (!pro) {
-      console.log(`⚠️ Password reset requested for non-existent phone: ${normalizedPhone}`);
       return res.json({ 
         success: true,
         message: 'If this phone number exists, a reset message was sent.'
       });
     }
 
-    // Generate 6-digit code for SMS (easier for users to enter)
+    // Generate 6-digit numeric code
     const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+    // Hash code using sha256 — never store raw code
     const hashedCode = crypto.createHash('sha256').update(resetCode).digest('hex');
     
-    // Set code and expiration (15 minutes)
-    pro.passwordResetToken = hashedCode;
-    pro.passwordResetExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    // Save hash and 10-minute expiry
+    pro.passwordResetCodeHash = hashedCode;
+    pro.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000);
     await pro.save();
 
-    // Send SMS with reset code
+    // Send SMS via Twilio — wrap in try/catch, do NOT crash if SMS fails
+    // SECURITY: The reset code is included in the SMS body. Never log it.
     try {
-      await sendSms(normalizedPhone, `Fixlo: Your password reset code is ${resetCode}. Valid for 15 minutes. Reply STOP to opt out.`);
-      console.log('✅ Password reset SMS sent successfully');
-      console.log(`   Phone: ${normalizedPhone}`);
-      console.log(`   Mode: ${isDemoMode ? 'DEMO' : 'PRODUCTION'}`);
-      // SECURITY: Never log the actual verification code
+      const smsBody = `Fixlo Password Reset Code\n\nYour reset code is: ${resetCode}\n\nThis code expires in 10 minutes.\nIf you didn't request this, ignore this message.`;
+      await sendSms(normalizedPhone, smsBody);
     } catch (smsError) {
-      console.error('❌ Failed to send password reset SMS');
-      console.error(`   Phone: ${normalizedPhone}`);
-      console.error(`   Error: ${smsError.message}`);
-      console.error(`   Mode: ${isDemoMode ? 'DEMO' : 'PRODUCTION'}`);
-      
-      // In development, log the code for testing (but never in production)
-      if (isDemoMode) {
-        console.log('📱 [DEMO MODE ONLY] Reset code:', resetCode);
-      }
-
-      // Return an error so the user knows the SMS failed and can try again
-      // (The reset token is already saved, so they can retry sending)
-      return res.status(503).json({
-        error: 'Unable to send SMS at this time. Please try again in a moment or contact support.'
-      });
+      console.error('❌ Failed to send password reset SMS:', smsError.message);
+      // Per spec: do not crash on SMS failure — return success regardless
     }
 
     res.json({ 
@@ -151,15 +125,12 @@ router.post('/request-password-reset', async (req, res) => {
   }
 });
 
-// Reset password with code or token
+// Reset password with SMS code
 router.post('/reset-password', async (req, res) => {
-  const { code, token, newPassword } = req.body || {};
+  const { phone, code, newPassword } = req.body || {};
   
-  // Accept either code or token
-  const resetValue = code || token;
-  
-  if (!resetValue || !newPassword) {
-    return res.status(400).json({ error: 'Reset code and new password are required' });
+  if (!phone || !code || !newPassword) {
+    return res.status(400).json({ error: 'Phone number, reset code, and new password are required' });
   }
 
   // Validate password strength
@@ -168,29 +139,37 @@ router.post('/reset-password', async (req, res) => {
   }
 
   try {
-    // Hash the code/token to compare with stored hash
-    const hashedValue = crypto.createHash('sha256').update(resetValue).digest('hex');
-    
-    // Find pro with valid code/token
-    const pro = await Pro.findOne({
-      passwordResetToken: hashedValue,
-      passwordResetExpires: { $gt: Date.now() }
-    });
+    // Normalize phone for lookup
+    const normalizationResult = normalizePhoneToE164(phone);
+    if (!normalizationResult.success) {
+      return res.status(400).json({ error: 'Invalid phone number format' });
+    }
+    const normalizedPhone = normalizationResult.phone;
 
-    if (!pro) {
+    // Find Pro by phone
+    const pro = await Pro.findOne({ phone: normalizedPhone });
+
+    // Hash incoming code to compare against stored hash
+    const hashedCode = crypto.createHash('sha256').update(code).digest('hex');
+
+    // Validate: code hash matches and not expired
+    if (
+      !pro ||
+      pro.passwordResetCodeHash !== hashedCode ||
+      !pro.passwordResetExpires ||
+      pro.passwordResetExpires < Date.now()
+    ) {
       return res.status(400).json({ error: 'Invalid or expired reset code' });
     }
 
-    // Hash the new password
+    // Hash new password with bcrypt (10 rounds)
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     
-    // Update password and clear reset token
+    // Update password and invalidate code (setting to undefined removes the fields from the document)
     pro.password = hashedPassword;
-    pro.passwordResetToken = null;
-    pro.passwordResetExpires = null;
+    pro.passwordResetCodeHash = undefined;
+    pro.passwordResetExpires = undefined;
     await pro.save();
-
-    console.log('✅ Password reset successful for:', pro.phone);
 
     res.json({ 
       success: true,
