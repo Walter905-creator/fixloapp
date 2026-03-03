@@ -5,6 +5,8 @@ const Pro = require("../models/Pro");
 const requireAuth = require("../middleware/requireAuth");
 const fs = require('fs');
 const path = require('path');
+const { sendOwnerNotification } = require('../utils/smsSender');
+const { getPriorityConfig } = require('../config/priorityRouting');
 
 // Protect all admin routes with JWT
 router.use(requireAuth);
@@ -23,6 +25,42 @@ router.use((req, res, next) => {
     console.log(`✅ Admin route access granted: role=${req.user?.role}, isAdmin=${req.user?.isAdmin}`);
   }
   next();
+});
+
+// ✅ Send a test Charlotte owner-notification SMS
+router.post("/test-charlotte-sms", async (req, res) => {
+  try {
+    const priorityConfig = getPriorityConfig('charlotte');
+    if (!priorityConfig) {
+      return res.status(404).json({ ok: false, error: 'No priority config found for Charlotte' });
+    }
+
+    const testLead = {
+      _id: 'test-sms-charlotte-' + Date.now(),
+      trade: req.body.serviceType || 'Plumbing',
+      city: 'Charlotte',
+      state: 'NC',
+      address: req.body.address || '100 N Tryon St, Charlotte, NC 28202',
+      name: req.body.fullName || 'Test Customer',
+      phone: req.body.phone || '+17045550000',
+      description: 'TEST: Sample job request to verify SMS notifications.'
+    };
+
+    console.log(`🧪 Admin triggered test Charlotte SMS → ${priorityConfig.phone}`);
+    const result = await sendOwnerNotification(priorityConfig.phone, testLead);
+
+    return res.json({
+      ok: result.success,
+      sentTo: priorityConfig.phone,
+      ownerName: priorityConfig.name,
+      messageId: result.messageId || null,
+      reason: result.reason || result.error || null,
+      testLead
+    });
+  } catch (err) {
+    console.error('❌ test-charlotte-sms error:', err.message);
+    return res.status(500).json({ ok: false, error: err.message });
+  }
 });
 
 // ✅ Test endpoint for debugging - kept public for troubleshooting
