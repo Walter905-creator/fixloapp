@@ -132,6 +132,12 @@ router.post('/request-password-reset', async (req, res) => {
       if (isDemoMode) {
         console.log('📱 [DEMO MODE ONLY] Reset code:', resetCode);
       }
+
+      // Return an error so the user knows the SMS failed and can try again
+      // (The reset token is already saved, so they can retry sending)
+      return res.status(503).json({
+        error: 'Unable to send SMS at this time. Please try again in a moment or contact support.'
+      });
     }
 
     res.json({ 
