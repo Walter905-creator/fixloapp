@@ -90,7 +90,7 @@ router.post('/request-password-reset', async (req, res) => {
     if (!pro) {
       return res.json({ 
         success: true,
-        message: 'If this phone number exists, a reset message was sent.'
+        message: 'If this phone number is registered, a reset code has been sent.'
       });
     }
 
@@ -108,6 +108,7 @@ router.post('/request-password-reset', async (req, res) => {
     // SECURITY: The reset code is included in the SMS body. Never log it.
     try {
       const smsBody = `Fixlo Password Reset Code\n\nYour reset code is: ${resetCode}\n\nThis code expires in 10 minutes.\nIf you didn't request this, ignore this message.`;
+      console.log("Sending reset SMS to:", normalizedPhone.slice(-4).padStart(normalizedPhone.length, '*'));
       await sendSms(normalizedPhone, smsBody);
     } catch (smsError) {
       console.error('❌ Failed to send password reset SMS:', smsError.message);
@@ -116,7 +117,7 @@ router.post('/request-password-reset', async (req, res) => {
 
     res.json({ 
       success: true,
-      message: 'If this phone number exists, a reset message was sent.'
+      message: 'If this phone number is registered, a reset code has been sent.'
     });
 
   } catch (error) {
