@@ -72,7 +72,6 @@ router.post('/', async (req, res) => {
       state,
       smsConsent,
       details,
-      email,
       paymentProvider = 'stripe',
       applePayToken
     } = req.body || {};
@@ -100,12 +99,6 @@ router.post('/', async (req, res) => {
         error: 'smsConsent must be true or false'
       });
     }
-
-    // 1️⃣ SAFETY DEFAULT FOR EMAIL (CRITICAL)
-    const safeEmail =
-      email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-        ? email
-        : `no-reply+${Date.now()}@fixloapp.com`;
 
     const requestId =
       'req_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
@@ -135,17 +128,17 @@ router.post('/', async (req, res) => {
     let savedLead = null;
 
     if (mongoose.connection.readyState === 1) {
-      // 2️⃣ BACKEND EMAIL SAFETY (ensure email is never undefined)
+      // Save job (phone-first, no email required)
       const jobData = {
         requestId,
         name: fullName.trim(),
-        email: safeEmail, // Always has fallback
-        phone: normalizedPhone, // Already E.164 normalized
+        phone: normalizedPhone,
         trade: serviceType.trim(),
         address: formattedAddress,
         city: city.trim(),
         state: state.trim(),
         description: details?.trim() || '',
+        preferredTime: req.body.preferredTime?.trim() || '',
         status: 'pending',
         smsConsent,
         smsConsentAt: smsConsent ? new Date() : null,
@@ -231,18 +224,11 @@ router.post('/', async (req, res) => {
     let stripeCustomerId = null;
 
     if (paymentProvider === 'stripe' && stripe && savedLead) {
-      const customers = await stripe.customers.list({
-        email: safeEmail,
-        limit: 1
+      const customer = await stripe.customers.create({
+        name: fullName,
+        phone: normalizedPhone,
+        metadata: { requestId }
       });
-
-      const customer =
-        customers.data[0] ||
-        (await stripe.customers.create({
-          email: safeEmail,
-          name: fullName,
-          phone: normalizedPhone
-        }));
 
       stripeCustomerId = customer.id;
 

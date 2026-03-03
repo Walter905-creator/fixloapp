@@ -17,7 +17,6 @@ const JobRequestSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    required: [true, 'Email is required'],
     match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Please provide a valid email'],
     lowercase: true
   },
@@ -59,6 +58,10 @@ const JobRequestSchema = new mongoose.Schema({
     type: String,
     enum: ['Same day', 'Within 48 hours', 'This week', 'Flexible'],
     default: 'Flexible'
+  },
+  preferredTime: {
+    type: String,
+    trim: true
   },
   photos: [{
     type: String
