@@ -53,8 +53,8 @@ function isUSPhoneNumber(phone) {
  */
 async function sendSms(to, body, options = {}) {
   const cli = getTwilioClient();
-  // Support both TWILIO_PHONE_NUMBER and TWILIO_PHONE for backward compatibility
-  const from = process.env.TWILIO_PHONE_NUMBER || process.env.TWILIO_PHONE;
+  // Support TWILIO_PHONE_NUMBER, TWILIO_FROM_NUMBER, or TWILIO_PHONE for backward compatibility
+  const from = process.env.TWILIO_PHONE_NUMBER || process.env.TWILIO_FROM_NUMBER || process.env.TWILIO_PHONE;
   const isDemoMode = process.env.NODE_ENV !== 'production';
 
   // Validate SMS configuration
@@ -66,7 +66,7 @@ async function sendSms(to, body, options = {}) {
 
   if (!from) {
     console.error('❌ SMS configuration invalid: No phone number configured');
-    console.error('   Missing: TWILIO_PHONE_NUMBER or TWILIO_PHONE');
+    console.error('   Missing: TWILIO_PHONE_NUMBER, TWILIO_FROM_NUMBER, or TWILIO_PHONE');
     throw new Error('SMS_CONFIGURATION_INVALID: Twilio phone number not configured');
   }
 
