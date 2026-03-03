@@ -6,6 +6,7 @@ const requireAuth = require("../middleware/requireAuth");
 const fs = require('fs');
 const path = require('path');
 const { sendOwnerNotification } = require('../utils/smsSender');
+const { sendSms } = require('../utils/twilio');
 const { getPriorityConfig } = require('../config/priorityRouting');
 
 // Protect all admin routes with JWT
@@ -59,6 +60,84 @@ router.post("/test-charlotte-sms", async (req, res) => {
     });
   } catch (err) {
     console.error('❌ test-charlotte-sms error:', err.message);
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// ✅ Trigger a full sample Charlotte job request to test the complete notification workflow
+// Sends both the priority SMS and the owner notification SMS
+router.post("/trigger-charlotte-test-job", async (req, res) => {
+  try {
+    const priorityConfig = getPriorityConfig('charlotte');
+    if (!priorityConfig) {
+      return res.status(404).json({ ok: false, error: 'No priority config found for Charlotte' });
+    }
+
+    const serviceType = req.body.serviceType || 'Plumbing';
+    const address = req.body.address || '100 N Tryon St, Charlotte, NC 28202';
+    const fullName = req.body.fullName || 'Test Homeowner';
+    const customerPhone = req.body.phone || '+17045550000';
+
+    const testLead = {
+      _id: 'test-job-charlotte-' + Date.now(),
+      trade: serviceType,
+      city: 'Charlotte',
+      state: 'NC',
+      address,
+      name: fullName,
+      phone: customerPhone,
+      description: 'TEST: Sample job request to verify the full notification workflow.',
+      smsConsent: true
+    };
+
+    console.log(`🧪 Admin triggered full Charlotte test job notification → ${priorityConfig.phone}`);
+
+    // Step 1: Send priority SMS (same as leads.js priority routing)
+    let prioritySmsResult = { success: false, error: null };
+    try {
+      const priorityMessage = `Fixlo Priority Lead (Charlotte):
+New homeowner service request received.
+Service: ${serviceType}
+Location: ${address}
+Reply ACCEPT to take this job first.`;
+      await sendSms(priorityConfig.phone, priorityMessage);
+      prioritySmsResult = { success: true };
+      console.log(`✅ Priority SMS sent to ${priorityConfig.name} (${priorityConfig.phone})`);
+    } catch (smsErr) {
+      prioritySmsResult = { success: false, error: smsErr.message };
+      console.error('❌ Priority SMS failed:', smsErr.message);
+    }
+
+    // Step 2: Send owner notification SMS
+    let ownerNotifyResult = { success: false, error: null };
+    try {
+      ownerNotifyResult = await sendOwnerNotification(priorityConfig.phone, testLead);
+      if (ownerNotifyResult.success) {
+        console.log(`✅ Owner notification sent (SID: ${ownerNotifyResult.messageId})`);
+      } else {
+        console.warn(`⚠️ Owner notification skipped: ${ownerNotifyResult.reason || ownerNotifyResult.error}`);
+      }
+    } catch (notifyErr) {
+      ownerNotifyResult = { success: false, error: notifyErr.message };
+      console.error('❌ Owner notification error:', notifyErr.message);
+    }
+
+    return res.json({
+      ok: prioritySmsResult.success || ownerNotifyResult.success,
+      ownerName: priorityConfig.name,
+      sentTo: priorityConfig.phone,
+      testLead,
+      notifications: {
+        prioritySms: prioritySmsResult,
+        ownerNotification: {
+          success: ownerNotifyResult.success,
+          messageId: ownerNotifyResult.messageId || null,
+          reason: ownerNotifyResult.reason || ownerNotifyResult.error || null
+        }
+      }
+    });
+  } catch (err) {
+    console.error('❌ trigger-charlotte-test-job error:', err.message);
     return res.status(500).json({ ok: false, error: err.message });
   }
 });
