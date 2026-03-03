@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const JobRequest = require('../models/JobRequest');
 const Pro = require('../models/Pro');
 const { geocodeAddress } = require('../utils/geocoding');
-const { sendOwnerNotification, sendHomeownerConfirmation } = require('../utils/smsSender');
+const { sendOwnerNotification, sendHomeownerConfirmation, sendProLeadAlert } = require('../utils/smsSender');
 const { getPriorityConfig } = require('../config/priorityRouting');
 
 // Constants
@@ -28,16 +28,6 @@ function normalizeUSPhone(phone) {
   if (digits.length === 10) return `+1${digits}`;
   if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
   return null;
-}
-
-// ---------- Twilio ----------
-
-let twilioClient = null;
-if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
-  twilioClient = require('twilio')(
-    process.env.TWILIO_ACCOUNT_SID,
-    process.env.TWILIO_AUTH_TOKEN
-  );
 }
 
 // ---------- Stripe ----------
@@ -220,28 +210,15 @@ router.post('/', async (req, res) => {
         }
       }).limit(50);
 
-      if (twilioClient && pros.length && process.env.TWILIO_PHONE) {
-        const msg = `FIXLO: New ${serviceType} job near ${formattedAddress}. ${fullName} (${normalizedPhone})`;
-
+      if (pros.length) {
+        // Send via sendProLeadAlert for proper consent checking, idempotency,
+        // compliance logging, and language detection — works for ALL US cities.
         (async () => {
           for (const pro of pros) {
             try {
-              // 4️⃣ ENSURE PRO PHONE IS E.164 (validate before sending)
-              if (!isValidE164(pro.phone)) {
-                console.error('❌ Pro phone not in E.164 format:', pro.phone);
-                continue;
-              }
-              
-              // 6️⃣ LOG CRITICAL EVENTS
-              console.log('📲 Sending SMS to:', pro.phone);
-              await twilioClient.messages.create({
-                to: pro.phone,
-                from: process.env.TWILIO_PHONE,
-                body: msg
-              });
-              console.log('✅ SMS sent to:', pro.phone);
+              await sendProLeadAlert(pro, savedLead);
             } catch (err) {
-              console.error('❌ SMS failed for', pro.phone, ':', err.message);
+              console.error('❌ Pro lead alert failed for', pro._id, ':', err.message);
             }
           }
         })();
