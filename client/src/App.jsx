@@ -72,6 +72,7 @@ export default function App(){
       
       <Route path="/how-it-works" element={<HowItWorksPage/>}/>
       <Route path="/assistant" element={<AssistantPage/>}/>
+      <Route path="/ai-assistant" element={<AssistantPage/>}/>
       <Route path="/contact" element={<ContactPage/>}/>
       <Route path="/pricing" element={<PricingPage/>}/>
       <Route path="/request" element={<RequestPage/>}/>
@@ -121,7 +122,7 @@ export default function App(){
       <Route path="/for-professionals" element={<Navigate to="/join" replace/>}/>
       <Route path="/terms" element={<Terms/>}/>
       <Route path="/privacy" element={<Privacy/>}/>
-      <Route path="/privacy-policy" element={<Privacy/>}/>
+      <Route path="/privacy-policy" element={<Navigate to="/privacy" replace/>}/>
       <Route path="/privacy-settings" element={<PrivacySettings/>}/>
       <Route path="/success" element={<Success/>}/>
       <Route path="/about" element={<AboutPage/>}/>
@@ -168,7 +169,7 @@ export default function App(){
             <h3 className="font-semibold text-slate-900 mb-3">Legal</h3>
             <ul className="space-y-2 text-sm text-slate-700">
               <li><a href="/terms" className="hover:text-brand">Terms of Service</a></li>
-              <li><a href="/privacy-policy" className="hover:text-brand">Privacy Policy</a></li>
+              <li><a href="/privacy" className="hover:text-brand">Privacy Policy</a></li>
               <li><a href="/privacy-settings" className="hover:text-brand">Privacy Settings</a></li>
             </ul>
           </div>

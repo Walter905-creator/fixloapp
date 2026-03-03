@@ -56,11 +56,17 @@ function generateServiceAlternates(service, city) {
     }
   });
 
-  // Add x-default (points to US version or homepage)
-  alternates.push({
-    hreflang: 'x-default',
-    href: `${baseUrl}/`
-  });
+  // Add x-default (points to US English version)
+  const usCountry = COUNTRIES.find(c => c.code === 'us');
+  if (usCountry) {
+    const usPath = city
+      ? `${baseUrl}/${usCountry.pathPrefix}/${usCountry.servicesPath}/${service}/${city}`
+      : `${baseUrl}/${usCountry.pathPrefix}/${usCountry.servicesPath}/${service}`;
+    alternates.push({
+      hreflang: 'x-default',
+      href: usPath
+    });
+  }
 
   return alternates;
 }
