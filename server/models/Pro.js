@@ -16,7 +16,7 @@ const BadgeSchema = new mongoose.Schema({
 const proSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true,
+    required: false,
     trim: true
   },
   // Additional name fields for better profile management
@@ -34,8 +34,9 @@ const proSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    required: true,
+    required: false,
     unique: true,
+    sparse: true,
     lowercase: true,
     trim: true
   },
@@ -59,7 +60,7 @@ const proSchema = new mongoose.Schema({
   },
   trade: {
     type: String,
-    required: true,
+    required: false,
     enum: [
       'plumbing',
       'electrical', 
@@ -92,7 +93,7 @@ const proSchema = new mongoose.Schema({
     },
     address: {
       type: String,
-      required: true
+      required: false
     }
   },
   // Additional location fields
@@ -113,7 +114,7 @@ const proSchema = new mongoose.Schema({
   },
   dob: {
     type: Date,
-    required: true
+    required: false
   },
   isActive: {
     type: Boolean,
@@ -347,6 +348,18 @@ const proSchema = new mongoose.Schema({
     pendingPayout: { type: Number, default: 0 }
   },
   
+  // Account setup fields (used for subscription-triggered onboarding)
+  accountCreated: {
+    type: Boolean,
+    default: false
+  },
+  accountSetupTokenHash: {
+    type: String
+  },
+  accountSetupExpires: {
+    type: Date
+  },
+
   // Password reset fields
   passwordResetToken: {
     type: String,
