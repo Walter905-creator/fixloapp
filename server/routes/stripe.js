@@ -1,11 +1,13 @@
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const axios = require('axios');
 const Pro = require('../models/Pro');
 const JobRequest = require('../models/JobRequest');
 const Referral = require('../models/Referral');
 const EarlyAccessSpots = require('../models/EarlyAccessSpots');
 const { applyReferralFreeMonth, hasExistingReward } = require('../services/applyReferralFreeMonth');
+const { sendSms } = require('../utils/twilio');
 
 // Initialize Stripe with validation
 let stripe;
@@ -404,10 +406,34 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
           }
         }
         
-        // Update Pro record with subscription details
+        // Determine Pro identity from session
         const userId = session.metadata?.userId;
-        if (userId) {
-          try {
+        const sessionPhone = session.customer_details?.phone || session.metadata?.phone || null;
+        
+        try {
+          let pro = null;
+          
+          if (userId) {
+            // Find by userId from metadata
+            pro = await Pro.findById(userId);
+          } else if (sessionPhone) {
+            // Find by phone number
+            pro = await Pro.findOne({ phone: sessionPhone });
+          }
+          
+          if (!pro && sessionPhone) {
+            // Create temporary Pro record for subscription-first onboarding
+            pro = new Pro({
+              phone: sessionPhone,
+              subscriptionActive: true,
+              accountCreated: false
+            });
+            console.log(`🆕 Created temporary Pro record for phone ${sessionPhone}`);
+          }
+          
+          if (!pro) {
+            console.warn('⚠️ No userId or phone in session — cannot associate subscription with a Pro');
+          } else {
             const updateData = {
               stripeCustomerId: session.customer,
               stripeSessionId: session.id,
@@ -415,12 +441,14 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
             };
             
             // Handle AI_HOME tier (Homeowner AI subscription)
+            let isAiHomeSubscription = false;
             if (subscriptionTier === 'AI_HOME') {
+              isAiHomeSubscription = true;
               updateData.aiSubscriptionId = session.subscription;
               updateData.aiSubscriptionStatus = 'active';
               updateData.aiSubscriptionStartDate = new Date();
               updateData.aiHomeAccess = true;
-              console.log(`🏠 Setting AI Home Expert access for user ${userId}`);
+              console.log(`🏠 Setting AI Home Expert access for user ${pro._id}`);
             } else {
               // Handle PRO and AI_PLUS tiers (Professional subscriptions)
               updateData.stripeSubscriptionId = session.subscription;
@@ -432,28 +460,51 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
               const tierToUse = subscriptionTier || session.metadata?.tier;
               if (tierToUse === 'AI_PLUS') {
                 updateData.subscriptionTier = 'ai_plus';
-                console.log(`🌟 Setting AI+ tier for pro ${userId}`);
-              } else if (tierToUse === 'PRO') {
-                updateData.subscriptionTier = 'pro';
-                console.log(`⭐ Setting PRO tier for pro ${userId}`);
+                console.log(`🌟 Setting AI+ tier for pro ${pro._id}`);
               } else {
-                // Default to PRO tier if metadata is missing or invalid
                 updateData.subscriptionTier = 'pro';
-                console.log(`⭐ Setting PRO tier (default) for pro ${userId}`);
+                console.log(`⭐ Setting PRO tier for pro ${pro._id}`);
               }
               
               // If there's a trial, set the subscription end date
               if (session.subscription) {
-                const subscription = await stripe.subscriptions.retrieve(session.subscription);
-                if (subscription.trial_end) {
-                  updateData.subscriptionEndDate = new Date(subscription.trial_end * 1000);
-                  console.log(`🎁 Trial ends: ${new Date(subscription.trial_end * 1000).toISOString()}`);
+                try {
+                  const sub = await stripe.subscriptions.retrieve(session.subscription);
+                  if (sub.trial_end) {
+                    updateData.subscriptionEndDate = new Date(sub.trial_end * 1000);
+                    console.log(`🎁 Trial ends: ${new Date(sub.trial_end * 1000).toISOString()}`);
+                  }
+                } catch (subErr) {
+                  console.error('❌ Failed to retrieve subscription trial info:', subErr.message);
                 }
               }
             }
             
-            const pro = await Pro.findByIdAndUpdate(userId, updateData, { new: true });
-            console.log(`✅ Pro ${userId} updated with subscription details`);
+            // Apply updates to pro document
+            Object.assign(pro, updateData);
+            
+            // Generate secure one-time account setup token (for non-AI_HOME PRO subscriptions)
+            let setupToken = null;
+            if (!isAiHomeSubscription && !pro.accountCreated) {
+              setupToken = crypto.randomBytes(32).toString('hex');
+              pro.accountSetupTokenHash = crypto.createHash('sha256').update(setupToken).digest('hex');
+              pro.accountSetupExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+            }
+            
+            await pro.save();
+            console.log(`✅ Pro ${pro._id} updated with subscription details`);
+            
+            // Send Welcome SMS asynchronously (non-blocking)
+            if (setupToken && sessionPhone) {
+              const baseUrl = process.env.CLIENT_URL || 'https://fixloapp.com';
+              const setupLink = `${baseUrl}/pro/setup-account/${setupToken}`;
+              const smsBody = `🎉 Welcome to Fixlo Pro!\n\nYour subscription is now active.\n\nCreate your account here:\n${setupLink}\n\nThis link expires in 24 hours.\n\nLet's start getting you leads 🚀`;
+              
+              // Fire-and-forget: do not await, do not throw
+              sendSms(sessionPhone, smsBody).catch((smsErr) => {
+                console.error('❌ Failed to send Pro welcome SMS:', smsErr.message);
+              });
+            }
             
             // Check if this is an early access subscription ($59.99) and decrement spots
             // Only for PRO tier (not AI_PLUS or other tiers)
@@ -476,7 +527,7 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
                   const spotsInstance = await EarlyAccessSpots.getInstance();
                   await spotsInstance.decrementSpots('subscription_created', {
                     subscriptionId: session.subscription,
-                    userId: userId,
+                    userId: pro._id,
                     priceId: priceId,
                     amount: priceAmount
                   });
@@ -489,8 +540,8 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
             }
             
             // Check if this pro was referred and complete the referral (PRO/AI_PLUS only)
-            if (pro && pro.referredByCode && session.subscription && subscriptionTier !== 'AI_HOME') {
-              console.log(`🎁 Checking referral completion for pro ${userId}`);
+            if (pro.referredByCode && session.subscription && subscriptionTier !== 'AI_HOME') {
+              console.log(`🎁 Checking referral completion for pro ${pro._id}`);
               try {
                 const apiUrl = process.env.API_URL || 'http://localhost:3001';
                 
@@ -500,7 +551,7 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
                 // Trigger referral completion
                 await axios.post(`${apiUrl}/api/referrals/complete`, {
                   referralCode: pro.referredByCode,
-                  referredUserId: userId,
+                  referredUserId: pro._id,
                   referredSubscriptionId: session.subscription,
                   country: country
                 });
@@ -511,11 +562,9 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
                 // Don't fail the webhook if referral completion fails
               }
             }
-          } catch (err) {
-            console.error(`❌ Failed to update Pro ${userId}:`, err.message);
           }
-        } else {
-          console.warn('⚠️ No userId in session metadata');
+        } catch (err) {
+          console.error(`❌ Failed to process checkout.session.completed:`, err.message);
         }
         break;
       }
