@@ -361,13 +361,11 @@ const proSchema = new mongoose.Schema({
   },
 
   // Password reset fields
-  passwordResetToken: {
-    type: String,
-    default: null
+  passwordResetCodeHash: {
+    type: String
   },
   passwordResetExpires: {
-    type: Date,
-    default: null
+    type: Date
   },
   
   // Free Pro flag for initial user
