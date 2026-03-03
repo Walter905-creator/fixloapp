@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const JobRequest = require('../models/JobRequest');
 const Pro = require('../models/Pro');
 const { geocodeAddress } = require('../utils/geocoding');
-const { sendOwnerNotification } = require('../utils/smsSender');
+const { sendOwnerNotification, sendHomeownerConfirmation } = require('../utils/smsSender');
 const { getPriorityConfig } = require('../config/priorityRouting');
 
 // Constants
@@ -167,6 +167,20 @@ router.post('/', async (req, res) => {
 
       // 6️⃣ LOG CRITICAL EVENTS
       console.log('💾 Job saved:', requestId, '| ID:', savedLead._id);
+
+      // Send homeowner confirmation SMS
+      if (smsConsent) {
+        try {
+          const hwResult = await sendHomeownerConfirmation(savedLead);
+          if (hwResult.success) {
+            console.log(`✅ Homeowner confirmation SMS sent (SID: ${hwResult.messageId})`);
+          } else {
+            console.log(`⚠️ Homeowner confirmation SMS skipped: ${hwResult.reason || hwResult.error}`);
+          }
+        } catch (hwErr) {
+          console.error('❌ Homeowner confirmation SMS error:', hwErr.message);
+        }
+      }
 
       // Send owner notification for Charlotte leads
       const priorityConfig = getPriorityConfig(city);
