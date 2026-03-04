@@ -133,11 +133,11 @@ app.use((req, res, next) => {
     .header("Access-Control-Allow-Origin", allowedOrigin)
     .header(
       "Access-Control-Allow-Methods",
-      "POST, OPTIONS, GET, PUT, DELETE, HEAD"
+      "POST, OPTIONS, GET, PUT, PATCH, DELETE, HEAD"
     )
     .header(
       "Access-Control-Allow-Headers",
-      "Content-Type, Authorization, X-Requested-With, Accept, Origin, Expires, Cache-Control, Pragma"
+      "Content-Type, Authorization, X-Requested-With, Accept, Origin, Expires, Cache-Control, Pragma, x-admin-key"
     )
     .header("Access-Control-Allow-Credentials", "true")
     .header("Access-Control-Max-Age", "86400")
@@ -153,7 +153,7 @@ app.use(
     },
     credentials: true,
     optionsSuccessStatus: 200,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
     allowedHeaders: [
       "Accept",
       "Accept-Language",
@@ -167,6 +167,7 @@ app.use(
       "Expires",
       "Cache-Control",
       "Pragma",
+      "x-admin-key",
     ],
     exposedHeaders: [
       "Access-Control-Allow-Origin",
@@ -324,6 +325,30 @@ app.use("/api/cloudinary", require("./routes/cloudinary")); // POST /api/cloudin
 
 app.use("/api/admin", adminRateLimit, require("./routes/admin"));
 app.use("/api/admin", adminRateLimit, require("./routes/adminJobs")); // Admin job management
+
+// Admin: Grant lifetime membership (protected by x-admin-key header)
+app.post("/api/admin/grant-lifetime", adminRateLimit, async (req, res) => {
+  if (!process.env.ADMIN_SECRET_KEY || req.headers["x-admin-key"] !== process.env.ADMIN_SECRET_KEY) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  const { proId } = req.body || {};
+  if (!proId) return res.status(400).json({ error: "proId is required" });
+  if (!mongoose.Types.ObjectId.isValid(proId)) {
+    return res.status(400).json({ error: "Invalid proId format" });
+  }
+  try {
+    const pro = await Pro.findById(proId);
+    if (!pro) return res.status(404).json({ error: "Pro not found" });
+    pro.subscriptionType = "lifetime";
+    pro.subscriptionActive = true;
+    await pro.save();
+    console.log(`✅ Lifetime access granted to pro ${proId}`);
+    return res.json({ success: true, message: "Lifetime access granted", proId });
+  } catch (err) {
+    console.error("❌ grant-lifetime error:", err.message);
+    return res.status(500).json({ error: "Server error granting lifetime access" });
+  }
+});
 
 // AI Automation Routes
 app.use("/api/lead-hunter", generalRateLimit, require("./routes/leadHunter")); // AI Lead Hunter

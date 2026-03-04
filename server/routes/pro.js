@@ -31,8 +31,14 @@ function requireAuth(req, res, next) {
 // Subscription gate — must come after requireAuth; always checks DB for freshness
 async function requireActiveSubscription(req, res, next) {
   try {
-    const pro = await Pro.findById(req.user.id).select('subscriptionActive');
+    const pro = await Pro.findById(req.user.id).select('subscriptionActive subscriptionType');
     if (!pro) return res.status(404).json({ error: 'Pro account not found' });
+    // Lifetime members always have access
+    if (pro.subscriptionType === 'lifetime') {
+      req.user.subscriptionActive = true;
+      req.user.subscriptionType = 'lifetime';
+      return next();
+    }
     if (!pro.subscriptionActive) {
       return res.status(403).json({
         error: 'Subscription inactive',
@@ -42,6 +48,7 @@ async function requireActiveSubscription(req, res, next) {
     }
     // Attach fresh subscription status to request
     req.user.subscriptionActive = pro.subscriptionActive;
+    req.user.subscriptionType = pro.subscriptionType;
     return next();
   } catch (err) {
     console.error('Subscription gate error:', err);
@@ -183,7 +190,8 @@ router.get('/dashboard', requireAuth, requireActiveSubscription, async (req, res
     return res.json({
       name: pro.name,
       trade: pro.trade,
-      subscriptionActive: pro.subscriptionActive,
+      subscriptionActive: pro.subscriptionType === 'lifetime' ? true : pro.subscriptionActive,
+      subscriptionType: pro.subscriptionType || 'monthly',
       leads
     });
   } catch (err) {

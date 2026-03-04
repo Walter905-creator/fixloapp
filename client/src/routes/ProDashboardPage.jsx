@@ -14,6 +14,7 @@ export default function ProDashboardPage(){
   const [showSettings, setShowSettings] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [subscriptionActive, setSubscriptionActive] = React.useState(null);
+  const [subscriptionType, setSubscriptionType] = React.useState(null);
   const [billingLoading, setBillingLoading] = React.useState(false);
   
   const displayName = user?.name || user?.phone || 'Pro User';
@@ -41,6 +42,7 @@ export default function ProDashboardPage(){
           setProData(data);
           setLeads(Array.isArray(data.leads) ? data.leads : []);
           setSubscriptionActive(data.subscriptionActive);
+          setSubscriptionType(data.subscriptionType || 'monthly');
         } else if(dashRes.status === 403){
           // Subscription inactive
           const data = await dashRes.json();
@@ -94,6 +96,38 @@ export default function ProDashboardPage(){
       setBillingLoading(false);
     }
   }
+
+  async function renewSubscription(){
+    const email = proData?.email || user?.email || '';
+    if(!email){
+      alert('No email address found. Please contact support to renew your subscription.');
+      return;
+    }
+    setBillingLoading(true);
+    try{
+      const token = getToken();
+      const res = await fetch(`${api}/api/stripe/create-checkout-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ email })
+      });
+      if(res.ok){
+        const data = await res.json();
+        if(data.url) window.location.href = data.url;
+        else alert('Could not create checkout session. Please contact support.');
+      } else {
+        alert('Could not start renewal. Please contact support.');
+      }
+    }catch(e){
+      console.error('Renew subscription error:', e);
+      alert('Could not start renewal. Please try again.');
+    }finally{
+      setBillingLoading(false);
+    }
+  }
   
   async function handleUpdateNotifications(e){
     e.preventDefault();
@@ -139,7 +173,11 @@ export default function ProDashboardPage(){
       <div className="mb-4 p-4 bg-brand/10 rounded-lg flex justify-between items-center">
         <p className="text-sm font-semibold text-slate-700">
           Logged in as: <span className="text-brand">{displayName} (Pro)</span>
-          {subscriptionActive !== null && (
+          {subscriptionType === 'lifetime' ? (
+            <span className="ml-3 inline-block px-2 py-0.5 rounded text-xs font-semibold bg-purple-100 text-purple-800">
+              Lifetime Member
+            </span>
+          ) : subscriptionActive !== null && (
             <span className={`ml-3 inline-block px-2 py-0.5 rounded text-xs font-semibold ${subscriptionActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
               {subscriptionActive ? 'Active' : 'Inactive'}
             </span>
@@ -163,14 +201,14 @@ export default function ProDashboardPage(){
       </div>
 
       {/* Subscription inactive banner */}
-      {subscriptionActive === false && (
+      {subscriptionActive === false && subscriptionType !== 'lifetime' && (
         <div className="mb-6 p-5 bg-red-50 border border-red-200 rounded-xl">
           <h2 className="font-semibold text-red-900 mb-1">Subscription Inactive</h2>
           <p className="text-sm text-red-800 mb-3">
             Your subscription is inactive. Please renew to access leads.
           </p>
           <button
-            onClick={openBillingPortal}
+            onClick={renewSubscription}
             disabled={billingLoading}
             className="btn-primary disabled:opacity-50"
           >
