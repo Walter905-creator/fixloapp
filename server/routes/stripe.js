@@ -454,6 +454,7 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
               updateData.stripeSubscriptionId = session.subscription;
               updateData.paymentStatus = session.subscription ? 'active' : 'pending';
               updateData.subscriptionActive = true;
+              updateData.subscriptionType = 'monthly';
               updateData.subscriptionStartDate = new Date();
               
               // Set subscription tier based on metadata or session metadata fallback
@@ -880,6 +881,9 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
               pro.aiSubscriptionStatus = 'cancelled';
               pro.aiHomeAccess = false;
               console.log(`✅ AI Home Expert subscription cancelled for user ${pro._id}`);
+            } else if (pro.subscriptionType === 'lifetime') {
+              // Never deactivate lifetime members
+              console.log(`ℹ️ Ignoring subscription cancellation for lifetime member ${pro._id}`);
             } else {
               // Handle PRO and AI_PLUS tier cancellation
               pro.paymentStatus = 'cancelled';

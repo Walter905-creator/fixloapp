@@ -133,6 +133,11 @@ const proSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  subscriptionType: {
+    type: String,
+    enum: ['monthly', 'lifetime'],
+    default: 'monthly'
+  },
   stripeCustomerId: {
     type: String
   },
