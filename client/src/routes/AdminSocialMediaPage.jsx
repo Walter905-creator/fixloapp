@@ -69,9 +69,16 @@ export default function AdminSocialMediaPage() {
       setLoading(true);
       setError('');
 
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
       const response = await fetch(`${API_BASE}/api/social/status`, {
         method: 'GET',
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
 
       if (!response.ok) {
@@ -93,9 +100,16 @@ export default function AdminSocialMediaPage() {
    */
   const loadMetaDebugInfo = async () => {
     try {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        return;
+      }
       const response = await fetch(`${API_BASE}/api/social/debug/meta`, {
         method: 'GET',
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
 
       if (!response.ok) {
@@ -145,9 +159,16 @@ export default function AdminSocialMediaPage() {
         console.log('[OAuth] Requesting authorization URL:', url);
       }
       
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
       const response = await fetch(url, {
         method: 'GET',
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
 
       if (process.env.NODE_ENV === 'development') {
