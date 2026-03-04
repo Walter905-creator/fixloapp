@@ -47,7 +47,7 @@ router.post('/login', async (req, res) => {
       console.log('🔐 Owner logged in - granting admin access');
     }
 
-    const token = sign({ role: 'pro', id: pro._id, phone: pro.phone, isAdmin: isOwner });
+    const token = sign({ role: pro.role || 'pro', id: pro._id, phone: pro.phone, isAdmin: isOwner });
     res.json({ 
       token, 
       pro: { 

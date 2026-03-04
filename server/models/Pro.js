@@ -378,6 +378,13 @@ const proSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+
+  // Role-based access control
+  role: {
+    type: String,
+    enum: ['pro', 'admin'],
+    default: 'pro'
+  },
   
   // Subscription tier for lead prioritization
   subscriptionTier: {

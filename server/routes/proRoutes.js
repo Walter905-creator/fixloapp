@@ -320,8 +320,13 @@ router.get("/leads", auth, async (req, res) => {
       return res.status(200).json([]);
     }
 
-    // Find all jobs assigned to this Pro
-    const leads = await JobRequest.find({ assignedTo: req.proId })
+    // Find all jobs assigned to this Pro (check both field names for compatibility)
+    const leads = await JobRequest.find({
+      $or: [
+        { assignedProId: req.proId },
+        { assignedTo: req.proId }
+      ]
+    })
       .sort({ createdAt: -1 })
       .limit(100);
 

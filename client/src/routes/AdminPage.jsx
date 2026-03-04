@@ -3,7 +3,7 @@ import HelmetSEO from '../seo/HelmetSEO';
 import { API_BASE } from '../utils/config';
 
 function getAuthHeaders() {
-  const token = localStorage.getItem('adminToken');
+  const token = localStorage.getItem('fixlo_token');
   return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 }
 
@@ -41,7 +41,11 @@ export default function AdminPage() {
         body: JSON.stringify({})
       });
       const data = await response.json();
-      setTestResult(data);
+      if (!response.ok) {
+        setTestError(data.error || `Request failed with status ${response.status}`);
+      } else {
+        setTestResult(data);
+      }
     } catch (err) {
       setTestError(err.message);
     } finally {

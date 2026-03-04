@@ -1,15 +1,8 @@
-/**
- * Admin Dashboard Control Center Routes
- * Provides overview metrics, system health, and configuration endpoints.
- *
- * All routes require JWT admin authentication.
- * Security: requireAuth + admin role check applied via router.use().
- */
-
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const requireAuth = require('../middleware/requireAuth');
+const requireAdmin = require('../middleware/requireAdmin');
 const Pro = require('../models/Pro');
 const JobRequest = require('../models/JobRequest');
 const AdminSettings = require('../models/AdminSettings');
@@ -19,13 +12,7 @@ const { getStats: getSeoStats } = require('../services/seoAIStats');
 
 // ── Auth guard ────────────────────────────────────────────────────────────────
 router.use(requireAuth);
-router.use((req, res, next) => {
-  const hasAdminAccess = req.user?.role === 'admin' || req.user?.isAdmin === true;
-  if (!hasAdminAccess) {
-    return res.status(403).json({ error: 'Forbidden: Admin access required' });
-  }
-  next();
-});
+router.use(requireAdmin);
 
 // ── Helper: safe DB check ─────────────────────────────────────────────────────
 function isDbConnected() {

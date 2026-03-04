@@ -3,7 +3,7 @@ import HelmetSEO from '../seo/HelmetSEO';
 import { API_BASE } from '../utils/config';
 
 function getAuthHeaders() {
-  const token = localStorage.getItem('adminToken');
+  const token = localStorage.getItem('fixlo_token');
   return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 }
 

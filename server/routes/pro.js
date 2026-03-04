@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 const Pro = require('../models/Pro');
 const JobRequest = require('../models/JobRequest');
 const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
+const { isUSPhoneNumber } = require('../utils/twilio');
 
 function requireJwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -182,7 +183,12 @@ router.get('/dashboard', requireAuth, requireActiveSubscription, async (req, res
     const pro = await Pro.findById(req.user.id).select('-password');
     if (!pro) return res.status(404).json({ error: 'Pro account not found' });
 
-    const leads = await JobRequest.find({ assignedProId: pro._id })
+    const leads = await JobRequest.find({
+      $or: [
+        { assignedProId: pro._id },
+        { assignedTo: pro._id }
+      ]
+    })
       .sort({ createdAt: -1 })
       .limit(100)
       .select('trade name phone email address city description status createdAt scheduledDate');
@@ -190,6 +196,7 @@ router.get('/dashboard', requireAuth, requireActiveSubscription, async (req, res
     return res.json({
       name: pro.name,
       trade: pro.trade,
+      role: pro.role || 'pro',
       subscriptionActive: pro.subscriptionType === 'lifetime' ? true : pro.subscriptionActive,
       subscriptionType: pro.subscriptionType || 'monthly',
       leads
@@ -197,6 +204,37 @@ router.get('/dashboard', requireAuth, requireActiveSubscription, async (req, res
   } catch (err) {
     console.error('Pro dashboard error:', err);
     return res.status(500).json({ error: 'Server error fetching dashboard' });
+  }
+});
+
+// PATCH /api/pro/settings — update notification preferences
+router.patch('/settings', requireAuth, async (req, res) => {
+  try {
+    const { whatsappOptIn, wantsNotifications } = req.body || {};
+    const pro = await Pro.findById(req.user.id);
+    if (!pro) return res.status(404).json({ error: 'Pro account not found' });
+
+    const isUSPro = pro.country === 'US' || isUSPhoneNumber(pro.phone);
+
+    if (typeof wantsNotifications === 'boolean') {
+      pro.wantsNotifications = wantsNotifications;
+    }
+    if (typeof whatsappOptIn === 'boolean') {
+      if (!isUSPro) pro.whatsappOptIn = whatsappOptIn;
+    }
+
+    await pro.save();
+    return res.json({
+      pro: {
+        whatsappOptIn: pro.whatsappOptIn,
+        wantsNotifications: pro.wantsNotifications,
+        smsConsent: pro.smsConsent,
+        country: pro.country
+      }
+    });
+  } catch (err) {
+    console.error('Pro settings error:', err);
+    return res.status(500).json({ error: 'Server error updating settings' });
   }
 });
 
