@@ -495,15 +495,17 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
             await pro.save();
             console.log(`✅ Pro ${pro._id} updated with subscription details`);
             
-            // Send Welcome SMS asynchronously (non-blocking)
+            // Send Welcome SMS asynchronously (non-blocking) — do NOT delay webhook response
             if (setupToken && sessionPhone) {
               const baseUrl = process.env.CLIENT_URL || 'https://fixloapp.com';
               const setupLink = `${baseUrl}/pro/setup-account/${setupToken}`;
               const smsBody = `🎉 Welcome to Fixlo Pro!\n\nYour subscription is now active.\n\nCreate your account here:\n${setupLink}\n\nThis link expires in 24 hours.\n\nLet's start getting you leads 🚀`;
               
-              // Fire-and-forget: do not await, do not throw
-              sendSms(sessionPhone, smsBody).catch((smsErr) => {
-                console.error('❌ Failed to send Pro welcome SMS:', smsErr.message);
+              // Use setImmediate to ensure SMS is sent after webhook response returns
+              setImmediate(() => {
+                sendSms(sessionPhone, smsBody).catch((smsErr) => {
+                  console.error('❌ Failed to send Pro welcome SMS:', smsErr.message);
+                });
               });
             }
             

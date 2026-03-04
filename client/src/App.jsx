@@ -35,6 +35,7 @@ import PrivacySettings from './pages/PrivacySettings.jsx';
 import Success from './pages/Success.jsx';
 import SignupPage from './routes/SignupPage.jsx';
 import ProSignupPage from './routes/ProSignupPage.jsx';
+import ProSetupAccountPage from './routes/ProSetupAccountPage.jsx';
 import AboutWalterArevaloPage from './routes/AboutWalterArevaloPage.jsx';
 import AboutPage from './routes/AboutPage.jsx';
 import TrendServicePage from './routes/TrendServicePage.jsx';
@@ -84,6 +85,7 @@ export default function App(){
       <Route path="/signup" element={<SignupPage/>}/>
       <Route path="/pro/signup" element={<ProSignupPage/>}/>
       <Route path="/pro/register" element={<ProSignupPage/>}/>
+      <Route path="/pro/setup-account/:token" element={<ProSetupAccountPage/>}/>
       <Route path="/pro/sign-in" element={<ProSignInPage/>}/>
       <Route path="/pro/login" element={<ProSignInPage/>}/>
       <Route path="/pro/forgot-password" element={<ProForgotPasswordPage/>}/>
