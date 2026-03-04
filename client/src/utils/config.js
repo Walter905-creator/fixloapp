@@ -52,4 +52,4 @@ export const STRIPE_PUBLISHABLE_KEY = stripePublishableKey;
 export const STRIPE_CHECKOUT_URL = getEnv('VITE_STRIPE_CHECKOUT_URL');
 
 // Seasonal configuration - set to true during holiday season (Nov-Jan)
-export const IS_HOLIDAY_SEASON = true;
+export const IS_HOLIDAY_SEASON = false;
