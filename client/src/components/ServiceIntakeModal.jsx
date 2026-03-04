@@ -194,7 +194,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
     description: '',
     address: '',
     city: defaultCity ? defaultCity.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '',
-    state: 'NC',
+    state: defaultCity && /charlotte/i.test(defaultCity) ? 'NC' : '',
     zip: '',
     urgency: 'Flexible',
     photos: [],
@@ -248,13 +248,6 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
       }
       if (!formData.zip || !/^\d{5}$/.test(formData.zip)) {
         newErrors.zip = 'Valid 5-digit ZIP code is required';
-      }
-      // Validate Charlotte, NC area
-      if (formData.city && !formData.city.toLowerCase().includes('charlotte')) {
-        newErrors.city = 'Service is only available in Charlotte, NC area';
-      }
-      if (formData.state && formData.state.toUpperCase() !== 'NC') {
-        newErrors.state = 'Service is only available in North Carolina';
       }
     }
 
@@ -434,7 +427,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
       case 3:
         return (
           <div className="space-y-4">
-            <h3 className="text-xl font-bold text-slate-900">Service address (Charlotte, NC area)</h3>
+            <h3 className="text-xl font-bold text-slate-900">Service address</h3>
             <input
               type="text"
               placeholder="Street Address"
@@ -712,7 +705,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-slate-200 p-6 z-10">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-slate-900">{customHeading || 'Charlotte Home Service Request'}</h2>
+            <h2 className="text-2xl font-bold text-slate-900">{customHeading || 'Home Service Request'}</h2>
             <button
               onClick={onClose}
               className="text-slate-400 hover:text-slate-600 text-2xl leading-none"

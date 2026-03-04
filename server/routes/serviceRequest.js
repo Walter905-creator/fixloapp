@@ -7,7 +7,7 @@ const client = process.env.TWILIO_ACCOUNT_SID ?
     twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN) : null;
 
 router.post('/', async (req, res) => {
-  const { serviceType, name, phone, email, address, description, urgency } = req.body;
+  const { serviceType, name, phone, email, address, description, urgency, source } = req.body;
   
   // Validate required fields
   if (!serviceType || !name || !phone || !address || !description) {
@@ -29,7 +29,8 @@ router.post('/', async (req, res) => {
           phone, 
           address, 
           description,
-          urgency: urgency || 'medium'
+          urgency: urgency || 'Flexible',
+          source: source || 'website'
         });
         await requestDoc.save();
         console.log(`✅ Service request saved to database: ${requestDoc._id}`);

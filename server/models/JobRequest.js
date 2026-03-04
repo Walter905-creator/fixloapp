@@ -266,7 +266,7 @@ const JobRequestSchema = new mongoose.Schema({
   // AI Diagnosis Metadata
   source: {
     type: String,
-    enum: ['website', 'app', 'mobile', 'referral', 'MANUAL', 'AI_DIAGNOSED'],
+    enum: ['website', 'seo', 'landing_page', 'referral', 'mobile_app', 'app', 'mobile', 'MANUAL', 'AI_DIAGNOSED'],
     default: 'website',
     required: true
   },

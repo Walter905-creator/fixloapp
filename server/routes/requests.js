@@ -128,6 +128,9 @@ router.post('/', async (req, res) => {
     let savedLead = null;
 
     if (mongoose.connection.readyState === 1) {
+      // Log new service request for debugging
+      console.log('New Fixlo service request:', { service: serviceType, city, phone: normalizedPhone });
+
       // Save job (phone-first, no email required)
       const jobData = {
         requestId,
@@ -137,7 +140,7 @@ router.post('/', async (req, res) => {
         address: formattedAddress,
         city: city.trim(),
         state: state.trim(),
-        description: details?.trim() || '',
+        description: details?.trim() || 'No additional details provided',
         preferredTime: req.body.preferredTime?.trim() || '',
         status: 'pending',
         smsConsent,
@@ -265,6 +268,7 @@ router.post('/', async (req, res) => {
 
     return res.status(201).json({
       ok: true,
+      success: true,
       requestId,
       clientSecret,
       message: 'Request submitted successfully',
