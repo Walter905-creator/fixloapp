@@ -4,6 +4,7 @@ import { API_BASE } from '../utils/config';
 
 export default function AdminJobsPage() {
   const [jobs, setJobs] = useState([]);
+  const [overview, setOverview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [selectedJob, setSelectedJob] = useState(null);
@@ -12,8 +13,21 @@ export default function AdminJobsPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    loadOverview();
     loadJobs();
   }, [filter]);
+
+  const loadOverview = async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_BASE}/api/admin/jobs/overview`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) setOverview(await res.json());
+    } catch (err) {
+      console.error('Error loading jobs overview:', err);
+    }
+  };
 
   const loadJobs = async () => {
     try {
@@ -317,6 +331,27 @@ export default function AdminJobsPage() {
       
       <div className="container-xl py-8">
         <h1 className="text-3xl font-bold mb-6">Job Control Center</h1>
+
+        {/* Jobs Overview Metrics */}
+        {overview && (
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
+            {[
+              { label: 'Total', value: overview.totalJobs, color: 'text-gray-800' },
+              { label: 'Pending', value: overview.pendingJobs, color: 'text-yellow-700' },
+              { label: 'Assigned', value: overview.assignedJobs, color: 'text-blue-700' },
+              { label: 'Completed', value: overview.completedJobs, color: 'text-green-700' },
+              { label: 'Cancelled', value: overview.cancelledJobs, color: 'text-red-600' },
+              { label: 'Today', value: overview.jobsToday, color: 'text-indigo-700' },
+              { label: 'This Week', value: overview.jobsThisWeek, color: 'text-purple-700' },
+              { label: 'Revenue', value: `$${(overview.totalRevenue || 0).toFixed(0)}`, color: 'text-emerald-700' },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="bg-white rounded-lg border border-gray-200 p-3 text-center">
+                <div className="text-xs text-gray-500 mb-1">{label}</div>
+                <div className={`text-lg font-bold ${color}`}>{value}</div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">

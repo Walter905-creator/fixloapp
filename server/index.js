@@ -325,6 +325,7 @@ app.use("/api/cloudinary", require("./routes/cloudinary")); // POST /api/cloudin
 
 app.use("/api/admin", adminRateLimit, require("./routes/admin"));
 app.use("/api/admin", adminRateLimit, require("./routes/adminJobs")); // Admin job management
+app.use("/api/admin", adminRateLimit, require("./routes/adminDashboard")); // Admin dashboard control center
 
 // Admin: Grant lifetime membership (protected by x-admin-key header)
 app.post("/api/admin/grant-lifetime", adminRateLimit, async (req, res) => {

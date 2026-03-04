@@ -19,6 +19,9 @@ import ProResetPasswordPage from './routes/ProResetPasswordPage.jsx';
 import AdminPage from './routes/AdminPage.jsx';
 import AdminJobsPage from './routes/AdminJobsPage.jsx';
 import AdminSocialMediaPage from './routes/AdminSocialMediaPage.jsx';
+import AdminSettingsPage from './routes/AdminSettingsPage.jsx';
+import AdminLeadHunterPage from './routes/AdminLeadHunterPage.jsx';
+import AdminSEOAIPage from './routes/AdminSEOAIPage.jsx';
 import ProDashboardPage from './routes/ProDashboardPage.jsx';
 import ContractorDashboardPage from './routes/ContractorDashboardPage.jsx';
 import JoinPage from './routes/JoinPage.jsx';
@@ -100,6 +103,21 @@ export default function App(){
       <Route path="/dashboard/admin/social" element={
         <RequireAdmin>
           <AdminSocialMediaPage/>
+        </RequireAdmin>
+      }/>
+      <Route path="/dashboard/admin/settings" element={
+        <RequireAdmin>
+          <AdminSettingsPage/>
+        </RequireAdmin>
+      }/>
+      <Route path="/dashboard/admin/lead-hunter" element={
+        <RequireAdmin>
+          <AdminLeadHunterPage/>
+        </RequireAdmin>
+      }/>
+      <Route path="/dashboard/admin/seo-ai" element={
+        <RequireAdmin>
+          <AdminSEOAIPage/>
         </RequireAdmin>
       }/>
       

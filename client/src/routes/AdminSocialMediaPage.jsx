@@ -25,8 +25,14 @@ export default function AdminSocialMediaPage() {
   const [metaDebugInfo, setMetaDebugInfo] = useState(null);
   const [showDebugPanel, setShowDebugPanel] = useState(false);
 
+  // Social settings state
+  const [socialSettings, setSocialSettings] = useState(null);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsSaved, setSettingsSaved] = useState(false);
+
   useEffect(() => {
     loadStatus();
+    loadSocialSettings();
     
     // Check for OAuth callback parameters
     const urlParams = new URLSearchParams(window.location.search);
@@ -64,6 +70,57 @@ export default function AdminSocialMediaPage() {
   /**
    * Load connection status for all platforms
    */
+  const loadSocialSettings = async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_BASE}/api/admin/social/settings`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) setSocialSettings(await res.json());
+    } catch (err) {
+      console.error('Failed to load social settings:', err);
+    }
+  };
+
+  const saveSocialSettings = async (updates) => {
+    try {
+      setSettingsSaving(true);
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_BASE}/api/admin/social/settings`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSocialSettings(data.settings);
+        setSettingsSaved(true);
+        setTimeout(() => setSettingsSaved(false), 2000);
+      }
+    } catch (err) {
+      console.error('Failed to save social settings:', err);
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
+
+  const postNow = async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_BASE}/api/admin/social/post-now`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ platform: 'all', content: 'Manual post from Fixlo Admin' })
+      });
+      if (res.ok) {
+        alert('Manual post triggered!');
+        loadSocialSettings();
+      }
+    } catch (err) {
+      alert('Post error: ' + err.message);
+    }
+  };
+
   const loadStatus = async () => {
     try {
       setLoading(true);
@@ -296,7 +353,70 @@ export default function AdminSocialMediaPage() {
             {error}
           </div>
         )}
-        
+
+        {/* Social Settings Panel */}
+        {socialSettings && (
+          <div className="bg-white rounded-lg border border-gray-200 p-5 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-gray-800">Auto-Posting Settings</h2>
+              {settingsSaved && <span className="text-green-600 text-sm font-medium">✅ Saved</span>}
+            </div>
+            <div className="flex flex-wrap gap-6 items-center mb-4">
+              {/* Auto-posting toggle */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-gray-700">Auto-Posting</span>
+                <button
+                  type="button"
+                  disabled={settingsSaving}
+                  onClick={() => saveSocialSettings({ autoPostingEnabled: !socialSettings.autoPostingEnabled })}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${socialSettings.autoPostingEnabled ? 'bg-green-500' : 'bg-gray-300'} disabled:opacity-50`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${socialSettings.autoPostingEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+                <span className="text-sm text-gray-500">{socialSettings.autoPostingEnabled ? 'ON' : 'OFF'}</span>
+              </div>
+              {/* Frequency */}
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Frequency:</label>
+                <select
+                  value={socialSettings.postingFrequency}
+                  disabled={settingsSaving}
+                  onChange={e => saveSocialSettings({ postingFrequency: e.target.value })}
+                  className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="daily">Daily</option>
+                  <option value="twice_daily">Twice Daily</option>
+                  <option value="weekly">Weekly</option>
+                </select>
+              </div>
+              {/* Manual post */}
+              <button
+                type="button"
+                onClick={postNow}
+                className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              >
+                📤 Post Now
+              </button>
+            </div>
+            {/* Recent posts */}
+            {socialSettings.recentPosts?.length > 0 && (
+              <div>
+                <div className="text-xs text-gray-500 uppercase font-semibold mb-2">Recent Posts</div>
+                <div className="space-y-1 max-h-40 overflow-y-auto">
+                  {[...socialSettings.recentPosts].reverse().map((post, i) => (
+                    <div key={i} className="flex items-center gap-3 text-xs py-1 border-b border-gray-50">
+                      <span className="text-gray-400">{new Date(post.postedAt).toLocaleString()}</span>
+                      <span className="text-gray-500">[{post.platform}]</span>
+                      <span className="text-gray-700 truncate flex-1">{post.content}</span>
+                      <span className={`font-semibold ${post.status === 'sent' ? 'text-green-600' : 'text-red-500'}`}>{post.status}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Meta OAuth Diagnostic Panel */}
         {showDebugPanel && metaDebugInfo && metaDebugInfo.lastErrorReason && (
           <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6 mb-6">

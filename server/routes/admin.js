@@ -78,6 +78,8 @@ router.post("/trigger-charlotte-test-job", async (req, res) => {
     const fullName = req.body.fullName || 'Test Homeowner';
     const customerPhone = req.body.phone || '+17045550000';
 
+    const errors = [];
+
     const testLead = {
       _id: 'test-job-charlotte-' + Date.now(),
       trade: serviceType,
@@ -105,6 +107,7 @@ Reply ACCEPT to take this job first.`;
       console.log(`✅ Priority SMS sent to ${priorityConfig.name} (${priorityConfig.phone})`);
     } catch (smsErr) {
       prioritySmsResult = { success: false, error: smsErr.message };
+      errors.push(`Priority SMS: ${smsErr.message}`);
       console.error('❌ Priority SMS failed:', smsErr.message);
     }
 
@@ -115,15 +118,26 @@ Reply ACCEPT to take this job first.`;
       if (ownerNotifyResult.success) {
         console.log(`✅ Owner notification sent (SID: ${ownerNotifyResult.messageId})`);
       } else {
-        console.warn(`⚠️ Owner notification skipped: ${ownerNotifyResult.reason || ownerNotifyResult.error}`);
+        const reason = ownerNotifyResult.reason || ownerNotifyResult.error || 'skipped';
+        console.warn(`⚠️ Owner notification skipped: ${reason}`);
+        errors.push(`Owner notification: ${reason}`);
       }
     } catch (notifyErr) {
       ownerNotifyResult = { success: false, error: notifyErr.message };
+      errors.push(`Owner notification: ${notifyErr.message}`);
       console.error('❌ Owner notification error:', notifyErr.message);
     }
 
     return res.json({
       ok: prioritySmsResult.success || ownerNotifyResult.success,
+      // Enhanced fields per Part 5
+      jobCreated: true,
+      jobId: testLead._id,
+      assignedPro: { name: priorityConfig.name, phone: priorityConfig.phone },
+      prioritySmsSent: prioritySmsResult.success,
+      ownerNotificationSent: ownerNotifyResult.success,
+      errors,
+      // Legacy fields (preserved for backward compat)
       ownerName: priorityConfig.name,
       sentTo: priorityConfig.phone,
       testLead,
