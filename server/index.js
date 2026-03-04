@@ -857,21 +857,49 @@ app.post("/webhook/stripe", async (req, res) => {
     return res.status(503).send("Stripe webhook not configured");
   }
   const sig = req.headers["stripe-signature"];
+  let event;
   try {
-    const event = stripe.webhooks.constructEvent(
+    event = stripe.webhooks.constructEvent(
       req.body,
       sig,
       process.env.STRIPE_WEBHOOK_SECRET
     );
-
-    // Handle subscription events here (optional)
-    console.log("💳 Stripe webhook event:", event.type);
-
-    res.json({ received: true });
   } catch (err) {
     console.error("❌ Stripe webhook error:", err.message);
-    res.status(400).send(`Webhook Error: ${err.message}`);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
   }
+
+  console.log("💳 Stripe webhook event:", event.type);
+
+  try {
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object;
+      const proId = session.metadata?.proId;
+      if (proId) {
+        await Pro.findByIdAndUpdate(proId, {
+          stripeCustomerId: session.customer,
+          stripeSubscriptionId: session.subscription,
+          subscriptionActive: true,
+          paymentStatus: "active",
+          isActive: true
+        });
+        console.log(`✅ Stripe checkout completed for pro ${proId}`);
+      }
+    } else if (event.type === "customer.subscription.deleted") {
+      const subscription = event.data.object;
+      const pro = await Pro.findOne({ stripeSubscriptionId: subscription.id });
+      if (pro && pro.subscriptionType !== "lifetime") {
+        pro.subscriptionActive = false;
+        pro.paymentStatus = "cancelled";
+        await pro.save();
+        console.log(`✅ Subscription cancelled for pro ${pro._id}`);
+      }
+    }
+  } catch (err) {
+    console.error("❌ Stripe webhook handler error:", err.message);
+  }
+
+  res.json({ received: true });
 });
 
 // ----------------------- Checkr Webhook (no-op when background checks disabled) -----------------------

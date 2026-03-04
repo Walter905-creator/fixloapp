@@ -72,7 +72,7 @@ export default function AdminSocialMediaPage() {
    */
   const loadSocialSettings = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('fixlo_token');
       const res = await fetch(`${API_BASE}/api/admin/social/settings`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -85,7 +85,7 @@ export default function AdminSocialMediaPage() {
   const saveSocialSettings = async (updates) => {
     try {
       setSettingsSaving(true);
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('fixlo_token');
       const res = await fetch(`${API_BASE}/api/admin/social/settings`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -106,7 +106,7 @@ export default function AdminSocialMediaPage() {
 
   const postNow = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('fixlo_token');
       const res = await fetch(`${API_BASE}/api/admin/social/post-now`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -126,7 +126,7 @@ export default function AdminSocialMediaPage() {
       setLoading(true);
       setError('');
 
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('fixlo_token');
       if (!token) {
         throw new Error('Not authenticated');
       }
@@ -157,7 +157,7 @@ export default function AdminSocialMediaPage() {
    */
   const loadMetaDebugInfo = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('fixlo_token');
       if (!token) {
         return;
       }
@@ -216,7 +216,7 @@ export default function AdminSocialMediaPage() {
         console.log('[OAuth] Requesting authorization URL:', url);
       }
       
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('fixlo_token');
       if (!token) {
         throw new Error('Not authenticated');
       }

@@ -19,7 +19,7 @@ export default function AdminJobsPage() {
 
   const loadOverview = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('fixlo_token');
       const res = await fetch(`${API_BASE}/api/admin/jobs/overview`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -32,7 +32,7 @@ export default function AdminJobsPage() {
   const loadJobs = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('fixlo_token');
       if (!token) {
         setError('Not authenticated');
         return;
@@ -61,7 +61,7 @@ export default function AdminJobsPage() {
 
   const viewJobDetails = async (jobId) => {
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('fixlo_token');
       const response = await fetch(`${API_BASE}/api/admin/jobs/${jobId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -87,7 +87,7 @@ export default function AdminJobsPage() {
 
     try {
       setActionLoading(true);
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('fixlo_token');
       const response = await fetch(`${API_BASE}/api/admin/jobs/${selectedJob._id}/schedule`, {
         method: 'POST',
         headers: {
@@ -114,7 +114,7 @@ export default function AdminJobsPage() {
 
     try {
       setActionLoading(true);
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('fixlo_token');
       const response = await fetch(`${API_BASE}/api/admin/jobs/${selectedJob._id}/start`, {
         method: 'POST',
         headers: {
@@ -141,7 +141,7 @@ export default function AdminJobsPage() {
 
     try {
       setActionLoading(true);
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('fixlo_token');
       const response = await fetch(`${API_BASE}/api/admin/jobs/${selectedJob._id}/end`, {
         method: 'POST',
         headers: {
@@ -170,7 +170,7 @@ export default function AdminJobsPage() {
 
     try {
       setActionLoading(true);
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('fixlo_token');
       const response = await fetch(`${API_BASE}/api/admin/jobs/${selectedJob._id}/materials`, {
         method: 'POST',
         headers: {
@@ -201,7 +201,7 @@ export default function AdminJobsPage() {
 
     try {
       setActionLoading(true);
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('fixlo_token');
       const response = await fetch(`${API_BASE}/api/admin/jobs/${selectedJob._id}/complete`, {
         method: 'POST',
         headers: {
@@ -228,7 +228,7 @@ export default function AdminJobsPage() {
 
     try {
       setActionLoading(true);
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('fixlo_token');
       const response = await fetch(`${API_BASE}/api/admin/jobs/${selectedJob._id}/invoice`, {
         method: 'POST',
         headers: {
@@ -256,7 +256,7 @@ export default function AdminJobsPage() {
 
     try {
       setActionLoading(true);
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('fixlo_token');
       const response = await fetch(`${API_BASE}/api/admin/jobs/${selectedJob._id}/capture-payment`, {
         method: 'POST',
         headers: {
@@ -285,7 +285,7 @@ export default function AdminJobsPage() {
 
     try {
       setActionLoading(true);
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('fixlo_token');
       const response = await fetch(`${API_BASE}/api/admin/jobs/${selectedJob._id}/release-authorization`, {
         method: 'POST',
         headers: {

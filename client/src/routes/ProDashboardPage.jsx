@@ -16,6 +16,7 @@ export default function ProDashboardPage(){
   const [subscriptionActive, setSubscriptionActive] = React.useState(null);
   const [subscriptionType, setSubscriptionType] = React.useState(null);
   const [billingLoading, setBillingLoading] = React.useState(false);
+  const [proRole, setProRole] = React.useState('pro');
   
   const displayName = user?.name || user?.phone || 'Pro User';
   
@@ -27,12 +28,13 @@ export default function ProDashboardPage(){
     async function load(){
       if(!api) { setLoaded(true); return; }
       const token = getToken();
-      const authHeaders = token
-        ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
-        : { 'Content-Type': 'application/json' };
+      if(!token) { setLoaded(true); return; }
+      const authHeaders = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      };
 
       try{
-        // Try SaaS dashboard endpoint first (requires subscriptionActive)
         const dashRes = await fetch(`${api}/api/pro/dashboard`, {
           headers: authHeaders
         });
@@ -43,26 +45,13 @@ export default function ProDashboardPage(){
           setLeads(Array.isArray(data.leads) ? data.leads : []);
           setSubscriptionActive(data.subscriptionActive);
           setSubscriptionType(data.subscriptionType || 'monthly');
+          setProRole(data.role || 'pro');
         } else if(dashRes.status === 403){
-          // Subscription inactive
           const data = await dashRes.json();
           setSubscriptionActive(false);
           setProData(data);
         } else {
-          // Fall back to legacy dashboard
-          const profileRes = await fetch(`${api}/api/pros/dashboard`, { credentials:'include', headers: authHeaders });
-          if(profileRes.ok){
-            const data = await profileRes.json();
-            setProData(data.pro);
-            setSubscriptionActive(data.pro?.paymentStatus === 'active' || data.pro?.subscriptionActive || false);
-          }
-
-          // Load leads from legacy endpoint
-          const leadsRes = await fetch(`${api}/api/pros/leads`, { credentials:'include', headers: authHeaders });
-          if(leadsRes.ok){
-            const data = await leadsRes.json();
-            setLeads(Array.isArray(data) ? data : (data?.leads || []));
-          }
+          setSubscriptionActive(false);
         }
       }catch(e){
         console.error('Failed to load dashboard:', e);
@@ -139,7 +128,7 @@ export default function ProDashboardPage(){
     
     try{
       const token = getToken();
-      const res = await fetch(`${api}/api/pros/settings`, {
+      const res = await fetch(`${api}/api/pro/settings`, {
         method: 'PATCH',
         credentials: 'include',
         headers: {
@@ -184,6 +173,14 @@ export default function ProDashboardPage(){
           )}
         </p>
         <div className="flex gap-3 items-center">
+          {proRole === 'admin' && (
+            <a
+              href="/dashboard/admin"
+              className="text-sm text-white bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded font-semibold"
+            >
+              Admin Dashboard
+            </a>
+          )}
           <button 
             onClick={openBillingPortal}
             disabled={billingLoading}
