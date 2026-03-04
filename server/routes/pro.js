@@ -18,14 +18,20 @@ function requireJwtSecret() {
 function requireAuth(req, res, next) {
   const raw = req.headers.authorization || '';
   const token = raw.startsWith('Bearer ') ? raw.slice(7) : null;
-  if (!token) return res.status(401).json({ error: 'Missing token' });
+  if (!token) {
+    console.log(`🔒 requireAuth: no token on ${req.method} ${req.path}`);
+    return res.status(401).json({ ok: false, error: 'Unauthorized' });
+  }
 
   try {
     const decoded = jwt.verify(token, requireJwtSecret());
     req.user = decoded;
+    // Normalize id: support both { proId } (legacy proRoutes tokens) and { id } (current tokens)
+    req.user.id = decoded.id || decoded.proId;
+    console.log(`🔐 requireAuth: token valid, user.id=${req.user.id}`);
     return next();
   } catch {
-    return res.status(401).json({ error: 'Invalid or expired token' });
+    return res.status(401).json({ ok: false, error: 'Unauthorized' });
   }
 }
 
@@ -180,19 +186,27 @@ router.post('/login', async (req, res) => {
 // GET /api/pro/dashboard — requires auth + active subscription
 router.get('/dashboard', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
+    console.log(`📊 Dashboard hit: user.id=${req.user.id}`);
     const pro = await Pro.findById(req.user.id).select('-password');
-    if (!pro) return res.status(404).json({ error: 'Pro account not found' });
+    if (!pro) return res.status(404).json({ ok: false, error: 'Pro account not found' });
+
 
     const leads = await JobRequest.find({
       $or: [
         { assignedProId: pro._id },
         { assignedTo: pro._id }
       ]
+
+    // Query leads using both assignment fields for compatibility
+    const leads = await JobRequest.find({
+      $or: [{ assignedProId: pro._id }, { assignedTo: pro._id }]
+ main
     })
       .sort({ createdAt: -1 })
       .limit(100)
       .select('trade name phone email address city description status createdAt scheduledDate');
 
+    console.log(`✅ Dashboard: ${leads.length} leads for pro ${pro._id}`);
     return res.json({
       name: pro.name,
       trade: pro.trade,
@@ -203,7 +217,7 @@ router.get('/dashboard', requireAuth, requireActiveSubscription, async (req, res
     });
   } catch (err) {
     console.error('Pro dashboard error:', err);
-    return res.status(500).json({ error: 'Server error fetching dashboard' });
+    return res.status(500).json({ ok: false, error: 'Server error fetching dashboard' });
   }
 });
 
@@ -241,18 +255,21 @@ router.patch('/settings', requireAuth, async (req, res) => {
 // POST /api/pro/billing-portal — creates Stripe billing portal session
 router.post('/billing-portal', requireAuth, async (req, res) => {
   try {
+    console.log(`💳 Billing portal hit: user.id=${req.user.id}`);
     const stripe = process.env.STRIPE_SECRET_KEY
       ? require('stripe')(process.env.STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' })
       : null;
 
     if (!stripe) {
-      return res.status(503).json({ error: 'Payment system not configured' });
+      return res.status(503).json({ ok: false, error: 'Payment system not configured' });
     }
 
     const pro = await Pro.findById(req.user.id).select('stripeCustomerId');
-    if (!pro) return res.status(404).json({ error: 'Pro account not found' });
+    if (!pro) return res.status(404).json({ ok: false, error: 'Pro account not found' });
+
+    console.log(`💳 Billing portal: stripeCustomerId=${pro.stripeCustomerId || 'none'}`);
     if (!pro.stripeCustomerId) {
-      return res.status(400).json({ error: 'No billing account found. Please subscribe first.' });
+      return res.status(400).json({ ok: false, error: 'No billing account found. Please subscribe first.' });
     }
 
     const clientUrl = process.env.CLIENT_URL || 'https://www.fixloapp.com';
@@ -264,7 +281,7 @@ router.post('/billing-portal', requireAuth, async (req, res) => {
     return res.json({ url: session.url });
   } catch (err) {
     console.error('Billing portal error:', err);
-    return res.status(500).json({ error: 'Failed to create billing portal session' });
+    return res.status(500).json({ ok: false, error: 'Failed to create billing portal session' });
   }
 });
 
