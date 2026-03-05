@@ -76,9 +76,18 @@ router.post('/', async (req, res) => {
       applePayToken
     } = req.body || {};
 
+    // Normalize service field — accept trade, service, or serviceType
+    const rawService = (req.body.trade || req.body.service || serviceType || '')
+      .toLowerCase()
+      .trim();
+
+    // ---------- Debug logging ----------
+    console.log('Incoming trade:', rawService);
+    console.log('Description length:', req.body.description?.length ?? req.body.details?.length);
+
     // ---------- Validation ----------
 
-    if (!serviceType || !fullName || !phone || !city || !state) {
+    if (!rawService || !fullName || !phone || !city || !state) {
       return res.status(400).json({
         ok: false,
         error: 'Missing required fields'
@@ -129,14 +138,14 @@ router.post('/', async (req, res) => {
 
     if (mongoose.connection.readyState === 1) {
       // Log new service request for debugging
-      console.log('New Fixlo service request:', { service: serviceType, city, phone: normalizedPhone });
+      console.log('New Fixlo service request:', { service: rawService, city, phone: normalizedPhone });
 
       // Save job (phone-first, no email required)
       const jobData = {
         requestId,
         name: fullName.trim(),
         phone: normalizedPhone,
-        trade: serviceType.trim(),
+        trade: rawService,
         address: formattedAddress,
         city: city.trim(),
         state: state.trim(),
@@ -195,7 +204,7 @@ router.post('/', async (req, res) => {
 
     if (smsConsent && mongoose.connection.readyState === 1) {
       pros = await Pro.find({
-        trade: serviceType.toLowerCase().trim(),
+        trade: rawService,
         wantsNotifications: true,
         isActive: true,
         location: {
@@ -278,6 +287,12 @@ router.post('/', async (req, res) => {
       }
     });
   } catch (err) {
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({
+        ok: false,
+        error: err.message
+      });
+    }
     console.error('❌ Request error:', err.message);
     return res.status(500).json({
       ok: false,

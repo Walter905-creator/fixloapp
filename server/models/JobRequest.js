@@ -5,7 +5,14 @@ const JobRequestSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Trade is required'],
     enum: {
-      values: ['General Repairs', 'Electrical', 'Plumbing', 'Drywall', 'Painting', 'Flooring', 'Carpentry', 'HVAC', 'Roofing', 'House Cleaning', 'Junk Removal', 'Other'],
+      values: [
+        'General Repairs', 'Electrical', 'Plumbing', 'Drywall', 'Painting',
+        'Flooring', 'Carpentry', 'HVAC', 'Roofing', 'House Cleaning', 'Junk Removal',
+        'Landscaping', 'Other',
+        'general repairs', 'electrical', 'plumbing', 'drywall', 'painting',
+        'flooring', 'carpentry', 'hvac', 'roofing', 'house cleaning', 'house-cleaning',
+        'junk removal', 'junk-removal', 'landscaping', 'other'
+      ],
       message: 'Trade must be a valid service type'
     }
   },
