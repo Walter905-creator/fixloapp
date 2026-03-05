@@ -191,16 +191,9 @@ router.get('/dashboard', requireAuth, requireActiveSubscription, async (req, res
     if (!pro) return res.status(404).json({ ok: false, error: 'Pro account not found' });
 
 
-    const leads = await JobRequest.find({
-      $or: [
-        { assignedProId: pro._id },
-        { assignedTo: pro._id }
-      ]
-
     // Query leads using both assignment fields for compatibility
     const leads = await JobRequest.find({
       $or: [{ assignedProId: pro._id }, { assignedTo: pro._id }]
- main
     })
       .sort({ createdAt: -1 })
       .limit(100)
