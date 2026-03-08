@@ -15,11 +15,8 @@ async function initializeWalterPro() {
     const email = 'pro4u.improvements@gmail.com';
     const ownerPhone = process.env.OWNER_PHONE || PLACEHOLDER_PHONE;
     
-    // Check if user already exists
-    const existingPro = await Pro.findOne({ 
-      email: email.toLowerCase(),
-      role: 'pro'
-    });
+    // Check if user already exists (search by email only, regardless of role)
+    const existingPro = await Pro.findOne({ email: email.toLowerCase() });
     
     if (existingPro) {
       // If phone is still the placeholder and we now have a real number, update it
@@ -65,6 +62,11 @@ async function initializeWalterPro() {
     
     return walterPro;
   } catch (error) {
+    // Duplicate key error — user was created concurrently or exists with a different role
+    if (error?.code === 11000) {
+      console.log('✅ Walter Pro already exists — skipping initialization');
+      return null;
+    }
     console.error('❌ Failed to initialize Walter Pro user:', error);
     throw error;
   }
