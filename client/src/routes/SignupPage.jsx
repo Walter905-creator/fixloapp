@@ -17,7 +17,7 @@ export default function SignupPage(){
             <li>✅ Secure payment processing</li>
             <li>✅ AI assistant guidance</li>
           </ul>
-          <Link to="/" className="btn btn-primary">Get Started</Link>
+          <Link to="/for-homeowners" className="btn btn-primary">Get Started</Link>
         </div>
         <div className="card p-6">
           <h2 className="text-xl font-semibold mb-4">For Professionals</h2>
@@ -28,7 +28,7 @@ export default function SignupPage(){
             <li>✅ Flexible scheduling</li>
             <li>✅ Secure payment processing</li>
           </ul>
-          <Link to="/join" className="btn btn-primary">Join as Pro</Link>
+          <Link to="/for-pros" className="btn btn-primary">Join as Pro</Link>
         </div>
       </div>
     </div>

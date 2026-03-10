@@ -95,12 +95,12 @@ export default function Navbar() {
           
           <div className="ml-auto hidden sm:flex items-center gap-3">
             <Link 
-              to="/join"
+              to="/for-pros"
               className="px-4 py-2 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition"
             >
-              Join Now
+              Join as Pro
             </Link>
-            <a href="/services" className="btn-primary">Find a Pro</a>
+            <Link to="/for-homeowners" className="btn-primary">Find a Pro</Link>
           </div>
         </nav>
 
@@ -181,19 +181,19 @@ export default function Navbar() {
             
             <div className="mt-4 flex flex-col gap-3 px-4">
               <Link 
-                to="/join"
+                to="/for-pros"
                 onClick={() => setMobileMenuOpen(false)}
                 className="px-4 py-3 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition text-center"
               >
-                Join Now
+                Join as Pro
               </Link>
-              <a 
-                href="/services"
+              <Link 
+                to="/for-homeowners"
                 onClick={() => setMobileMenuOpen(false)}
                 className="btn-primary text-center"
               >
                 Find a Pro
-              </a>
+              </Link>
             </div>
           </nav>
         </div>
