@@ -3,7 +3,6 @@ import HelmetSEO from "../seo/HelmetSEO";
 import Schema from "../seo/Schema";
 import { Link, useNavigate } from "react-router-dom";
 import StickyProCTA from "../components/StickyProCTA";
-import ServiceIntakeButton from "../components/ServiceIntakeButton";
 import HomeReferralSection from "../components/HomeReferralSection";
 import ReferralSection from "../components/ReferralSection";
 import HomePricingBlock from "../components/HomePricingBlock";
@@ -19,7 +18,6 @@ import { IS_HOLIDAY_SEASON } from "../utils/config";
 /**
  * Local images from /public/images
  */
-const HERO_IMG = "/images/hero-pro.jpg";
 
 const SERVICES = [
   { to: "/services/plumbing",     title: "Plumbing",      desc: "Faucets, pipes, drains, and more",       benefit: "Fast response from verified local professionals", img: "/images/service-plumbing.jpg" },
@@ -86,62 +84,13 @@ export default function HomePage() {
     <>
       <HelmetSEO title={pageTitle} canonicalPathname="/" />
       <Schema />
-      
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-b from-slate-50 to-white overflow-hidden">
-        <div className="container-xl">
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center py-12 md:py-16 lg:py-20">
-            {/* Hero Content */}
-            <div className="text-center lg:text-left order-2 lg:order-1">
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight text-slate-900">
-                Fixlo – Find Trusted Home Service Professionals Near You
-              </h2>
-              
-              <p className="mt-6 text-lg md:text-xl text-slate-600 max-w-2xl mx-auto lg:mx-0">
-                Fixlo is a trusted home services marketplace connecting homeowners across the United States with verified, background-checked professionals for plumbing, electrical, HVAC, cleaning, junk removal, roofing, carpentry, painting, landscaping, and handyman services. Get reliable help for any home project — fast, easy, and with no hidden fees.
-              </p>
 
-              {/* CTAs */}
-              <div className="mt-8 flex flex-col gap-4 justify-center lg:justify-start">
-                {/* Charlotte Service Intake Button */}
-                <div className="w-full">
-                  <ServiceIntakeButton />
-                </div>
-                
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <button
-                    onClick={() => navigate("/join")}
-                    className="btn-primary text-lg px-8 py-4 shadow-sm hover:shadow-md"
-                  >
-                    Get Jobs Near Me
-                  </button>
-                  <button
-                    onClick={() => navigate("/services")}
-                    className="btn-ghost text-lg px-8 py-4 hover:bg-slate-100"
-                  >
-                    Book a Trusted Pro
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Hero Image */}
-            <div className="order-1 lg:order-2">
-              <div className="relative rounded-lg overflow-hidden shadow-sm">
-                <img
-                  src={HERO_IMG}
-                  alt="Professional tradesperson at work"
-                  className="w-full h-auto object-cover"
-                  width="600"
-                  height="600"
-                  loading="eager"
-                  decoding="async"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* New contractor-focused sections */}
+      <HeroSection />
+      <TrustBar />
+      <LeadPreview />
+      <Testimonials />
+      <FinalCTA />
 
       {/* Referral Program Section */}
       {isAuthenticated && user?.role === 'pro' && user?.id ? (
@@ -616,13 +565,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* New contractor-focused sections */}
-      <HeroSection />
-      <TrustBar />
-      <LeadPreview />
-      <Testimonials />
-      <FinalCTA />
 
       {/* Mobile Sticky CTA */}
       <StickyProCTA />
