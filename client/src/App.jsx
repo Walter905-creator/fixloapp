@@ -45,6 +45,8 @@ import EarnStartPage from './routes/EarnStartPage.jsx';
 import EarnDashboardPage from './routes/EarnDashboardPage.jsx';
 import ReferralSignInPage from './routes/ReferralSignInPage.jsx';
 import RequestPage from './routes/RequestPage.jsx';
+import HomeownerLandingPage from './routes/HomeownerLandingPage.jsx';
+import ProLandingPage from './routes/ProLandingPage.jsx';
 export default function App(){
   return (<>
     <MetaPixelTracker />
@@ -141,7 +143,9 @@ export default function App(){
       <Route path="/earn/start" element={<EarnStartPage/>}/>
       <Route path="/earn/sign-in" element={<ReferralSignInPage/>}/>
       <Route path="/earn/dashboard" element={<EarnDashboardPage/>}/>
-      <Route path="/for-professionals" element={<Navigate to="/join" replace/>}/>
+      <Route path="/for-homeowners" element={<HomeownerLandingPage/>}/>
+      <Route path="/for-pros" element={<ProLandingPage/>}/>
+      <Route path="/for-professionals" element={<Navigate to="/for-pros" replace/>}/>
       <Route path="/terms" element={<Terms/>}/>
       <Route path="/privacy" element={<Privacy/>}/>
       <Route path="/privacy-policy" element={<Navigate to="/privacy" replace/>}/>
@@ -164,11 +168,22 @@ export default function App(){
             </ul>
           </div>
           
+          {/* For Homeowners Column */}
+          <div>
+            <h3 className="font-semibold text-slate-900 mb-3">For Homeowners</h3>
+            <ul className="space-y-2 text-sm text-slate-700">
+              <li><a href="/for-homeowners" className="hover:text-brand">Find a Pro</a></li>
+              <li><a href="/request" className="hover:text-brand">Request a Service</a></li>
+              <li><a href="/services" className="hover:text-brand">Browse Services</a></li>
+              <li><a href="/my-jobs" className="hover:text-brand">My Jobs</a></li>
+            </ul>
+          </div>
+          
           {/* For Professionals Column */}
           <div>
             <h3 className="font-semibold text-slate-900 mb-3">For Professionals</h3>
             <ul className="space-y-2 text-sm text-slate-700">
-              <li><a href="/join" className="hover:text-brand">Join as a Pro</a></li>
+              <li><a href="/for-pros" className="hover:text-brand">Join as a Pro</a></li>
               <li><a href="/pro/sign-in" className="hover:text-brand">Pro Sign In</a></li>
               <li><a href="/how-it-works" className="hover:text-brand">How Fixlo Works</a></li>
             </ul>
