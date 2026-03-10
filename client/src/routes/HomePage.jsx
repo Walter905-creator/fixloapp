@@ -143,6 +143,13 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Contractor-focused sections */}
+      <HeroSection />
+      <TrustBar />
+      <LeadPreview />
+      <Testimonials />
+      <FinalCTA />
+
       {/* Referral Program Section */}
       {isAuthenticated && user?.role === 'pro' && user?.id ? (
         <section className="py-12 md:py-16">
@@ -616,13 +623,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* New contractor-focused sections */}
-      <HeroSection />
-      <TrustBar />
-      <LeadPreview />
-      <Testimonials />
-      <FinalCTA />
 
       {/* Mobile Sticky CTA */}
       <StickyProCTA />
