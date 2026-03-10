@@ -7,6 +7,11 @@ import ServiceIntakeButton from "../components/ServiceIntakeButton";
 import HomeReferralSection from "../components/HomeReferralSection";
 import ReferralSection from "../components/ReferralSection";
 import HomePricingBlock from "../components/HomePricingBlock";
+import HeroSection from "../components/HeroSection";
+import TrustBar from "../components/TrustBar";
+import LeadPreview from "../components/LeadPreview";
+import Testimonials from "../components/Testimonials";
+import FinalCTA from "../components/FinalCTA";
 import { useAuth } from "../context/AuthContext";
 import { detectUserCountry } from "../utils/countryDetection";
 import { IS_HOLIDAY_SEASON } from "../utils/config";
@@ -611,6 +616,13 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* New contractor-focused sections */}
+      <HeroSection />
+      <TrustBar />
+      <LeadPreview />
+      <Testimonials />
+      <FinalCTA />
 
       {/* Mobile Sticky CTA */}
       <StickyProCTA />
