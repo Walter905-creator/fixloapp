@@ -37,15 +37,21 @@ export default function HeroSection() {
             <p className="mt-6 text-lg md:text-xl text-slate-200 max-w-xl">
               Find local homeowners who need your services. No bidding. No lead fees.
             </p>
-            <div className="mt-8">
+            <div className="mt-8 flex flex-col sm:flex-row items-center sm:items-start gap-4">
               <button
-                onClick={() => navigate("/join")}
-                className="inline-block text-white font-semibold text-lg px-10 py-4 rounded-full shadow-lg transition-colors"
+                onClick={() => navigate("/for-homeowners")}
+                className="w-full sm:w-auto text-white font-semibold text-lg px-10 py-4 rounded-full shadow-lg transition-colors"
                 style={{ backgroundColor: "#2ecc71" }}
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#27ae60")}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#2ecc71")}
               >
-                Join Fixlo Now
+                I Need a Service
+              </button>
+              <button
+                onClick={() => navigate("/for-pros")}
+                className="w-full sm:w-auto bg-transparent text-white font-semibold text-lg px-10 py-4 rounded-full shadow-lg border-2 border-white transition-colors hover:bg-white hover:text-slate-900"
+              >
+                I Am a Contractor
               </button>
             </div>
           </div>
