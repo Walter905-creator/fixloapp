@@ -342,7 +342,7 @@ async function sendLeadNotification(pro, lead) {
 }
 
 /**
- * Send owner notification for new lead in Charlotte
+ * Send owner notification for any new USA lead.
  * Owner phone is always US-based, no consent check required (business owner)
  */
 async function sendOwnerNotification(ownerPhone, lead) {
