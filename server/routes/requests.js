@@ -6,8 +6,9 @@ const mongoose = require('mongoose');
 const JobRequest = require('../models/JobRequest');
 const Pro = require('../models/Pro');
 const { geocodeAddress } = require('../utils/geocoding');
+const { isUSPhoneNumber } = require('../utils/twilio');
 const { sendOwnerNotification, sendHomeownerConfirmation, sendProLeadAlert } = require('../utils/smsSender');
-const { getPriorityConfig } = require('../config/priorityRouting');
+const { getPriorityConfig, getOwnerPhone } = require('../config/priorityRouting');
 
 // Constants
 const VISIT_FEE_AMOUNT = parseInt(process.env.VISIT_FEE_AMOUNT || '150', 10);
@@ -177,12 +178,11 @@ router.post('/', async (req, res) => {
         }
       }
 
-      // Send owner notification for Charlotte leads
-      const priorityConfig = getPriorityConfig(city);
-      if (priorityConfig) {
+      // Send owner notification for any USA lead
+      if (isUSPhoneNumber(phone)) {
         try {
-          console.log(`📢 Sending owner notification for ${city} lead`);
-          const ownerResult = await sendOwnerNotification(priorityConfig.phone, savedLead);
+          console.log(`📢 Sending owner notification for USA lead`);
+          const ownerResult = await sendOwnerNotification(getOwnerPhone(), savedLead);
           if (ownerResult.success) {
             console.log(`✅ Owner notification sent successfully (SID: ${ownerResult.messageId})`);
           } else {

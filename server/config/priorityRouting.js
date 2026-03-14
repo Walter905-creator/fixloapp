@@ -67,10 +67,21 @@ function findPriorityProByPhone(phone) {
   return null;
 }
 
+/**
+ * Get the owner's phone number for USA-wide lead notifications.
+ * Uses the OWNER_PHONE environment variable when set, otherwise falls back
+ * to the Charlotte priority-pro phone (Walter Arevalo).
+ * @returns {string} Owner phone in E.164 format
+ */
+function getOwnerPhone() {
+  return process.env.OWNER_PHONE || PRIORITY_ROUTING.charlotte.phone;
+}
+
 module.exports = {
   PRIORITY_ROUTING,
   getPriorityConfig,
   hasPriorityRouting,
   getDelayMs,
-  findPriorityProByPhone
+  findPriorityProByPhone,
+  getOwnerPhone
 };

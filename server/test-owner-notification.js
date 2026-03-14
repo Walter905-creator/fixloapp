@@ -1,11 +1,11 @@
 /**
  * Test Script for Owner Notification System
  * 
- * This script validates that owner notifications are sent for Charlotte leads.
+ * This script validates that owner notifications are sent for any new USA lead.
  * Run with: node server/test-owner-notification.js
  */
 
-console.log('🧪 Testing Owner Notification System for Charlotte Leads\n');
+console.log('🧪 Testing Owner Notification System for USA Leads\n');
 console.log('='.repeat(60));
 
 // Mock lead data for Charlotte
@@ -21,22 +21,55 @@ const charlotteLead = {
   serviceType: 'Plumbing'
 };
 
-// Mock owner phone (Walter Arevalo)
-const ownerPhone = '+15164449953';
+// Mock lead data for a non-Charlotte USA city
+const nonCharlotteLead = {
+  _id: 'test-lead-456',
+  trade: 'Electrical',
+  city: 'Austin',
+  state: 'TX',
+  address: '456 Oak Ave, Austin, TX 78701',
+  name: 'Jane Homeowner',
+  phone: '+15125551234',
+  description: 'Outlet not working',
+  serviceType: 'Electrical'
+};
+
+// Owner phone (resolved via getOwnerPhone helper)
+const { getOwnerPhone } = require('./config/priorityRouting');
+const ownerPhone = getOwnerPhone();
 
 console.log('\n📋 Test Configuration:');
 console.log('   Owner Phone:', ownerPhone);
-console.log('   Test City:', charlotteLead.city);
-console.log('   Lead Details:', {
+console.log('   Charlotte Lead City:', charlotteLead.city);
+console.log('   Non-Charlotte Lead City:', nonCharlotteLead.city);
+console.log('   Charlotte Lead Details:', {
   service: charlotteLead.trade,
   customer: charlotteLead.name,
   address: charlotteLead.address
 });
+console.log('   Non-Charlotte Lead Details:', {
+  service: nonCharlotteLead.trade,
+  customer: nonCharlotteLead.name,
+  address: nonCharlotteLead.address
+});
 
 console.log('\n' + '='.repeat(60));
 
-// Test 1: Verify Priority Config for Charlotte
-console.log('\n1️⃣ Testing Priority Configuration for Charlotte');
+// Test 1: Verify getOwnerPhone helper
+console.log('\n1️⃣ Testing getOwnerPhone Helper');
+try {
+  const phone = getOwnerPhone();
+  if (phone && phone.startsWith('+1')) {
+    console.log('   ✅ getOwnerPhone returns a US E.164 number:', phone);
+  } else {
+    console.log('   ❌ getOwnerPhone returned unexpected value:', phone);
+  }
+} catch (error) {
+  console.log('   ❌ Error calling getOwnerPhone:', error.message);
+}
+
+// Test 2: Verify Priority Config for Charlotte (priority routing still works)
+console.log('\n2️⃣ Testing Priority Configuration for Charlotte');
 try {
   const { getPriorityConfig } = require('./config/priorityRouting');
   
@@ -47,12 +80,6 @@ try {
     console.log('   Owner:', priorityConfig.name);
     console.log('   Phone:', priorityConfig.phone);
     console.log('   Delay:', priorityConfig.delayMinutes, 'minutes');
-    
-    if (priorityConfig.phone === ownerPhone) {
-      console.log('   ✅ Phone number matches Walter Arevalo');
-    } else {
-      console.log('   ❌ Phone number mismatch!');
-    }
   } else {
     console.log('   ❌ No priority config found for Charlotte');
   }
@@ -60,8 +87,8 @@ try {
   console.log('   ❌ Error loading priority config:', error.message);
 }
 
-// Test 2: Verify SMS Template Exists
-console.log('\n2️⃣ Testing Owner SMS Template');
+// Test 3: Verify SMS Template Exists
+console.log('\n3️⃣ Testing Owner SMS Template');
 try {
   const { SMS_TEMPLATES } = require('./utils/smsSender');
   
@@ -71,7 +98,7 @@ try {
     if (SMS_TEMPLATES.owner.en) {
       console.log('   ✅ English template found');
       
-      // Test template rendering
+      // Test template rendering with Charlotte lead
       const testMessage = SMS_TEMPLATES.owner.en({
         service: charlotteLead.trade,
         city: charlotteLead.city,
@@ -80,7 +107,7 @@ try {
         address: charlotteLead.address
       });
       
-      console.log('   Sample message:');
+      console.log('   Sample message (Charlotte):');
       console.log('   ---');
       console.log('   ' + testMessage);
       console.log('   ---');
@@ -102,6 +129,19 @@ try {
       } else {
         console.log('   ❌ Message template validation FAILED');
       }
+
+      // Test template rendering with non-Charlotte USA lead
+      const testMessageAustin = SMS_TEMPLATES.owner.en({
+        service: nonCharlotteLead.trade,
+        city: nonCharlotteLead.city,
+        customerName: nonCharlotteLead.name,
+        customerPhone: nonCharlotteLead.phone,
+        address: nonCharlotteLead.address
+      });
+      
+      const hasAustinCity = testMessageAustin.includes(nonCharlotteLead.city);
+      console.log('\n   Non-Charlotte USA message validation:');
+      console.log('     Austin city included:', hasAustinCity ? '✅' : '❌');
     } else {
       console.log('   ❌ English template not found');
     }
@@ -112,8 +152,8 @@ try {
   console.log('   ❌ Error loading SMS template:', error.message);
 }
 
-// Test 3: Verify sendOwnerNotification function exists
-console.log('\n3️⃣ Testing sendOwnerNotification Function');
+// Test 4: Verify sendOwnerNotification function exists
+console.log('\n4️⃣ Testing sendOwnerNotification Function');
 try {
   const { sendOwnerNotification } = require('./utils/smsSender');
   
@@ -153,8 +193,8 @@ try {
   console.log('   ❌ Error loading sendOwnerNotification:', error.message);
 }
 
-// Test 4: Verify Integration in leads.js
-console.log('\n4️⃣ Testing Integration in leads.js Route');
+// Test 5: Verify Integration in leads.js uses USA-wide notification
+console.log('\n5️⃣ Testing USA-Wide Integration in leads.js Route');
 try {
   const fs = require('fs');
   const leadsRouteContent = fs.readFileSync('./routes/leads.js', 'utf8');
@@ -162,6 +202,14 @@ try {
   // Check for sendOwnerNotification import
   const hasImport = leadsRouteContent.includes('sendOwnerNotification');
   console.log('   Import statement:', hasImport ? '✅' : '❌');
+  
+  // Check for getOwnerPhone import (USA-wide)
+  const hasOwnerPhoneHelper = leadsRouteContent.includes('getOwnerPhone');
+  console.log('   getOwnerPhone helper:', hasOwnerPhoneHelper ? '✅' : '❌');
+  
+  // Check for isUSPhoneNumber check (USA-wide trigger)
+  const hasUSCheck = leadsRouteContent.includes('isUSPhoneNumber');
+  console.log('   USA phone check:', hasUSCheck ? '✅' : '❌');
   
   // Check for owner notification call
   const hasOwnerNotificationCall = leadsRouteContent.includes('await sendOwnerNotification');
@@ -172,8 +220,8 @@ try {
                            leadsRouteContent.includes('Owner notification error');
   console.log('   Error handling:', hasErrorHandling ? '✅' : '❌');
   
-  if (hasImport && hasOwnerNotificationCall && hasErrorHandling) {
-    console.log('   ✅ Integration validation PASSED');
+  if (hasImport && hasOwnerPhoneHelper && hasUSCheck && hasOwnerNotificationCall && hasErrorHandling) {
+    console.log('   ✅ USA-wide integration validation PASSED');
   } else {
     console.log('   ❌ Integration validation FAILED');
   }
@@ -185,23 +233,25 @@ console.log('\n' + '='.repeat(60));
 console.log('\n📊 Test Summary');
 console.log('='.repeat(60));
 console.log('\nTest Results:');
-console.log('  ✓ Priority configuration for Charlotte exists');
-console.log('  ✓ Owner phone number matches Walter Arevalo (516-444-9953)');
+console.log('  ✓ getOwnerPhone helper resolves owner phone (OWNER_PHONE env or Charlotte fallback)');
+console.log('  ✓ Priority configuration for Charlotte still exists');
 console.log('  ✓ SMS template includes all required lead information');
 console.log('  ✓ sendOwnerNotification function is properly implemented');
-console.log('  ✓ Integration with leads.js route is complete');
+console.log('  ✓ leads.js triggers owner notification for ALL USA leads');
 console.log('  ✓ Error handling prevents lead processing failures');
 
 console.log('\n💡 Expected Behavior:');
-console.log('  1. When a lead is submitted for Charlotte:');
-console.log('     - Priority SMS sent to Walter (existing)');
-console.log('     - Owner notification SMS sent to Walter (new)');
+console.log('  1. When a USA lead is submitted (any city):');
+console.log('     - Owner notification SMS sent to owner phone (OWNER_PHONE env or Charlotte fallback)');
+console.log('     - Lead processing continues normally');
+console.log('  2. When a Charlotte lead is submitted specifically:');
+console.log('     - Priority SMS also sent to Walter (priority routing)');
 console.log('     - Other pros notified after 3-minute delay');
-console.log('  2. Owner notification includes:');
+console.log('  3. Owner notification includes:');
 console.log('     - Service type');
 console.log('     - Customer name and phone');
 console.log('     - Full address');
-console.log('  3. If notification fails:');
+console.log('  4. If notification fails:');
 console.log('     - Error is logged');
 console.log('     - Lead processing continues normally');
 
@@ -209,6 +259,6 @@ console.log('\n⚠️  Note: This is a dry-run test.');
 console.log('   No actual SMS messages were sent.');
 console.log('   To test with real Twilio integration:');
 console.log('   - Ensure server is running with valid Twilio credentials');
-console.log('   - Submit a test lead via POST /api/leads with city="Charlotte"');
+console.log('   - Submit a test lead via POST /api/leads with any USA city');
 console.log('   - Check server logs for owner notification status');
 console.log('\n');

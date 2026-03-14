@@ -5,9 +5,9 @@ const JobRequest = require('../models/JobRequest');
 const Invoice = require('../models/Invoice');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
-const { normalizeE164 } = require('../utils/twilio');
+const { normalizeE164, isUSPhoneNumber } = require('../utils/twilio');
 const { sendOwnerNotification } = require('../utils/smsSender');
-const { getPriorityConfig } = require('../config/priorityRouting');
+const { getPriorityConfig, getOwnerPhone } = require('../config/priorityRouting');
 
 /**
  * Validate E.164 phone format
@@ -311,12 +311,11 @@ router.post('/submit', upload.array('photos', 5), async (req, res) => {
 
     console.log(`✅ Service intake request created: ${jobRequest._id}`);
 
-    // Send owner notification for Charlotte leads
-    const priorityConfig = getPriorityConfig(city);
-    if (priorityConfig) {
+    // Send owner notification for any USA lead
+    if (isUSPhoneNumber(phone)) {
       try {
-        console.log(`📢 Sending owner notification for ${city} lead`);
-        const ownerResult = await sendOwnerNotification(priorityConfig.phone, jobRequest);
+        console.log(`📢 Sending owner notification for USA lead`);
+        const ownerResult = await sendOwnerNotification(getOwnerPhone(), jobRequest);
         if (ownerResult.success) {
           console.log(`✅ Owner notification sent successfully (SID: ${ownerResult.messageId})`);
         } else {
