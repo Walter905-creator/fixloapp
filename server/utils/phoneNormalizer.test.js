@@ -144,7 +144,9 @@ describe('Phone Normalization - E.164 Format', () => {
       const phones = [
         { input: '+44 20 7183 8750', expected: '+442071838750' },
         { input: '+55 11 5525-6325', expected: '+551155256325' },
-        { input: '+81 3-1234-5678', expected: '+81312345678' }
+        { input: '+81 3-1234-5678', expected: '+81312345678' },
+        { input: '+91 98765 43210', expected: '+919876543210' },
+        { input: '+919876543210', expected: '+919876543210' }
       ];
 
       phones.forEach(({ input, expected }) => {
@@ -152,6 +154,20 @@ describe('Phone Normalization - E.164 Format', () => {
         expect(result.success).toBe(true);
         expect(result.phone).toBe(expected);
       });
+    });
+
+    test('should handle Indian phone numbers with country code', () => {
+      // Indian mobile numbers: 10 digits prefixed with +91
+      const result = normalizePhoneToE164('+919876543210');
+      expect(result.success).toBe(true);
+      expect(result.phone).toBe('+919876543210');
+    });
+
+    test('should handle Indian phone numbers without + but with country code', () => {
+      // 919876543210 → +919876543210 (12 digits starting with 91)
+      const result = normalizePhoneToE164('919876543210');
+      expect(result.success).toBe(true);
+      expect(result.phone).toBe('+919876543210');
     });
   });
 });

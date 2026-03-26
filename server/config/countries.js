@@ -76,6 +76,19 @@ const SUPPORTED_COUNTRIES = {
     launchDate: '2025-01-01'
   },
   
+  // Asia
+  IN: {
+    code: 'IN',
+    name: 'India',
+    currency: 'INR',
+    currencySymbol: '₹',
+    language: 'hi',
+    region: 'Asia',
+    timezone: 'Asia/Kolkata',
+    active: true,
+    launchDate: '2025-01-01'
+  },
+
   // Latin America
   MX: {
     code: 'MX',
