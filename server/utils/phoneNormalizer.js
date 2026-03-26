@@ -43,11 +43,13 @@ function normalizePhoneToE164(phone) {
 
   // Handle already E.164 formatted numbers (starts with +)
   if (normalized.startsWith('+')) {
+    // Strip spaces and formatting characters while preserving digits and the + prefix
+    const cleaned = normalized.replace(/[^\d+]/g, '');
     // Validate the E.164 format
-    if (isValidE164Format(normalized)) {
+    if (isValidE164Format(cleaned)) {
       return {
         success: true,
-        phone: normalized,
+        phone: cleaned,
         error: null,
         original: original
       };

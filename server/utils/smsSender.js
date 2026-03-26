@@ -33,7 +33,10 @@ const SMS_TEMPLATES = {
       `Te contactaremos con profesionales verificados pronto. Responde STOP para cancelar.`,
     pt: (data) =>
       `Fixlo: Recebemos seu pedido de ${data.service} em ${data.city}. ` +
-      `Estamos conectando você com profissionais verificados. Responda STOP para cancelar.`
+      `Estamos conectando você com profissionais verificados. Responda STOP para cancelar.`,
+    hi: (data) =>
+      `Fixlo: ${data.city} में आपका ${data.service} अनुरोध प्राप्त हुआ। ` +
+      `हम आपको जल्द ही सत्यापित पेशेवरों से जोड़ेंगे। बंद करने के लिए STOP लिखें।`
   },
   
   // Pro notification about new lead
@@ -43,7 +46,9 @@ const SMS_TEMPLATES = {
     es: (data) =>
       `[${data.service}] ${data.location} – Contacto: ${data.customerName} ${data.customerPhone}. Responde STOP para cancelar.`,
     pt: (data) =>
-      `[${data.service}] ${data.location} – Contato: ${data.customerName} ${data.customerPhone}. Responda STOP para cancelar.`
+      `[${data.service}] ${data.location} – Contato: ${data.customerName} ${data.customerPhone}. Responda STOP para cancelar.`,
+    hi: (data) =>
+      `[${data.service}] ${data.location} – संपर्क: ${data.customerName} ${data.customerPhone}. बंद करने के लिए STOP लिखें।`
   },
   
   // Lead alert (generic lead notification)
@@ -53,7 +58,9 @@ const SMS_TEMPLATES = {
     es: (data) =>
       `Nuevo cliente para ${data.service} en ${data.city}. Revisa tu panel de Fixlo. Responde STOP para cancelar.`,
     pt: (data) =>
-      `Novo cliente para ${data.service} em ${data.city}. Verifique seu painel Fixlo. Responda STOP para cancelar.`
+      `Novo cliente para ${data.service} em ${data.city}. Verifique seu painel Fixlo. Responda STOP para cancelar.`,
+    hi: (data) =>
+      `${data.city} में ${data.service} के लिए नई लीड। अपना Fixlo डैशबोर्ड देखें। बंद करने के लिए STOP लिखें।`
   },
   
   // Owner notification for new leads (Charlotte)
@@ -71,6 +78,11 @@ const SMS_TEMPLATES = {
 function detectLanguage(country) {
   const countryUpper = (country || 'US').toUpperCase();
   
+  // Hindi-speaking countries
+  if (['IN'].includes(countryUpper)) {
+    return 'hi';
+  }
+
   // Spanish-speaking countries
   if (['ES', 'MX', 'AR', 'CO', 'CL', 'PE', 'VE', 'EC', 'GT', 'CU', 'BO', 'DO', 'HN', 'PY', 'SV', 'NI', 'CR', 'PA', 'UY'].includes(countryUpper)) {
     return 'es';
