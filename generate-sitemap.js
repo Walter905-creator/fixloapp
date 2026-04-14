@@ -191,16 +191,9 @@ function generateSitemap() {
 
   <!-- Main service category pages (high-level) -->\n`;
 
-  // Add service category pages
-  services.forEach(service => {
-    sitemap += `  <url>
-    <loc>${baseUrl}/services/${service}</loc>
-    <lastmod>${currentDate}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  \n`;
-  });
+  // NOTE: Legacy /services/{service} URLs are NOT added here.
+  // They have canonical tags pointing to /us/services/{service} (the canonical URL).
+  // Only country-prefixed URLs are included in the sitemap to avoid redirect entries.
 
   // INTERNATIONAL SEO: Add country-specific service pages
   // Loop order: country → service → city (as specified in requirements)
