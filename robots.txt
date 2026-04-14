@@ -9,7 +9,6 @@ Disallow: /dashboard/admin/
 
 # Block authentication and account management pages
 Disallow: /pro/sign-in
-Disallow: /pro/login
 Disallow: /pro/forgot-password
 Disallow: /pro/reset-password
 Disallow: /pro/setup-account/
@@ -31,7 +30,5 @@ Disallow: /success
 Disallow: /payment-success
 Disallow: /payment-cancel
 Disallow: /request
-Disallow: /privacy-policy
-Disallow: /privacy-policy.html
 
 Sitemap: https://www.fixloapp.com/sitemap.xml
