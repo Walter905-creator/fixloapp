@@ -7,4 +7,28 @@ Disallow: /admin/
 Disallow: /dashboard/admin
 Disallow: /dashboard/admin/
 
+# Block authentication and account management pages
+Disallow: /pro/sign-in
+Disallow: /pro/forgot-password
+Disallow: /pro/reset-password
+Disallow: /pro/setup-account/
+
+# Block private dashboard and management pages
+Disallow: /dashboard
+Disallow: /dashboard/
+Disallow: /staff/
+Disallow: /contractor/
+Disallow: /my-jobs
+
+# Block referral auth/dashboard pages (thin content)
+Disallow: /earn/sign-in
+Disallow: /earn/dashboard
+Disallow: /earn/start
+
+# Block transactional/utility pages
+Disallow: /success
+Disallow: /payment-success
+Disallow: /payment-cancel
+Disallow: /request
+
 Sitemap: https://www.fixloapp.com/sitemap.xml
