@@ -102,16 +102,16 @@ export default function AboutPage() {
             Fixlo connects homeowners with professionals across all major home service categories:
           </p>
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
-            <Link to="/services/plumbing" className="text-brand hover:underline">• Plumbing</Link>
-            <Link to="/services/electrical" className="text-brand hover:underline">• Electrical</Link>
-            <Link to="/services/hvac" className="text-brand hover:underline">• HVAC</Link>
-            <Link to="/services/carpentry" className="text-brand hover:underline">• Carpentry</Link>
-            <Link to="/services/painting" className="text-brand hover:underline">• Painting</Link>
-            <Link to="/services/roofing" className="text-brand hover:underline">• Roofing</Link>
-            <Link to="/services/cleaning" className="text-brand hover:underline">• House Cleaning</Link>
-            <Link to="/services/junk-removal" className="text-brand hover:underline">• Junk Removal</Link>
-            <Link to="/services/landscaping" className="text-brand hover:underline">• Landscaping</Link>
-            <Link to="/services/handyman" className="text-brand hover:underline">• Handyman Services</Link>
+            <Link to="/us/services/plumbing" className="text-brand hover:underline">• Plumbing</Link>
+            <Link to="/us/services/electrical" className="text-brand hover:underline">• Electrical</Link>
+            <Link to="/us/services/hvac" className="text-brand hover:underline">• HVAC</Link>
+            <Link to="/us/services/carpentry" className="text-brand hover:underline">• Carpentry</Link>
+            <Link to="/us/services/painting" className="text-brand hover:underline">• Painting</Link>
+            <Link to="/us/services/roofing" className="text-brand hover:underline">• Roofing</Link>
+            <Link to="/us/services/house-cleaning" className="text-brand hover:underline">• House Cleaning</Link>
+            <Link to="/us/services/junk-removal" className="text-brand hover:underline">• Junk Removal</Link>
+            <Link to="/us/services/landscaping" className="text-brand hover:underline">• Landscaping</Link>
+            <Link to="/us/services/handyman" className="text-brand hover:underline">• Handyman Services</Link>
           </div>
           <div className="mt-4">
             <Link to="/services" className="text-brand hover:underline font-medium">

@@ -89,7 +89,10 @@ sed -i '/<meta name="description"/d' "$TEMPLATE_FILE"
 sed -i '/<meta name="robots"/d' "$TEMPLATE_FILE"
 
 # Then add the homepage meta tags before the comment
-sed -i "s|<!-- Title, description, robots, canonical, and social|<title>Fixlo – Book Trusted Home Services Near You</title>\n    <meta name=\"description\" content=\"Fixlo connects homeowners with trusted, verified home service professionals. Book plumbing, electrical, HVAC, cleaning, and more. Fast, reliable, and affordable home services.\" />\n    <meta name=\"robots\" content=\"index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1\" />\n    <link rel=\"canonical\" href=\"https://www.fixloapp.com/\" />\n    <!-- Title, description, robots, canonical, and social|" "$TEMPLATE_FILE"
+# NOTE: Do NOT add a canonical here. index.html is served as the SPA shell for ALL routes
+# via Vercel rewrite, so a hardcoded canonical would conflict with every non-homepage route.
+# React Helmet sets the correct per-route canonical dynamically.
+sed -i "s|<!-- Title, description, robots, canonical, and social|<title>Fixlo – Book Trusted Home Services Near You</title>\n    <meta name=\"description\" content=\"Fixlo connects homeowners with trusted, verified home service professionals. Book plumbing, electrical, HVAC, cleaning, and more. Fast, reliable, and affordable home services.\" />\n    <meta name=\"robots\" content=\"index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1\" />\n    <!-- Title, description, robots, canonical, and social|" "$TEMPLATE_FILE"
 
 # Add structured data for homepage (Organization schema) - using a temp file approach
 cat > /tmp/homepage_schema.txt << 'SCHEMA_EOF'
