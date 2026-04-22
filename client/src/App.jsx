@@ -193,10 +193,10 @@ export default function App(){
           <div>
             <h3 className="font-semibold text-slate-900 mb-3">Popular Services</h3>
             <ul className="space-y-2 text-sm text-slate-700">
-              <li><a href="/services/plumbing" className="hover:text-brand">Plumbing</a></li>
-              <li><a href="/services/electrical" className="hover:text-brand">Electrical</a></li>
-              <li><a href="/services/hvac" className="hover:text-brand">HVAC</a></li>
-              <li><a href="/services/cleaning" className="hover:text-brand">Cleaning</a></li>
+              <li><a href="/us/services/plumbing" className="hover:text-brand">Plumbing</a></li>
+              <li><a href="/us/services/electrical" className="hover:text-brand">Electrical</a></li>
+              <li><a href="/us/services/hvac" className="hover:text-brand">HVAC</a></li>
+              <li><a href="/us/services/house-cleaning" className="hover:text-brand">Cleaning</a></li>
               <li><a href="/services" className="hover:text-brand">View All Services</a></li>
             </ul>
           </div>

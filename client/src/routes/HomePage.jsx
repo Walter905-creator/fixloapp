@@ -20,17 +20,17 @@ import { IS_HOLIDAY_SEASON } from "../utils/config";
  */
 
 const SERVICES = [
-  { to: "/services/plumbing",     title: "Plumbing",      desc: "Faucets, pipes, drains, and more",       benefit: "Fast response from verified local professionals", img: "/images/service-plumbing.jpg" },
-  { to: "/services/electrical",   title: "Electrical",    desc: "Lighting, wiring, outlets, and more",    benefit: "Licensed electricians ready to help you today", img: "/images/service-electrical.jpg" },
-  { to: "/services/cleaning",     title: "Cleaning",      desc: "Housekeeping, carpets, windows",         benefit: "Trusted cleaners for your home or office", img: "/images/service-cleaning.jpg" },
-  { to: "/services/roofing",      title: "Roofing",       desc: "Repairs, replacements, inspections",     benefit: "Expert roofers protecting your investment", img: "/images/service-roofing.jpg" },
-  { to: "/services/hvac",         title: "HVAC",          desc: "Heating, cooling, vents",                benefit: "Keep your home comfortable year-round", img: "/images/service-hvac.jpg" },
-  { to: "/services/carpentry",    title: "Carpentry",     desc: "Framing, trim, installs",                benefit: "Skilled carpenters for quality craftsmanship", img: "/images/service-carpentry.jpg" },
-  { to: "/services/painting",     title: "Painting",      desc: "Interior and exterior painting",         benefit: "Transform your space with professional painters", img: "/images/service-painting.jpg" },
-  { to: "/services/landscaping",  title: "Landscaping",   desc: "Lawn, garden, hardscape",                benefit: "Beautiful outdoor spaces by local experts", img: "/images/service-landscaping.jpg" },
-  { to: "/services/junk-removal", title: "Junk Removal",  desc: "Haul away unwanted items",               benefit: "Quick and easy removal service near you", img: "/images/service-junk-removal.jpg" },
-  { to: "/services/decks",        title: "Decks",         desc: "Build, repair, staining",                benefit: "Quality deck work from experienced builders", img: "/images/service-decks.jpg" },
-  { to: "/services/handyman",     title: "Handyman",      desc: "Small jobs, quick fixes",                benefit: "Reliable handymen for all your home repairs", img: "/images/service-handyman.jpg" }
+  { to: "/us/services/plumbing",     title: "Plumbing",      desc: "Faucets, pipes, drains, and more",       benefit: "Fast response from verified local professionals", img: "/images/service-plumbing.jpg" },
+  { to: "/us/services/electrical",   title: "Electrical",    desc: "Lighting, wiring, outlets, and more",    benefit: "Licensed electricians ready to help you today", img: "/images/service-electrical.jpg" },
+  { to: "/us/services/house-cleaning", title: "Cleaning",    desc: "Housekeeping, carpets, windows",         benefit: "Trusted cleaners for your home or office", img: "/images/service-cleaning.jpg" },
+  { to: "/us/services/roofing",      title: "Roofing",       desc: "Repairs, replacements, inspections",     benefit: "Expert roofers protecting your investment", img: "/images/service-roofing.jpg" },
+  { to: "/us/services/hvac",         title: "HVAC",          desc: "Heating, cooling, vents",                benefit: "Keep your home comfortable year-round", img: "/images/service-hvac.jpg" },
+  { to: "/us/services/carpentry",    title: "Carpentry",     desc: "Framing, trim, installs",                benefit: "Skilled carpenters for quality craftsmanship", img: "/images/service-carpentry.jpg" },
+  { to: "/us/services/painting",     title: "Painting",      desc: "Interior and exterior painting",         benefit: "Transform your space with professional painters", img: "/images/service-painting.jpg" },
+  { to: "/us/services/landscaping",  title: "Landscaping",   desc: "Lawn, garden, hardscape",                benefit: "Beautiful outdoor spaces by local experts", img: "/images/service-landscaping.jpg" },
+  { to: "/us/services/junk-removal", title: "Junk Removal",  desc: "Haul away unwanted items",               benefit: "Quick and easy removal service near you", img: "/images/service-junk-removal.jpg" },
+  { to: "/us/services/decks",        title: "Decks",         desc: "Build, repair, staining",                benefit: "Quality deck work from experienced builders", img: "/images/service-decks.jpg" },
+  { to: "/us/services/handyman",     title: "Handyman",      desc: "Small jobs, quick fixes",                benefit: "Reliable handymen for all your home repairs", img: "/images/service-handyman.jpg" }
 ];
 
 const TESTIMONIALS = [
@@ -248,58 +248,58 @@ export default function HomePage() {
               Find trusted professionals in major cities across the United States
             </p>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 text-sm">
-              <Link to="/services/plumbing/new-york" className="text-brand hover:underline">
+              <Link to="/us/services/plumbing/new-york" className="text-brand hover:underline">
                 Plumbing in New York
               </Link>
-              <Link to="/services/electrical/los-angeles" className="text-brand hover:underline">
+              <Link to="/us/services/electrical/los-angeles" className="text-brand hover:underline">
                 Electrical in Los Angeles
               </Link>
-              <Link to="/services/cleaning/chicago" className="text-brand hover:underline">
+              <Link to="/us/services/house-cleaning/chicago" className="text-brand hover:underline">
                 Cleaning in Chicago
               </Link>
-              <Link to="/services/hvac/houston" className="text-brand hover:underline">
+              <Link to="/us/services/hvac/houston" className="text-brand hover:underline">
                 HVAC in Houston
               </Link>
-              <Link to="/services/plumbing/phoenix" className="text-brand hover:underline">
+              <Link to="/us/services/plumbing/phoenix" className="text-brand hover:underline">
                 Plumbing in Phoenix
               </Link>
-              <Link to="/services/roofing/philadelphia" className="text-brand hover:underline">
+              <Link to="/us/services/roofing/philadelphia" className="text-brand hover:underline">
                 Roofing in Philadelphia
               </Link>
-              <Link to="/services/junk-removal/san-antonio" className="text-brand hover:underline">
+              <Link to="/us/services/junk-removal/san-antonio" className="text-brand hover:underline">
                 Junk Removal in San Antonio
               </Link>
-              <Link to="/services/painting/san-diego" className="text-brand hover:underline">
+              <Link to="/us/services/painting/san-diego" className="text-brand hover:underline">
                 Painting in San Diego
               </Link>
-              <Link to="/services/landscaping/dallas" className="text-brand hover:underline">
+              <Link to="/us/services/landscaping/dallas" className="text-brand hover:underline">
                 Landscaping in Dallas
               </Link>
-              <Link to="/services/handyman/austin" className="text-brand hover:underline">
+              <Link to="/us/services/handyman/austin" className="text-brand hover:underline">
                 Handyman in Austin
               </Link>
-              <Link to="/services/electrical/miami" className="text-brand hover:underline">
+              <Link to="/us/services/electrical/miami" className="text-brand hover:underline">
                 Electrical in Miami
               </Link>
-              <Link to="/services/carpentry/seattle" className="text-brand hover:underline">
+              <Link to="/us/services/carpentry/seattle" className="text-brand hover:underline">
                 Carpentry in Seattle
               </Link>
-              <Link to="/services/plumbing/denver" className="text-brand hover:underline">
+              <Link to="/us/services/plumbing/denver" className="text-brand hover:underline">
                 Plumbing in Denver
               </Link>
-              <Link to="/services/hvac/atlanta" className="text-brand hover:underline">
+              <Link to="/us/services/hvac/atlanta" className="text-brand hover:underline">
                 HVAC in Atlanta
               </Link>
-              <Link to="/services/painting/boston" className="text-brand hover:underline">
+              <Link to="/us/services/painting/boston" className="text-brand hover:underline">
                 Painting in Boston
               </Link>
-              <Link to="/services/roofing/charlotte" className="text-brand hover:underline">
+              <Link to="/us/services/roofing/charlotte" className="text-brand hover:underline">
                 Roofing in Charlotte
               </Link>
-              <Link to="/services/landscaping/portland" className="text-brand hover:underline">
+              <Link to="/us/services/landscaping/portland" className="text-brand hover:underline">
                 Landscaping in Portland
               </Link>
-              <Link to="/services/cleaning/nashville" className="text-brand hover:underline">
+              <Link to="/us/services/house-cleaning/nashville" className="text-brand hover:underline">
                 Cleaning in Nashville
               </Link>
             </div>
