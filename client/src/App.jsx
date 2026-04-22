@@ -196,7 +196,7 @@ export default function App(){
               <li><a href="/us/services/plumbing" className="hover:text-brand">Plumbing</a></li>
               <li><a href="/us/services/electrical" className="hover:text-brand">Electrical</a></li>
               <li><a href="/us/services/hvac" className="hover:text-brand">HVAC</a></li>
-              <li><a href="/us/services/house-cleaning" className="hover:text-brand">Cleaning</a></li>
+              <li><a href="/us/services/house-cleaning" className="hover:text-brand">House Cleaning</a></li>
               <li><a href="/services" className="hover:text-brand">View All Services</a></li>
             </ul>
           </div>

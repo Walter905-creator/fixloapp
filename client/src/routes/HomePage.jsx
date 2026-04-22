@@ -22,7 +22,7 @@ import { IS_HOLIDAY_SEASON } from "../utils/config";
 const SERVICES = [
   { to: "/us/services/plumbing",     title: "Plumbing",      desc: "Faucets, pipes, drains, and more",       benefit: "Fast response from verified local professionals", img: "/images/service-plumbing.jpg" },
   { to: "/us/services/electrical",   title: "Electrical",    desc: "Lighting, wiring, outlets, and more",    benefit: "Licensed electricians ready to help you today", img: "/images/service-electrical.jpg" },
-  { to: "/us/services/house-cleaning", title: "Cleaning",    desc: "Housekeeping, carpets, windows",         benefit: "Trusted cleaners for your home or office", img: "/images/service-cleaning.jpg" },
+  { to: "/us/services/house-cleaning", title: "House Cleaning", desc: "Housekeeping, carpets, windows",         benefit: "Trusted cleaners for your home or office", img: "/images/service-cleaning.jpg" },
   { to: "/us/services/roofing",      title: "Roofing",       desc: "Repairs, replacements, inspections",     benefit: "Expert roofers protecting your investment", img: "/images/service-roofing.jpg" },
   { to: "/us/services/hvac",         title: "HVAC",          desc: "Heating, cooling, vents",                benefit: "Keep your home comfortable year-round", img: "/images/service-hvac.jpg" },
   { to: "/us/services/carpentry",    title: "Carpentry",     desc: "Framing, trim, installs",                benefit: "Skilled carpenters for quality craftsmanship", img: "/images/service-carpentry.jpg" },
@@ -255,7 +255,7 @@ export default function HomePage() {
                 Electrical in Los Angeles
               </Link>
               <Link to="/us/services/house-cleaning/chicago" className="text-brand hover:underline">
-                Cleaning in Chicago
+                House Cleaning in Chicago
               </Link>
               <Link to="/us/services/hvac/houston" className="text-brand hover:underline">
                 HVAC in Houston
@@ -300,7 +300,7 @@ export default function HomePage() {
                 Landscaping in Portland
               </Link>
               <Link to="/us/services/house-cleaning/nashville" className="text-brand hover:underline">
-                Cleaning in Nashville
+                House Cleaning in Nashville
               </Link>
             </div>
           </div>
