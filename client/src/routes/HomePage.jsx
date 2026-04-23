@@ -92,6 +92,13 @@ export default function HomePage() {
       <Testimonials />
       <FinalCTA />
 
+      {/* Contractor-focused sections */}
+      <HeroSection />
+      <TrustBar />
+      <LeadPreview />
+      <Testimonials />
+      <FinalCTA />
+
       {/* Referral Program Section */}
       {isAuthenticated && user?.role === 'pro' && user?.id ? (
         <section className="py-12 md:py-16">
