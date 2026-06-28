@@ -14,13 +14,13 @@ console.log('🔧 WALTER AREVALO PRO ACTIVATION SCRIPT');
 console.log('=' .repeat(60));
 
 async function activateOwnerPro() {
-  // Get MongoDB connection details - ONLY using MONGO_URI
-  const MONGO_URI = process.env.MONGO_URI;
+  // Get MongoDB connection details - ONLY using MONGODB_URI
+  const MONGODB_URI = process.env.MONGODB_URI;
   const MONGODB_DB = process.env.MONGODB_DB || 'fixlo';
   
-  if (!MONGO_URI) {
-    console.error('❌ Missing MONGO_URI environment variable');
-    console.error('❌ FATAL ERROR: Set MONGO_URI environment variable');
+  if (!MONGODB_URI) {
+    console.error('❌ Missing MONGODB_URI environment variable');
+    console.error('❌ FATAL ERROR: Set MONGODB_URI environment variable');
     process.exit(1);
   }
   
@@ -30,7 +30,7 @@ async function activateOwnerPro() {
   let client;
   try {
     // Connect to MongoDB
-    client = new MongoClient(MONGO_URI);
+    client = new MongoClient(MONGODB_URI);
     await client.connect();
     
     const db = client.db(MONGODB_DB);

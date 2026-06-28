@@ -123,7 +123,7 @@ else
     echo ""
     echo "Next steps:"
     echo "  1. Check Vercel function logs for errors"
-    echo "  2. Verify MONGO_URI is set in Vercel environment variables"
+    echo "  2. Verify MONGODB_URI is set in Vercel environment variables"
     echo "  3. Verify MongoDB Atlas is accessible (IP whitelist)"
 fi
 

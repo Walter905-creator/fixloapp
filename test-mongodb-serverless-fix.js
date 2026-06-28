@@ -175,6 +175,6 @@ try {
 console.log('\n✅ All structure tests passed!');
 console.log('\n📝 Next Steps:');
 console.log('   1. Deploy to Vercel');
-console.log('   2. Ensure MONGO_URI is set in Vercel environment variables');
+console.log('   2. Ensure MONGODB_URI is set in Vercel environment variables');
 console.log('   3. Test with: curl https://fixloapp.com/api/social/scheduler/status');
 console.log('   4. Expected response: databaseAvailable: true, metaConnected: true');
