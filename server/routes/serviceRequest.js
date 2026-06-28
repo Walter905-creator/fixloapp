@@ -21,7 +21,7 @@ router.post('/', async (req, res) => {
   try {
     // Save to DB if available
     let requestDoc = null;
-    if (process.env.MONGO_URI) {
+    if (process.env.MONGODB_URI) {
       try {
         requestDoc = new JobRequest({ 
           trade: serviceType, // Map serviceType to trade
@@ -39,7 +39,7 @@ router.post('/', async (req, res) => {
         console.log(`⚠️ Database save failed, continuing without database: ${dbError.message}`);
       }
     } else {
-      console.log(`📝 No MONGO_URI provided - logging request instead of saving`);
+      console.log(`📝 No MONGODB_URI provided - logging request instead of saving`);
     }
 
     if (requestDoc) {

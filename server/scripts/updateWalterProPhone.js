@@ -14,17 +14,25 @@ const PRO_EMAIL = 'pro4u.improvements@gmail.com';
 
 async function updateWalterProPhone() {
   try {
-    // Connect to MongoDB - ONLY using MONGO_URI
-    const MONGO_URI = process.env.MONGO_URI;
+    // Connect to MongoDB - ONLY using MONGODB_URI
+    const MONGODB_URI = process.env.MONGODB_URI;
     
-    if (!MONGO_URI) {
-      console.error('❌ MONGO_URI not found in environment variables');
-      console.error('❌ FATAL ERROR: Set MONGO_URI environment variable');
+    if (!MONGODB_URI) {
+      console.error('❌ MONGODB_URI not found in environment variables');
+      console.error('❌ FATAL ERROR: Set MONGODB_URI environment variable');
       process.exit(1);
     }
     
     console.log('🔌 Connecting to MongoDB...');
-    await mongoose.connect(MONGO_URI, { maxPoolSize: 10 });
+    await mongoose.connect(
+      process.env.MONGODB_URI,
+      {
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 10000,
+        socketTimeoutMS: 45000,
+        family: 4,
+      }
+    );
     console.log('✅ Connected to MongoDB');
     
     console.log(`\n🔍 Searching for Pro user with email: ${PRO_EMAIL}`);

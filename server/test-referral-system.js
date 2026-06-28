@@ -15,13 +15,21 @@ async function testReferralSystem() {
   console.log('🧪 Testing Fixlo Referral System\n');
   
   try {
-    // Connect to MongoDB if available - ONLY using MONGO_URI
-    if (process.env.MONGO_URI) {
+    // Connect to MongoDB if available - ONLY using MONGODB_URI
+    if (process.env.MONGODB_URI) {
       console.log('📦 Connecting to MongoDB...');
-      await mongoose.connect(process.env.MONGO_URI);
+      await mongoose.connect(
+      process.env.MONGODB_URI,
+      {
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 10000,
+        socketTimeoutMS: 45000,
+        family: 4,
+      }
+    );
       console.log('✅ Connected to MongoDB\n');
     } else {
-      console.log('⚠️ No MONGO_URI - testing models only\n');
+      console.log('⚠️ No MONGODB_URI - testing models only\n');
     }
     
     // Test 1: Pro Model Referral Code Generation

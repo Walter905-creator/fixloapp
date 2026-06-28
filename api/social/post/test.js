@@ -17,48 +17,17 @@
  */
 
 const mongoose = require('mongoose');
+const dbConnect = require('../../lib/dbConnect');
 
-// Connection state cache
-let cachedDbConnection = null;
-let connectionAttempted = false;
-
-/**
- * Connect to MongoDB
- */
 async function connectToDatabase() {
-  if (cachedDbConnection && mongoose.connection.readyState === 1) {
-    return cachedDbConnection;
-  }
+  const connection = await dbConnect();
 
-  if (connectionAttempted && !cachedDbConnection) {
+  if (!connection) {
+    console.warn('[test-post] MONGODB_URI not configured or MongoDB unavailable');
     return null;
   }
 
-  connectionAttempted = true;
-
-  try {
-    const MONGO_URI = process.env.MONGO_URI;
-
-    if (!MONGO_URI) {
-      console.warn('[test-post] MONGO_URI not configured');
-      return null;
-    }
-
-    await mongoose.connect(MONGO_URI, {
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 10000,
-      maxPoolSize: 10,
-      minPoolSize: 1,
-    });
-
-    cachedDbConnection = mongoose.connection;
-    console.log('[test-post] Database connected');
-    
-    return cachedDbConnection;
-  } catch (error) {
-    console.error('[test-post] Database connection failed:', error.message);
-    return null;
-  }
+  return connection;
 }
 
 /**
@@ -162,7 +131,7 @@ module.exports = async (req, res) => {
       return res.status(503).json({
         success: false,
         error: 'Database connection unavailable',
-        message: 'Configure MONGO_URI environment variable',
+        message: 'Configure MONGODB_URI environment variable',
         requestId
       });
     }

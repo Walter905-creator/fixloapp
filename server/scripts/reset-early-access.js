@@ -40,15 +40,23 @@ async function resetEarlyAccess() {
     console.log('🚀 Early Access Reset Script Starting...');
     console.log(`📊 Target spots: ${targetSpots}`);
     
-    // Connect to MongoDB - ONLY using MONGO_URI
-    if (!process.env.MONGO_URI) {
-      console.error('❌ MONGO_URI environment variable is not set');
-      console.error('❌ FATAL ERROR: Set MONGO_URI environment variable');
-      throw new Error('MONGO_URI environment variable is not set');
+    // Connect to MongoDB - ONLY using MONGODB_URI
+    if (!process.env.MONGODB_URI) {
+      console.error('❌ MONGODB_URI environment variable is not set');
+      console.error('❌ FATAL ERROR: Set MONGODB_URI environment variable');
+      throw new Error('MONGODB_URI environment variable is not set');
     }
     
     console.log('🔌 Connecting to MongoDB...');
-    await mongoose.connect(process.env.MONGO_URI);
+    await mongoose.connect(
+      process.env.MONGODB_URI,
+      {
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 10000,
+        socketTimeoutMS: 45000,
+        family: 4,
+      }
+    );
     console.log('✅ MongoDB connected');
     
     // Get or create the EarlyAccessSpots instance

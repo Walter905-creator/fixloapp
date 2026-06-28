@@ -11,55 +11,17 @@
  */
 
 const mongoose = require('mongoose');
+const dbConnect = require('../lib/dbConnect');
 
-// Connection state cache to avoid repeated connection attempts
-let cachedDbConnection = null;
-let connectionAttempted = false;
-
-/**
- * Connect to MongoDB with error handling
- */
 async function connectToDatabase() {
-  // Return cached connection if available
-  if (cachedDbConnection && mongoose.connection.readyState === 1) {
-    return cachedDbConnection;
-  }
+  const connection = await dbConnect();
 
-  // Only attempt connection once per function instance
-  if (connectionAttempted) {
+  if (!connection) {
+    console.warn('[force-status] MONGODB_URI not configured or MongoDB unavailable');
     return null;
   }
 
-  connectionAttempted = true;
-
-  try {
-    const MONGO_URI = process.env.MONGO_URI;
-
-    if (!MONGO_URI) {
-      console.warn('[force-status] MONGO_URI not configured');
-      return null;
-    }
-
-    console.log('[force-status] Attempting database connection...');
-    
-    await mongoose.connect(MONGO_URI, {
-      serverSelectionTimeoutMS: 5000, // 5 second timeout
-      socketTimeoutMS: 10000,
-      maxPoolSize: 10, // Maximum 10 connections in pool
-      minPoolSize: 1,  // Keep at least 1 connection alive
-    });
-
-    cachedDbConnection = mongoose.connection;
-    console.log('[force-status] Database connected successfully');
-    
-    return cachedDbConnection;
-  } catch (error) {
-    console.error('[force-status] Database connection failed:', {
-      error: error.message,
-      code: error.code,
-    });
-    return null;
-  }
+  return connection;
 }
 
 /**
@@ -131,7 +93,7 @@ module.exports = async (req, res) => {
         connectedAt: null,
         isTokenValid: false,
         tokenExpiresAt: null,
-        message: 'Database connection unavailable - configure MONGO_URI environment variable',
+        message: 'Database connection unavailable - configure MONGODB_URI environment variable',
         requestId,
       });
     }

@@ -1089,7 +1089,7 @@ async function start() {
     console.log("🧪 ATTEMPTING CONNECTION WITHOUT DATABASE NAME");
     console.log("-".repeat(80));
     try {
-      const uriWithoutDb = removeMongoDBName((process.env.MONGODB_URI || process.env.MONGO_URI || "").trim());
+      const uriWithoutDb = removeMongoDBName((process.env.MONGODB_URI || '').trim());
       const sanitizedTestUri = sanitizeMongoURI(uriWithoutDb);
       console.log(`Trying: ${sanitizedTestUri}`);
       const testConnection = await mongoose.createConnection(uriWithoutDb, {
