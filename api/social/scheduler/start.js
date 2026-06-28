@@ -169,7 +169,7 @@ module.exports = async (req, res) => {
       return res.status(503).json({
         success: false,
         error: 'Database connection unavailable',
-        message: 'Configure MONGO_URI environment variable in Vercel',
+        message: 'Configure MONGODB_URI environment variable in Vercel',
         databaseAvailable: false,
         requestId
       });

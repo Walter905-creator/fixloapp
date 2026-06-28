@@ -27,22 +27,22 @@ console.log('');
 // Load environment variables
 require('dotenv').config();
 
-// Check for MongoDB URI - ONLY using MONGO_URI
-const MONGO_URI = process.env.MONGO_URI;
+// Check for MongoDB URI - ONLY using MONGODB_URI
+const MONGODB_URI = process.env.MONGODB_URI;
 
-if (!MONGO_URI) {
-  console.error('❌ ERROR: MONGO_URI not set in .env file');
+if (!MONGODB_URI) {
+  console.error('❌ ERROR: MONGODB_URI not set in .env file');
   console.log('');
   console.log('Please add the following to your .env file:');
-  console.log('MONGO_URI=mongodb+srv://...');
+  console.log('MONGODB_URI=mongodb+srv://...');
   process.exit(1);
 }
 
-console.log('✅ MONGO_URI is configured');
+console.log('✅ MONGODB_URI is configured');
 console.log('');
 
 // Parse and display connection details (masking password)
-const displayUri = MONGO_URI.replace(/(:\/\/[^:]+:)([^@]+)(@)/, '$1****$3');
+const displayUri = MONGODB_URI.replace(/(:\/\/[^:]+:)([^@]+)(@)/, '$1****$3');
 console.log('📋 Connection String Details:');
 console.log('   ', displayUri);
 console.log('');
@@ -50,7 +50,7 @@ console.log('');
 // Extract connection details using URL parsing
 try {
   // For SRV URIs, we need to parse manually since URL can't handle mongodb+srv://
-  const match = MONGO_URI.match(/mongodb(?:\+srv)?:\/\/([^:]+):([^@]+)@([^/]+)\/([^?]+)/);
+  const match = MONGODB_URI.match(/mongodb(?:\+srv)?:\/\/([^:]+):([^@]+)@([^/]+)\/([^?]+)/);
   if (match) {
     const [, username, password, cluster, database] = match;
     console.log('   Username:', username);
@@ -113,10 +113,10 @@ if (fs.existsSync(indexPath)) {
     console.log('⚠️  MongoDB connection code not found in index.js');
   }
   
-  if (indexContent.includes('process.env.MONGO_URI')) {
-    console.log('✅ MONGO_URI environment variable usage found in index.js');
+  if (indexContent.includes('process.env.MONGODB_URI')) {
+    console.log('✅ MONGODB_URI environment variable usage found in index.js');
   } else {
-    console.log('⚠️  MONGO_URI environment variable usage not found in index.js');
+    console.log('⚠️  MONGODB_URI environment variable usage not found in index.js');
   }
   console.log('');
 }
