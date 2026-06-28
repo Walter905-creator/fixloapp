@@ -4,8 +4,9 @@ import { useNavigate } from "react-router-dom";
 const CONTRACTOR_IMG = "/images/service-handyman.jpg";
 const HOUSE_BG_IMG = "/images/how-it-works.jpg";
 
-export default function HeroSection() {
+export default function HeroSection({ headingTag = "h2" }) {
   const navigate = useNavigate();
+  const HeadingTag = headingTag;
 
   return (
     <section
@@ -31,12 +32,20 @@ export default function HeroSection() {
         <div className="grid lg:grid-cols-2 gap-10 items-center">
           {/* Left side content */}
           <div className="text-white">
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
-              Get Unlimited Job Leads for Your Trade Business
-            </h2>
-            <p className="mt-6 text-lg md:text-xl text-slate-200 max-w-xl">
-              Find local homeowners who need your services. No bidding. No lead fees.
+            <p className="text-emerald-400 font-semibold uppercase tracking-widest text-sm mb-3">
+              Trusted home services marketplace
             </p>
+            <HeadingTag className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
+              Book trusted home services or grow your trade business with Fixlo.
+            </HeadingTag>
+            <p className="mt-6 text-lg md:text-xl text-slate-200 max-w-2xl">
+              Homeowners get matched fast with verified local pros, and contractors get a cleaner path to quality leads without the usual bidding chaos.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-2">
+              {['Fast homeowner requests', 'Verified local pros', 'Clear routes for every audience'].map((item) => (
+                <span key={item} className="pill border-white/40 text-white bg-white/10">{item}</span>
+              ))}
+            </div>
             <div className="mt-8 flex flex-col sm:flex-row items-center sm:items-start gap-4">
               <button
                 onClick={() => navigate("/for-homeowners")}
@@ -45,13 +54,13 @@ export default function HeroSection() {
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#27ae60")}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#2ecc71")}
               >
-                I Need a Service
+                Find a Pro
               </button>
               <button
                 onClick={() => navigate("/for-pros")}
                 className="w-full sm:w-auto bg-transparent text-white font-semibold text-lg px-10 py-4 rounded-full shadow-lg border-2 border-white transition-colors hover:bg-white hover:text-slate-900"
               >
-                I Am a Contractor
+                Join as a Pro
               </button>
             </div>
           </div>
