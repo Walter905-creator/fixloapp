@@ -1,19 +1,26 @@
-const dbConnect = require('../lib/dbConnect');
+const mongoose = require('mongoose');
 
 async function connectDB() {
-  if (!process.env.MONGODB_URI?.trim()) {
-    console.error('❌ MONGODB_URI is not configured.');
-    process.exit(1);
+  const uri = process.env.MONGODB_URI;
+
+  if (!uri) {
+    throw new Error('MONGODB_URI missing');
   }
 
-  const connection = await dbConnect();
+  console.log(
+    'Mongo Host:',
+    uri.replace(/\/\/.*?:.*?@/, '//****:****@')
+  );
 
-  if (!connection) {
-    console.error('❌ MongoDB is unavailable with the configured MONGODB_URI.');
-    process.exit(1);
-  }
+  await mongoose.connect(uri, {
+    maxPoolSize: 10,
+    serverSelectionTimeoutMS: 10000,
+    socketTimeoutMS: 45000,
+    family: 4,
+  });
 
-  return connection;
+  console.log('MongoDB connected');
 }
 
-module.exports = { connectDB };
+module.exports = connectDB;
+module.exports.connectDB = connectDB;

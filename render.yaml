@@ -26,7 +26,7 @@ services:
       # Optional environment variables for enhanced functionality
       - key: STRIPE_SECRET_KEY
         sync: false
-      - key: MONGO_URI
+      - key: MONGODB_URI
         sync: false
       - key: TWILIO_ACCOUNT_SID
         sync: false
