@@ -296,8 +296,7 @@ async function processWeeklyPayouts() {
     } catch (err) {
       console.error(`❌ [WeeklyPayout] Failed for recruiter ${recruiter._id}:`, err.message);
 
-      // Create failed payout record
-      const RecruiterPayout = require('../models/RecruiterPayout');
+      // Create failed payout record using the already-required RecruiterPayout
       await RecruiterPayout.create({
         recruiterId: recruiter._id,
         amount: 0,

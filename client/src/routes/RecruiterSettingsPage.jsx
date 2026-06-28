@@ -155,7 +155,7 @@ export default function RecruiterSettingsPage() {
                     <input type="checkbox" className="sr-only" checked={sms[key] || false}
                       onChange={e => setSms(s => ({ ...s, [key]: e.target.checked }))} />
                     <div className={'w-11 h-6 rounded-full transition-colors ' + (sms[key] ? 'bg-blue-500' : 'bg-white/20')}>
-                      <div className={'absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ' + (sms[key] ? 'translate-x-5.5 left-0.5' : 'translate-x-0 left-0.5')} />
+                      <div className={'absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ' + (sms[key] ? 'translate-x-5 left-0.5' : 'translate-x-0 left-0.5')} />
                     </div>
                   </div>
                 </label>

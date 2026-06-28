@@ -190,13 +190,15 @@ router.get('/recruiters', requireRecruiter, async (req, res) => {
 });
 
 // ── Commissions ────────────────────────────────────────────────────────────────
+const VALID_COMMISSION_STATUSES = ['pending', 'held', 'approved', 'paid', 'cancelled', 'refunded', 'fraud_review'];
+
 router.get('/commissions', requireRecruiter, async (req, res) => {
   try {
     const { page = 1, limit = 20, status } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
     const filter = { recruiterId: req.user.id };
-    if (status) filter.status = status;
+    if (status && VALID_COMMISSION_STATUSES.includes(status)) filter.status = status;
 
     const [commissions, total] = await Promise.all([
       RecruiterCommission.find(filter)

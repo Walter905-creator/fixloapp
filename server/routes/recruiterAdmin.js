@@ -20,6 +20,20 @@ const RecruiterReferral = require('../models/RecruiterReferral');
 const RecruiterCommission = require('../models/RecruiterCommission');
 const RecruiterPayout = require('../models/RecruiterPayout');
 
+/**
+ * Escape special regex characters to prevent NoSQL injection via $regex.
+ * @param {string} str
+ * @returns {string}
+ */
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+const VALID_RECRUITER_STATUSES = ['active', 'suspended', 'pending_review'];
+const VALID_REFERRAL_STATUSES = ['pending', 'active', 'paid', 'cancelled', 'fraud_review'];
+const VALID_COMMISSION_STATUSES = ['pending', 'held', 'approved', 'paid', 'cancelled', 'refunded', 'fraud_review'];
+const VALID_PAYOUT_STATUSES = ['pending', 'processing', 'paid', 'failed'];
+
 // ── List / search recruiters ──────────────────────────────────────────────────
 router.get('/recruiters', requireAdmin, async (req, res) => {
   try {
@@ -27,12 +41,13 @@ router.get('/recruiters', requireAdmin, async (req, res) => {
     const skip = (Number(page) - 1) * Number(limit);
 
     const filter = {};
-    if (status) filter.status = status;
+    if (status && VALID_RECRUITER_STATUSES.includes(status)) filter.status = status;
     if (search) {
+      const safeSearch = escapeRegex(String(search).slice(0, 100));
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-        { recruiterCode: { $regex: search, $options: 'i' } }
+        { name: { $regex: safeSearch, $options: 'i' } },
+        { email: { $regex: safeSearch, $options: 'i' } },
+        { recruiterCode: { $regex: safeSearch, $options: 'i' } }
       ];
     }
 
@@ -102,11 +117,12 @@ router.get('/recruiter-referrals', requireAdmin, async (req, res) => {
     const skip = (Number(page) - 1) * Number(limit);
 
     const filter = {};
-    if (status) filter.status = status;
+    if (status && VALID_REFERRAL_STATUSES.includes(status)) filter.status = status;
     if (search) {
+      const safeSearch = escapeRegex(String(search).slice(0, 100));
       filter.$or = [
-        { proEmail: { $regex: search, $options: 'i' } },
-        { proName: { $regex: search, $options: 'i' } }
+        { proEmail: { $regex: safeSearch, $options: 'i' } },
+        { proName: { $regex: safeSearch, $options: 'i' } }
       ];
     }
 
@@ -133,7 +149,7 @@ router.get('/recruiter-commissions', requireAdmin, async (req, res) => {
     const skip = (Number(page) - 1) * Number(limit);
 
     const filter = {};
-    if (status) filter.status = status;
+    if (status && VALID_COMMISSION_STATUSES.includes(status)) filter.status = status;
 
     const [commissions, total] = await Promise.all([
       RecruiterCommission.find(filter)
@@ -186,7 +202,7 @@ router.get('/recruiter-payouts', requireAdmin, async (req, res) => {
     const skip = (Number(page) - 1) * Number(limit);
 
     const filter = {};
-    if (status) filter.status = status;
+    if (status && VALID_PAYOUT_STATUSES.includes(status)) filter.status = status;
 
     const [payouts, total] = await Promise.all([
       RecruiterPayout.find(filter)

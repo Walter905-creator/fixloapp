@@ -175,6 +175,11 @@ router.post('/reset-password', async (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
 
+    // Validate token is a 64-character hex string to prevent NoSQL injection
+    if (!/^[0-9a-f]{64}$/.test(token)) {
+      return res.status(400).json({ error: 'Invalid or expired reset token' });
+    }
+
     const recruiter = await RecruiterProfile.findOne({
       resetToken: token,
       resetTokenExpires: { $gt: new Date() }
