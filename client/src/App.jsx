@@ -47,6 +47,19 @@ import ReferralSignInPage from './routes/ReferralSignInPage.jsx';
 import RequestPage from './routes/RequestPage.jsx';
 import HomeownerLandingPage from './routes/HomeownerLandingPage.jsx';
 import ProLandingPage from './routes/ProLandingPage.jsx';
+// Recruiter Network
+import RecruiterSignupPage from './routes/RecruiterSignupPage.jsx';
+import RecruiterLoginPage from './routes/RecruiterLoginPage.jsx';
+import RecruiterForgotPasswordPage from './routes/RecruiterForgotPasswordPage.jsx';
+import RecruiterDashboardPage from './routes/RecruiterDashboardPage.jsx';
+import RecruiterReferralsPage from './routes/RecruiterReferralsPage.jsx';
+import RecruiterRecruitersPage from './routes/RecruiterRecruitersPage.jsx';
+import RecruiterPaymentsPage from './routes/RecruiterPaymentsPage.jsx';
+import RecruiterSettingsPage from './routes/RecruiterSettingsPage.jsx';
+// Admin Recruiter Pages
+import AdminRecruitersPage from './routes/AdminRecruitersPage.jsx';
+import AdminCommissionsPage from './routes/AdminCommissionsPage.jsx';
+import AdminPayoutsPage from './routes/AdminPayoutsPage.jsx';
 export default function App(){
   return (<>
     <MetaPixelTracker />
@@ -143,6 +156,28 @@ export default function App(){
       <Route path="/earn/start" element={<EarnStartPage/>}/>
       <Route path="/earn/sign-in" element={<ReferralSignInPage/>}/>
       <Route path="/earn/dashboard" element={<EarnDashboardPage/>}/>
+      
+      {/* Recruiter Network */}
+      <Route path="/recruiter/signup" element={<RecruiterSignupPage/>}/>
+      <Route path="/recruiter/login" element={<RecruiterLoginPage/>}/>
+      <Route path="/recruiter/forgot-password" element={<RecruiterForgotPasswordPage/>}/>
+      <Route path="/recruiter/dashboard" element={<RecruiterDashboardPage/>}/>
+      <Route path="/recruiter/referrals" element={<RecruiterReferralsPage/>}/>
+      <Route path="/recruiter/recruiters" element={<RecruiterRecruitersPage/>}/>
+      <Route path="/recruiter/payments" element={<RecruiterPaymentsPage/>}/>
+      <Route path="/recruiter/settings" element={<RecruiterSettingsPage/>}/>
+      <Route path="/recruiter" element={<Navigate to="/recruiter/dashboard" replace/>}/>
+      
+      {/* Admin Recruiter Pages */}
+      <Route path="/admin/recruiters" element={
+        <RequireAdmin><AdminRecruitersPage/></RequireAdmin>
+      }/>
+      <Route path="/admin/commissions" element={
+        <RequireAdmin><AdminCommissionsPage/></RequireAdmin>
+      }/>
+      <Route path="/admin/payouts" element={
+        <RequireAdmin><AdminPayoutsPage/></RequireAdmin>
+      }/>
       <Route path="/for-homeowners" element={<HomeownerLandingPage/>}/>
       <Route path="/for-pros" element={<ProLandingPage/>}/>
       <Route path="/for-professionals" element={<Navigate to="/for-pros" replace/>}/>

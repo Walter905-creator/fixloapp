@@ -5,6 +5,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { Analytics } from '@vercel/analytics/react';
 import { AuthProvider } from './context/AuthContext';
 import { ReferralAuthProvider } from './context/ReferralAuthContext';
+import { RecruiterAuthProvider } from './context/RecruiterAuthContext';
 import App from './App';
 import './index.css';
 
@@ -31,8 +32,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <BrowserRouter>
         <AuthProvider>
           <ReferralAuthProvider>
-            <App />
-            <Analytics /> {/* Vercel Web Analytics */}
+            <RecruiterAuthProvider>
+              <App />
+              <Analytics /> {/* Vercel Web Analytics */}
+            </RecruiterAuthProvider>
           </ReferralAuthProvider>
         </AuthProvider>
       </BrowserRouter>
