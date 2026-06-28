@@ -11,7 +11,7 @@ if (!process.env.MONGODB_URI) {
 console.log('🧪 MongoDB Connection Test');
 console.log('='.repeat(60));
 console.log(
-  'Mongo host:',
+  'MongoDB host:',
   process.env.MONGODB_URI?.replace(/\/\/.*?:.*?@/, '//****:****@')
 );
 console.log('');

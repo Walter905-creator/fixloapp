@@ -15,7 +15,7 @@ if (!globalThis.__mongoClient) {
   globalThis.__mongoClient = null;
 }
 
-function getMongoUri() {
+function getMongodbUri() {
   return process.env.MONGODB_URI?.trim() || '';
 }
 
@@ -44,7 +44,7 @@ async function dbConnect() {
     }
   }
 
-  if (!getMongoUri()) {
+  if (!getMongodbUri()) {
     console.error('[dbConnect] MONGODB_URI is not configured');
     return null;
   }
@@ -100,7 +100,6 @@ function isDatabaseAvailable() {
 }
 
 module.exports = dbConnect;
-module.exports.connectDB = dbConnect;
 module.exports.disconnectDB = disconnectDB;
 module.exports.getConnectionState = getConnectionState;
 module.exports.isDatabaseAvailable = isDatabaseAvailable;
