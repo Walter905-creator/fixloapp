@@ -51,7 +51,7 @@ async function connectDB() {
   if (!uri.startsWith("mongodb://") && !uri.startsWith("mongodb+srv://")) {
     console.error("❌ MALFORMED URI: Must start with mongodb:// or mongodb+srv://");
     console.error(
-      "📋 Expected format: ******cluster.mongodb.net/database?retryWrites=true&w=majority"
+      "📋 Expected format: mongodb+srv://<username>:<password>@cluster.mongodb.net/database?retryWrites=true&w=majority"
     );
     console.error("❌ FATAL ERROR: Invalid MongoDB URI format.");
     console.log("=".repeat(80) + "\n");
