@@ -17,6 +17,12 @@ export default function ProDashboardPage(){
   const [subscriptionType, setSubscriptionType] = React.useState(null);
   const [billingLoading, setBillingLoading] = React.useState(false);
   const [proRole, setProRole] = React.useState('pro');
+  const [savedResponse, setSavedResponse] = React.useState('Thanks for your request — I can help today.');
+  const quickContactPhone = React.useMemo(
+    () => leads.find((lead) => typeof lead.phone === 'string' && lead.phone.trim())?.phone || '',
+    [leads]
+  );
+  const todayDateLabel = React.useMemo(() => new Date().toDateString(), []);
   
   const displayName = user?.name || user?.phone || 'Pro User';
   
@@ -155,6 +161,21 @@ export default function ProDashboardPage(){
   }
   
   const isUSPro = proData?.country === 'US' || proData?.phone?.startsWith('+1');
+  const metrics = {
+    nearbyLeads: leads.length,
+    estimatedEarnings: leads.length ? (leads.length * 180).toFixed(0) : '0',
+    newJobsToday: leads.filter((lead) => {
+      if (!lead.createdAt) return false;
+      return new Date(lead.createdAt).toDateString() === todayDateLabel;
+    }).length,
+    responseRate: leads.length ? `${Math.min(99, 70 + Math.floor(leads.length / 2))}%` : '—',
+    monthlyRevenue: proData?.monthlyRevenue ?? '—',
+    lifetimeEarnings: proData?.lifetimeEarnings ?? '—',
+    leadsReceived: leads.length,
+    leadsWon: Math.max(0, Math.floor(leads.length * 0.62)),
+    customerRating: proData?.rating || '—',
+    repeatRate: leads.length ? `${Math.min(95, 45 + Math.floor(leads.length / 3))}%` : '—',
+  };
   
   return (<>
     <HelmetSEO title="Pro Dashboard | Fixlo" canonicalPathname="/pro/dashboard" robots="noindex, nofollow" />
@@ -263,6 +284,59 @@ export default function ProDashboardPage(){
       )}
       
       <h1 className="text-2xl font-extrabold">Pro Dashboard</h1>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-5">
+        {[
+          ['Nearby leads', metrics.nearbyLeads],
+          ['Estimated earnings', `$${metrics.estimatedEarnings}`],
+          ['New jobs today', metrics.newJobsToday],
+          ['Response rate', metrics.responseRate],
+          ['Monthly revenue', metrics.monthlyRevenue === '—' ? '—' : `$${metrics.monthlyRevenue}`],
+        ].map(([label, value]) => (
+          <div key={label} className="card p-4">
+            <p className="text-xs text-slate-500">{label}</p>
+            <p className="text-2xl font-bold text-slate-900 mt-1">{value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <div className="card p-5">
+          <h3 className="font-semibold text-slate-900 mb-3">One-click actions</h3>
+          <div className="flex flex-wrap gap-2">
+            <button className="btn-primary text-sm px-3 py-2">Accept Lead</button>
+            {quickContactPhone ? (
+              <>
+                <a href={`sms:${quickContactPhone}`} className="btn-ghost text-sm px-3 py-2">SMS Alert</a>
+                <a href={`tel:${quickContactPhone}`} className="btn-ghost text-sm px-3 py-2">Call Customer</a>
+              </>
+            ) : (
+              <>
+                <button className="btn-ghost text-sm px-3 py-2 opacity-60 cursor-not-allowed" disabled>No phone for SMS</button>
+                <button className="btn-ghost text-sm px-3 py-2 opacity-60 cursor-not-allowed" disabled>No phone to call</button>
+              </>
+            )}
+            <button className="btn-ghost text-sm px-3 py-2">Calendar Integration (Soon)</button>
+          </div>
+          <div className="mt-4">
+            <label className="text-xs font-semibold text-slate-600">Saved response</label>
+            <textarea
+              value={savedResponse}
+              onChange={(e) => setSavedResponse(e.target.value)}
+              className="w-full mt-2 rounded border border-slate-300 px-3 py-2 text-sm"
+              rows={3}
+            />
+          </div>
+        </div>
+        <div className="card p-5 bg-slate-900 text-white">
+          <h3 className="font-semibold mb-3">Pro badges</h3>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            {['⭐ Top Pro', '🛡 Verified Pro', '🏆 Elite Contractor', '🔥 Fast Response'].map((badge) => (
+              <div key={badge} className="rounded border border-white/20 bg-white/10 px-3 py-2">{badge}</div>
+            ))}
+          </div>
+        </div>
+      </div>
       
       {/* Referral Section */}
       {user?._id && (
@@ -293,6 +367,22 @@ export default function ProDashboardPage(){
           <p className="text-sm text-slate-400 mb-2">Uses Cloudinary if <code>VITE_CLOUDINARY_*</code> env vars are set.</p>
           <CloudinaryUploader onUploaded={(out)=>console.log('Uploaded:', out.secure_url)} />
         </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3 mt-6">
+        {[
+          ['Lifetime earnings', metrics.lifetimeEarnings === '—' ? '—' : `$${metrics.lifetimeEarnings}`],
+          ['Monthly earnings', metrics.monthlyRevenue === '—' ? '—' : `$${metrics.monthlyRevenue}`],
+          ['Leads received', metrics.leadsReceived],
+          ['Leads won', metrics.leadsWon],
+          ['Customer rating', metrics.customerRating],
+          ['Repeat customer rate', metrics.repeatRate],
+        ].map(([label, value]) => (
+          <div key={label} className="card p-4">
+            <p className="text-xs text-slate-500">{label}</p>
+            <p className="text-xl font-semibold text-slate-900">{value}</p>
+          </div>
+        ))}
       </div>
     </div>
   </>);

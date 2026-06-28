@@ -11,6 +11,7 @@ import TrustBar from "../components/TrustBar";
 import LeadPreview from "../components/LeadPreview";
 import Testimonials from "../components/Testimonials";
 import FinalCTA from "../components/FinalCTA";
+import ConversionGrowthWidgets from "../components/ConversionGrowthWidgets";
 import { useAuth } from "../context/AuthContext";
 import { detectUserCountry } from "../utils/countryDetection";
 import { IS_HOLIDAY_SEASON } from "../utils/config";
@@ -54,6 +55,14 @@ const TESTIMONIALS = [
   }
 ];
 
+const SOLUTION_QUICK_PROBLEMS = [
+  "My AC stopped working",
+  "I have a water leak",
+  "I need junk removed",
+  "I need a cleaner",
+  "I need landscaping",
+];
+
 const pageTitle = IS_HOLIDAY_SEASON 
   ? "Fixlo – Book Holiday Home Services & Christmas Repairs Near You"
   : "Fixlo – Find Trusted Home Service Professionals Near You | Plumbing, Electrical, HVAC & More";
@@ -87,10 +96,33 @@ export default function HomePage() {
 
       {/* New contractor-focused sections */}
       <HeroSection />
+      <ConversionGrowthWidgets audience="homeowner" ctaText="Get Started" ctaLink="/request" />
       <TrustBar />
       <LeadPreview />
       <Testimonials />
       <FinalCTA />
+
+      <section className="py-10 bg-white border-y border-slate-200">
+        <div className="container-xl">
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 text-center">
+            Solve your home problem today.
+          </h2>
+          <p className="text-center text-slate-600 mt-2 mb-6">
+            Get help in minutes. One place for every home service.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {SOLUTION_QUICK_PROBLEMS.map((problem) => (
+              <button
+                key={problem}
+                onClick={() => navigate(`/request?problem=${encodeURIComponent(problem)}`)}
+                className="card p-4 text-left hover:border-brand hover:shadow-md transition"
+              >
+                <span className="text-sm font-semibold text-slate-900">{problem}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Referral Program Section */}
       {isAuthenticated && user?.role === 'pro' && user?.id ? (

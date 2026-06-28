@@ -12,6 +12,10 @@ export default function CustomerPortalPage() {
   const [showJobModal, setShowJobModal] = useState(false);
   const [invoice, setInvoice] = useState(null);
   const [error, setError] = useState('');
+  const [favoritePros, setFavoritePros] = useState([]);
+  const [repeatService, setRepeatService] = useState('');
+  const [locationStatus, setLocationStatus] = useState('Not detected');
+  const [locationCoords, setLocationCoords] = useState(null);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -97,6 +101,38 @@ export default function CustomerPortalPage() {
       default:
         return '';
     }
+  };
+
+  const progressLabels = ['Request submitted', 'Pro assigned', 'Pro on the way', 'Service in progress', 'Service completed'];
+
+  const getProgressStep = (status) => {
+    if (status === 'completed') return 4;
+    if (status === 'in-progress') return 3;
+    if (status === 'assigned') return 1;
+    return 0;
+  };
+
+  const detectLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationStatus('Location unavailable');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const coords = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+        setLocationCoords(coords);
+        setLocationStatus('Location detected');
+      },
+      (error) => {
+        if (error.code === error.PERMISSION_DENIED) setLocationStatus('Permission denied');
+        else if (error.code === error.POSITION_UNAVAILABLE) setLocationStatus('Location unavailable');
+        else if (error.code === error.TIMEOUT) setLocationStatus('Location request timed out');
+        else setLocationStatus('Location error');
+      }
+    );
   };
 
   if (!authenticated) {
@@ -202,6 +238,46 @@ export default function CustomerPortalPage() {
             </button>
           </div>
 
+          <div className="grid gap-4 md:grid-cols-3 mb-6">
+            <div className="bg-white rounded-lg shadow p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">One-click request flow</h3>
+              <button onClick={() => (window.location.href = '/request')} className="btn-primary text-sm px-4 py-2">Request Service</button>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Convenience tools</h3>
+              <div className="space-y-2">
+                <button onClick={detectLocation} className="btn-ghost text-xs px-3 py-2">Auto-detect location</button>
+                <p className="text-xs text-gray-600">{locationStatus}</p>
+                {locationCoords && (
+                  <p className="text-xs text-gray-600">
+                    Lat: {locationCoords.lat.toFixed(4)} · Lng: {locationCoords.lng.toFixed(4)}
+                  </p>
+                )}
+                <div className="text-xs text-gray-600">Photo upload placeholder</div>
+                <input type="file" accept="image/*" aria-label="Upload photo" className="text-xs" />
+                <div className="text-xs text-gray-600">Video upload placeholder</div>
+                <input type="file" accept="video/*" aria-label="Upload video" className="text-xs" />
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Favorites & repeat service</h3>
+              <button
+                onClick={() => setFavoritePros((prev) => [...prev, `Pro ${prev.length + 1}`])}
+                className="btn-ghost text-xs px-3 py-2 mb-2"
+              >
+                Save favorite pro
+              </button>
+              <p className="text-xs text-gray-600 mb-2">Favorites saved: {favoritePros.length}</p>
+              <input
+                value={repeatService}
+                onChange={(e) => setRepeatService(e.target.value)}
+                placeholder="Repeat previous service"
+                className="w-full text-xs border border-gray-300 rounded px-2 py-1"
+              />
+              <div className="mt-2 text-xs text-gray-600">SMS notifications: enabled • Push notifications: placeholder</div>
+            </div>
+          </div>
+
           {jobs.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-lg shadow">
               <p className="text-gray-500">No jobs found</p>
@@ -231,6 +307,17 @@ export default function CustomerPortalPage() {
                         <p className="text-xs text-gray-500">
                           Submitted: {new Date(job.createdAt).toLocaleDateString()}
                         </p>
+                        <div className="mt-3">
+                          <p className="text-xs font-semibold text-gray-700 mb-2">Progress tracker</p>
+                          <div className="grid grid-cols-5 gap-1">
+                            {progressLabels.map((label, index) => (
+                              <div key={label} className="text-center">
+                                <div className={`h-2 rounded-full ${index <= getProgressStep(job.status) ? 'bg-green-500' : 'bg-gray-200'}`} />
+                                <p className="text-[10px] text-gray-500 mt-1">{label}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                       <div className="mt-4 sm:mt-0 sm:ml-6 text-right">
                         {job.totalCost > 0 && (

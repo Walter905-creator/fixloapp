@@ -1,54 +1,46 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import HelmetSEO from '../seo/HelmetSEO';
+import ConversionGrowthWidgets from '../components/ConversionGrowthWidgets';
 
-const SERVICES = [
-  { to: '/services/plumbing',     title: 'Plumbing',      desc: 'Faucets, pipes, drains & more',          icon: '🔧' },
-  { to: '/services/electrical',   title: 'Electrical',    desc: 'Lighting, wiring, outlets & more',       icon: '⚡' },
-  { to: '/services/cleaning',     title: 'Cleaning',      desc: 'Housekeeping, carpets, windows',         icon: '🧹' },
-  { to: '/services/roofing',      title: 'Roofing',       desc: 'Repairs, replacements, inspections',     icon: '🏠' },
-  { to: '/services/hvac',         title: 'HVAC',          desc: 'Heating, cooling, vents',                icon: '❄️' },
-  { to: '/services/carpentry',    title: 'Carpentry',     desc: 'Framing, trim, installs',                icon: '🪚' },
-  { to: '/services/painting',     title: 'Painting',      desc: 'Interior and exterior painting',         icon: '🎨' },
-  { to: '/services/landscaping',  title: 'Landscaping',   desc: 'Lawn, garden, hardscape',                icon: '🌿' },
-  { to: '/services/junk-removal', title: 'Junk Removal',  desc: 'Haul away unwanted items',               icon: '🚛' },
-  { to: '/services/handyman',     title: 'Handyman',      desc: 'Small jobs, quick fixes',                icon: '🔨' },
+const PROBLEM_CATEGORIES = [
+  { to: '/us/services/plumbing', title: 'Emergency Plumbing', icon: '🚨' },
+  { to: '/us/services/electrical', title: 'Electrical Problems', icon: '⚡' },
+  { to: '/us/services/hvac', title: 'AC Repair', icon: '❄️' },
+  { to: '/us/services/house-cleaning', title: 'House Cleaning', icon: '🧼' },
+  { to: '/us/services/junk-removal', title: 'Junk Removal', icon: '🗑️' },
+  { to: '/us/services/landscaping', title: 'Landscaping', icon: '🌿' },
+  { to: '/us/services/carpentry', title: 'Carpentry', icon: '🪚' },
+  { to: '/us/services/remodeling', title: 'Remodeling', icon: '🏡' },
+  { to: '/us/services/roofing', title: 'Roofing', icon: '🏠' },
+  { to: '/us/services/painting', title: 'Painting', icon: '🎨' },
 ];
 
-const HOW_IT_WORKS = [
-  {
-    step: '1',
-    title: 'Describe your project',
-    desc: 'Tell us what home service you need and where you are located. It only takes a minute.',
-  },
-  {
-    step: '2',
-    title: 'Get matched instantly',
-    desc: 'We connect you with background-checked professionals in your area who specialize in your service.',
-  },
-  {
-    step: '3',
-    title: 'Get the job done',
-    desc: 'Confirm the details, schedule the visit, and get real-time SMS updates every step of the way.',
-  },
+const QUICK_PROBLEMS = [
+  'My AC stopped working',
+  'I have a water leak',
+  'I need junk removed',
+  'I need a cleaner',
+  'I need landscaping',
 ];
 
-const TESTIMONIALS = [
-  {
-    quote: 'Found a trusted plumber in under 10 minutes. He showed up on time and fixed the leak same day.',
-    name: 'Jennifer M.',
-    location: 'Austin, TX',
-  },
-  {
-    quote: 'The process was so easy. I described what I needed, got a match, and had my electrical issue fixed by afternoon.',
-    name: 'David R.',
-    location: 'Denver, CO',
-  },
-  {
-    quote: 'Background-checked pros gave me real peace of mind. I will only use Fixlo from now on.',
-    name: 'Maria L.',
-    location: 'Miami, FL',
-  },
+const CONVENIENCE_FEATURES = [
+  'One-click service request flow',
+  'Auto-detect location',
+  'Photo upload',
+  'Video upload',
+  'Save favorite pros',
+  'Repeat previous services',
+  'SMS notifications',
+  'Push notification placeholders',
+];
+
+const PROGRESS_STEPS = [
+  'Request submitted',
+  'Pro assigned',
+  'Pro on the way',
+  'Service in progress',
+  'Service completed',
 ];
 
 export default function HomeownerLandingPage() {
@@ -57,55 +49,34 @@ export default function HomeownerLandingPage() {
   return (
     <>
       <HelmetSEO
-        title="Find Trusted Home Service Professionals Near You | Fixlo"
-        description="Get matched with background-checked plumbers, electricians, cleaners, roofers & more. Submit a request and hear back fast — no bidding, no hassle."
+        title="Fixlo solves your home problems fast | Verified local pros"
+        description="Solve your home problem today. Get help in minutes with verified professionals and instant matching across all major home service categories."
         canonicalPathname="/for-homeowners"
       />
 
-      {/* Hero */}
-      <section
-        className="relative overflow-hidden"
-        style={{ minHeight: '520px' }}
-      >
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: 'url(/images/how-it-works.jpg)' }}
-          aria-hidden="true"
-        />
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              'linear-gradient(to right, rgba(15,23,42,0.92) 0%, rgba(15,23,42,0.80) 55%, rgba(15,23,42,0.45) 100%)',
-          }}
-          aria-hidden="true"
-        />
-        <div className="relative container-xl py-16 md:py-24">
-          <div className="max-w-2xl text-white">
-            <p className="text-emerald-400 font-semibold uppercase tracking-widest text-sm mb-3">
-              For Homeowners
-            </p>
+      <section className="relative overflow-hidden" style={{ minHeight: '540px' }}>
+        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: 'url(/images/how-it-works.jpg)' }} aria-hidden="true" />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, rgba(15,23,42,0.92) 0%, rgba(15,23,42,0.80) 55%, rgba(15,23,42,0.45) 100%)' }} aria-hidden="true" />
+        <div className="relative container-xl py-16 md:py-24 text-white">
+          <div className="max-w-3xl">
+            <p className="text-emerald-400 font-semibold uppercase tracking-widest text-sm mb-3">For Homeowners</p>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
-              Find Trusted Home Service Pros Near You
+              Fixlo solves your home problems fast.
             </h1>
-            <p className="mt-6 text-lg md:text-xl text-slate-200 max-w-xl">
-              Plumbing, electrical, HVAC, cleaning & more. Background-checked
-              professionals ready to help — no bidding, no hassle.
+            <p className="mt-4 text-lg md:text-xl text-slate-200">Find verified professionals in minutes.</p>
+            <p className="mt-4 text-lg text-slate-200">
+              Solve your home problem today. Get help in minutes. One place for every home service.
             </p>
+            <div className="mt-6 flex flex-wrap gap-2">
+              {['Fast', 'Trusted', 'Local', 'Easy'].map((item) => (
+                <span key={item} className="pill border-white/40 text-white bg-white/10">✓ {item}</span>
+              ))}
+            </div>
             <div className="mt-8 flex flex-wrap gap-4">
-              <button
-                onClick={() => navigate('/request')}
-                className="inline-block text-white font-semibold text-lg px-10 py-4 rounded-full shadow-lg transition-colors"
-                style={{ backgroundColor: '#2ecc71' }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#27ae60')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#2ecc71')}
-              >
-                Get a Free Quote
+              <button onClick={() => navigate('/request')} className="inline-block text-white font-semibold text-lg px-10 py-4 rounded-full shadow-lg transition-colors" style={{ backgroundColor: '#2ecc71' }}>
+                Get Started
               </button>
-              <Link
-                to="/services"
-                className="inline-block bg-white/10 hover:bg-white/20 text-white font-semibold text-lg px-10 py-4 rounded-full shadow-lg transition-colors border border-white/30"
-              >
+              <Link to="/services" className="inline-block bg-white/10 hover:bg-white/20 text-white font-semibold text-lg px-10 py-4 rounded-full shadow-lg transition-colors border border-white/30">
                 Browse Services
               </Link>
             </div>
@@ -113,140 +84,91 @@ export default function HomeownerLandingPage() {
         </div>
       </section>
 
-      {/* Trust bar */}
-      <section className="bg-white border-y border-slate-200 py-8">
-        <div className="container-xl">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            {[
-              { icon: '✅', label: 'Background-checked pros' },
-              { icon: '⚡', label: 'Fast response times' },
-              { icon: '💬', label: 'Real-time SMS updates' },
-              { icon: '🔒', label: 'Secure & private' },
-            ].map((item) => (
-              <div key={item.label} className="flex flex-col items-center gap-2">
-                <span className="text-2xl" aria-hidden="true">{item.icon}</span>
-                <p className="text-sm font-semibold text-slate-800">{item.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <ConversionGrowthWidgets audience="homeowner" ctaText="Get Started" ctaLink="/request" />
 
-      {/* Services Grid */}
       <section className="py-12 md:py-16 bg-slate-50">
         <div className="container-xl">
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3 text-center">
-            What do you need help with?
-          </h2>
-          <p className="text-center text-slate-600 mb-10 max-w-2xl mx-auto">
-            Choose a service below or submit a custom request and we'll match you with the right professional.
-          </p>
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3 text-center">Problem-based service categories</h2>
+          <p className="text-center text-slate-600 mb-8 max-w-2xl mx-auto">Fast service, verified professionals, instant matching, and multiple categories in one place.</p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {SERVICES.map((s) => (
-              <Link
-                key={s.to}
-                to={s.to}
-                className="card p-5 hover:border-emerald-400 hover:shadow-md transition group flex flex-col items-center text-center gap-2"
-              >
-                <span className="text-3xl" aria-hidden="true">{s.icon}</span>
-                <h3 className="font-semibold text-slate-900 group-hover:text-emerald-600 transition-colors">
-                  {s.title}
-                </h3>
-                <p className="text-xs text-slate-500">{s.desc}</p>
+            {PROBLEM_CATEGORIES.map((service) => (
+              <Link key={service.title} to={service.to} className="card p-5 text-center hover:border-emerald-400 hover:shadow-md transition">
+                <div className="text-3xl mb-2" aria-hidden="true">{service.icon}</div>
+                <p className="font-semibold text-slate-900 text-sm">{service.title}</p>
               </Link>
             ))}
           </div>
-          <div className="mt-10 text-center">
-            <button
-              onClick={() => navigate('/request')}
-              className="btn-primary px-8 py-3 text-base"
-            >
-              Request Any Service →
-            </button>
+        </div>
+      </section>
+
+      <section className="py-12 bg-white">
+        <div className="container-xl">
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-6 text-center">Pick your problem in one click</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {QUICK_PROBLEMS.map((problem) => (
+              <button key={problem} onClick={() => navigate(`/request?problem=${encodeURIComponent(problem)}`)} className="card p-4 text-left hover:border-brand hover:shadow-md transition">
+                <span className="text-sm font-semibold text-slate-900">{problem}</span>
+              </button>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* How it works */}
+      <section className="py-12 md:py-16 bg-slate-50">
+        <div className="container-xl grid gap-8 lg:grid-cols-2">
+          <div className="card p-6">
+            <h3 className="text-2xl font-bold text-slate-900 mb-4">Convenience that feels effortless</h3>
+            <ul className="grid gap-2 text-sm text-slate-700">
+              {CONVENIENCE_FEATURES.map((item) => (
+                <li key={item} className="flex items-start gap-2"><span className="text-emerald-600">✓</span><span>{item}</span></li>
+              ))}
+            </ul>
+          </div>
+          <div className="card p-6 bg-gradient-to-br from-slate-900 to-slate-800 text-white">
+            <h3 className="text-2xl font-bold mb-4">Live progress tracker</h3>
+            <div className="space-y-3">
+              {PROGRESS_STEPS.map((step, idx) => (
+                <div key={step} className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${idx === 2 ? 'bg-emerald-500 animate-pulse' : 'bg-white/20'}`}>{idx + 1}</div>
+                  <p className="text-sm">{step}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="py-12 md:py-16 bg-white">
         <div className="container-xl">
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3 text-center">
-            How it works for homeowners
-          </h2>
-          <p className="text-center text-slate-600 mb-10 max-w-xl mx-auto">
-            Getting home services has never been simpler.
-          </p>
-          <div className="grid md:grid-cols-3 gap-8">
-            {HOW_IT_WORKS.map((step) => (
-              <div key={step.step} className="card p-6 text-center">
-                <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 font-extrabold text-xl flex items-center justify-center mx-auto mb-4">
-                  {step.step}
-                </div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">{step.title}</h3>
-                <p className="text-slate-600 text-sm">{step.desc}</p>
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-8 text-center">Premium homeowner experience</h2>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {[
+              'Professional onboarding flow',
+              'Animated status indicators',
+              'Real-time updates UI',
+              'Review submission flow',
+              'Favorite contractor system',
+              'Referral rewards section',
+            ].map((feature) => (
+              <div key={feature} className="card p-5 bg-white/70 backdrop-blur border border-slate-200">
+                <p className="font-semibold text-slate-900">{feature}</p>
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="py-12 md:py-16 bg-slate-50">
-        <div className="container-xl">
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-10 text-center">
-            Homeowners love Fixlo
-          </h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            {TESTIMONIALS.map((t, idx) => (
-              <div key={idx} className="card p-6">
-                <p className="text-slate-700 mb-4 leading-relaxed">"{t.quote}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-semibold">
-                    {t.name[0]}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-slate-900">{t.name}</p>
-                    <p className="text-sm text-slate-500">{t.location}</p>
-                  </div>
-                </div>
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
+            <div className="card p-4">
+              <h3 className="font-semibold text-slate-900 mb-3">Before/After gallery</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <img src="/images/service-painting.jpg" alt="Before service" className="rounded-lg h-32 w-full object-cover" loading="lazy" />
+                <img src="/images/service-landscaping.jpg" alt="After service" className="rounded-lg h-32 w-full object-cover" loading="lazy" />
               </div>
-            ))}
+            </div>
+            <div className="card p-4 bg-emerald-50 border-emerald-200">
+              <h3 className="font-semibold text-slate-900 mb-2">Referral rewards</h3>
+              <p className="text-sm text-slate-700 mb-4">Invite neighbors and unlock reward credits after completed services.</p>
+              <button onClick={() => navigate('/signup')} className="btn-primary px-5 py-2 text-sm">Invite & Earn Rewards</button>
+            </div>
           </div>
-        </div>
-      </section>
-
-      {/* Final CTA */}
-      <section className="py-16 md:py-20 bg-slate-900 text-center">
-        <div className="container-xl">
-          <h2 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight">
-            Ready to get started?
-          </h2>
-          <p className="mt-4 text-lg text-slate-300 max-w-xl mx-auto">
-            Submit a free request and get matched with a verified local professional today.
-          </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <button
-              onClick={() => navigate('/request')}
-              className="inline-block text-white font-semibold text-xl px-12 py-5 rounded-full shadow-xl transition-colors"
-              style={{ backgroundColor: '#2ecc71' }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#27ae60')}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#2ecc71')}
-            >
-              Get a Free Quote
-            </button>
-            <Link
-              to="/services"
-              className="inline-block bg-white/10 hover:bg-white/20 text-white font-semibold text-xl px-12 py-5 rounded-full shadow-xl transition-colors border border-white/30"
-            >
-              Browse All Services
-            </Link>
-          </div>
-          <p className="mt-6 text-slate-400 text-sm">
-            Are you a professional?{' '}
-            <Link to="/for-pros" className="text-emerald-400 hover:underline">
-              Join Fixlo as a Pro →
-            </Link>
-          </p>
         </div>
       </section>
     </>
