@@ -37,6 +37,35 @@ try {
   throw error;
 }
 
+function getProfessionalPlanDetails(plan, unitAmount = null, priceId = null) {
+  const normalizedPlan = String(plan || 'pro').trim().toLowerCase();
+
+  if (normalizedPlan === 'premium') {
+    return {
+      plan: 'premium',
+      leadPriority: 'premium',
+      subscriptionPrice: unitAmount ? unitAmount / 100 : 179.99,
+      stripePriceId: priceId || process.env.STRIPE_PREMIUM_PRICE_ID || process.env.STRIPE_STANDARD_PRICE_ID || '',
+      subscriptionTier: 'pro'
+    };
+  }
+
+  return {
+    plan: 'pro',
+    leadPriority: 'standard',
+    subscriptionPrice: unitAmount ? unitAmount / 100 : 59.99,
+    stripePriceId: priceId || process.env.STRIPE_PRO_PRICE_ID || process.env.STRIPE_EARLY_ACCESS_PRICE_ID || process.env.STRIPE_PRICE_ID || '',
+    subscriptionTier: 'pro'
+  };
+}
+
+function getStripeSubscriptionState(status) {
+  if (status === 'active') return { paymentStatus: 'active', subscriptionStatus: 'active', isActive: true };
+  if (status === 'past_due' || status === 'unpaid') return { paymentStatus: 'failed', subscriptionStatus: 'past_due', isActive: false };
+  if (status === 'canceled' || status === 'incomplete_expired') return { paymentStatus: 'cancelled', subscriptionStatus: 'cancelled', isActive: false };
+  return { paymentStatus: 'pending', subscriptionStatus: 'inactive', isActive: false };
+}
+
 // Create SetupIntent for payment method authorization
 router.post('/create-setup-intent', async (req, res) => {
   try {
@@ -136,14 +165,19 @@ router.post('/create-checkout-session', async (req, res) => {
   try {
     console.log('🔔 Stripe checkout session requested');
     
-    // Get email, userId, tier, and optional customerId from request body
-    const { email, userId, customerId, tier, useEarlyAccessPrice } = req.body;
+    const { email, userId, customerId, tier, plan, phone, referralCode } = req.body;
     
-    // Validate tier if provided
     if (tier && !['PRO', 'AI_PLUS'].includes(tier)) {
       return res.status(400).json({
         error: 'Invalid tier',
         message: 'Tier must be either "PRO" or "AI_PLUS"'
+      });
+    }
+
+    if (plan && !['pro', 'premium'].includes(String(plan).toLowerCase())) {
+      return res.status(400).json({
+        error: 'Invalid plan',
+        message: 'Plan must be either "pro" or "premium"'
       });
     }
     
@@ -166,11 +200,9 @@ router.post('/create-checkout-session', async (req, res) => {
     // Check required environment variables
     const clientUrl = process.env.YOUR_DOMAIN || process.env.CLIENT_URL || 'https://www.fixloapp.com';
     
-    // Determine subscription tier and price ID
-    // tier can be: 'PRO' (default, $59.99 or $179.99) or 'AI_PLUS' ($99)
+    const selectedPlan = String(plan || 'pro').toLowerCase();
     const subscriptionTier = tier === 'AI_PLUS' ? 'AI_PLUS' : 'PRO';
-    
-    // Get price ID based on tier and early access availability
+
     let priceId;
     if (subscriptionTier === 'AI_PLUS') {
       priceId = process.env.STRIPE_AI_PLUS_PRICE_ID;
@@ -181,38 +213,17 @@ router.post('/create-checkout-session', async (req, res) => {
           message: 'AI+ subscription is not available at this time. Please contact support.'
         });
       }
+    } else if (selectedPlan === 'premium') {
+      priceId = process.env.STRIPE_PREMIUM_PRICE_ID || process.env.STRIPE_STANDARD_PRICE_ID;
     } else {
-      // For PRO tier, check if early access is available and requested
-      if (useEarlyAccessPrice) {
-        // Check early access availability
-        const spotsInstance = await EarlyAccessSpots.getInstance();
-        
-        if (spotsInstance.isEarlyAccessAvailable()) {
-          // Use early access price ($59.99)
-          priceId = process.env.STRIPE_EARLY_ACCESS_PRICE_ID || process.env.STRIPE_PRICE_ID || 'prod_SaAyX0rd1VWGE0';
-          console.log(`🎫 Using early access price: ${priceId} (${spotsInstance.spotsRemaining} spots remaining)`);
-        } else {
-          // Early access full, use standard price
-          priceId = process.env.STRIPE_STANDARD_PRICE_ID;
-          if (!priceId) {
-            console.error('❌ STRIPE_STANDARD_PRICE_ID not configured');
-            return res.status(500).json({
-              error: 'Standard pricing not configured',
-              message: 'Please contact support for pricing information.'
-            });
-          }
-          console.log(`💰 Using standard price: ${priceId} (early access full)`);
-        }
-      } else {
-        // Use standard price ($179.99)
-        priceId = process.env.STRIPE_STANDARD_PRICE_ID;
-        if (!priceId) {
-          // Fallback to old price ID if standard not configured
-          priceId = process.env.STRIPE_PRICE_ID || 'prod_SaAyX0rd1VWGE0';
-          console.warn('⚠️ STRIPE_STANDARD_PRICE_ID not configured, using fallback');
-        }
-        console.log(`💰 Using standard price: ${priceId}`);
-      }
+      priceId = process.env.STRIPE_PRO_PRICE_ID || process.env.STRIPE_EARLY_ACCESS_PRICE_ID || process.env.STRIPE_PRICE_ID;
+    }
+
+    if (!priceId) {
+      return res.status(500).json({
+        error: 'Pricing not configured',
+        message: 'Stripe price IDs are missing for the selected plan.'
+      });
     }
     
     console.log(`💰 Creating checkout session for tier: ${subscriptionTier} with price ID: ${priceId}`);
@@ -252,6 +263,7 @@ router.post('/create-checkout-session', async (req, res) => {
           userId: userId || '',
           service: 'fixlo-pro-subscription',
           tier: subscriptionTier,
+          plan: selectedPlan,
           timestamp: new Date().toISOString()
         }
       },
@@ -260,6 +272,9 @@ router.post('/create-checkout-session', async (req, res) => {
         customerId: customerIdToUse,
         service: 'fixlo-pro-subscription',
         tier: subscriptionTier,
+        plan: selectedPlan,
+        phone: phone || '',
+        referralCode: referralCode || '',
         timestamp: new Date().toISOString()
       },
       success_url: `${clientUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
@@ -389,6 +404,9 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
         
         // Retrieve subscription to access product metadata
         let subscriptionTier = null;
+        let professionalPlan = session.metadata?.plan || 'pro';
+        let priceIdFromSubscription = null;
+        let unitAmountFromSubscription = null;
         if (session.subscription) {
           try {
             const subscription = await stripe.subscriptions.retrieve(session.subscription, {
@@ -397,8 +415,11 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
             
             // Check product metadata for tier information
             const product = subscription.items.data[0]?.price?.product;
+            priceIdFromSubscription = subscription.items.data[0]?.price?.id || null;
+            unitAmountFromSubscription = subscription.items.data[0]?.price?.unit_amount || null;
             if (product && typeof product === 'object' && product.metadata) {
               subscriptionTier = product.metadata.tier;
+              professionalPlan = product.metadata.plan || professionalPlan;
               console.log(`📦 Product tier from metadata: ${subscriptionTier}`);
             }
           } catch (err) {
@@ -451,11 +472,21 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
               console.log(`🏠 Setting AI Home Expert access for user ${pro._id}`);
             } else {
               // Handle PRO and AI_PLUS tiers (Professional subscriptions)
+              const planDetails = getProfessionalPlanDetails(
+                professionalPlan || session.metadata?.plan,
+                unitAmountFromSubscription,
+                priceIdFromSubscription
+              );
               updateData.stripeSubscriptionId = session.subscription;
               updateData.paymentStatus = session.subscription ? 'active' : 'pending';
               updateData.subscriptionActive = true;
               updateData.subscriptionType = 'monthly';
               updateData.subscriptionStartDate = new Date();
+              updateData.subscriptionStatus = 'active';
+              updateData.subscriptionPlan = planDetails.plan;
+              updateData.subscriptionPrice = planDetails.subscriptionPrice;
+              updateData.leadPriority = planDetails.leadPriority;
+              updateData.stripePriceId = planDetails.stripePriceId;
               
               // Set subscription tier based on metadata or session metadata fallback
               const tierToUse = subscriptionTier || session.metadata?.tier;
@@ -463,8 +494,8 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
                 updateData.subscriptionTier = 'ai_plus';
                 console.log(`🌟 Setting AI+ tier for pro ${pro._id}`);
               } else {
-                updateData.subscriptionTier = 'pro';
-                console.log(`⭐ Setting PRO tier for pro ${pro._id}`);
+                updateData.subscriptionTier = planDetails.subscriptionTier;
+                console.log(`⭐ Setting ${planDetails.plan.toUpperCase()} plan for pro ${pro._id}`);
               }
               
               // If there's a trial, set the subscription end date
@@ -582,6 +613,9 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
         
         // Retrieve subscription to access product metadata
         let subscriptionTier = null;
+        let professionalPlan = 'pro';
+        let priceIdFromSubscription = null;
+        let unitAmountFromSubscription = null;
         if (invoice.subscription) {
           try {
             const subscription = await stripe.subscriptions.retrieve(invoice.subscription, {
@@ -590,8 +624,11 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
             
             // Check product metadata for tier information
             const product = subscription.items.data[0]?.price?.product;
+            priceIdFromSubscription = subscription.items.data[0]?.price?.id || null;
+            unitAmountFromSubscription = subscription.items.data[0]?.price?.unit_amount || null;
             if (product && typeof product === 'object' && product.metadata) {
               subscriptionTier = product.metadata.tier;
+              professionalPlan = product.metadata.plan || professionalPlan;
               console.log(`📦 Product tier from metadata: ${subscriptionTier}`);
             }
           } catch (err) {
@@ -616,8 +653,15 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
               }
             } else {
               // Handle PRO and AI_PLUS tiers (Professional subscriptions)
+              const planDetails = getProfessionalPlanDetails(professionalPlan, unitAmountFromSubscription, priceIdFromSubscription);
               pro.paymentStatus = 'active';
               pro.isActive = true;
+              pro.subscriptionStatus = 'active';
+              pro.subscriptionActive = true;
+              pro.subscriptionPlan = planDetails.plan;
+              pro.subscriptionPrice = planDetails.subscriptionPrice;
+              pro.leadPriority = planDetails.leadPriority;
+              pro.stripePriceId = planDetails.stripePriceId;
               
               // Update subscription dates
               if (invoice.subscription) {
@@ -632,7 +676,7 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
                   console.log(`🌟 Maintaining AI+ tier for pro ${pro._id}`);
                 } else if (tierToUse === 'PRO') {
                   pro.subscriptionTier = 'pro';
-                  console.log(`⭐ Maintaining PRO tier for pro ${pro._id}`);
+                  console.log(`⭐ Maintaining ${planDetails.plan.toUpperCase()} plan for pro ${pro._id}`);
                 } else {
                   // Default to PRO tier for paid subscriptions without metadata
                   pro.subscriptionTier = 'pro';
@@ -811,6 +855,8 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
               // Handle PRO and AI_PLUS tier failure
               pro.paymentStatus = 'failed';
               pro.isActive = false;
+              pro.subscriptionActive = false;
+              pro.subscriptionStatus = 'past_due';
             }
             
             await pro.save();
@@ -891,6 +937,7 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
               pro.paymentStatus = 'cancelled';
               pro.isActive = false;
               pro.subscriptionActive = false;
+              pro.subscriptionStatus = 'cancelled';
             }
             
             await pro.save();
@@ -948,19 +995,37 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
               }
             } else {
               // Handle PRO and AI_PLUS tier updates
+              const planDetails = getProfessionalPlanDetails(
+                subscription.metadata?.plan || 'pro',
+                subscription.items?.data?.[0]?.price?.unit_amount || null,
+                subscription.items?.data?.[0]?.price?.id || null
+              );
+              pro.subscriptionPlan = planDetails.plan;
+              pro.subscriptionPrice = planDetails.subscriptionPrice;
+              pro.leadPriority = planDetails.leadPriority;
+              pro.stripePriceId = planDetails.stripePriceId;
               if (subscription.status === 'active') {
-                pro.paymentStatus = 'active';
-                pro.isActive = true;
+                const state = getStripeSubscriptionState(subscription.status);
+                pro.paymentStatus = state.paymentStatus;
+                pro.subscriptionStatus = state.subscriptionStatus;
+                pro.isActive = state.isActive;
+                pro.subscriptionActive = true;
                 pro.subscriptionStartDate = new Date(subscription.current_period_start * 1000);
                 pro.subscriptionEndDate = new Date(subscription.current_period_end * 1000);
                 console.log(`✅ Pro subscription updated to active for user ${pro._id}`);
               } else if (subscription.status === 'canceled' || subscription.status === 'incomplete_expired') {
-                pro.paymentStatus = 'cancelled';
-                pro.isActive = false;
+                const state = getStripeSubscriptionState(subscription.status);
+                pro.paymentStatus = state.paymentStatus;
+                pro.subscriptionStatus = state.subscriptionStatus;
+                pro.isActive = state.isActive;
+                pro.subscriptionActive = false;
                 console.log(`✅ Pro subscription cancelled for user ${pro._id}`);
               } else if (subscription.status === 'past_due' || subscription.status === 'unpaid') {
-                pro.paymentStatus = 'failed';
-                pro.isActive = false;
+                const state = getStripeSubscriptionState(subscription.status);
+                pro.paymentStatus = state.paymentStatus;
+                pro.subscriptionStatus = state.subscriptionStatus;
+                pro.isActive = state.isActive;
+                pro.subscriptionActive = false;
                 console.log(`⚠️ Pro subscription payment issue for user ${pro._id}`);
               }
             }

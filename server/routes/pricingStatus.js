@@ -28,63 +28,52 @@ router.get('/', async (req, res) => {
       const countryCode = req.query.countryCode || 'US';
       
       // Calculate prices for the country (without database access)
-      const standardPrice = calculatePrice('proMonthlySubscription', countryCode);
-      const standardPriceFormatted = formatPrice(standardPrice.amount, standardPrice.currency);
-      
+      const proPrice = calculatePrice('proMonthlySubscription', countryCode);
+      const premiumPrice = calculatePrice('premiumMonthlySubscription', countryCode);
+       
       return res.json({
         success: true,
         data: {
           earlyAccessSpotsRemaining: 0,
           earlyAccessAvailable: false,
-          currentPrice: standardPrice.amount,
-          nextPrice: standardPrice.amount,
-          currentPriceFormatted: standardPriceFormatted,
-          nextPriceFormatted: standardPriceFormatted,
-          currency: standardPrice.currency,
-          message: `Fixlo Pro is ${standardPriceFormatted}/month.`
+          currentPrice: proPrice.amount,
+          nextPrice: premiumPrice.amount,
+          currentPriceFormatted: formatPrice(proPrice.amount, proPrice.currency),
+          nextPriceFormatted: formatPrice(premiumPrice.amount, premiumPrice.currency),
+          currency: proPrice.currency,
+          proPrice: proPrice.amount,
+          premiumPrice: premiumPrice.amount,
+          proPriceFormatted: formatPrice(proPrice.amount, proPrice.currency),
+          premiumPriceFormatted: formatPrice(premiumPrice.amount, premiumPrice.currency),
+          message: `Fixlo Pro is ${formatPrice(proPrice.amount, proPrice.currency)}/month and Fixlo Premium is ${formatPrice(premiumPrice.amount, premiumPrice.currency)}/month.`
         },
         timestamp: new Date().toISOString(),
         note: 'Database temporarily unavailable. Showing standard pricing'
       });
     }
     
-    // Get or create early access spots instance
-    const spotsInstance = await EarlyAccessSpots.getInstance();
-    
-    // Determine if early access is available
-    const earlyAccessAvailable = spotsInstance.isEarlyAccessAvailable();
-    
     // Get country code from query param or default to US
     const countryCode = req.query.countryCode || 'US';
     
     // Calculate prices for the country
-    const earlyAccessPrice = calculatePrice('proMonthlySubscriptionEarlyAccess', countryCode);
-    const standardPrice = calculatePrice('proMonthlySubscription', countryCode);
-    
-    // Determine current price based on availability
-    const currentPrice = earlyAccessAvailable 
-      ? earlyAccessPrice.amount 
-      : standardPrice.amount;
-    
-    const currentPriceFormatted = earlyAccessAvailable
-      ? formatPrice(earlyAccessPrice.amount, earlyAccessPrice.currency)
-      : formatPrice(standardPrice.amount, standardPrice.currency);
-    
-    const nextPriceFormatted = formatPrice(standardPrice.amount, standardPrice.currency);
+    const proPrice = calculatePrice('proMonthlySubscription', countryCode);
+    const premiumPrice = calculatePrice('premiumMonthlySubscription', countryCode);
     
     res.json({
       success: true,
       data: {
-        earlyAccessSpotsRemaining: spotsInstance.spotsRemaining,
-        earlyAccessAvailable,
-        currentPrice,
-        nextPrice: standardPrice.amount,
-        currentPriceFormatted,
-        nextPriceFormatted,
-        currency: earlyAccessAvailable ? earlyAccessPrice.currency : standardPrice.currency,
-        message: earlyAccessAvailable 
-          ? `Only ${spotsInstance.spotsRemaining} early-access spots remain. Once filled, Fixlo Pro increases to ${nextPriceFormatted}/month permanently.`
-          : `Early access has ended. Fixlo Pro is now ${nextPriceFormatted}/month.`
+        earlyAccessSpotsRemaining: 0,
+        earlyAccessAvailable: false,
+        currentPrice: proPrice.amount,
+        nextPrice: premiumPrice.amount,
+        currentPriceFormatted: formatPrice(proPrice.amount, proPrice.currency),
+        nextPriceFormatted: formatPrice(premiumPrice.amount, premiumPrice.currency),
+        currency: proPrice.currency,
+        proPrice: proPrice.amount,
+        premiumPrice: premiumPrice.amount,
+        proPriceFormatted: formatPrice(proPrice.amount, proPrice.currency),
+        premiumPriceFormatted: formatPrice(premiumPrice.amount, premiumPrice.currency),
+        message: `Fixlo Pro is ${formatPrice(proPrice.amount, proPrice.currency)}/month. Fixlo Premium is ${formatPrice(premiumPrice.amount, premiumPrice.currency)}/month with priority lead access.`
       },
       timestamp: new Date().toISOString()
     });

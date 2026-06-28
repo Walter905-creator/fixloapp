@@ -3,7 +3,9 @@ const express = require("express");
 const router = express.Router();
 const JobRequest = require("../models/JobRequest");
 const Pro = require("../models/Pro");
+const LeadAssignment = require("../models/LeadAssignment");
 const auth = require("../middleware/auth");
+const { acceptLead, declineLead, processExpiredPremiumAssignments } = require('../services/leadAssignmentService');
 
 // ✅ Test endpoint
 router.get("/test", (req, res) => {
@@ -17,6 +19,7 @@ router.get("/test", (req, res) => {
 router.get("/jobs", auth, async (req, res) => {
   try {
     const { status } = req.query;
+    await processExpiredPremiumAssignments();
     
     // Check if database is connected
     const mongoose = require('mongoose');
@@ -66,17 +69,46 @@ router.get("/jobs", auth, async (req, res) => {
       return res.json(filteredJobs);
     }
 
-    // Build query
-    let query = {};
-    if (status) {
-      query.status = status === 'open' ? 'pending' : status; // Map 'open' to 'pending' in database
-    }
+    const assignments = await LeadAssignment.find({
+      proId: req.proId,
+      ...(status === 'open'
+        ? { status: 'pending' }
+        : status && status !== 'all'
+          ? { status }
+          : {})
+    })
+      .populate('leadId')
+      .sort({ assignedAt: -1 })
+      .limit(50);
 
-    console.log("🔍 Fetching jobs from database with query:", query);
-    const jobs = await JobRequest.find(query).sort({ createdAt: -1 }).limit(50);
-    
-    // Transform jobs to match client expectations
-    const transformedJobs = jobs.map(job => ({
+    const assignmentJobs = assignments
+      .filter((assignment) => assignment.leadId)
+      .map((assignment) => ({
+        _id: assignment.leadId._id,
+        id: assignment.leadId._id,
+        assignmentId: assignment._id,
+        assignmentType: assignment.assignmentType,
+        assignmentStatus: assignment.status,
+        exclusiveUntil: assignment.exclusiveUntil,
+        service: assignment.leadId.trade?.toLowerCase() || 'service',
+        type: assignment.leadId.trade?.toLowerCase() || 'service',
+        city: assignment.leadId.city || assignment.leadId.address?.split(',').pop()?.trim() || 'Unknown',
+        location: {
+          city: assignment.leadId.city || assignment.leadId.address?.split(',').pop()?.trim() || 'Unknown',
+          address: assignment.leadId.address
+        },
+        description: assignment.leadId.description,
+        desc: assignment.leadId.description,
+        status: assignment.status === 'pending' ? 'open' : assignment.status,
+        createdAt: assignment.leadId.createdAt,
+        date: assignment.leadId.createdAt
+      }));
+
+    const assignedJobs = await JobRequest.find({
+      $or: [{ assignedProId: req.proId }, { assignedTo: req.proId }]
+    }).sort({ createdAt: -1 }).limit(50);
+
+    const transformedJobs = assignedJobs.map(job => ({
       _id: job._id,
       id: job._id,
       service: job.trade?.toLowerCase() || 'service',
@@ -93,8 +125,16 @@ router.get("/jobs", auth, async (req, res) => {
       date: job.createdAt
     }));
 
-    console.log(`✅ Found ${transformedJobs.length} jobs`);
-    res.json(transformedJobs);
+    const seen = new Set();
+    const combinedJobs = [...assignmentJobs, ...transformedJobs].filter((job) => {
+      const key = `${job._id}:${job.assignmentId || 'job'}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    console.log(`✅ Found ${combinedJobs.length} jobs`);
+    res.json(combinedJobs);
   } catch (err) {
     console.error("❌ Error fetching jobs:", err);
     res.status(500).json({ error: "Server error fetching jobs" });
@@ -135,12 +175,20 @@ router.post("/jobs/:jobId/:action", auth, async (req, res) => {
     switch (action) {
       case 'accept':
       case 'interested':
-        job.status = 'assigned';
-        job.assignedPro = proId;
-        await job.save();
+        {
+          const result = await acceptLead(jobId, proId);
+          if (!result.ok) {
+            return res.status(result.status).json({ error: result.error });
+          }
+        }
         break;
       case 'decline':
-        // Job remains open for other pros
+        {
+          const result = await declineLead(jobId, proId);
+          if (!result.ok) {
+            return res.status(result.status).json({ error: result.error });
+          }
+        }
         break;
       default:
         return res.status(400).json({ error: "Invalid action" });

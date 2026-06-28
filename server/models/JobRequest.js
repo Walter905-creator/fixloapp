@@ -246,6 +246,18 @@ const JobRequestSchema = new mongoose.Schema({
   assignedAt: {
     type: Date
   },
+  leadAssignmentStatus: {
+    type: String,
+    enum: ['available', 'assigned', 'expired', 'accepted', 'released'],
+    default: 'available'
+  },
+  currentLeadAssignmentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'LeadAssignment'
+  },
+  exclusiveUntil: {
+    type: Date
+  },
   // Priority Pro Routing (Charlotte, NC)
   priorityNotified: {
     type: Boolean,

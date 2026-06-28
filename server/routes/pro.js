@@ -5,8 +5,10 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const Pro = require('../models/Pro');
 const JobRequest = require('../models/JobRequest');
+const LeadAssignment = require('../models/LeadAssignment');
 const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
 const { isUSPhoneNumber } = require('../utils/twilio');
+const { processExpiredPremiumAssignments } = require('../services/leadAssignmentService');
 
 function requireJwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -187,26 +189,63 @@ router.post('/login', async (req, res) => {
 router.get('/dashboard', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     console.log(`📊 Dashboard hit: user.id=${req.user.id}`);
+    await processExpiredPremiumAssignments();
     const pro = await Pro.findById(req.user.id).select('-password');
     if (!pro) return res.status(404).json({ ok: false, error: 'Pro account not found' });
 
-
-    // Query leads using both assignment fields for compatibility
-    const leads = await JobRequest.find({
+    const assignedJobs = await JobRequest.find({
       $or: [{ assignedProId: pro._id }, { assignedTo: pro._id }]
     })
       .sort({ createdAt: -1 })
       .limit(100)
       .select('trade name phone email address city description status createdAt scheduledDate');
 
-    console.log(`✅ Dashboard: ${leads.length} leads for pro ${pro._id}`);
+    const leadAssignments = await LeadAssignment.find({
+      proId: pro._id,
+      status: { $in: ['pending', 'accepted', 'released'] }
+    })
+      .populate('leadId', 'trade name phone email address city state description status createdAt exclusiveUntil')
+      .sort({ assignedAt: -1 })
+      .limit(100);
+
+    const assignmentLeads = leadAssignments
+      .filter((assignment) => assignment.leadId)
+      .map((assignment) => ({
+        ...assignment.leadId.toObject(),
+        assignmentId: assignment._id,
+        assignmentType: assignment.assignmentType,
+        assignmentStatus: assignment.status,
+        exclusiveUntil: assignment.exclusiveUntil,
+        canRespond: assignment.status === 'pending'
+      }));
+
+    const directLeads = assignedJobs.map((job) => ({
+      ...job.toObject(),
+      assignmentType: 'accepted_job',
+      assignmentStatus: 'accepted',
+      canRespond: false
+    }));
+
+    const dedupedLeads = [];
+    const seenLeadIds = new Set();
+    [...assignmentLeads, ...directLeads].forEach((lead) => {
+      const key = `${lead._id}:${lead.assignmentId || lead.assignmentStatus}`;
+      if (!seenLeadIds.has(key)) {
+        seenLeadIds.add(key);
+        dedupedLeads.push(lead);
+      }
+    });
+
+    console.log(`✅ Dashboard: ${dedupedLeads.length} leads for pro ${pro._id}`);
     return res.json({
       name: pro.name,
       trade: pro.trade,
       role: pro.role || 'pro',
       subscriptionActive: pro.subscriptionType === 'lifetime' ? true : pro.subscriptionActive,
       subscriptionType: pro.subscriptionType || 'monthly',
-      leads
+      subscriptionPlan: pro.subscriptionPlan || 'pro',
+      leadPriority: pro.leadPriority || 'standard',
+      leads: dedupedLeads
     });
   } catch (err) {
     console.error('Pro dashboard error:', err);

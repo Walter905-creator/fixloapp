@@ -95,6 +95,29 @@ export default function AdminPage() {
             </div>
           </div>
 
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="text-xs text-gray-500 mb-1">Fixlo Pro</div>
+              <div className="text-2xl font-bold">{overview.proPlanCounts?.pro ?? 0}</div>
+            </div>
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="text-xs text-gray-500 mb-1">Premium Pros</div>
+              <div className="text-2xl font-bold text-slate-900">{overview.proPlanCounts?.premium ?? 0}</div>
+            </div>
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="text-xs text-gray-500 mb-1">Premium Pending</div>
+              <div className="text-2xl font-bold text-amber-700">{overview.leadAssignments?.pendingPremiumAssignments ?? 0}</div>
+            </div>
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="text-xs text-gray-500 mb-1">Expired Assignments</div>
+              <div className="text-2xl font-bold text-red-600">{overview.leadAssignments?.expiredAssignments ?? 0}</div>
+            </div>
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="text-xs text-gray-500 mb-1">Premium Response Rate</div>
+              <div className="text-2xl font-bold text-green-700">{overview.leadAssignments?.premiumResponseRate ?? 0}%</div>
+            </div>
+          </div>
+
           {/* System Health */}
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="text-sm font-semibold text-gray-700 mb-3">System Health</div>
@@ -104,6 +127,34 @@ export default function AdminPage() {
               <div className="flex items-center gap-2"><span className="text-gray-500">AI Lead Hunter</span>{healthBadge(overview.systemHealth?.aiLeadHunter)}</div>
               <div className="flex items-center gap-2"><span className="text-gray-500">SEO Engine</span>{healthBadge(overview.systemHealth?.seoEngine)}</div>
             </div>
+          </div>
+
+          <div className="bg-white rounded-lg border border-gray-200 p-4 mt-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-sm font-semibold text-gray-700">Recent Lead Assignments</div>
+              <a href="/dashboard/admin/jobs" className="text-sm text-blue-600 hover:underline">Open jobs</a>
+            </div>
+            {overview.leadAssignments?.recent?.length ? (
+              <div className="space-y-3">
+                {overview.leadAssignments.recent.map((assignment) => (
+                  <div key={assignment._id} className="rounded border border-gray-100 p-3 text-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="font-semibold text-slate-900">
+                        {assignment.leadId?.trade || 'Lead'} • {assignment.proId?.businessName || assignment.proId?.name || 'Unassigned pro'}
+                      </div>
+                      <span className="rounded bg-slate-100 px-2 py-1 text-xs font-semibold uppercase text-slate-700">
+                        {assignment.status}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-slate-600">
+                      {(assignment.leadId?.city || 'Unknown city')}{assignment.leadId?.state ? `, ${assignment.leadId.state}` : ''} • {assignment.assignmentType}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-gray-500">No lead assignments yet.</div>
+            )}
           </div>
         </div>
       ) : null}

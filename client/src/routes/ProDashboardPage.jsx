@@ -16,6 +16,7 @@ export default function ProDashboardPage(){
   const [subscriptionActive, setSubscriptionActive] = React.useState(null);
   const [subscriptionType, setSubscriptionType] = React.useState(null);
   const [billingLoading, setBillingLoading] = React.useState(false);
+  const [leadActionLoading, setLeadActionLoading] = React.useState(null);
   const [proRole, setProRole] = React.useState('pro');
   const [savedResponse, setSavedResponse] = React.useState('Thanks for your request — I can help today.');
   const quickContactPhone = React.useMemo(
@@ -176,6 +177,41 @@ export default function ProDashboardPage(){
     customerRating: proData?.rating || '—',
     repeatRate: leads.length ? `${Math.min(95, 45 + Math.floor(leads.length / 3))}%` : '—',
   };
+
+  async function respondToLead(leadId, action) {
+    setLeadActionLoading(`${leadId}:${action}`);
+    try {
+      const token = getToken();
+      const res = await fetch(`${api}/api/pro/jobs/${leadId}/${action}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        }
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Could not update lead');
+      }
+
+      const dashRes = await fetch(`${api}/api/pro/dashboard`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        }
+      });
+
+      if (dashRes.ok) {
+        const data = await dashRes.json();
+        setLeads(Array.isArray(data.leads) ? data.leads : []);
+      }
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setLeadActionLoading(null);
+    }
+  }
   
   return (<>
     <HelmetSEO title="Pro Dashboard | Fixlo" canonicalPathname="/pro/dashboard" robots="noindex, nofollow" />
@@ -190,6 +226,11 @@ export default function ProDashboardPage(){
           ) : subscriptionActive !== null && (
             <span className={`ml-3 inline-block px-2 py-0.5 rounded text-xs font-semibold ${subscriptionActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
               {subscriptionActive ? 'Active' : 'Inactive'}
+            </span>
+          )}
+          {proData?.subscriptionPlan && (
+            <span className={`ml-3 inline-block px-2 py-0.5 rounded text-xs font-semibold ${proData.subscriptionPlan === 'premium' ? 'bg-slate-900 text-white' : 'bg-blue-100 text-blue-800'}`}>
+              {proData.subscriptionPlan === 'premium' ? 'Premium' : 'Pro'}
             </span>
           )}
         </p>
@@ -304,7 +345,9 @@ export default function ProDashboardPage(){
         <div className="card p-5">
           <h3 className="font-semibold text-slate-900 mb-3">One-click actions</h3>
           <div className="flex flex-wrap gap-2">
-            <button className="btn-primary text-sm px-3 py-2">Accept Lead</button>
+            <button className="btn-primary text-sm px-3 py-2" disabled>
+              {proData?.subscriptionPlan === 'premium' ? 'Premium Lead Ready' : 'Lead Actions Below'}
+            </button>
             {quickContactPhone ? (
               <>
                 <a href={`sms:${quickContactPhone}`} className="btn-ghost text-sm px-3 py-2">SMS Alert</a>
@@ -356,7 +399,32 @@ export default function ProDashboardPage(){
                 {leads.map((l,i)=>(<li key={i} className="border border-white/10 rounded-xl p-3">
                   <div className="font-semibold">{l.trade || l.service || 'Service'}</div>
                   <div className="text-sm text-slate-400">{l.name || '—'} • {l.phone || ''} • {l.city || ''}</div>
+                  <div className="mt-1 flex flex-wrap gap-2 text-xs">
+                    {l.assignmentType && <span className="rounded bg-slate-100 px-2 py-1 text-slate-700">{l.assignmentType}</span>}
+                    {l.assignmentStatus && <span className="rounded bg-blue-100 px-2 py-1 text-blue-700">{l.assignmentStatus}</span>}
+                    {l.exclusiveUntil && <span className="rounded bg-amber-100 px-2 py-1 text-amber-700">Exclusive until {new Date(l.exclusiveUntil).toLocaleTimeString()}</span>}
+                  </div>
                   {l.description && <div className="text-xs text-slate-500 mt-1">{l.description}</div>}
+                  {l.canRespond && (
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => respondToLead(l._id, 'accept')}
+                        disabled={leadActionLoading === `${l._id}:accept`}
+                        className="rounded bg-slate-900 px-3 py-2 text-xs font-semibold text-white"
+                      >
+                        {leadActionLoading === `${l._id}:accept` ? 'Accepting...' : 'Accept Lead'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => respondToLead(l._id, 'decline')}
+                        disabled={leadActionLoading === `${l._id}:decline`}
+                        className="rounded border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700"
+                      >
+                        {leadActionLoading === `${l._id}:decline` ? 'Declining...' : 'Decline'}
+                      </button>
+                    </div>
+                  )}
                 </li>))}
               </ul>
             ) : <div className="text-sm text-slate-400">No leads yet.</div>)

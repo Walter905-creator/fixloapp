@@ -13,6 +13,8 @@ export default function ProSignupPage(){
   const [referrerName, setReferrerName] = useState('');
   const [referralCodeFromLink, setReferralCodeFromLink] = useState(false);
   const [pricingStatus, setPricingStatus] = useState(null);
+  const [selectedPlan, setSelectedPlan] = useState('pro');
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   
   const stripeUrlRaw = STRIPE_CHECKOUT_URL;
   const [country, setCountry] = React.useState('US'); // Default to US
@@ -131,24 +133,42 @@ export default function ProSignupPage(){
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     const email = (form.get('email') || '').trim();
-    const target = resolveCheckoutURL(stripeUrlRaw);
-    if(!target){
-      alert('Stripe checkout URL is missing or invalid. Set VITE_STRIPE_CHECKOUT_URL to a full https:// link (Payment Link or Checkout Session URL).');
-      return;
-    }
     try{
+      setCheckoutLoading(true);
+      const response = await fetch(`${API_BASE}/api/stripe/create-checkout-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          phone: (form.get('phone') || '').trim(),
+          plan: selectedPlan,
+          referralCode: referralCode && referralValid ? referralCode : '',
+          tier: 'PRO'
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.sessionUrl) {
+          window.location.href = data.sessionUrl;
+          return;
+        }
+      }
+
+      const target = resolveCheckoutURL(stripeUrlRaw);
+      if(!target){
+        alert('Stripe checkout is unavailable right now. Please contact support.');
+        return;
+      }
+
       const url = new URL(target);
       if(email) url.searchParams.set('prefilled_email', email);
-      
-      // Add referral code to metadata if present
-      if (referralCode && referralValid) {
-        url.searchParams.set('client_reference_id', referralCode);
-      }
-      
       window.location.href = url.toString();
     }catch(err){
       console.error('Stripe redirect error:', err);
-      alert('Could not build a valid Stripe URL. Please check VITE_STRIPE_CHECKOUT_URL.');
+      alert('Could not start checkout. Please try again.');
+    } finally {
+      setCheckoutLoading(false);
     }
   }
 
@@ -158,50 +178,49 @@ export default function ProSignupPage(){
     <div className="container-xl py-8">
       <h1 className="text-2xl font-extrabold">Join Fixlo as a Professional</h1>
       
-      {/* Early Access Pricing Banner */}
-      {pricingStatus?.earlyAccessAvailable && (
-        <div className="mt-6 p-5 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl shadow-sm">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-              🎯
-            </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-bold text-green-900 mb-1">Early Access Special</h3>
-              <p className="text-sm text-green-800 mb-2">
-                {pricingStatus.message}
-              </p>
-              <div className="mt-3 p-3 bg-white border border-green-300 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm text-slate-600 font-medium">Your Price Today</div>
-                    <div className="text-3xl font-bold text-green-600">{pricingStatus.currentPriceFormatted}/month</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm text-slate-600 font-medium">Regular Price</div>
-                    <div className="text-2xl font-bold text-slate-400 line-through">{pricingStatus.nextPriceFormatted}/month</div>
-                  </div>
-                </div>
-                <div className="mt-2 flex items-center gap-2 text-xs text-green-700 font-semibold">
-                  <span className="inline-block px-2 py-1 bg-green-100 rounded">🔒 Price locked for life</span>
-                  <span>•</span>
-                  <span>{pricingStatus.earlyAccessSpotsRemaining} spots remaining</span>
-                </div>
+      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        {[
+          {
+            id: 'pro',
+            title: 'Fixlo Pro',
+            price: pricingStatus?.proPriceFormatted || '$59.99',
+            cta: 'Join Fixlo Pro',
+            copy: 'Get matched with homeowners in your trade within 30 miles.',
+            benefits: ['Leads for your trade', '30-mile lead matching', 'Dashboard access']
+          },
+          {
+            id: 'premium',
+            title: 'Fixlo Premium',
+            price: pricingStatus?.premiumPriceFormatted || '$179.99',
+            cta: 'Get Priority Leads',
+            copy: 'Get priority access to new leads before regular pros. One exclusive lead at a time with a 1-hour response window.',
+            benefits: ['Premium-first routing', '1-hour exclusive response window', 'One active exclusive lead at a time']
+          }
+        ].map((plan) => (
+          <button
+            key={plan.id}
+            type="button"
+            onClick={() => setSelectedPlan(plan.id)}
+            className={`rounded-2xl border p-5 text-left transition ${selectedPlan === plan.id ? 'border-slate-900 bg-slate-900 text-white shadow-lg' : 'border-slate-200 bg-white hover:border-slate-400'}`}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-bold">{plan.title}</h3>
+                <div className="mt-2 text-3xl font-extrabold">{plan.price}<span className="text-base font-medium">/month</span></div>
               </div>
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${selectedPlan === plan.id ? 'bg-white/15 text-white' : 'bg-slate-100 text-slate-700'}`}>
+                {plan.cta}
+              </span>
             </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Standard Pricing (when early access is full) */}
-      {pricingStatus && !pricingStatus.earlyAccessAvailable && (
-        <div className="mt-6 p-5 bg-blue-50 border border-blue-200 rounded-xl">
-          <h3 className="text-lg font-bold text-blue-900 mb-1">Fixlo Pro Membership</h3>
-          <p className="text-sm text-blue-800 mb-2">
-            Early access has ended. Join at the standard price.
-          </p>
-          <div className="text-3xl font-bold text-blue-600">{pricingStatus.currentPriceFormatted}/month</div>
-        </div>
-      )}
+            <p className={`mt-3 text-sm ${selectedPlan === plan.id ? 'text-slate-200' : 'text-slate-600'}`}>{plan.copy}</p>
+            <ul className={`mt-4 space-y-2 text-sm ${selectedPlan === plan.id ? 'text-slate-100' : 'text-slate-700'}`}>
+              {plan.benefits.map((benefit) => (
+                <li key={benefit}>✓ {benefit}</li>
+              ))}
+            </ul>
+          </button>
+        ))}
+      </div>
       
       {/* Referral Banner - Subtle confirmation */}
       {referralValid && referralCode && (
@@ -223,7 +242,12 @@ export default function ProSignupPage(){
       )}
       
       <div className="card p-6 max-w-lg">
-        <p className="text-slate-700 mb-6">Start getting quality leads in your area. Background check and onboarding included.</p>
+        <p className="text-slate-700 mb-6">
+          Start getting quality leads in your area. Background check and onboarding included.
+          <span className="block mt-2 font-semibold text-slate-900">
+            Selected plan: {selectedPlan === 'premium' ? 'Fixlo Premium' : 'Fixlo Pro'}
+          </span>
+        </p>
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
             <label className="block text-sm text-slate-800 mb-1">Full Name</label>
@@ -313,18 +337,18 @@ export default function ProSignupPage(){
             </>
           )}
           
-          <button type="submit" className="btn-primary w-full">
-            Continue to Payment & Background Check
+          <button type="submit" className="btn-primary w-full" disabled={checkoutLoading}>
+            {checkoutLoading
+              ? 'Starting Checkout...'
+              : selectedPlan === 'premium'
+                ? 'Get Priority Leads'
+                : 'Join Fixlo Pro'}
           </button>
         </form>
         {pricingStatus && (
           <p className="text-xs text-slate-600 mt-4 text-center">
-            {pricingStatus.currentPriceFormatted}/month subscription includes background check, lead notifications, and platform access.
-            {pricingStatus.earlyAccessAvailable && (
-              <span className="block mt-1 text-green-600 font-semibold">
-                🔒 Price locked for life while subscription remains active
-              </span>
-            )}
+            {(selectedPlan === 'premium' ? pricingStatus.premiumPriceFormatted : pricingStatus.proPriceFormatted) || (selectedPlan === 'premium' ? '$179.99' : '$59.99')}
+            /month includes background check, lead notifications, and platform access.
           </p>
         )}
       </div>

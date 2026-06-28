@@ -5,11 +5,14 @@
 
 // Base pricing in USD (US market)
 const BASE_PRICING = {
-  // Early Access pricing (price-locked for existing subscribers)
+  // Backward-compatible alias for legacy early-access consumers
   proMonthlySubscriptionEarlyAccess: 59.99,
   
-  // Standard pricing (for new users after early access ends)
-  proMonthlySubscription: 179.99,
+  // Fixlo Pro
+  proMonthlySubscription: 59.99,
+  
+  // Fixlo Premium
+  premiumMonthlySubscription: 179.99,
   
   proAnnualSubscription: 599.99, // 2 months free (will be updated later)
   aiPlusMonthlySubscription: 99.00 // AI+ tier with priority lead access
