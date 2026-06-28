@@ -97,7 +97,6 @@ router.get('/overview', async (req, res) => {
         .sort({ assignedAt: -1 })
         .limit(10)
     ]);
-    ]);
 
     const lhHealth = getLeadHunterHealth();
     const seoStats = getSeoStats();
