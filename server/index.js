@@ -9,6 +9,7 @@ const dotenv = require("dotenv");
 const http = require("http");
 const path = require("path");
 const { Server } = require("socket.io");
+const { connectDB } = require("./config/database");
 
 dotenv.config();
 
@@ -963,73 +964,8 @@ app.use(errorHandler);
 async function start() {
   const PORT = process.env.PORT || 10000;
 
-  // ============================================================================
-  // MONGODB CONNECTION - USING ONLY MONGO_URI
-  // ============================================================================
-  console.log("\n" + "=".repeat(80));
-  console.log("🔍 MONGODB CONNECTION DEBUG");
-  console.log("=".repeat(80));
-  console.log(`📍 NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
-  console.log(`📍 Mongoose Version: ${mongoose.version}`);
-  
-  // Explicit logging before connection
-  console.log(`Using Mongo URI: ${process.env.MONGO_URI ? "MONGO_URI" : "NOT FOUND"}`);
-  
-  // Fatal error if MONGO_URI does not exist
-  if (!process.env.MONGO_URI) {
-    console.error("❌ MONGO_URI is missing.");
-    console.error("❌ FATAL ERROR: Cannot start server without MONGO_URI environment variable.");
-    console.error("📋 Set MONGO_URI in your environment variables.");
-    console.log("=".repeat(80) + "\n");
-    process.exit(1);
-  }
-  
-  // Use ONLY MONGO_URI - no fallbacks, no defaults
-  const MONGO_URI = process.env.MONGO_URI.trim();
-  
-  // Sanitize URI for logging (mask password)
-  const sanitizedURI = sanitizeMongoURI(MONGO_URI);
-  console.log(`📍 Sanitized URI: ${sanitizedURI}`);
-  
-  // Parse connection components
-  const parsed = parseMongoURI(MONGO_URI);
-  if (parsed.error) {
-    console.error(`❌ URI parsing error: ${parsed.error}`);
-  } else {
-    console.log(`📍 Parsed Username: ${parsed.username}`);
-    console.log(`📍 Parsed Host: ${parsed.host}`);
-    console.log(`📍 Parsed Database: ${parsed.database}`);
-  }
-  
-  // Validate URI format
-  if (!MONGO_URI.startsWith('mongodb://') && !MONGO_URI.startsWith('mongodb+srv://')) {
-    console.error('❌ MALFORMED URI: Must start with mongodb:// or mongodb+srv://');
-    console.error('📋 Expected format: mongodb+srv://username:password@cluster.mongodb.net/database?retryWrites=true&w=majority');
-    console.error('❌ FATAL ERROR: Invalid MongoDB URI format.');
-    console.log("=".repeat(80) + "\n");
-    process.exit(1);
-  }
-  
-  console.log("=".repeat(80) + "\n");
-  // ============================================================================
-
   try {
-    mongoose.set("strictQuery", true);
-    
-    // Add explicit connection options for better diagnostics
-    const connectionOptions = {
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 10000, // 10 seconds
-      socketTimeoutMS: 45000, // 45 seconds
-      family: 4 // Force IPv4
-    };
-    
-    console.log("Connecting to Mongo...");
-    console.log('🔌 Connection options:', JSON.stringify(connectionOptions, null, 2));
-    
-    await mongoose.connect(MONGO_URI, connectionOptions);
-    console.log("✅ MongoDB CONNECTED");
-    console.log(`📊 Database: ${MONGO_URI.includes('@') ? MONGO_URI.split('@')[1] : 'local'}`);
+    await connectDB();
 
     // (Optional) Index optimization/cleanup
     try {
@@ -1153,7 +1089,7 @@ async function start() {
     console.log("🧪 ATTEMPTING CONNECTION WITHOUT DATABASE NAME");
     console.log("-".repeat(80));
     try {
-      const uriWithoutDb = removeMongoDBName(MONGO_URI);
+      const uriWithoutDb = removeMongoDBName((process.env.MONGODB_URI || process.env.MONGO_URI || "").trim());
       const sanitizedTestUri = sanitizeMongoURI(uriWithoutDb);
       console.log(`Trying: ${sanitizedTestUri}`);
       const testConnection = await mongoose.createConnection(uriWithoutDb, {
