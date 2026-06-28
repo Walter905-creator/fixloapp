@@ -29,7 +29,6 @@ const sanitizeInput = require("./middleware/sanitization");
 const shield = require("./middleware/shield");
 const errorHandler = require("./middleware/errorHandler");
 const { privacyAuditLogger } = require("./middleware/privacyAudit");
-const { sanitizeMongoURI, parseMongoURI, removeMongoDBName } = require("./lib/mongoUtils");
 const {
   generalRateLimit,
   authRateLimit,
@@ -1082,25 +1081,6 @@ async function start() {
       console.error('  - Verify cluster hostname in MongoDB Atlas dashboard');
       console.error('  - Check network/firewall settings');
       console.error('  - Ensure environment has external DNS access');
-    }
-    
-    // Test connection WITHOUT database name
-    console.log("\n" + "-".repeat(80));
-    console.log("🧪 ATTEMPTING CONNECTION WITHOUT DATABASE NAME");
-    console.log("-".repeat(80));
-    try {
-      const uriWithoutDb = removeMongoDBName((process.env.MONGODB_URI || '').trim());
-      const sanitizedTestUri = sanitizeMongoURI(uriWithoutDb);
-      console.log(`Trying: ${sanitizedTestUri}`);
-      const testConnection = await mongoose.createConnection(uriWithoutDb, {
-        serverSelectionTimeoutMS: 5000,
-        socketTimeoutMS: 10000,
-        family: 4
-      }).asPromise();
-      console.log('✅ Connection works WITHOUT database name - database access issue');
-      await testConnection.close();
-    } catch (testErr) {
-      console.error(`❌ Connection also fails without database: ${testErr.message}`);
     }
     
     console.log("=".repeat(80) + "\n");
