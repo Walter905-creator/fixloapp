@@ -15,13 +15,13 @@ if (!globalThis.__mongoClient) {
   globalThis.__mongoClient = null;
 }
 
-function getMongodbUri() {
+function getMongoDBUri() {
   return process.env.MONGODB_URI?.trim() || '';
 }
 
 function logMongoHost() {
   console.log(
-    'Mongo host:',
+    'MongoDB host:',
     process.env.MONGODB_URI?.replace(/\/\/.*?:.*?@/, '//****:****@')
   );
 }
@@ -44,7 +44,7 @@ async function dbConnect() {
     }
   }
 
-  if (!getMongodbUri()) {
+  if (!getMongoDBUri()) {
     console.error('[dbConnect] MONGODB_URI is not configured');
     return null;
   }

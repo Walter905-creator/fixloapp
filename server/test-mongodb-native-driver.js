@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 
+/**
+ * MongoDB Mongoose Connection Test
+ *
+ * Uses the shared Mongoose connection settings that the backend now expects
+ * with `process.env.MONGODB_URI`.
+ */
+
 const mongoose = require('mongoose');
 require('dotenv').config();
 
@@ -8,7 +15,7 @@ if (!process.env.MONGODB_URI) {
   process.exit(1);
 }
 
-console.log('🧪 MongoDB Connection Test');
+console.log('🧪 MongoDB Mongoose Connection Test');
 console.log('='.repeat(60));
 console.log(
   'MongoDB host:',
