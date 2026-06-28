@@ -25,6 +25,11 @@ export default function ConversionGrowthWidgets({
   const notifications = audience === 'pro' ? PRO_NOTIFICATIONS : HOMEOWNER_NOTIFICATIONS;
   const [index, setIndex] = React.useState(0);
   const [showExitIntent, setShowExitIntent] = React.useState(false);
+  const [showMobileSticky, setShowMobileSticky] = React.useState(true);
+  const canUseFinePointer = React.useMemo(
+    () => typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(pointer:fine)').matches,
+    []
+  );
 
   React.useEffect(() => {
     const timer = setInterval(() => {
@@ -35,11 +40,16 @@ export default function ConversionGrowthWidgets({
 
   React.useEffect(() => {
     const onMouseOut = (event) => {
-      if (event.clientY <= 0) setShowExitIntent(true);
+      const alreadyShown = sessionStorage.getItem('fixlo_exit_intent_shown') === '1';
+      if (!canUseFinePointer || alreadyShown) return;
+      if (event.clientY <= 0) {
+        setShowExitIntent(true);
+        sessionStorage.setItem('fixlo_exit_intent_shown', '1');
+      }
     };
     window.addEventListener('mouseout', onMouseOut);
     return () => window.removeEventListener('mouseout', onMouseOut);
-  }, []);
+  }, [canUseFinePointer]);
 
   return (
     <>
@@ -54,6 +64,14 @@ export default function ConversionGrowthWidgets({
       {showExitIntent && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
           <div className="max-w-md w-full rounded-2xl bg-white p-6 shadow-2xl border border-slate-200">
+            <button
+              type="button"
+              className="float-right text-slate-500 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand rounded px-2 py-1"
+              onClick={() => setShowExitIntent(false)}
+              aria-label="Close exit modal"
+            >
+              Close
+            </button>
             <h3 className="text-2xl font-bold text-slate-900">Before you go...</h3>
             <p className="text-sm text-slate-600 mt-2">
               {audience === 'pro'
@@ -72,11 +90,23 @@ export default function ConversionGrowthWidgets({
         </div>
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden border-t border-slate-200 bg-white/95 backdrop-blur p-3">
-        <Link to={ctaLink} className="btn-primary w-full py-3 text-base text-center">
-          {ctaText}
-        </Link>
-      </div>
+      {showMobileSticky && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden border-t border-slate-200 bg-white/95 backdrop-blur p-3">
+          <div className="flex items-center gap-2">
+            <Link to={ctaLink} className="btn-primary w-full py-3 text-base text-center">
+              {ctaText}
+            </Link>
+            <button
+              type="button"
+              className="btn-ghost px-3 py-3 text-sm"
+              onClick={() => setShowMobileSticky(false)}
+              aria-label="Dismiss sticky CTA"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

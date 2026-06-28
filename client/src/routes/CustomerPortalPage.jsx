@@ -15,6 +15,7 @@ export default function CustomerPortalPage() {
   const [favoritePros, setFavoritePros] = useState([]);
   const [repeatService, setRepeatService] = useState('');
   const [locationStatus, setLocationStatus] = useState('Not detected');
+  const [locationCoords, setLocationCoords] = useState(null);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -117,8 +118,20 @@ export default function CustomerPortalPage() {
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      () => setLocationStatus('Location detected'),
-      () => setLocationStatus('Permission needed')
+      (position) => {
+        const coords = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+        setLocationCoords(coords);
+        setLocationStatus('Location detected');
+      },
+      (error) => {
+        if (error.code === error.PERMISSION_DENIED) setLocationStatus('Permission denied');
+        else if (error.code === error.POSITION_UNAVAILABLE) setLocationStatus('Location unavailable');
+        else if (error.code === error.TIMEOUT) setLocationStatus('Location request timed out');
+        else setLocationStatus('Location error');
+      }
     );
   };
 
@@ -235,10 +248,15 @@ export default function CustomerPortalPage() {
               <div className="space-y-2">
                 <button onClick={detectLocation} className="btn-ghost text-xs px-3 py-2">Auto-detect location</button>
                 <p className="text-xs text-gray-600">{locationStatus}</p>
+                {locationCoords && (
+                  <p className="text-xs text-gray-600">
+                    Lat: {locationCoords.lat.toFixed(4)} · Lng: {locationCoords.lng.toFixed(4)}
+                  </p>
+                )}
                 <div className="text-xs text-gray-600">Photo upload placeholder</div>
-                <input type="file" accept="image/*" className="text-xs" />
+                <input type="file" accept="image/*" aria-label="Upload photo" className="text-xs" />
                 <div className="text-xs text-gray-600">Video upload placeholder</div>
-                <input type="file" accept="video/*" className="text-xs" />
+                <input type="file" accept="video/*" aria-label="Upload video" className="text-xs" />
               </div>
             </div>
             <div className="bg-white rounded-lg shadow p-4">

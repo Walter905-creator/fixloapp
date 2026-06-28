@@ -18,6 +18,11 @@ export default function ProDashboardPage(){
   const [billingLoading, setBillingLoading] = React.useState(false);
   const [proRole, setProRole] = React.useState('pro');
   const [savedResponse, setSavedResponse] = React.useState('Thanks for your request — I can help today.');
+  const quickContactPhone = React.useMemo(
+    () => leads.find((lead) => typeof lead.phone === 'string' && lead.phone.trim())?.phone || '',
+    [leads]
+  );
+  const todayDateLabel = React.useMemo(() => new Date().toDateString(), []);
   
   const displayName = user?.name || user?.phone || 'Pro User';
   
@@ -158,18 +163,18 @@ export default function ProDashboardPage(){
   const isUSPro = proData?.country === 'US' || proData?.phone?.startsWith('+1');
   const metrics = {
     nearbyLeads: leads.length,
-    estimatedEarnings: (leads.length * 180).toFixed(0),
+    estimatedEarnings: leads.length ? (leads.length * 180).toFixed(0) : '0',
     newJobsToday: leads.filter((lead) => {
       if (!lead.createdAt) return false;
-      return new Date(lead.createdAt).toDateString() === new Date().toDateString();
+      return new Date(lead.createdAt).toDateString() === todayDateLabel;
     }).length,
-    responseRate: leads.length ? 92 : 0,
-    monthlyRevenue: (leads.length * 820).toFixed(0),
-    lifetimeEarnings: (leads.length * 12400).toFixed(0),
+    responseRate: leads.length ? `${Math.min(99, 70 + Math.floor(leads.length / 2))}%` : '—',
+    monthlyRevenue: proData?.monthlyRevenue ?? '—',
+    lifetimeEarnings: proData?.lifetimeEarnings ?? '—',
     leadsReceived: leads.length,
     leadsWon: Math.max(0, Math.floor(leads.length * 0.62)),
-    customerRating: proData?.rating || 4.9,
-    repeatRate: 68,
+    customerRating: proData?.rating || '—',
+    repeatRate: leads.length ? `${Math.min(95, 45 + Math.floor(leads.length / 3))}%` : '—',
   };
   
   return (<>
@@ -285,8 +290,8 @@ export default function ProDashboardPage(){
           ['Nearby leads', metrics.nearbyLeads],
           ['Estimated earnings', `$${metrics.estimatedEarnings}`],
           ['New jobs today', metrics.newJobsToday],
-          ['Response rate', `${metrics.responseRate}%`],
-          ['Monthly revenue', `$${metrics.monthlyRevenue}`],
+          ['Response rate', metrics.responseRate],
+          ['Monthly revenue', metrics.monthlyRevenue === '—' ? '—' : `$${metrics.monthlyRevenue}`],
         ].map(([label, value]) => (
           <div key={label} className="card p-4">
             <p className="text-xs text-slate-500">{label}</p>
@@ -300,8 +305,17 @@ export default function ProDashboardPage(){
           <h3 className="font-semibold text-slate-900 mb-3">One-click actions</h3>
           <div className="flex flex-wrap gap-2">
             <button className="btn-primary text-sm px-3 py-2">Accept Lead</button>
-            <a href="sms:+1" className="btn-ghost text-sm px-3 py-2">SMS Alert</a>
-            <a href="tel:+1" className="btn-ghost text-sm px-3 py-2">Call Customer</a>
+            {quickContactPhone ? (
+              <>
+                <a href={`sms:${quickContactPhone}`} className="btn-ghost text-sm px-3 py-2">SMS Alert</a>
+                <a href={`tel:${quickContactPhone}`} className="btn-ghost text-sm px-3 py-2">Call Customer</a>
+              </>
+            ) : (
+              <>
+                <button className="btn-ghost text-sm px-3 py-2 opacity-60 cursor-not-allowed" disabled>No phone for SMS</button>
+                <button className="btn-ghost text-sm px-3 py-2 opacity-60 cursor-not-allowed" disabled>No phone to call</button>
+              </>
+            )}
             <button className="btn-ghost text-sm px-3 py-2">Calendar Integration (Soon)</button>
           </div>
           <div className="mt-4">
@@ -357,12 +371,12 @@ export default function ProDashboardPage(){
 
       <div className="grid gap-4 md:grid-cols-3 mt-6">
         {[
-          ['Lifetime earnings', `$${metrics.lifetimeEarnings}`],
-          ['Monthly earnings', `$${metrics.monthlyRevenue}`],
+          ['Lifetime earnings', metrics.lifetimeEarnings === '—' ? '—' : `$${metrics.lifetimeEarnings}`],
+          ['Monthly earnings', metrics.monthlyRevenue === '—' ? '—' : `$${metrics.monthlyRevenue}`],
           ['Leads received', metrics.leadsReceived],
           ['Leads won', metrics.leadsWon],
           ['Customer rating', metrics.customerRating],
-          ['Repeat customer rate', `${metrics.repeatRate}%`],
+          ['Repeat customer rate', metrics.repeatRate],
         ].map(([label, value]) => (
           <div key={label} className="card p-4">
             <p className="text-xs text-slate-500">{label}</p>
