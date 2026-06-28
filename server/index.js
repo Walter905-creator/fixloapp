@@ -407,6 +407,12 @@ app.use("/api/commission-referrals", generalRateLimit, require("./routes/commiss
 app.use("/api/payouts", generalRateLimit, require("./routes/payouts")); // commission payouts
 app.use("/api/distribution", adminRateLimit, require("./routes/distribution")); // distribution engine (admin only)
 
+// ── Recruiter / Affiliate Network ─────────────────────────────────────────────
+app.use("/api/recruiter-auth", authRateLimit, require("./routes/recruiterAuth"));
+app.use("/api/recruiter", generalRateLimit, require("./routes/recruiter"));
+app.use("/api/recruiter", generalRateLimit, require("./routes/recruiterTracking")); // pro signup tracking
+app.use("/api/admin", adminRateLimit, require("./routes/recruiterAdmin")); // admin recruiter mgmt
+
 // Direct messaging
 app.use("/api", generalRateLimit, require("./routes/messages")); // messaging API
 
@@ -885,6 +891,38 @@ app.post("/webhook/stripe", async (req, res) => {
         });
         console.log(`✅ Stripe checkout completed for pro ${proId}`);
       }
+    } else if (event.type === "invoice.payment_succeeded") {
+      // Trigger recruiter commission engine on first successful payment
+      const invoice = event.data.object;
+      const subscriptionId = invoice.subscription;
+      const amountPaid = invoice.amount_paid; // cents
+
+      if (subscriptionId && amountPaid > 0) {
+        try {
+          // Only generate on first invoice (billing_reason = 'subscription_create')
+          if (invoice.billing_reason === 'subscription_create') {
+            const { generateCommissionsForFirstPayment } = require('./services/recruiterCommissionEngine');
+            const result = await generateCommissionsForFirstPayment(subscriptionId, amountPaid);
+            if (result.ok) {
+              console.log(`✅ Recruiter commissions generated for subscription ${subscriptionId}`);
+            }
+          }
+        } catch (commErr) {
+          console.warn('⚠️ Recruiter commission engine error (non-blocking):', commErr.message);
+        }
+      }
+    } else if (event.type === "invoice.payment_failed") {
+      // Cancel pending commissions on payment failure
+      const invoice = event.data.object;
+      const subscriptionId = invoice.subscription;
+      if (subscriptionId) {
+        try {
+          const { cancelCommissionsForSubscription } = require('./services/recruiterCommissionEngine');
+          await cancelCommissionsForSubscription(subscriptionId, 'cancelled');
+        } catch (commErr) {
+          console.warn('⚠️ Commission cancellation error (non-blocking):', commErr.message);
+        }
+      }
     } else if (event.type === "customer.subscription.deleted") {
       const subscription = event.data.object;
       const pro = await Pro.findOne({ stripeSubscriptionId: subscription.id });
@@ -893,6 +931,13 @@ app.post("/webhook/stripe", async (req, res) => {
         pro.paymentStatus = "cancelled";
         await pro.save();
         console.log(`✅ Subscription cancelled for pro ${pro._id}`);
+      }
+      // Cancel any outstanding recruiter commissions
+      try {
+        const { cancelCommissionsForSubscription } = require('./services/recruiterCommissionEngine');
+        await cancelCommissionsForSubscription(subscription.id, 'cancelled');
+      } catch (commErr) {
+        console.warn('⚠️ Commission cancellation error (non-blocking):', commErr.message);
       }
     }
   } catch (err) {
@@ -1005,8 +1050,9 @@ async function start() {
     // Start scheduled tasks for operational safeguards
     // IMPORTANT: Only start after successful DB connection
     try {
-      const { startScheduledTasks } = require('./services/scheduledTasks');
+      const { startScheduledTasks, startRecruiterScheduledTasks } = require('./services/scheduledTasks');
       startScheduledTasks();
+      startRecruiterScheduledTasks();
       console.log('✅ Scheduled tasks started');
     } catch (e) {
       console.warn("⚠️ Scheduled tasks initialization skipped:", e?.message || e);
