@@ -29,7 +29,7 @@ export default function RecruiterSignupPage() {
 
   const validateRef = async (code) => {
     try {
-      const res = await fetch(`${API_BASE}/api/recruiter/validate/${code}`);
+      const res = await fetch(`${API_BASE}/api/recruiter/validate/${code}?type=recruiter`);
       const data = await res.json();
       if (data.valid) setRefName(data.recruiterName || 'a recruiter');
     } catch { /* silent */ }

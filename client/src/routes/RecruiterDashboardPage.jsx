@@ -37,6 +37,8 @@ export default function RecruiterDashboardPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState('');
+  const [generating, setGenerating] = useState('');
+  const [latestCodes, setLatestCodes] = useState({ pro: null, recruiter: null });
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) navigate('/recruiter/login', { replace: true });
@@ -63,6 +65,29 @@ export default function RecruiterDashboardPage() {
       setCopied(key);
       setTimeout(() => setCopied(''), 2000);
     });
+  };
+
+  const generateOneTimeCode = async (type) => {
+    setGenerating(type);
+    try {
+      const res = await authFetch(`${API_BASE}/api/recruiter/codes/generate`, {
+        method: 'POST',
+        body: JSON.stringify({ type, expiresInDays: 30 })
+      });
+      const json = await res.json();
+      if (json.ok && json.code?.code) {
+        const createdCode = json.code.code;
+        const baseUrl = window.location.origin;
+        const link = type === 'recruiter'
+          ? `${baseUrl}/recruiter/signup?ref=${createdCode}`
+          : `${baseUrl}/pros/signup?ref=${createdCode}`;
+        setLatestCodes((prev) => ({ ...prev, [type]: link }));
+      }
+    } catch (err) {
+      console.error('One-time code generation failed:', err);
+    } finally {
+      setGenerating('');
+    }
   };
 
   if (authLoading || loading) {
@@ -102,35 +127,83 @@ export default function RecruiterDashboardPage() {
           <div className="mb-8">
             <h1 className="text-3xl font-extrabold">Welcome back, {rec.name}!</h1>
             <p className="text-white/50 mt-1">Recruiter Code: <span className="text-blue-400 font-mono font-bold">{rec.recruiterCode}</span></p>
+            <p className="text-white/50 mt-1">
+              Stripe Connect: <span className={rec.stripeConnectOnboarded ? 'text-emerald-400 font-semibold' : 'text-amber-300 font-semibold'}>
+                {rec.stripeConnectOnboarded ? 'Connected' : 'Not Connected'}
+              </span>
+            </p>
           </div>
 
           {/* Referral Links */}
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-8">
-            <h2 className="font-semibold mb-4 text-blue-200">Your Referral Links</h2>
+            <h2 className="font-semibold mb-4 text-blue-200">My Referral Links</h2>
             <div className="space-y-3">
               {[
-                { label: 'Pro Signup Link', url: rec.recruiterLink, key: 'pro' },
-                { label: 'Recruiter Signup Link', url: rec.recruiterRecruiterLink, key: 'rec' }
-              ].map(({ label, url, key }) => (
+                { label: 'Recruiter Code', value: rec.recruiterCode, key: 'code' },
+                { label: 'Pro Referral Link', url: rec.proReferralLink || rec.recruiterLink, key: 'pro-referral-link' },
+                { label: 'Recruiter Referral Link', url: rec.recruiterReferralLink || rec.recruiterRecruiterLink, key: 'recruiter-referral-link' }
+              ].map(({ label, url, value, key }) => (
                 <div key={key} className="flex items-center gap-3 bg-white/5 rounded-xl px-4 py-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-white/50 mb-0.5">{label}</p>
-                    <p className="text-sm text-blue-300 font-mono truncate">{url}</p>
+                    <p className="text-sm text-blue-300 font-mono truncate">{value || url}</p>
                   </div>
-                  <button onClick={() => copy(url, key)}
+                  <button onClick={() => copy(value || url, key)}
                     className="shrink-0 bg-blue-500/20 hover:bg-blue-500/40 border border-blue-400/30 text-blue-300 text-xs px-3 py-1.5 rounded-lg transition-colors">
                     {copied === key ? '✓ Copied' : 'Copy'}
                   </button>
                 </div>
               ))}
             </div>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                onClick={() => copy(rec.proReferralLink || rec.recruiterLink, 'copy-pro-link')}
+                className="bg-blue-500/20 hover:bg-blue-500/40 border border-blue-400/30 text-blue-200 text-xs px-3 py-2 rounded-lg transition-colors"
+              >
+                {copied === 'copy-pro-link' ? '✓ Copied' : 'Copy Pro Link'}
+              </button>
+              <button
+                onClick={() => copy(rec.recruiterReferralLink || rec.recruiterRecruiterLink, 'copy-recruiter-link')}
+                className="bg-blue-500/20 hover:bg-blue-500/40 border border-blue-400/30 text-blue-200 text-xs px-3 py-2 rounded-lg transition-colors"
+              >
+                {copied === 'copy-recruiter-link' ? '✓ Copied' : 'Copy Recruiter Link'}
+              </button>
+              <button
+                onClick={() => generateOneTimeCode('pro')}
+                disabled={generating === 'pro'}
+                className="bg-emerald-500/20 hover:bg-emerald-500/40 border border-emerald-400/30 text-emerald-200 text-xs px-3 py-2 rounded-lg transition-colors disabled:opacity-60"
+              >
+                {generating === 'pro' ? 'Generating…' : 'Generate One-Time Pro Code'}
+              </button>
+              <button
+                onClick={() => generateOneTimeCode('recruiter')}
+                disabled={generating === 'recruiter'}
+                className="bg-purple-500/20 hover:bg-purple-500/40 border border-purple-400/30 text-purple-200 text-xs px-3 py-2 rounded-lg transition-colors disabled:opacity-60"
+              >
+                {generating === 'recruiter' ? 'Generating…' : 'Generate One-Time Recruiter Code'}
+              </button>
+            </div>
+            {(latestCodes.pro || latestCodes.recruiter) && (
+              <div className="mt-4 space-y-2 text-xs">
+                {latestCodes.pro && (
+                  <p className="text-emerald-300">
+                    New Pro Code Link: <span className="font-mono">{latestCodes.pro}</span>
+                  </p>
+                )}
+                {latestCodes.recruiter && (
+                  <p className="text-purple-300">
+                    New Recruiter Code Link: <span className="font-mono">{latestCodes.recruiter}</span>
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Stats grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-            <StatCard label="Total Pros Referred" value={stats.totalReferrals} icon="👥" color="blue" />
+            <StatCard label="Direct Pros Referred" value={stats.totalReferrals} icon="👥" color="blue" />
             <StatCard label="Active Pros" value={stats.activeReferrals} icon="✅" color="green" />
-            <StatCard label="Recruiters Referred" value={stats.recruitersReferred} icon="🤝" color="purple" />
+            <StatCard label="Referred Recruiters" value={stats.recruitersReferred} icon="🤝" color="purple" />
             <StatCard label="Pending" value={fmt(stats.pendingCommissions)} sub="Awaiting first payment" icon="⏳" color="yellow" />
             <StatCard label="Held" value={fmt(stats.heldCommissions)} sub="In verification period" icon="🔒" color="red" />
             <StatCard label="Available" value={fmt(stats.approvedCommissions)} sub="Ready for payout" icon="💰" color="teal" />

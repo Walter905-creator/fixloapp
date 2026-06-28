@@ -173,7 +173,7 @@ export default function ProSignupPage(){
   }
 
   return (<>
-    <HelmetSEO title="Professional Sign Up | Fixlo" canonicalPathname="/pro/signup" />
+    <HelmetSEO title="Professional Sign Up | Fixlo" canonicalPathname="/pros/signup" />
     <ProValueBanner dense />
     <div className="container-xl py-8">
       <h1 className="text-2xl font-extrabold">Join Fixlo as a Professional</h1>

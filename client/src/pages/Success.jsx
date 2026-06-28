@@ -52,7 +52,7 @@ export default function Success() {
 
           <div className="space-y-4">
             <a 
-              href="/pro/dashboard" 
+              href="/pros/dashboard" 
               className="inline-block w-full bg-purple-600 text-white py-4 px-6 rounded-full font-semibold hover:bg-purple-700 transition-colors"
             >
               Go to Dashboard

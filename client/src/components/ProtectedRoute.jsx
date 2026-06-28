@@ -17,7 +17,7 @@ export default function ProtectedRoute({ children, requiredRole }) {
 
   if (!isAuthenticated) {
     // Redirect to login page if not authenticated
-    return <Navigate to="/pro/sign-in" state={{ from: location }} replace />;
+    return <Navigate to="/pros/login" state={{ from: location }} replace />;
   }
 
   if (requiredRole && user?.role !== requiredRole) {
