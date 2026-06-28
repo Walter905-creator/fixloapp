@@ -71,7 +71,7 @@ export default function AdminJobsPage() {
       if (!response.ok) throw new Error('Failed to fetch job details');
 
       const data = await response.json();
-      setSelectedJob(data.job);
+      setSelectedJob({ ...data.job, leadAssignments: data.leadAssignments || [] });
       setShowModal(true);
     } catch (err) {
       console.error('Error loading job details:', err);
@@ -582,6 +582,24 @@ export default function AdminJobsPage() {
                             <strong>✅ Accepted At:</strong> {new Date(selectedJob.priorityAcceptedAt).toLocaleString()}
                           </p>
                         )}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedJob.leadAssignments?.length > 0 && (
+                    <div className="md:col-span-2">
+                      <h3 className="text-lg font-semibold mb-3">Lead Assignments</h3>
+                      <div className="space-y-2 text-sm">
+                        {selectedJob.leadAssignments.map((assignment) => (
+                          <div key={assignment._id} className="rounded border border-gray-200 p-3">
+                            <p><strong>Pro:</strong> {assignment.proId?.businessName || assignment.proId?.name || 'Unknown pro'}</p>
+                            <p><strong>Plan:</strong> {assignment.proId?.subscriptionPlan || 'pro'} • <strong>Priority:</strong> {assignment.proId?.leadPriority || 'standard'}</p>
+                            <p><strong>Type:</strong> {assignment.assignmentType} • <strong>Status:</strong> {assignment.status}</p>
+                            {assignment.exclusiveUntil && (
+                              <p><strong>Exclusive Until:</strong> {new Date(assignment.exclusiveUntil).toLocaleString()}</p>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}

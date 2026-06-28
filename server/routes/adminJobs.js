@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const JobRequest = require('../models/JobRequest');
 const Pro = require('../models/Pro');
+const LeadAssignment = require('../models/LeadAssignment');
 const requireAuth = require('../middleware/requireAuth');
 const smsService = require('../services/smsService');
 const { sendNotificationWithFallback } = require('../services/emailService');
@@ -90,9 +91,14 @@ router.get('/jobs/:id', async (req, res) => {
       return res.status(404).json({ error: 'Job not found' });
     }
 
+    const leadAssignments = await LeadAssignment.find({ leadId: req.params.id })
+      .populate('proId', 'name email phone trade businessName subscriptionPlan leadPriority')
+      .sort({ assignedAt: -1 });
+
     res.json({
       success: true,
-      job
+      job,
+      leadAssignments
     });
   } catch (error) {
     console.error('❌ Error fetching job:', error);

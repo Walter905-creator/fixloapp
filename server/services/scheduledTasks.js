@@ -2,6 +2,7 @@ const cron = require('node-cron');
 const { releaseStaleAuthorizations } = require('./autoReleaseService');
 const { verify30DayReferrals } = require('./commissionVerification');
 const { huntLeads } = require('./aiLeadHunter');
+const { processExpiredPremiumAssignments } = require('./leadAssignmentService');
 const { releaseApprovedCommissions, processWeeklyPayouts } = require('./recruiterCommissionEngine');
 const { sendWeeklySmsToAllRecruiters } = require('./recruiterSmsService');
 
@@ -110,6 +111,27 @@ function startScheduledTasks() {
     task: leadHunterTask,
     schedule: '*/15 * * * *',
     description: 'AI-powered lead detection and distribution (every 15 minutes)'
+  });
+
+  const premiumLeadExpiryTask = cron.schedule('*/5 * * * *', async () => {
+    try {
+      const result = await processExpiredPremiumAssignments();
+      if (result.processed > 0) {
+        console.log(`[PREMIUM_ASSIGNMENTS] Processed ${result.processed} expired assignment(s)`);
+      }
+    } catch (error) {
+      console.error(`[PREMIUM_ASSIGNMENTS] Failed: ${error.message}`);
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York'
+  });
+
+  scheduledTasks.push({
+    name: 'premium-lead-expiry',
+    task: premiumLeadExpiryTask,
+    schedule: '*/5 * * * *',
+    description: 'Expire premium-exclusive leads and advance routing'
   });
 
   // Task 4: SEO AI Engine

@@ -7,6 +7,7 @@ const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const { normalizeE164, isUSPhoneNumber } = require('../utils/twilio');
 const { sendOwnerNotification } = require('../utils/smsSender');
+const { routeLead } = require('../services/leadAssignmentService');
 const { getPriorityConfig, getOwnerPhone } = require('../config/priorityRouting');
 
 /**
@@ -310,6 +311,12 @@ router.post('/submit', upload.array('photos', 5), async (req, res) => {
     await jobRequest.save();
 
     console.log(`✅ Service intake request created: ${jobRequest._id}`);
+
+    try {
+      await routeLead(jobRequest._id);
+    } catch (routingError) {
+      console.error('❌ Service intake lead routing failed:', routingError.message);
+    }
 
     // Send owner notification for any USA lead
     if (isUSPhoneNumber(phone)) {

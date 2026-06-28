@@ -5,6 +5,7 @@ const requireAuth = require('../middleware/requireAuth');
 const requireAdmin = require('../middleware/requireAdmin');
 const Pro = require('../models/Pro');
 const JobRequest = require('../models/JobRequest');
+const LeadAssignment = require('../models/LeadAssignment');
 const AdminSettings = require('../models/AdminSettings');
 const SocialSettings = require('../models/SocialSettings');
 const { getHealth: getLeadHunterHealth, huntLeads } = require('../services/aiLeadHunter');
@@ -31,7 +32,7 @@ router.get('/overview', async (req, res) => {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    const [totalPros, activePros, lifetimePros, monthRevenue, leadsToday] = await Promise.all([
+    const [totalPros, activePros, lifetimePros, monthRevenue, leadsToday, proPlans, assignmentStats, recentAssignments] = await Promise.all([
       Pro.countDocuments(),
       Pro.countDocuments({ isActive: true }),
       Pro.countDocuments({ subscriptionType: 'lifetime' }),
@@ -39,7 +40,63 @@ router.get('/overview', async (req, res) => {
         { $match: { createdAt: { $gte: startOfMonth }, status: 'completed' } },
         { $group: { _id: null, total: { $sum: '$totalCost' } } }
       ]),
-      JobRequest.countDocuments({ createdAt: { $gte: startOfDay } })
+      JobRequest.countDocuments({ createdAt: { $gte: startOfDay } }),
+      Pro.aggregate([
+        { $group: { _id: '$subscriptionPlan', count: { $sum: 1 } } }
+      ]),
+      LeadAssignment.aggregate([
+        {
+          $group: {
+            _id: null,
+            acceptedAssignments: {
+              $sum: { $cond: [{ $eq: ['$status', 'accepted'] }, 1, 0] }
+            },
+            expiredAssignments: {
+              $sum: { $cond: [{ $eq: ['$status', 'expired'] }, 1, 0] }
+            },
+            pendingPremiumAssignments: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [
+                      { $eq: ['$assignmentType', 'premium_exclusive'] },
+                      { $eq: ['$status', 'pending'] }
+                    ]
+                  },
+                  1,
+                  0
+                ]
+              }
+            },
+            releasedAssignments: {
+              $sum: { $cond: [{ $eq: ['$status', 'released'] }, 1, 0] }
+            },
+            totalPremiumAssignments: {
+              $sum: { $cond: [{ $eq: ['$assignmentType', 'premium_exclusive'] }, 1, 0] }
+            },
+            acceptedPremiumAssignments: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [
+                      { $eq: ['$assignmentType', 'premium_exclusive'] },
+                      { $eq: ['$status', 'accepted'] }
+                    ]
+                  },
+                  1,
+                  0
+                ]
+              }
+            }
+          }
+        }
+      ]),
+      LeadAssignment.find()
+        .populate('leadId', 'trade city state createdAt')
+        .populate('proId', 'name businessName subscriptionPlan')
+        .sort({ assignedAt: -1 })
+        .limit(10)
+    ]);
     ]);
 
     const lhHealth = getLeadHunterHealth();
@@ -49,12 +106,29 @@ router.get('/overview', async (req, res) => {
     const stripeOk = !!(process.env.STRIPE_SECRET_KEY);
     const twilioOk = !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN);
 
+    const assignmentSummary = assignmentStats[0] || {};
+    const proPlanCounts = proPlans.reduce((acc, item) => {
+      if (item?._id) acc[item._id] = item.count;
+      return acc;
+    }, {});
+
     res.json({
       totalPros,
       activePros,
       lifetimePros,
       totalRevenueMonth: monthRevenue[0]?.total || 0,
       leadsToday,
+      proPlanCounts,
+      leadAssignments: {
+        acceptedAssignments: assignmentSummary.acceptedAssignments || 0,
+        expiredAssignments: assignmentSummary.expiredAssignments || 0,
+        pendingPremiumAssignments: assignmentSummary.pendingPremiumAssignments || 0,
+        releasedAssignments: assignmentSummary.releasedAssignments || 0,
+        premiumResponseRate: assignmentSummary.totalPremiumAssignments
+          ? Number(((assignmentSummary.acceptedPremiumAssignments || 0) / assignmentSummary.totalPremiumAssignments * 100).toFixed(1))
+          : 0,
+        recent: recentAssignments
+      },
       smsSentToday: 0, // placeholder – extend with SmsNotification model if needed
       systemHealth: {
         stripe: stripeOk,
@@ -136,6 +210,25 @@ router.get('/jobs/recent', async (req, res) => {
     res.json({ jobs });
   } catch (err) {
     console.error('❌ /admin/jobs/recent error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/lead-assignments/recent', async (req, res) => {
+  try {
+    if (!isDbConnected()) {
+      return res.status(503).json({ error: 'Database not connected' });
+    }
+
+    const assignments = await LeadAssignment.find()
+      .populate('leadId', 'trade city state status createdAt')
+      .populate('proId', 'name businessName subscriptionPlan leadPriority')
+      .sort({ assignedAt: -1 })
+      .limit(50);
+
+    res.json({ success: true, assignments });
+  } catch (err) {
+    console.error('❌ /admin/lead-assignments/recent error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });

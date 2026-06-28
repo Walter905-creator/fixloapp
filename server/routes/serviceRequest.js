@@ -2,6 +2,7 @@
 const router = require('express').Router();
 const Pro = require('../models/Pro');
 const JobRequest = require('../models/JobRequest');
+const { routeLead } = require('../services/leadAssignmentService');
 const twilio = require('twilio');
 const client = process.env.TWILIO_ACCOUNT_SID ? 
     twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN) : null;
@@ -41,8 +42,13 @@ router.post('/', async (req, res) => {
       console.log(`📝 No MONGO_URI provided - logging request instead of saving`);
     }
 
-    // Notify professionals (SMS) if Twilio is configured
-    if (client) {
+    if (requestDoc) {
+      try {
+        await routeLead(requestDoc._id);
+      } catch (routingError) {
+        console.error('❌ Lead routing failed:', routingError.message);
+      }
+    } else if (client) {
       try {
         const pros = await Pro.find({ wantsNotifications: true, trade: serviceType });
         for (let pro of pros) {

@@ -144,6 +144,10 @@ const proSchema = new mongoose.Schema({
   stripeSubscriptionId: {
     type: String
   },
+  stripePriceId: {
+    type: String,
+    trim: true
+  },
   subscriptionStartDate: {
     type: Date
   },
@@ -154,8 +158,27 @@ const proSchema = new mongoose.Schema({
   // This allows pros to temporarily stop receiving leads while keeping subscription active
   subscriptionStatus: {
     type: String,
-    enum: ['active', 'paused', 'cancelled', 'pending'],
+    enum: ['active', 'inactive', 'cancelled', 'past_due', 'paused', 'pending'],
     default: 'pending'
+  },
+  subscriptionPlan: {
+    type: String,
+    enum: ['pro', 'premium'],
+    default: 'pro'
+  },
+  subscriptionPrice: {
+    type: Number,
+    default: 59.99
+  },
+  leadPriority: {
+    type: String,
+    enum: ['standard', 'premium'],
+    default: 'standard'
+  },
+  leadAssignmentStatus: {
+    type: String,
+    enum: ['available', 'assigned', 'expired', 'accepted', 'released'],
+    default: 'available'
   },
   pausedAt: {
     type: Date

@@ -43,17 +43,8 @@ export default function PricingPage(){
     loadPricing();
   }, []);
 
-  const getProPrice = () => {
-    // Use pricing status to determine current price
-    if (pricingStatus) {
-      return pricingStatus.currentPriceFormatted;
-    }
-    
-    if (pricing?.prices?.proMonthlySubscription) {
-      return pricing.prices.proMonthlySubscription.formatted;
-    }
-    return '$59.99';
-  };
+  const getProPrice = () => pricingStatus?.proPriceFormatted || pricing?.prices?.proMonthlySubscription?.formatted || '$59.99';
+  const getPremiumPrice = () => pricingStatus?.premiumPriceFormatted || pricing?.prices?.premiumMonthlySubscription?.formatted || '$179.99';
 
   const getCountryName = () => {
     return countryInfo?.countryName || 'your country';
@@ -77,68 +68,38 @@ export default function PricingPage(){
         </div>
       ) : (
         <>
-          {/* Early Access Banner */}
-          {pricingStatus?.earlyAccessAvailable && (
-            <div className="mt-6 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl shadow-sm">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                  🎯
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold text-blue-900 mb-1">Early Access Pricing</h3>
-                  <p className="text-sm text-blue-800 mb-2">
-                    {pricingStatus.message}
-                  </p>
-                  <div className="flex items-center gap-4 mt-3">
-                    <div className="px-3 py-1 bg-white border border-blue-300 rounded-lg">
-                      <span className="text-xs text-slate-600 font-medium">Early Access Spots</span>
-                      <div className="text-2xl font-bold text-blue-600">{pricingStatus.earlyAccessSpotsRemaining}</div>
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-xs text-blue-700 font-semibold">
-                        Price locked for life while subscription remains active
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          <div className="grid md:grid-cols-2 gap-4 mt-6">
+          <div className="grid md:grid-cols-3 gap-4 mt-6">
             <div className="card p-5">
               <h3 className="font-semibold">Homeowners</h3>
               <p className="text-sm text-slate-400">
                 Free to request quotes. Pay pros directly after the job.
               </p>
             </div>
-            <div className="card p-5">
-              <h3 className="font-semibold">Pros</h3>
-              <div className="flex items-baseline gap-2">
-                <strong className="text-xl">{getProPrice()}/month</strong>
-                {pricingStatus?.earlyAccessAvailable && (
-                  <span className="text-xs text-slate-500 line-through">{pricingStatus.nextPriceFormatted}/month</span>
-                )}
-              </div>
-              <p className="text-sm text-slate-600 mt-1">
-                subscription for job leads & dashboard access
+            <div className="card p-5 border-2 border-slate-200">
+              <h3 className="font-semibold text-lg">Fixlo Pro</h3>
+              <strong className="mt-2 block text-3xl">{getProPrice()}<span className="text-base font-medium">/month</span></strong>
+              <p className="text-sm text-slate-600 mt-3">
+                Get matched with homeowners in your trade within 30 miles.
               </p>
-              
-              {/* Price lock badge */}
-              {pricingStatus?.earlyAccessAvailable && (
-                <div className="mt-3 inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded">
-                  🔒 Price Locked
-                </div>
-              )}
-              
-              {pricing?.prices?.proMonthlySubscription && (
-                <div className="mt-3 text-xs text-slate-400">
-                  {pricing.prices.proMonthlySubscription.baseAmount !== pricing.prices.proMonthlySubscription.amount && (
-                    <div>Base price: ${pricing.prices.proMonthlySubscription.baseAmount.toFixed(2)} USD</div>
-                  )}
-                  <div className="mt-1">Currency: {pricing.country.currency}</div>
-                </div>
-              )}
+              <ul className="mt-4 space-y-2 text-sm text-slate-700">
+                <li>✓ Pro receives leads for their trade</li>
+                <li>✓ 30-mile matching radius</li>
+                <li>✓ Active subscription required</li>
+              </ul>
+              <a href="/pro/signup" className="btn-primary mt-5 inline-block">Join Fixlo Pro</a>
+            </div>
+            <div className="card p-5 border-2 border-slate-900 bg-slate-900 text-white">
+              <h3 className="font-semibold text-lg">Fixlo Premium</h3>
+              <strong className="mt-2 block text-3xl">{getPremiumPrice()}<span className="text-base font-medium">/month</span></strong>
+              <p className="text-sm text-slate-200 mt-3">
+                Get priority access to new leads before regular pros. One exclusive lead at a time with a 1-hour response window.
+              </p>
+              <ul className="mt-4 space-y-2 text-sm text-slate-100">
+                <li>✓ Premium pros get first access</li>
+                <li>✓ 1-hour exclusive response window</li>
+                <li>✓ Falls back to Fixlo Pro after premium expires</li>
+              </ul>
+              <a href="/pro/signup" className="mt-5 inline-block rounded-lg bg-white px-4 py-2 font-semibold text-slate-900">Get Priority Leads</a>
             </div>
           </div>
         </>
@@ -157,12 +118,12 @@ export default function PricingPage(){
       <div className="mt-8 p-6 bg-slate-50 rounded-lg border border-slate-200">
         <h2 className="text-xl font-bold mb-4">What's Included</h2>
         <ul className="space-y-2 text-slate-700">
-          <li>✓ Unlimited job lead notifications</li>
           <li>✓ Professional dashboard access</li>
           <li>✓ Direct messaging with homeowners</li>
           <li>✓ Profile listing in search results</li>
           <li>✓ Customer review system</li>
           <li>✓ Mobile app access</li>
+          <li>✓ Plan-based lead routing with premium priority options</li>
         </ul>
       </div>
 
@@ -171,7 +132,7 @@ export default function PricingPage(){
           href="/pro/signup" 
           className="inline-block px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
         >
-          Get Started
+          Compare Plans
         </a>
       </div>
     </div>

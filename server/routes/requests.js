@@ -8,6 +8,7 @@ const Pro = require('../models/Pro');
 const { geocodeAddress } = require('../utils/geocoding');
 const { isUSPhoneNumber } = require('../utils/twilio');
 const { sendOwnerNotification, sendHomeownerConfirmation, sendProLeadAlert } = require('../utils/smsSender');
+const { routeLead } = require('../services/leadAssignmentService');
 const { getPriorityConfig, getOwnerPhone } = require('../config/priorityRouting');
 
 // Constants
@@ -197,36 +198,11 @@ router.post('/', async (req, res) => {
 
     // ---------- Notify Pros ----------
 
-    let pros = [];
-    const radiusMeters = milesToMeters(
-      parseInt(process.env.LEAD_RADIUS_MILES || '30', 10)
-    );
-
-    if (smsConsent && mongoose.connection.readyState === 1) {
-      pros = await Pro.find({
-        trade: rawService,
-        wantsNotifications: true,
-        isActive: true,
-        location: {
-          $near: {
-            $geometry: { type: 'Point', coordinates: [lng, lat] },
-            $maxDistance: radiusMeters
-          }
-        }
-      }).limit(50);
-
-      if (pros.length) {
-        // Send via sendProLeadAlert for proper consent checking, idempotency,
-        // compliance logging, and language detection — works for ALL US cities.
-        (async () => {
-          for (const pro of pros) {
-            try {
-              await sendProLeadAlert(pro, savedLead);
-            } catch (err) {
-              console.error('❌ Pro lead alert failed for', pro._id, ':', err.message);
-            }
-          }
-        })();
+    if (savedLead) {
+      try {
+        await routeLead(savedLead._id);
+      } catch (routingError) {
+        console.error('❌ Requests lead routing failed:', routingError.message);
       }
     }
 

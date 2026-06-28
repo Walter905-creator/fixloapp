@@ -3,6 +3,7 @@ const router = express.Router();
 const Pro = require('../models/Pro');
 const JobRequest = require('../models/JobRequest');
 const { geocodeAddress } = require('../utils/geocode');
+const { routeLead } = require('../services/leadAssignmentService');
 
 // Optional: Twilio SMS
 let twilioClient = null;
@@ -35,10 +36,6 @@ router.post('/', async (req, res) => {
     }
 
     // 2) Query nearby pros (configurable radius) with database fallback
-    let pros = [];
-    const radiusMiles = parseInt(process.env.LEAD_RADIUS_MILES) || 30;
-    const radiusMeters = milesToMeters(radiusMiles);
-
     // Save lead to database before notifying pros
     let savedLead = null;
     try {
@@ -64,53 +61,21 @@ router.post('/', async (req, res) => {
       // Continue without failing the request
     }
 
-    try {
-      // Check database connection before querying
-      const mongoose = require('mongoose');
-      if (mongoose.connection.readyState === 1) {
-        // Use MongoDB $near with geospatial index on location
-        pros = await Pro.find({
-          trade: trade.toLowerCase().trim(),
-          wantsNotifications: true,
-          location: {
-            $near: {
-              $geometry: { type: 'Point', coordinates: [lng, lat] },
-              $maxDistance: radiusMeters
-            }
-          }
-        }).limit(50); // safety cap
-      } else {
-        console.warn('Database not connected, cannot query for pros');
+    let matchedPros = 0;
+    if (savedLead) {
+      try {
+        const routingResult = await routeLead(savedLead._id);
+        matchedPros = routingResult.regularProsNotified || Number(Boolean(routingResult.proId));
+      } catch (routingError) {
+        console.error('❌ Homeowner lead routing failed:', routingError.message);
       }
-    } catch (dbError) {
-      console.error('Database query failed:', dbError.message);
-      // Continue with empty pros array
     }
-
-    // 3) Fire-and-forget notify (SMS/email) – do not block response
-    (async () => {
-      if (twilioClient && pros.length) {
-        const msg = `FIXLO: New ${trade} request near ${formatted}. ${name} (${phone}). "${description || ''}"`;
-        for (const pro of pros) {
-          try {
-            await twilioClient.messages.create({
-              to: pro.phone,
-              from: process.env.TWILIO_PHONE, // must be a valid Twilio number you own
-              body: msg
-            });
-          } catch (err) {
-            console.error('Twilio SMS error to', pro.phone, err.message);
-          }
-        }
-      }
-      // Lead is now saved to database using JobRequest model
-    })().catch(console.error);
 
     // 4) Return immediately so UI can show confirmation
     return res.json({
       ok: true,
       message: 'Request received. Nearby pros have been notified.',
-      matchedPros: pros.length,
+      matchedPros,
       leadId: savedLead ? savedLead._id : null
     });
   } catch (err) {
