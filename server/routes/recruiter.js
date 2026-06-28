@@ -83,6 +83,8 @@ router.get('/me', requireRecruiter, async (req, res) => {
         recruiterCode: recruiter.recruiterCode,
         recruiterLink: recruiter.recruiterLink,
         recruiterRecruiterLink: recruiter.recruiterRecruiterLink,
+        proReferralLink: recruiter.proReferralLink || recruiter.recruiterLink,
+        recruiterReferralLink: recruiter.recruiterReferralLink || recruiter.recruiterRecruiterLink,
         stripeConnectAccountId: recruiter.stripeConnectAccountId,
         stripeConnectOnboarded: recruiter.stripeConnectOnboarded,
         payoutStatus: recruiter.payoutStatus,
@@ -297,6 +299,7 @@ router.patch('/codes/:id/deactivate', requireRecruiter, async (req, res) => {
 router.get('/validate/:code', async (req, res) => {
   try {
     const { code } = req.params;
+    const { type } = req.query;
     const upperCode = code.trim().toUpperCase();
 
     // First, check if it matches a permanent recruiter code
@@ -314,6 +317,7 @@ router.get('/validate/:code', async (req, res) => {
     // Then check one-time codes
     const oneTimeCode = await RecruiterReferralCode.findOne({
       code: upperCode,
+      ...(type === 'recruiter' || type === 'pro' ? { type } : {}),
       isActive: true,
       isUsed: false,
       $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }]

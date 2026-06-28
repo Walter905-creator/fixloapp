@@ -86,7 +86,7 @@ export default function PricingPage(){
                 <li>✓ 30-mile matching radius</li>
                 <li>✓ Active subscription required</li>
               </ul>
-              <a href="/pro/signup" className="btn-primary mt-5 inline-block">Join Fixlo Pro</a>
+              <a href="/pros/signup" className="btn-primary mt-5 inline-block">Join Fixlo Pro</a>
             </div>
             <div className="card p-5 border-2 border-slate-900 bg-slate-900 text-white">
               <h3 className="font-semibold text-lg">Fixlo Premium</h3>
@@ -99,7 +99,7 @@ export default function PricingPage(){
                 <li>✓ 1-hour exclusive response window</li>
                 <li>✓ Falls back to Fixlo Pro after premium expires</li>
               </ul>
-              <a href="/pro/signup" className="mt-5 inline-block rounded-lg bg-white px-4 py-2 font-semibold text-slate-900">Get Priority Leads</a>
+              <a href="/pros/signup" className="mt-5 inline-block rounded-lg bg-white px-4 py-2 font-semibold text-slate-900">Get Priority Leads</a>
             </div>
           </div>
         </>
@@ -129,7 +129,7 @@ export default function PricingPage(){
 
       <div className="mt-6 text-center">
         <a 
-          href="/pro/signup" 
+          href="/pros/signup" 
           className="inline-block px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
         >
           Compare Plans

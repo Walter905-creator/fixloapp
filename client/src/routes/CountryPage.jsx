@@ -128,7 +128,7 @@ export default function CountryPage() {
                 Find Services
               </a>
               <a
-                href="/pro/signup"
+                href="/pros/signup"
                 className="px-8 py-4 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-400 transition-colors"
               >
                 Join as a Pro
@@ -226,7 +226,7 @@ export default function CountryPage() {
                 <li>✓ Mobile app access</li>
               </ul>
               <a
-                href="/pro/signup"
+                href="/pros/signup"
                 className="block mt-6 px-6 py-3 bg-blue-600 text-white text-center font-semibold rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Join as a Pro
@@ -253,7 +253,7 @@ export default function CountryPage() {
               Find a Pro
             </a>
             <a
-              href="/pro/signup"
+              href="/pros/signup"
               className="px-8 py-4 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-400 transition-colors"
             >
               Become a Pro

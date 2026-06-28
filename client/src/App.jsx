@@ -1,11 +1,11 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import PromoBanner from './components/PromoBanner';
-import ProBanner from './components/ProBanner';
 import CookieConsent from './components/CookieConsent';
 import MetaPixelTracker from './components/MetaPixelTracker';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
+import RecruiterProtectedRoute from './components/RecruiterProtectedRoute';
 import RequireAdmin from './components/RequireAdmin';
 import HomePage from './routes/HomePage.jsx';
 import ServicesPage from './routes/ServicesPage.jsx';
@@ -47,6 +47,7 @@ import ReferralSignInPage from './routes/ReferralSignInPage.jsx';
 import RequestPage from './routes/RequestPage.jsx';
 import HomeownerLandingPage from './routes/HomeownerLandingPage.jsx';
 import ProLandingPage from './routes/ProLandingPage.jsx';
+import RecruiterLandingPage from './routes/RecruiterLandingPage.jsx';
 // Recruiter Network
 import RecruiterSignupPage from './routes/RecruiterSignupPage.jsx';
 import RecruiterLoginPage from './routes/RecruiterLoginPage.jsx';
@@ -64,7 +65,6 @@ export default function App(){
   return (<>
     <MetaPixelTracker />
     <PromoBanner />
-    <ProBanner />
     <Navbar/>
     <Routes>
       <Route path="/" element={<HomePage/>}/>
@@ -98,13 +98,25 @@ export default function App(){
       <Route path="/charlotte" element={<Navigate to="/request?city=charlotte-nc" replace/>}/>
       <Route path="/country/:countryCode" element={<CountryPage/>}/>
       <Route path="/signup" element={<SignupPage/>}/>
-      <Route path="/pro/signup" element={<ProSignupPage/>}/>
-      <Route path="/pro/register" element={<ProSignupPage/>}/>
+      <Route path="/pros" element={<ProLandingPage/>}/>
+      <Route path="/pros/signup" element={<ProSignupPage/>}/>
+      <Route path="/pros/register" element={<ProSignupPage/>}/>
+      <Route path="/pros/login" element={<ProSignInPage/>}/>
+      <Route path="/pros/forgot-password" element={<ProForgotPasswordPage/>}/>
+      <Route path="/pros/reset-password" element={<ProResetPasswordPage/>}/>
+      <Route path="/pros/pricing" element={<PricingPage/>}/>
+      <Route path="/pros/dashboard" element={
+        <ProtectedRoute requiredRole="pro">
+          <ProDashboardPage/>
+        </ProtectedRoute>
+      }/>
+      <Route path="/pro/signup" element={<Navigate to="/pros/signup" replace/>}/>
+      <Route path="/pro/register" element={<Navigate to="/pros/signup" replace/>}/>
       <Route path="/pro/setup-account/:token" element={<ProSetupAccountPage/>}/>
-      <Route path="/pro/sign-in" element={<ProSignInPage/>}/>
-      <Route path="/pro/login" element={<ProSignInPage/>}/>
-      <Route path="/pro/forgot-password" element={<ProForgotPasswordPage/>}/>
-      <Route path="/pro/reset-password" element={<ProResetPasswordPage/>}/>
+      <Route path="/pro/sign-in" element={<Navigate to="/pros/login" replace/>}/>
+      <Route path="/pro/login" element={<Navigate to="/pros/login" replace/>}/>
+      <Route path="/pro/forgot-password" element={<Navigate to="/pros/forgot-password" replace/>}/>
+      <Route path="/pro/reset-password" element={<Navigate to="/pros/reset-password" replace/>}/>
       
       {/* Admin routes - PRIVATE ONLY, not public, not linked anywhere */}
       <Route path="/dashboard/admin" element={
@@ -137,6 +149,11 @@ export default function App(){
           <AdminSEOAIPage/>
         </RequireAdmin>
       }/>
+      <Route path="/admin" element={
+        <RequireAdmin>
+          <AdminPage/>
+        </RequireAdmin>
+      }/>
       
       {/* Old admin routes - redirect to prevent 404 hints */}
       <Route path="/admin/*" element={<Navigate to="/" replace/>}/>
@@ -145,9 +162,7 @@ export default function App(){
       
       <Route path="/my-jobs" element={<CustomerPortalPage/>}/>
       <Route path="/pro/dashboard" element={
-        <ProtectedRoute requiredRole="pro">
-          <ProDashboardPage/>
-        </ProtectedRoute>
+        <Navigate to="/pros/dashboard" replace/>
       }/>
       <Route path="/contractor/dashboard" element={<ContractorDashboardPage/>}/>
       <Route path="/staff/jobs" element={<JobManagementPage/>}/>
@@ -161,12 +176,32 @@ export default function App(){
       <Route path="/recruiter/signup" element={<RecruiterSignupPage/>}/>
       <Route path="/recruiter/login" element={<RecruiterLoginPage/>}/>
       <Route path="/recruiter/forgot-password" element={<RecruiterForgotPasswordPage/>}/>
-      <Route path="/recruiter/dashboard" element={<RecruiterDashboardPage/>}/>
-      <Route path="/recruiter/referrals" element={<RecruiterReferralsPage/>}/>
-      <Route path="/recruiter/recruiters" element={<RecruiterRecruitersPage/>}/>
-      <Route path="/recruiter/payments" element={<RecruiterPaymentsPage/>}/>
-      <Route path="/recruiter/settings" element={<RecruiterSettingsPage/>}/>
-      <Route path="/recruiter" element={<Navigate to="/recruiter/dashboard" replace/>}/>
+      <Route path="/recruiter/dashboard" element={
+        <RecruiterProtectedRoute>
+          <RecruiterDashboardPage/>
+        </RecruiterProtectedRoute>
+      }/>
+      <Route path="/recruiter/referrals" element={
+        <RecruiterProtectedRoute>
+          <RecruiterReferralsPage/>
+        </RecruiterProtectedRoute>
+      }/>
+      <Route path="/recruiter/recruiters" element={
+        <RecruiterProtectedRoute>
+          <RecruiterRecruitersPage/>
+        </RecruiterProtectedRoute>
+      }/>
+      <Route path="/recruiter/payments" element={
+        <RecruiterProtectedRoute>
+          <RecruiterPaymentsPage/>
+        </RecruiterProtectedRoute>
+      }/>
+      <Route path="/recruiter/settings" element={
+        <RecruiterProtectedRoute>
+          <RecruiterSettingsPage/>
+        </RecruiterProtectedRoute>
+      }/>
+      <Route path="/recruiter" element={<RecruiterLandingPage/>}/>
       
       {/* Admin Recruiter Pages */}
       <Route path="/admin/recruiters" element={
@@ -179,8 +214,8 @@ export default function App(){
         <RequireAdmin><AdminPayoutsPage/></RequireAdmin>
       }/>
       <Route path="/for-homeowners" element={<HomeownerLandingPage/>}/>
-      <Route path="/for-pros" element={<ProLandingPage/>}/>
-      <Route path="/for-professionals" element={<Navigate to="/for-pros" replace/>}/>
+      <Route path="/for-pros" element={<Navigate to="/pros" replace/>}/>
+      <Route path="/for-professionals" element={<Navigate to="/pros" replace/>}/>
       <Route path="/terms" element={<Terms/>}/>
       <Route path="/privacy" element={<Privacy/>}/>
       <Route path="/privacy-policy" element={<Navigate to="/privacy" replace/>}/>
@@ -218,8 +253,8 @@ export default function App(){
           <div>
             <h3 className="font-semibold text-slate-900 mb-3">For Professionals</h3>
             <ul className="space-y-2 text-sm text-slate-700">
-              <li><a href="/for-pros" className="hover:text-brand">Join as a Pro</a></li>
-              <li><a href="/pro/sign-in" className="hover:text-brand">Pro Sign In</a></li>
+              <li><a href="/pros" className="hover:text-brand">Join as a Pro</a></li>
+              <li><a href="/pros/login" className="hover:text-brand">Pro Sign In</a></li>
               <li><a href="/how-it-works" className="hover:text-brand">How Fixlo Works</a></li>
             </ul>
           </div>

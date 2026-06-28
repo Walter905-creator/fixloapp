@@ -31,8 +31,10 @@ const recruiterProfileSchema = new mongoose.Schema({
   },
 
   // Full referral links (generated from recruiterCode)
-  recruiterLink: { type: String, default: '' },         // /pro-signup?ref=CODE
-  recruiterRecruiterLink: { type: String, default: '' }, // /recruiter/signup?ref=CODE
+  recruiterLink: { type: String, default: '' },         // legacy alias
+  recruiterRecruiterLink: { type: String, default: '' }, // legacy alias
+  proReferralLink: { type: String, default: '' },        // /pros/signup?ref=CODE
+  recruiterReferralLink: { type: String, default: '' },  // /recruiter/signup?ref=CODE
 
   // Up-line relationship for 2-level commissions
   parentRecruiterId: {

@@ -12,6 +12,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { sign } = require('../utils/jwt');
 const RecruiterProfile = require('../models/RecruiterProfile');
+const RecruiterReferralCode = require('../models/RecruiterReferralCode');
 const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
 const { sendSms } = require('../utils/twilio');
 
@@ -35,9 +36,30 @@ router.post('/signup', async (req, res) => {
     // Resolve parent recruiter from ref code
     let parentRecruiterId = null;
     if (refCode) {
-      const parent = await RecruiterProfile.findOne({
-        recruiterCode: refCode.trim().toUpperCase()
+      const normalizedRefCode = refCode.trim().toUpperCase();
+      let parent = await RecruiterProfile.findOne({
+        recruiterCode: normalizedRefCode
       });
+
+      if (!parent) {
+        const oneTimeCode = await RecruiterReferralCode.findOne({
+          code: normalizedRefCode,
+          type: 'recruiter',
+          isActive: true,
+          isUsed: false,
+          $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }]
+        });
+        if (oneTimeCode) {
+          parent = await RecruiterProfile.findById(oneTimeCode.recruiterId);
+          if (parent) {
+            oneTimeCode.isUsed = true;
+            oneTimeCode.usedBy = email.toLowerCase().trim();
+            oneTimeCode.usedDate = new Date();
+            await oneTimeCode.save();
+          }
+        }
+      }
+
       if (parent) {
         parentRecruiterId = parent._id;
       }
@@ -52,7 +74,10 @@ router.post('/signup', async (req, res) => {
 
     const hashed = await bcrypt.hash(password, 12);
     const recruiterCode = await RecruiterProfile.generateUniqueCode();
-    const baseUrl = process.env.FRONTEND_URL || 'https://fixloapp.com';
+    const baseUrl = process.env.FRONTEND_URL || 'https://www.fixloapp.com';
+    const encodedCode = encodeURIComponent(recruiterCode);
+    const proReferralLink = `${baseUrl}/pros/signup?ref=${encodedCode}`;
+    const recruiterReferralLink = `${baseUrl}/recruiter/signup?ref=${encodedCode}`;
 
     const recruiter = await RecruiterProfile.create({
       name: name.trim(),
@@ -60,8 +85,10 @@ router.post('/signup', async (req, res) => {
       phone: normalizedPhone,
       password: hashed,
       recruiterCode,
-      recruiterLink: `${baseUrl}/pro-signup?ref=${recruiterCode}`,
-      recruiterRecruiterLink: `${baseUrl}/recruiter/signup?ref=${recruiterCode}`,
+      recruiterLink: proReferralLink,
+      recruiterRecruiterLink: recruiterReferralLink,
+      proReferralLink,
+      recruiterReferralLink,
       parentRecruiterId,
       signupIp: req.ip || ''
     });
@@ -75,7 +102,10 @@ router.post('/signup', async (req, res) => {
         name: recruiter.name,
         email: recruiter.email,
         recruiterCode: recruiter.recruiterCode,
-        recruiterLink: recruiter.recruiterLink
+        recruiterLink: recruiter.recruiterLink,
+        recruiterRecruiterLink: recruiter.recruiterRecruiterLink,
+        proReferralLink: recruiter.proReferralLink || recruiter.recruiterLink,
+        recruiterReferralLink: recruiter.recruiterReferralLink || recruiter.recruiterRecruiterLink
       }
     });
   } catch (err) {
@@ -117,6 +147,8 @@ router.post('/login', async (req, res) => {
         recruiterCode: recruiter.recruiterCode,
         recruiterLink: recruiter.recruiterLink,
         recruiterRecruiterLink: recruiter.recruiterRecruiterLink,
+        proReferralLink: recruiter.proReferralLink || recruiter.recruiterLink,
+        recruiterReferralLink: recruiter.recruiterReferralLink || recruiter.recruiterRecruiterLink,
         stripeConnectOnboarded: recruiter.stripeConnectOnboarded,
         payoutStatus: recruiter.payoutStatus
       }

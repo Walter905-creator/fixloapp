@@ -49,7 +49,7 @@ export default function ProSignInPage(){
           if (redirectPath) {
             navigate(redirectPath);
           } else {
-            navigate('/pro/dashboard');
+            navigate('/pros/dashboard');
           }
         } else {
           setError('Login failed - invalid response format.');
@@ -71,7 +71,7 @@ export default function ProSignInPage(){
   }
   
   return (<>
-    <HelmetSEO title="Pro Sign In | Fixlo" canonicalPathname="/pro/sign-in" />
+    <HelmetSEO title="Pro Sign In | Fixlo" canonicalPathname="/pros/login" />
     <div className="container-xl py-8">
       <div className="max-w-md mx-auto">
         <h1 className="text-2xl font-extrabold mb-6">Pro Sign In</h1>
@@ -110,7 +110,7 @@ export default function ProSignInPage(){
             
             <div className="flex items-center justify-between">
               <Link 
-                to="/pro/forgot-password" 
+                to="/pros/forgot-password"
                 className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
               >
                 Forgot password?

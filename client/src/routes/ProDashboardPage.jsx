@@ -214,7 +214,7 @@ export default function ProDashboardPage(){
   }
   
   return (<>
-    <HelmetSEO title="Pro Dashboard | Fixlo" canonicalPathname="/pro/dashboard" robots="noindex, nofollow" />
+    <HelmetSEO title="Pro Dashboard | Fixlo" canonicalPathname="/pros/dashboard" robots="noindex, nofollow" />
     <div className="container-xl py-8">
       <div className="mb-4 p-4 bg-brand/10 rounded-lg flex justify-between items-center">
         <p className="text-sm font-semibold text-slate-700">

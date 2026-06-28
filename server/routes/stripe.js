@@ -525,6 +525,32 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
             
             await pro.save();
             console.log(`✅ Pro ${pro._id} updated with subscription details`);
+
+            // Track recruiter attribution for /pros/signup?ref=RECRUITER_CODE
+            if (!isAiHomeSubscription && session.metadata?.referralCode && session.subscription) {
+              try {
+                const apiUrl = process.env.API_URL || 'http://localhost:3001';
+                const proEmail = (pro.email || session.customer_details?.email || '').toLowerCase().trim();
+                const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(proEmail);
+                const proName = [pro.firstName, pro.lastName].filter(Boolean).join(' ').trim() || pro.name || 'Unknown Pro';
+                if (isValidEmail) {
+                  await axios.post(`${apiUrl}/api/recruiter/track-pro-signup`, {
+                    proId: pro._id,
+                    proEmail,
+                    proName,
+                    proTrade: pro.trade || pro.primaryService || '',
+                    proCity: pro.city || '',
+                    proPhone: pro.phone || '',
+                    stripeCustomerId: session.customer || null,
+                    stripeSubscriptionId: session.subscription || null,
+                    refCode: session.metadata.referralCode,
+                    signupIp: req.ip || ''
+                  });
+                }
+              } catch (recruiterTrackErr) {
+                console.error('❌ Recruiter attribution tracking failed:', recruiterTrackErr.message);
+              }
+            }
             
             // Send Welcome SMS asynchronously (non-blocking) — do NOT delay webhook response
             if (setupToken && sessionPhone) {

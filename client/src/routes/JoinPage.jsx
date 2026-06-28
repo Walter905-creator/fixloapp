@@ -16,7 +16,7 @@ export default function JoinPage(){
       captureReferralCode(searchParams);
       
       // Redirect to ProSignupPage with the ref parameter
-      window.location.href = `/pro/signup?ref=${encodeURIComponent(refCode)}`;
+      window.location.href = `/pros/signup?ref=${encodeURIComponent(refCode)}`;
     }
   }, [searchParams]);
 
