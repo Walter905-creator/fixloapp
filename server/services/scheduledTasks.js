@@ -2,6 +2,8 @@ const cron = require('node-cron');
 const { releaseStaleAuthorizations } = require('./autoReleaseService');
 const { verify30DayReferrals } = require('./commissionVerification');
 const { huntLeads } = require('./aiLeadHunter');
+const { releaseApprovedCommissions, processWeeklyPayouts } = require('./recruiterCommissionEngine');
+const { sendWeeklySmsToAllRecruiters } = require('./recruiterSmsService');
 
 /**
  * Scheduled tasks service
@@ -164,6 +166,68 @@ function startScheduledTasks() {
   console.log('🚀 Scheduled tasks initialized - running autonomously');
 }
 
+// ── Recruiter Commission Tasks ─────────────────────────────────────────────────
+
+/**
+ * Start recruiter-specific scheduled tasks.
+ * Called after startScheduledTasks().
+ */
+function startRecruiterScheduledTasks() {
+  // Release held commissions daily at 5 AM
+  const releaseCommissionsTask = cron.schedule('0 5 * * *', async () => {
+    console.log('[RECRUITER_COMMISSIONS] Releasing approved commissions...');
+    try {
+      const released = await releaseApprovedCommissions();
+      console.log(`[RECRUITER_COMMISSIONS] Released: ${released} commission(s)`);
+    } catch (err) {
+      console.error('[RECRUITER_COMMISSIONS] Failed:', err.message);
+    }
+  }, { scheduled: true, timezone: 'America/New_York' });
+
+  scheduledTasks.push({
+    name: 'recruiter-release-commissions',
+    task: releaseCommissionsTask,
+    schedule: '0 5 * * *',
+    description: 'Release held recruiter commissions after hold period (daily 5 AM)'
+  });
+
+  // Weekly payouts — every Monday at 9 AM
+  const weeklyPayoutTask = cron.schedule('0 9 * * 1', async () => {
+    console.log('[RECRUITER_PAYOUTS] Processing weekly payouts...');
+    try {
+      const result = await processWeeklyPayouts();
+      console.log(`[RECRUITER_PAYOUTS] Processed: ${result.results?.length || 0} payout(s)`);
+    } catch (err) {
+      console.error('[RECRUITER_PAYOUTS] Failed:', err.message);
+    }
+  }, { scheduled: true, timezone: 'America/New_York' });
+
+  scheduledTasks.push({
+    name: 'recruiter-weekly-payouts',
+    task: weeklyPayoutTask,
+    schedule: '0 9 * * 1',
+    description: 'Process weekly Stripe Connect payouts to recruiters (Monday 9 AM)'
+  });
+
+  // Weekly SMS summaries — every Monday at 8 AM
+  const weeklySmsTask = cron.schedule('0 8 * * 1', async () => {
+    console.log('[RECRUITER_WEEKLY_SMS] Sending weekly summaries...');
+    try {
+      const count = await sendWeeklySmsToAllRecruiters();
+      console.log(`[RECRUITER_WEEKLY_SMS] Sent: ${count} message(s)`);
+    } catch (err) {
+      console.error('[RECRUITER_WEEKLY_SMS] Failed:', err.message);
+    }
+  }, { scheduled: true, timezone: 'America/New_York' });
+
+  scheduledTasks.push({
+    name: 'recruiter-weekly-sms',
+    task: weeklySmsTask,
+    schedule: '0 8 * * 1',
+    description: 'Send weekly SMS summary to all active recruiters (Monday 8 AM)'
+  });
+}
+
 /**
  * Stop all scheduled tasks
  */
@@ -202,6 +266,12 @@ async function triggerTask(taskName) {
     case 'seo-ai-engine':
       const { runSEOAgent } = require('./seo/seoAgent');
       return await runSEOAgent({ maxPages: 20 });
+    case 'recruiter-release-commissions':
+      return await releaseApprovedCommissions();
+    case 'recruiter-weekly-payouts':
+      return await processWeeklyPayouts();
+    case 'recruiter-weekly-sms':
+      return await sendWeeklySmsToAllRecruiters();
     default:
       throw new Error(`Unknown task: ${taskName}`);
   }
@@ -209,6 +279,7 @@ async function triggerTask(taskName) {
 
 module.exports = {
   startScheduledTasks,
+  startRecruiterScheduledTasks,
   stopScheduledTasks,
   getTasksStatus,
   triggerTask
