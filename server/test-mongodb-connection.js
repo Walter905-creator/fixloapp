@@ -30,7 +30,7 @@ async function testConnection() {
     
     // Connect with the same options used in the server
     await mongoose.connect(
-      process.env.MONGODB_URI,
+      MONGODB_URI,
       {
         maxPoolSize: 10,
         serverSelectionTimeoutMS: 10000,
