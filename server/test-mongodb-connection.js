@@ -8,7 +8,7 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
-const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGO_URI;
+const MONGODB_URI = process.env.MONGODB_URI;
 
 console.log('🧪 MongoDB Connection Test');
 console.log('='.repeat(50));
@@ -29,11 +29,15 @@ async function testConnection() {
     console.log('🔌 Attempting to connect to MongoDB...');
     
     // Connect with the same options used in the server
-    await mongoose.connect(MONGO_URI, {
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 10000,
-      socketTimeoutMS: 45000,
-    });
+    await mongoose.connect(
+      process.env.MONGODB_URI,
+      {
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 10000,
+        socketTimeoutMS: 45000,
+        family: 4,
+      }
+    );
     
     console.log('✅ Successfully connected to MongoDB!');
     console.log('');

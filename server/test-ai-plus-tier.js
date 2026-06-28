@@ -86,16 +86,24 @@ async function testLeadPrioritization() {
   
   try {
     // Connect to MongoDB to create test pros
-    const mongoUri = process.env.MONGO_URI;
+    const mongoUri = process.env.MONGODB_URI;
     
     if (!mongoUri) {
-      console.error('❌ MONGO_URI not found in environment variables');
-      console.error('❌ FATAL ERROR: Set MONGO_URI environment variable');
+      console.error('❌ MONGODB_URI not found in environment variables');
+      console.error('❌ FATAL ERROR: Set MONGODB_URI environment variable');
       process.exit(1);
     }
     
     console.log('\n📦 Connecting to MongoDB...');
-    await mongoose.connect(mongoUri);
+    await mongoose.connect(
+      process.env.MONGODB_URI,
+      {
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 10000,
+        socketTimeoutMS: 45000,
+        family: 4,
+      }
+    );
     console.log('✅ Connected to MongoDB');
     
     const Pro = require('./models/Pro');

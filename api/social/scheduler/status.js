@@ -177,7 +177,7 @@ module.exports = async (req, res) => {
         serverless: true,
         metaConnected: false,
         databaseAvailable: false,
-        message: 'Database connection unavailable - check MONGO_URI environment variable',
+        message: 'Database connection unavailable - check MONGODB_URI environment variable',
         requestId
       });
     }

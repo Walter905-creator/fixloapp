@@ -11,11 +11,11 @@
 const mongoose = require('mongoose');
 
 // Test configuration
-const MONGO_URI = process.env.MONGO_URI;
+const MONGODB_URI = process.env.MONGODB_URI;
 
-if (!MONGO_URI) {
-  console.error('❌ MONGO_URI not found in environment variables');
-  console.error('❌ FATAL ERROR: Set MONGO_URI environment variable to run tests');
+if (!MONGODB_URI) {
+  console.error('❌ MONGODB_URI not found in environment variables');
+  console.error('❌ FATAL ERROR: Set MONGODB_URI environment variable to run tests');
   process.exit(1);
 }
 
@@ -24,7 +24,15 @@ console.log('🧪 Testing AI → Pro Handoff Functionality\n');
 // Helper to connect to MongoDB
 async function connectDB() {
   try {
-    await mongoose.connect(MONGO_URI);
+    await mongoose.connect(
+      process.env.MONGODB_URI,
+      {
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 10000,
+        socketTimeoutMS: 45000,
+        family: 4,
+      }
+    );
     console.log('✅ Connected to MongoDB');
     return true;
   } catch (error) {
@@ -364,7 +372,7 @@ async function runAllTests() {
     process.exit(0);
   } else if (!dbConnected) {
     console.log('\n⚠️ Some tests skipped due to database unavailability\n');
-    console.log('To run all tests, ensure MongoDB is running and MONGO_URI is configured.\n');
+    console.log('To run all tests, ensure MongoDB is running and MONGODB_URI is configured.\n');
     process.exit(0);
   } else {
     console.log('\n❌ Some tests failed!\n');

@@ -5,14 +5,22 @@ const { geocode } = require('../utils/geocode');
 
 (async () => {
   try {
-    // Connect to MongoDB - ONLY using MONGO_URI
-    if (!process.env.MONGO_URI) {
-      console.error('❌ MONGO_URI environment variable is not set');
-      console.error('❌ FATAL ERROR: Set MONGO_URI environment variable');
+    // Connect to MongoDB - ONLY using MONGODB_URI
+    if (!process.env.MONGODB_URI) {
+      console.error('❌ MONGODB_URI environment variable is not set');
+      console.error('❌ FATAL ERROR: Set MONGODB_URI environment variable');
       process.exit(1);
     }
     
-    await mongoose.connect(process.env.MONGO_URI);
+    await mongoose.connect(
+      process.env.MONGODB_URI,
+      {
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 10000,
+        socketTimeoutMS: 45000,
+        family: 4,
+      }
+    );
     console.log('Connected to MongoDB');
     
     const pros = await Pro.find({ 'location.coordinates': [0,0] });

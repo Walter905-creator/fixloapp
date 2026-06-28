@@ -2,8 +2,8 @@
  * Test: Deterministic MongoDB Connection Behavior
  * 
  * This test verifies that the server correctly handles MongoDB connection states:
- * 1. Server exits when MONGO_URI is missing
- * 2. Server exits when MONGO_URI is malformed
+ * 1. Server exits when MONGODB_URI is missing
+ * 2. Server exits when MONGODB_URI is malformed
  * 3. Server exits when MongoDB is unreachable
  * 4. Server does NOT fall back to DB-less mode
  */
@@ -50,7 +50,7 @@ function runServerTest(env, description) {
       
       // Extract key lines
       const keyLines = output.split('\n').filter(line => 
-        line.includes('MONGO_URI') ||
+        line.includes('MONGODB_URI') ||
         line.includes('MONGODB CONNECTION') ||
         line.includes('Connecting to Mongo') ||
         line.includes('MongoDB CONNECTED') ||
@@ -78,33 +78,33 @@ async function runTests() {
   console.log('# MongoDB Connection Determinism Tests');
   console.log('#'.repeat(80));
 
-  // Test 1: No MONGO_URI
+  // Test 1: No MONGODB_URI
   const test1 = await runServerTest(
-    { MONGO_URI: undefined },
-    'Server should exit when MONGO_URI is missing'
+    { MONGODB_URI: undefined },
+    'Server should exit when MONGODB_URI is missing'
   );
   
-  if (test1.code === 1 && test1.output.includes('MONGO_URI is missing')) {
-    console.log('✅ PASS: Server correctly exits without MONGO_URI');
+  if (test1.code === 1 && test1.output.includes('MONGODB_URI is missing')) {
+    console.log('✅ PASS: Server correctly exits without MONGODB_URI');
   } else {
-    console.log('❌ FAIL: Server did not exit properly without MONGO_URI');
+    console.log('❌ FAIL: Server did not exit properly without MONGODB_URI');
   }
 
-  // Test 2: Malformed MONGO_URI
+  // Test 2: Malformed MONGODB_URI
   const test2 = await runServerTest(
-    { MONGO_URI: 'invalid-uri' },
-    'Server should exit when MONGO_URI is malformed'
+    { MONGODB_URI: 'invalid-uri' },
+    'Server should exit when MONGODB_URI is malformed'
   );
   
   if (test2.code === 1 && test2.output.includes('MALFORMED URI')) {
-    console.log('✅ PASS: Server correctly exits with malformed MONGO_URI');
+    console.log('✅ PASS: Server correctly exits with malformed MONGODB_URI');
   } else {
-    console.log('❌ FAIL: Server did not exit properly with malformed MONGO_URI');
+    console.log('❌ FAIL: Server did not exit properly with malformed MONGODB_URI');
   }
 
   // Test 3: Unreachable MongoDB
   const test3 = await runServerTest(
-    { MONGO_URI: 'mongodb://192.0.2.1:27017/test' },
+    { MONGODB_URI: 'mongodb://192.0.2.1:27017/test' },
     'Server should exit when MongoDB is unreachable'
   );
   
