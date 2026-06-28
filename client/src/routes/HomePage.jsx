@@ -14,7 +14,7 @@ export default function HomePage() {
     <>
       <HelmetSEO title={pageTitle} canonicalPathname="/" />
       <Schema />
-      <HeroSection />
+      <HeroSection headingTag="h1" />
       <HomeownerExperienceSections />
     </>
   );

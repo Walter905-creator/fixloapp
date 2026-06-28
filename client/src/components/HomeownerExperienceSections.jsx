@@ -77,7 +77,7 @@ export default function HomeownerExperienceSections() {
       <section className="py-12 md:py-16 bg-slate-50">
         <div className="container-xl grid gap-8 lg:grid-cols-2">
           <div className="card p-6">
-            <h2 className="text-2xl font-bold text-slate-900 mb-4">Convenience that feels effortless</h2>
+            <h3 className="text-2xl font-bold text-slate-900 mb-4">Convenience that feels effortless</h3>
             <ul className="grid gap-2 text-sm text-slate-700">
               {CONVENIENCE_FEATURES.map((item) => (
                 <li key={item} className="flex items-start gap-2"><span className="text-emerald-600">✓</span><span>{item}</span></li>
@@ -85,7 +85,7 @@ export default function HomeownerExperienceSections() {
             </ul>
           </div>
           <div className="card p-6 bg-gradient-to-br from-slate-900 to-slate-800 text-white">
-            <h2 className="text-2xl font-bold mb-4">Live progress tracker</h2>
+            <h3 className="text-2xl font-bold mb-4">Live progress tracker</h3>
             <div className="space-y-3">
               {PROGRESS_STEPS.map((step, idx) => (
                 <div key={step} className="flex items-center gap-3">

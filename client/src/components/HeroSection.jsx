@@ -4,8 +4,9 @@ import { useNavigate } from "react-router-dom";
 const CONTRACTOR_IMG = "/images/service-handyman.jpg";
 const HOUSE_BG_IMG = "/images/how-it-works.jpg";
 
-export default function HeroSection() {
+export default function HeroSection({ headingTag = "h2" }) {
   const navigate = useNavigate();
+  const HeadingTag = headingTag;
 
   return (
     <section
@@ -34,9 +35,9 @@ export default function HeroSection() {
             <p className="text-emerald-400 font-semibold uppercase tracking-widest text-sm mb-3">
               Trusted home services marketplace
             </p>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
+            <HeadingTag className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
               Book trusted home services or grow your trade business with Fixlo.
-            </h1>
+            </HeadingTag>
             <p className="mt-6 text-lg md:text-xl text-slate-200 max-w-2xl">
               Homeowners get matched fast with verified local pros, and contractors get a cleaner path to quality leads without the usual bidding chaos.
             </p>
