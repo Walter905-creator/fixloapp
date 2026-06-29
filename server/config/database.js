@@ -15,7 +15,18 @@ function getConfiguredMongoUri() {
 }
 
 function isMongoUriValid(uri) {
-  return /^mongodb(\+srv)?:\/\//i.test(uri || '');
+  if (!uri) return false;
+
+  try {
+    const parsed = new URL(uri);
+    const isMongoProtocol = parsed.protocol === 'mongodb:' || parsed.protocol === 'mongodb+srv:';
+    const hasHostname = Boolean(parsed.hostname && !/[<>]/.test(parsed.hostname));
+    const hasDatabasePath = parsed.pathname && parsed.pathname !== '/';
+
+    return isMongoProtocol && hasHostname && hasDatabasePath;
+  } catch {
+    return false;
+  }
 }
 
 function isProduction() {
@@ -47,7 +58,8 @@ async function connectDB() {
 
   if (!validUri) {
     if (isProduction()) {
-      throw new Error(`MongoDB URI is missing or invalid. Checked: ${MONGO_ENV_KEYS.join(', ')}`);
+      console.error(`MongoDB URI validation failed. Checked: ${MONGO_ENV_KEYS.join(', ')}`);
+      throw new Error('MongoDB URI is missing or invalid.');
     }
 
     console.warn(LOCAL_SANDBOX_WARNING);
