@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const MONGO_ENV_KEYS = ['MONGODB_URI', 'MONGO_URI', 'DATABASE_URL'];
 const LOCAL_SANDBOX_WARNING = 'MongoDB URI missing or invalid in local/sandbox environment. Skipping database connection.';
+const SUPPORTED_MONGO_PROTOCOLS = new Set(['mongodb:', 'mongodb+srv:']);
 
 function getConfiguredMongoUri() {
   for (const key of MONGO_ENV_KEYS) {
@@ -14,19 +15,36 @@ function getConfiguredMongoUri() {
   return { key: null, uri: '' };
 }
 
-function isMongoUriValid(uri) {
-  if (!uri) return false;
+function getMongoUriValidationDetails(uri) {
+  if (!uri) {
+    return { valid: false, reason: 'missing URI value' };
+  }
 
   try {
     const parsed = new URL(uri);
-    const isMongoProtocol = parsed.protocol === 'mongodb:' || parsed.protocol === 'mongodb+srv:';
+    const isMongoProtocol = SUPPORTED_MONGO_PROTOCOLS.has(parsed.protocol);
+    // Reject template placeholders like <cluster-host> so sandbox/example values do not attempt a real connection.
     const hasHostname = Boolean(parsed.hostname && !/[<>]/.test(parsed.hostname));
     const hasDatabasePath = parsed.pathname && parsed.pathname !== '/';
 
-    return isMongoProtocol && hasHostname && hasDatabasePath;
+    if (!isMongoProtocol) {
+      return { valid: false, reason: `unsupported protocol: ${parsed.protocol || 'none'}` };
+    }
+    if (!hasHostname) {
+      return { valid: false, reason: 'missing or placeholder hostname' };
+    }
+    if (!hasDatabasePath) {
+      return { valid: false, reason: 'missing database name in path' };
+    }
+
+    return { valid: true, reason: 'ok' };
   } catch {
-    return false;
+    return { valid: false, reason: 'unparseable connection string' };
   }
+}
+
+function isMongoUriValid(uri) {
+  return getMongoUriValidationDetails(uri).valid;
 }
 
 function isProduction() {
@@ -54,15 +72,17 @@ function requireDatabase(req, res, next) {
 
 async function connectDB() {
   const { key, uri } = getConfiguredMongoUri();
-  const validUri = isMongoUriValid(uri);
+  const validation = getMongoUriValidationDetails(uri);
+  const validUri = validation.valid;
 
   if (!validUri) {
     if (isProduction()) {
-      console.error(`MongoDB URI validation failed. Checked: ${MONGO_ENV_KEYS.join(', ')}`);
+      console.error(`MongoDB URI validation failed. Checked: ${MONGO_ENV_KEYS.join(', ')}. Reason: ${validation.reason}`);
       throw new Error('MongoDB URI is missing or invalid.');
     }
 
     console.warn(LOCAL_SANDBOX_WARNING);
+    console.warn(`MongoDB URI validation reason: ${validation.reason}`);
     return { connected: false, skipped: true, reason: 'missing_or_invalid_uri' };
   }
 
@@ -94,6 +114,7 @@ async function connectDB() {
 module.exports = connectDB;
 module.exports.connectDB = connectDB;
 module.exports.getConfiguredMongoUri = getConfiguredMongoUri;
+module.exports.getMongoUriValidationDetails = getMongoUriValidationDetails;
 module.exports.isMongoUriValid = isMongoUriValid;
 module.exports.isDatabaseAvailable = isDatabaseAvailable;
 module.exports.getDatabaseUnavailableResponse = getDatabaseUnavailableResponse;
