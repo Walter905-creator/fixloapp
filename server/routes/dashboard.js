@@ -8,6 +8,10 @@ const Pro = require('../models/Pro');
 const LeadAssignment = require('../models/LeadAssignment');
 const JobRequest = require('../models/JobRequest');
 
+const TOTAL_COMMISSION_STATUSES = ['pending', 'held', 'approved', 'paid'];
+const PENDING_COMMISSION_STATUSES = ['pending', 'held'];
+const ACCEPTED_JOB_STATUSES = ['accepted', 'completed', 'in-progress'];
+
 function normalizeId(value) {
   if (!value) return null;
   return String(value);
@@ -91,14 +95,17 @@ router.get('/recruiter', async (req, res) => {
     });
 
     const recentReferrals = referrals.filter((r) => new Date(r.createdAt) >= weekStart);
-    const convertedRecent = recentReferrals.filter((r) => mapRecruiterStatus(r.status) === 'converted' || mapRecruiterStatus(r.status) === 'paid').length;
+    const convertedRecent = recentReferrals.filter((r) => {
+      const status = mapRecruiterStatus(r.status);
+      return status === 'converted' || status === 'paid';
+    }).length;
 
     const totalCommission = commissions
-      .filter((c) => ['pending', 'held', 'approved', 'paid'].includes(c.status))
+      .filter((c) => TOTAL_COMMISSION_STATUSES.includes(c.status))
       .reduce((sum, c) => sum + (c.amount || 0), 0);
 
     const pendingCommission = commissions
-      .filter((c) => ['pending', 'held'].includes(c.status))
+      .filter((c) => PENDING_COMMISSION_STATUSES.includes(c.status))
       .reduce((sum, c) => sum + (c.amount || 0), 0);
 
     const weekly = sevenDays.map((day) => {
@@ -236,10 +243,10 @@ router.get('/pro', async (req, res) => {
     const leads = Array.from(dedupe.values()).sort((a, b) => new Date(b.dateRequested) - new Date(a.dateRequested));
 
     const newLeads = leads.filter((lead) => lead.status === 'pending').length;
-    const acceptedJobs = leads.filter((lead) => ['accepted', 'completed', 'in-progress'].includes(lead.status)).length;
+    const acceptedJobs = leads.filter((lead) => ACCEPTED_JOB_STATUSES.includes(lead.status)).length;
     const pendingQuotes = leads.filter((lead) => lead.status === 'pending').length;
     const estimatedEarnings = leads
-      .filter((lead) => ['accepted', 'completed', 'in-progress'].includes(lead.status))
+      .filter((lead) => ACCEPTED_JOB_STATUSES.includes(lead.status))
       .reduce((sum, lead) => sum + (lead.estimatedValue || 0), 0);
 
     const recentRequests = leads.slice(0, 7).map((lead) => ({
@@ -249,6 +256,11 @@ router.get('/pro', async (req, res) => {
       service: lead.service,
       status: lead.status
     }));
+
+    const subscriptionStatus = pro.subscriptionStatus
+      || (pro.subscriptionActive ? 'active' : null)
+      || pro.subscriptionType
+      || 'inactive';
 
     return res.json({
       user: {
@@ -260,7 +272,7 @@ router.get('/pro', async (req, res) => {
         newLeads,
         acceptedJobs,
         pendingQuotes,
-        subscriptionStatus: pro.subscriptionStatus || (pro.subscriptionActive ? 'active' : 'inactive') || pro.subscriptionType || 'inactive',
+        subscriptionStatus,
         checkrStatus: pro.backgroundCheckStatus || pro.verificationStatus || 'pending',
         smsEnabled: !!(pro.notificationSettings?.sms && pro.smsConsent),
         estimatedEarnings
@@ -269,7 +281,7 @@ router.get('/pro', async (req, res) => {
       recentRequests,
       billing: {
         stripeCustomerId: pro.stripeCustomerId || '',
-        subscriptionStatus: pro.subscriptionStatus || '',
+        subscriptionStatus,
         currentPeriodEnd: pro.subscriptionEndDate || ''
       }
     });

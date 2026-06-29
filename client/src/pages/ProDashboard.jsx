@@ -11,10 +11,11 @@ import LoadingState from '../components/dashboard/LoadingState';
 import ErrorState from '../components/dashboard/ErrorState';
 import WeeklyBarChart from '../components/dashboard/WeeklyBarChart';
 import CopyLinkCard from '../components/dashboard/CopyLinkCard';
+import { formatUsdCents } from '../lib/format';
 import '../styles/dashboard.css';
 
 function toMoney(value) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format((value || 0) / 100);
+  return formatUsdCents(value);
 }
 
 export default function ProDashboard() {
