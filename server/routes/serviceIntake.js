@@ -9,6 +9,7 @@ const { normalizeE164, isUSPhoneNumber } = require('../utils/twilio');
 const { sendOwnerNotification } = require('../utils/smsSender');
 const { routeLead } = require('../services/leadAssignmentService');
 const { getPriorityConfig, getOwnerPhone } = require('../config/priorityRouting');
+const { HOMEOWNER_REQUEST_PRICE, HOMEOWNER_REQUEST_PRICE_CENTS } = require('../config/pricing');
 
 /**
  * Validate E.164 phone format
@@ -123,8 +124,8 @@ router.post('/payment-intent', async (req, res) => {
       customer: customer.id,
       payment_method_types: ['card'],
       metadata: {
-        type: 'service-visit-authorization',
-        visit_fee: '150',
+        type: 'homeowner-request-fee',
+        request_fee: String(HOMEOWNER_REQUEST_PRICE), // 49.99
         email: email,
         source: 'fixlo-service-intake',
         timestamp: new Date().toISOString()
@@ -214,11 +215,11 @@ router.post('/submit', upload.array('photos', 5), async (req, res) => {
       });
     }
 
-    // Validate Charlotte, NC area
-    if (!city || !state || state.toUpperCase() !== 'NC' || !city.toLowerCase().includes('charlotte')) {
+    // Validate city and state are present (service is nationwide)
+    if (!city || !state) {
       return res.status(400).json({
         success: false,
-        message: 'Service is only available in Charlotte, NC area'
+        message: 'City and state are required'
       });
     }
 

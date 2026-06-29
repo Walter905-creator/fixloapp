@@ -238,8 +238,8 @@ export function generateCompetitorFAQ(competitorId) {
       answer: `Fixlo differentiates itself through pro-friendly pricing (no expensive per-lead fees), rigorous background verification for all professionals, and a modern technology platform. While ${competitor.name} ${competitor.weaknesses[0]?.toLowerCase()}, Fixlo focuses on creating value for both homeowners and professionals through transparent pricing and quality assurance.`
     },
     {
-      question: `Is Fixlo free for homeowners?`,
-      answer: `Yes, Fixlo is completely free for homeowners. There are no membership fees, no hidden charges, and no service fees when you book professionals through our platform. Homeowners can browse, compare, and connect with verified professionals at no cost.`
+      question: `How much does Fixlo cost for homeowners?`,
+      answer: `Homeowners pay a fixed $49.99 nationwide matching fee to submit a service request and get connected with trusted local professionals. This one-time fee applies to all cities, all states, and all services. No membership fees, no hidden charges — just $49.99 to get matched.`
     },
     {
       question: `Does Fixlo do background checks on professionals?`,

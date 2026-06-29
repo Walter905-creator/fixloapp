@@ -180,7 +180,7 @@ function PaymentForm({ formData, onSuccess, onError }) {
         onClick={handleAuthorizeAndSubmit}
         className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {isProcessing ? 'Authorizing...' : 'Authorize Payment & Submit Request'}
+        {isProcessing ? 'Processing...' : 'Pay $49.99 & Submit Request'}
       </button>
     </div>
   );
@@ -549,13 +549,17 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
       case 6:
         return (
           <div className="space-y-4">
-            <h3 className="text-xl font-bold text-slate-900">Service Visit & Estimate</h3>
+            <h3 className="text-xl font-bold text-slate-900">Matching Fee & Terms</h3>
             <div className="bg-slate-50 p-6 rounded-lg space-y-3 text-slate-800">
               <p className="font-semibold text-lg">Please review and accept:</p>
               <ul className="space-y-2 text-sm">
                 <li className="flex items-start">
                   <span className="font-semibold mr-2">•</span>
-                  <span><strong>Professional on-site evaluation:</strong> $150 flat fee</span>
+                  <span><strong>Nationwide matching fee:</strong> $49.99 one-time</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="font-semibold mr-2">•</span>
+                  <span>Get matched with trusted local professionals for only $49.99.</span>
                 </li>
                 <li className="flex items-start">
                   <span className="font-semibold mr-2">•</span>
@@ -580,7 +584,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
                 className="mt-1 h-5 w-5 text-brand border-slate-300 rounded focus:ring-brand"
               />
               <span className="text-slate-700">
-                I understand and agree to the $150 service visit fee.
+                I understand and agree to the $49.99 nationwide matching fee.
               </span>
             </label>
             {errors.termsAccepted && <p className="text-red-600 text-sm">{errors.termsAccepted}</p>}
@@ -646,7 +650,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
               <h3 className="text-2xl font-bold text-slate-900">Request Submitted Successfully 🎉</h3>
               <div className="bg-green-50 p-4 rounded-lg space-y-2 text-sm text-slate-800">
                 <p className="font-semibold text-green-800">✓ Service request created</p>
-                <p className="font-semibold text-green-800">✓ Visit fee authorized (card not charged)</p>
+                <p className="font-semibold text-green-800">✓ $49.99 matching fee authorized</p>
               </div>
               <p className="text-slate-600">
                 We've notified a verified Fixlo Pro in your area.
@@ -666,13 +670,13 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
 
         return (
           <div className="space-y-4">
-            <h3 className="text-xl font-bold text-slate-900">Payment Authorization</h3>
+            <h3 className="text-xl font-bold text-slate-900">Payment — $49.99 Matching Fee</h3>
             <div className="bg-blue-50 p-4 rounded-lg space-y-2 text-sm text-slate-800">
-              <p className="font-semibold">Important:</p>
+              <p className="font-semibold">How it works:</p>
               <ul className="space-y-1 ml-4">
-                <li>• Your card will <strong>not be charged now</strong></li>
-                <li>• The $150 visit fee is authorized only and will be <strong>waived if you approve the job</strong></li>
-                <li>• Final charges are calculated after work is completed</li>
+                <li>• A one-time <strong>$49.99 nationwide matching fee</strong> is charged now</li>
+                <li>• Get matched with trusted local professionals for only $49.99</li>
+                <li>• Professionals will contact you to discuss the job and pricing</li>
               </ul>
             </div>
             

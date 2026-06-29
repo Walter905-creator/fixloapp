@@ -10,10 +10,10 @@ const { isUSPhoneNumber } = require('../utils/twilio');
 const { sendOwnerNotification, sendHomeownerConfirmation, sendProLeadAlert } = require('../utils/smsSender');
 const { routeLead } = require('../services/leadAssignmentService');
 const { getPriorityConfig, getOwnerPhone } = require('../config/priorityRouting');
+const { HOMEOWNER_REQUEST_PRICE_CENTS } = require('../config/pricing');
 
-// Constants
-const VISIT_FEE_AMOUNT = parseInt(process.env.VISIT_FEE_AMOUNT || '150', 10);
-const VISIT_FEE_AMOUNT_CENTS = VISIT_FEE_AMOUNT * 100;
+// Constants — $49.99 fixed nationwide homeowner request fee
+const HOMEOWNER_REQUEST_AMOUNT_CENTS = HOMEOWNER_REQUEST_PRICE_CENTS; // 4999
 
 // ---------- Helpers ----------
 
@@ -221,16 +221,17 @@ router.post('/', async (req, res) => {
       stripeCustomerId = customer.id;
 
       const intent = await stripe.paymentIntents.create({
-        amount: VISIT_FEE_AMOUNT_CENTS,
+        amount: HOMEOWNER_REQUEST_AMOUNT_CENTS, // $49.99 fixed nationwide fee
         currency: 'usd',
         customer: customer.id,
-        capture_method: 'manual',
+        capture_method: 'automatic', // $49.99 matching fee — charged immediately, non-refundable upfront fee for being matched with professionals
         payment_method_types: ['card'],
         metadata: {
           requestId,
           serviceType,
           city,
-          state
+          state,
+          fee_type: 'homeowner_request'
         }
       });
 

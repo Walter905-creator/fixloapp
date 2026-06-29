@@ -2,19 +2,30 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 /**
- * HomePricingBlock - Displays Fixlo Pro static pricing on homepage
+ * HomePricingBlock - Displays Fixlo pricing for homeowners and professionals
  */
 export default function HomePricingBlock() {
   const navigate = useNavigate();
 
   return (
     <div className="card p-8 bg-gradient-to-br from-emerald-50 to-blue-50 border-2 border-emerald-200">
-      <div className="max-w-2xl mx-auto text-center">
+      <div className="max-w-3xl mx-auto text-center">
         <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-6">
-          Choose the Fixlo plan that fits how you want to win leads.
+          Simple, transparent pricing.
         </h2>
 
-        <div className="grid gap-4 md:grid-cols-2 text-left">
+        <div className="grid gap-4 md:grid-cols-3 text-left">
+          <div className="rounded-2xl border-2 border-emerald-400 bg-white p-6 shadow-sm">
+            <p className="text-sm font-semibold text-emerald-600">Homeowners</p>
+            <p className="mt-2 text-3xl font-extrabold text-slate-900">$49.99<span className="text-base font-medium"> one-time</span></p>
+            <p className="mt-3 text-slate-700">Get matched with trusted local professionals for only $49.99. Nationwide — all cities, all services.</p>
+            <button
+              onClick={() => navigate('/services')}
+              className="mt-5 inline-flex items-center justify-center rounded-lg bg-emerald-600 px-6 py-3 font-semibold text-white hover:bg-emerald-700 transition-colors"
+            >
+              Request Service
+            </button>
+          </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <p className="text-sm font-semibold text-slate-500">Fixlo Pro</p>
             <p className="mt-2 text-3xl font-extrabold text-slate-900">$59.99<span className="text-base font-medium">/month</span></p>

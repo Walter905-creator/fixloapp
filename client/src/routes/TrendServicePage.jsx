@@ -60,11 +60,11 @@ function generateFAQ({ trend, service, city, isSpanish }) {
     },
     {
       question: `How much does ${serviceName} cost in ${cityName}?`,
-      answer: `Pricing varies based on the specific work needed. Request free quotes from multiple verified ${serviceName.toLowerCase()} professionals in ${cityName} to compare rates and find the best value for your ${trendName.toLowerCase()} project.`
+      answer: `Pricing varies based on the specific work needed. Submit a request and get matched with verified ${serviceName.toLowerCase()} professionals in ${cityName} for a one-time $49.99 matching fee. Compare rates from multiple pros to find the best value for your project.`
     },
     {
-      question: `Is Fixlo free for homeowners in ${cityName}?`,
-      answer: `Yes, Fixlo is completely free for homeowners. There are no membership fees, no hidden charges, and no service fees when you book professionals in ${cityName}.`
+      question: `How does Fixlo pricing work for homeowners in ${cityName}?`,
+      answer: `Homeowners pay a fixed $49.99 nationwide matching fee to submit a service request and get connected with trusted local professionals. This fee applies to all services in ${cityName} and across the United States — no hidden charges, no surprises.`
     }
   ];
 
@@ -275,13 +275,13 @@ export default function TrendServicePage() {
             Ready to Book {trendName} {serviceName} in {cityName}?
           </h2>
           <p className="mb-4 text-slate-100">
-            Connect with verified professionals in minutes. Free for homeowners.
+            Connect with verified professionals in minutes for only $49.99.
           </p>
           <Link 
             to={`/services/${serviceSlug}/${citySlug}`}
             className="inline-block px-6 py-3 bg-white text-brand font-semibold rounded-lg hover:bg-slate-100 transition"
           >
-            Get Free Quotes
+            Get Matched — $49.99
           </Link>
         </div>
 
