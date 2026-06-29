@@ -7,10 +7,13 @@ const RecruiterCommission = require('../models/RecruiterCommission');
 const Pro = require('../models/Pro');
 const LeadAssignment = require('../models/LeadAssignment');
 const JobRequest = require('../models/JobRequest');
+const { requireDatabase } = require('../config/database');
 
 const TOTAL_COMMISSION_STATUSES = ['pending', 'held', 'approved', 'paid'];
 const PENDING_COMMISSION_STATUSES = ['pending', 'held'];
 const ACCEPTED_JOB_STATUSES = ['accepted', 'completed', 'in-progress'];
+
+router.use(requireDatabase);
 
 function normalizeId(value) {
   if (!value) return null;

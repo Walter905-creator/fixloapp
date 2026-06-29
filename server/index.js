@@ -965,33 +965,37 @@ async function start() {
   const PORT = process.env.PORT || 10000;
 
   try {
-    await connectDB();
+    const dbState = await connectDB();
 
-    // (Optional) Index optimization/cleanup
-    try {
-      await DatabaseOptimizer.ensureIndexes?.();
-      console.log("✅ DB indexes ensured");
-    } catch (e) {
-      console.warn("⚠️ DB optimizer skipped:", e?.message || e);
-    }
+    if (dbState?.connected) {
+      // (Optional) Index optimization/cleanup
+      try {
+        await DatabaseOptimizer.ensureIndexes?.();
+        console.log("✅ DB indexes ensured");
+      } catch (e) {
+        console.warn("⚠️ DB optimizer skipped:", e?.message || e);
+      }
 
-    // Initialize Walter Pro user
-    try {
-      const { initializeWalterPro } = require('./scripts/initWalterPro');
-      await initializeWalterPro();
-    } catch (e) {
-      console.warn("⚠️ Walter Pro initialization skipped:", e?.message || e);
-    }
+      // Initialize Walter Pro user
+      try {
+        const { initializeWalterPro } = require('./scripts/initWalterPro');
+        await initializeWalterPro();
+      } catch (e) {
+        console.warn("⚠️ Walter Pro initialization skipped:", e?.message || e);
+      }
 
-    // Start scheduled tasks for operational safeguards
-    // IMPORTANT: Only start after successful DB connection
-    try {
-      const { startScheduledTasks, startRecruiterScheduledTasks } = require('./services/scheduledTasks');
-      startScheduledTasks();
-      startRecruiterScheduledTasks();
-      console.log('✅ Scheduled tasks started');
-    } catch (e) {
-      console.warn("⚠️ Scheduled tasks initialization skipped:", e?.message || e);
+      // Start scheduled tasks for operational safeguards
+      // IMPORTANT: Only start after successful DB connection
+      try {
+        const { startScheduledTasks, startRecruiterScheduledTasks } = require('./services/scheduledTasks');
+        startScheduledTasks();
+        startRecruiterScheduledTasks();
+        console.log('✅ Scheduled tasks started');
+      } catch (e) {
+        console.warn("⚠️ Scheduled tasks initialization skipped:", e?.message || e);
+      }
+    } else {
+      console.warn('⚠️ Database unavailable at boot. Starting API without database-backed features.');
     }
 
     // Initialize Social Media Manager

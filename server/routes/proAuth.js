@@ -3,12 +3,15 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { sign } = require('../utils/jwt');
 const Pro = require('../models/Pro');
+const { requireDatabase } = require('../config/database');
 const { sendSms } = require('../utils/twilio');
 const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
 
 // Admin owner email (Walter Arevalo) - should be set via environment variable
 const OWNER_EMAIL = process.env.OWNER_EMAIL || 'pro4u.improvements@gmail.com';
 const OWNER_USER_ID = process.env.OWNER_USER_ID; // Optional: match by user ID as well
+
+router.use(requireDatabase);
 
 // Pro login endpoint - uses phone number
 router.post('/login', async (req, res) => {
