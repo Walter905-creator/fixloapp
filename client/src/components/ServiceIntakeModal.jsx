@@ -549,7 +549,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
       case 6:
         return (
           <div className="space-y-4">
-            <h3 className="text-xl font-bold text-slate-900">Matching Fee &amp; Terms</h3>
+            <h3 className="text-xl font-bold text-slate-900">Matching Fee & Terms</h3>
             <div className="bg-slate-50 p-6 rounded-lg space-y-3 text-slate-800">
               <p className="font-semibold text-lg">Please review and accept:</p>
               <ul className="space-y-2 text-sm">

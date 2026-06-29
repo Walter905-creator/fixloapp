@@ -224,7 +224,7 @@ router.post('/', async (req, res) => {
         amount: HOMEOWNER_REQUEST_AMOUNT_CENTS, // $49.99 fixed nationwide fee
         currency: 'usd',
         customer: customer.id,
-        capture_method: 'automatic', // charge immediately as matching fee
+        capture_method: 'automatic', // $49.99 matching fee — charged immediately, non-refundable upfront fee for being matched with professionals
         payment_method_types: ['card'],
         metadata: {
           requestId,

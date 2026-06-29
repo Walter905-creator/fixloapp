@@ -193,12 +193,9 @@ router.post('/homeowner-checkout', async (req, res) => {
       });
     }
 
-    const successUrl = process.env.CLIENT_URL
-      ? `${process.env.CLIENT_URL}/request-confirmed?session_id={CHECKOUT_SESSION_ID}`
-      : `https://fixloapp.com/request-confirmed?session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = process.env.CLIENT_URL
-      ? `${process.env.CLIENT_URL}/request-cancelled`
-      : `https://fixloapp.com/request-cancelled`;
+    const baseUrl = process.env.CLIENT_URL || 'https://fixloapp.com';
+    const successUrl = `${baseUrl}/request-confirmed?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${baseUrl}/request-cancelled`;
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
