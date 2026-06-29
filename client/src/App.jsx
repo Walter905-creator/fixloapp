@@ -61,6 +61,8 @@ import RecruiterSettingsPage from './routes/RecruiterSettingsPage.jsx';
 import AdminRecruitersPage from './routes/AdminRecruitersPage.jsx';
 import AdminCommissionsPage from './routes/AdminCommissionsPage.jsx';
 import AdminPayoutsPage from './routes/AdminPayoutsPage.jsx';
+import RecruiterDashboard from './pages/RecruiterDashboard.jsx';
+import ProDashboard from './pages/ProDashboard.jsx';
 export default function App(){
   return (<>
     <MetaPixelTracker />
@@ -108,6 +110,11 @@ export default function App(){
       <Route path="/pros/dashboard" element={
         <ProtectedRoute requiredRole="pro">
           <ProDashboardPage/>
+        </ProtectedRoute>
+      }/>
+      <Route path="/dashboard/pro" element={
+        <ProtectedRoute requiredRole="pro">
+          <ProDashboard/>
         </ProtectedRoute>
       }/>
       <Route path="/pro/signup" element={<Navigate to="/pros/signup" replace/>}/>
@@ -179,6 +186,11 @@ export default function App(){
       <Route path="/recruiter/dashboard" element={
         <RecruiterProtectedRoute>
           <RecruiterDashboardPage/>
+        </RecruiterProtectedRoute>
+      }/>
+      <Route path="/dashboard/recruiter" element={
+        <RecruiterProtectedRoute>
+          <RecruiterDashboard/>
         </RecruiterProtectedRoute>
       }/>
       <Route path="/recruiter/referrals" element={

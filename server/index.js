@@ -362,6 +362,7 @@ app.use("/api/pros", generalRateLimit, require("./routes/proRoutes")); // auth &
 
 app.use("/api/pro", generalRateLimit, require("./routes/proJobs")); // professional jobs
 app.use("/api/pro", authRateLimit, require("./routes/pro")); // SaaS Pro register/login/dashboard
+app.use("/api/dashboard", generalRateLimit, require("./routes/dashboard")); // recruiter/pro dashboard summaries
 app.use("/api/pro", generalRateLimit, require("./routes/proSetup")); // Pro subscription onboarding setup
 app.use("/pro", generalRateLimit, require("./routes/proSetup")); // GET /pro/setup-account/:token
 
