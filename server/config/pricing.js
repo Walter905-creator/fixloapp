@@ -3,8 +3,15 @@
  * Defines pricing strategies and conversion rates for different countries
  */
 
+// Homeowner request/matching fee — fixed nationwide
+const HOMEOWNER_REQUEST_PRICE = 49.99;
+const HOMEOWNER_REQUEST_PRICE_CENTS = 4999;
+
 // Base pricing in USD (US market)
 const BASE_PRICING = {
+  // Homeowner request / matching fee (one-time, nationwide)
+  homeownerRequest: HOMEOWNER_REQUEST_PRICE,
+
   // Backward-compatible alias for legacy early-access consumers
   proMonthlySubscriptionEarlyAccess: 59.99,
   
@@ -250,6 +257,8 @@ function formatPrice(amount, currency) {
 }
 
 module.exports = {
+  HOMEOWNER_REQUEST_PRICE,
+  HOMEOWNER_REQUEST_PRICE_CENTS,
   BASE_PRICING,
   CURRENCY_RATES,
   COUNTRY_PRICING_ADJUSTMENTS,

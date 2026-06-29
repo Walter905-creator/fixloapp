@@ -81,7 +81,7 @@ export default function ContactPage(){
               <div>
                 <h3 className="font-semibold text-slate-900 mb-2">How much does it cost to use Fixlo?</h3>
                 <p className="text-sm text-slate-700">
-                  For homeowners, Fixlo is completely free to use. You only pay the professional directly for their services. For professionals, we offer a flat monthly subscription with no per-lead fees.
+                  Homeowners pay a fixed $49.99 nationwide matching fee to submit a service request and get connected with trusted local professionals. For professionals, we offer a flat monthly subscription with no per-lead fees.
                 </p>
               </div>
               

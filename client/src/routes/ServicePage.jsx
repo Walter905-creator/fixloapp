@@ -278,12 +278,11 @@ export default function ServicePage({ legacy = false }){
           <p className="text-slate-700 mt-6">
             {IS_HOLIDAY_SEASON ? (
               <>
-                <strong>Get your home ready for the holidays!</strong> Fill out the form below to receive quotes from trusted {serviceName.toLowerCase()} professionals in {cityName}. 
-                Our service is free for homeowners, and there's no obligation to hire. 
+                <strong>Get your home ready for the holidays!</strong> Fill out the form below to get matched with trusted {serviceName.toLowerCase()} professionals in {cityName} for only $49.99.
                 <span className="italic text-slate-600"> ¡Haz que tu casa esté lista para Navidad – reserva ahora!</span>
               </>
             ) : (
-              <>Ready to get started? Fill out the form below to receive quotes from trusted {serviceName.toLowerCase()} professionals in {cityName}. Our service is free for homeowners, and there's no obligation to hire.</>
+              <>Ready to get started? Fill out the form below to get matched with trusted {serviceName.toLowerCase()} professionals in {cityName}. A one-time $49.99 matching fee applies — no hidden costs, no surprises.</>
             )}
           </p>
         </div>
