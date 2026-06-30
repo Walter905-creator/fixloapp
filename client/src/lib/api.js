@@ -46,4 +46,8 @@ export function fetchProDashboard(options = {}) {
   return requestDashboard('/api/dashboard/pro', 'pro', options);
 }
 
+export function fetchOwnerDashboard(options = {}) {
+  return requestDashboard('/api/dashboard/owner', 'recruiter', options);
+}
+
 export { API_BASE };

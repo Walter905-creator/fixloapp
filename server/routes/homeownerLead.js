@@ -4,6 +4,7 @@ const Pro = require('../models/Pro');
 const JobRequest = require('../models/JobRequest');
 const { geocodeAddress } = require('../utils/geocode');
 const { routeLead } = require('../services/leadAssignmentService');
+const { sendOwnerAlert } = require('../utils/sendOwnerAlert');
 
 // Optional: Twilio SMS
 let twilioClient = null;
@@ -70,6 +71,18 @@ router.post('/', async (req, res) => {
         console.error('❌ Homeowner lead routing failed:', routingError.message);
       }
     }
+
+    // Fire-and-forget owner SMS alert — must not block lead submission or throw
+    sendOwnerAlert(
+      'new_lead',
+      {
+        service: trade,
+        location: formatted || address,
+        name: name,
+        phone: phone
+      },
+      savedLead ? `new_lead:${savedLead._id}` : undefined
+    ).catch((err) => console.warn('[OwnerAlert] Unexpected error:', err.message));
 
     // 4) Return immediately so UI can show confirmation
     return res.json({
