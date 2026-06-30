@@ -70,9 +70,12 @@ const ADMIN_TEMPLATES = {
  * @param {object} data       Template variables
  */
 async function sendRecruiterSms(recruiter, eventType, data = {}) {
-  if (!recruiter?.phone) return { disabled: true, reason: 'No phone number' };
+  if (!recruiter?.phoneNumber) return { disabled: true, reason: 'No phone number' };
 
-  // Check preferences
+  // Require explicit SMS opt-in
+  if (!recruiter.smsOptIn) return { disabled: true, reason: 'SMS opt-in not granted' };
+
+  // Check per-event preferences (fine-grained opt-out)
   const prefs = recruiter.smsNotifications || {};
   const prefMap = {
     new_referral: 'referrals',
@@ -99,11 +102,11 @@ async function sendRecruiterSms(recruiter, eventType, data = {}) {
   const message = templateFn(data);
 
   try {
-    const result = await sendSms(recruiter.phone, message);
+    const result = await sendSms(recruiter.phoneNumber, message);
     console.log(`📱 [RecruiterSMS] Sent "${eventType}" to recruiter ${recruiter._id}`);
     return result;
   } catch (err) {
-    console.error(`❌ [RecruiterSMS] Failed to send "${eventType}" to ${recruiter.phone}:`, err.message);
+    console.error(`❌ [RecruiterSMS] Failed to send "${eventType}" to ${recruiter.phoneNumber}:`, err.message);
     return { error: err.message };
   }
 }
@@ -146,8 +149,9 @@ async function sendWeeklySmsToAllRecruiters() {
 
   const recruiters = await RecruiterProfile.find({
     status: 'active',
-    phone: { $ne: '' },
-    'smsNotifications.weeklySummary': true
+    phoneNumber: { $exists: true, $ne: null },
+    smsOptIn: true,
+    'smsNotifications.weeklySummary': { $ne: false }
   });
 
   const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);

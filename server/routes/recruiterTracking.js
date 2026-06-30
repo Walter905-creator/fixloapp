@@ -117,7 +117,7 @@ router.post('/track-pro-signup', async (req, res) => {
 
     // SMS to recruiter
     try {
-      if (recruiter.phone && recruiter.smsNotifications?.referrals !== false) {
+      if (recruiter.phoneNumber && recruiter.smsOptIn) {
         await sendRecruiterSms(recruiter, 'new_referral', {});
       }
     } catch (smsErr) {

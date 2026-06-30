@@ -9,7 +9,8 @@ export default function RecruiterSignupPage() {
   const [searchParams] = useSearchParams();
   const { login, isAuthenticated } = useRecruiterAuth();
 
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
+  const [form, setForm] = useState({ name: '', email: '', phoneNumber: '', password: '', confirmPassword: '' });
+  const [smsOptIn, setSmsOptIn] = useState(false);
   const [refCode, setRefCode] = useState('');
   const [refName, setRefName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -44,6 +45,12 @@ export default function RecruiterSignupPage() {
       setError('Passwords do not match');
       return;
     }
+    // Basic US phone validation
+    const digitsOnly = form.phoneNumber.replace(/\D/g, '');
+    if (digitsOnly.length < 10 || digitsOnly.length > 11) {
+      setError('Please enter a valid US phone number');
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE}/api/recruiter-auth/signup`, {
@@ -52,7 +59,8 @@ export default function RecruiterSignupPage() {
         body: JSON.stringify({
           name: form.name,
           email: form.email,
-          phone: form.phone,
+          phoneNumber: form.phoneNumber,
+          smsOptIn,
           password: form.password,
           refCode: refCode || undefined
         })
@@ -104,10 +112,11 @@ export default function RecruiterSignupPage() {
                   placeholder="you@example.com" />
               </div>
               <div>
-                <label className="block text-blue-100 text-sm font-medium mb-1">Phone (optional)</label>
-                <input name="phone" type="tel" value={form.phone} onChange={handleChange}
+                <label className="block text-blue-100 text-sm font-medium mb-1">Phone Number <span className="text-red-400">*</span></label>
+                <input name="phoneNumber" type="tel" value={form.phoneNumber} onChange={handleChange} required
                   className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2.5 text-white placeholder-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                   placeholder="+1 (555) 000-0000" />
+                <p className="text-blue-300/60 text-xs mt-1">Required for SMS notifications</p>
               </div>
               <div>
                 <label className="block text-blue-100 text-sm font-medium mb-1">Password</label>
@@ -120,6 +129,20 @@ export default function RecruiterSignupPage() {
                 <input name="confirmPassword" type="password" value={form.confirmPassword} onChange={handleChange} required
                   className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2.5 text-white placeholder-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                   placeholder="Repeat password" />
+              </div>
+
+              <div className="bg-white/5 border border-white/10 rounded-lg p-3">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={smsOptIn}
+                    onChange={e => setSmsOptIn(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-white/30 bg-white/10 accent-blue-500 cursor-pointer flex-shrink-0"
+                  />
+                  <span className="text-blue-200 text-xs leading-relaxed">
+                    I agree to receive SMS notifications regarding referrals, commissions, and account updates. Reply STOP to unsubscribe.
+                  </span>
+                </label>
               </div>
 
               <button type="submit" disabled={loading}
