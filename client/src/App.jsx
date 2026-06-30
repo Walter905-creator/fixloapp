@@ -63,6 +63,14 @@ import AdminCommissionsPage from './routes/AdminCommissionsPage.jsx';
 import AdminPayoutsPage from './routes/AdminPayoutsPage.jsx';
 import RecruiterDashboard from './pages/RecruiterDashboard.jsx';
 import ProDashboard from './pages/ProDashboard.jsx';
+// Auth pages
+import HomeownerLogin from './pages/auth/HomeownerLogin.jsx';
+import ProLogin from './pages/auth/ProLogin.jsx';
+import RecruiterLogin from './pages/auth/RecruiterLogin.jsx';
+import HomeownerSignup from './pages/auth/HomeownerSignup.jsx';
+import ProSignup from './pages/auth/ProSignup.jsx';
+import RecruiterSignup from './pages/auth/RecruiterSignup.jsx';
+import ForgotPassword from './pages/auth/ForgotPassword.jsx';
 export default function App(){
   return (<>
     <MetaPixelTracker />
@@ -235,6 +243,19 @@ export default function App(){
       <Route path="/success" element={<Success/>}/>
       <Route path="/about" element={<AboutPage/>}/>
       <Route path="/about-walter-arevalo" element={<AboutWalterArevaloPage/>}/>
+      
+      {/* Unified auth routes */}
+      <Route path="/login/homeowner" element={<HomeownerLogin/>}/>
+      <Route path="/login/pro" element={<ProLogin/>}/>
+      <Route path="/login/recruiter" element={<RecruiterLogin/>}/>
+      <Route path="/signup/homeowner" element={<HomeownerSignup/>}/>
+      <Route path="/signup/pro" element={<ProSignup/>}/>
+      <Route path="/signup/recruiter" element={<RecruiterSignup/>}/>
+      <Route path="/forgot-password" element={<ForgotPassword/>}/>
+      
+      {/* Homeowner dashboard */}
+      <Route path="/dashboard/homeowner" element={<CustomerPortalPage/>}/>
+      
       <Route path="*" element={<Navigate to="/" replace/>}/>
     </Routes>
     <footer className="border-t border-slate-200 mt-8 bg-white">

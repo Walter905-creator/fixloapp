@@ -1,9 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 const { sign } = require('../utils/jwt');
 const Pro = require("../models/Pro");
+const Homeowner = require("../models/Homeowner");
+const RecruiterProfile = require("../models/RecruiterProfile");
 const mongoose = require("mongoose");
+const { requireDatabase } = require('../config/database');
+const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@fixloapp.com';
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH; // store hash, not raw
@@ -321,6 +326,313 @@ router.delete('/account/:userId', async (req, res) => {
       error: 'Failed to delete account. Please try again or contact support.' 
     });
   }
+});
+
+// ── Homeowner Login ───────────────────────────────────────────────────────────
+router.post('/login/homeowner', requireDatabase, async (req, res) => {
+  const { email, password } = req.body || {};
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required' });
+  }
+  try {
+    const homeowner = await Homeowner.findOne({ email: email.toLowerCase().trim() });
+    if (!homeowner) return res.status(401).json({ error: 'Invalid credentials' });
+    const ok = await bcrypt.compare(password, homeowner.password);
+    if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
+    const token = sign({ role: 'homeowner', id: homeowner._id, email: homeowner.email });
+    return res.json({
+      token,
+      homeowner: {
+        id: homeowner._id,
+        name: homeowner.name,
+        email: homeowner.email,
+        phone: homeowner.phone
+      }
+    });
+  } catch (err) {
+    console.error('Homeowner login error:', err);
+    return res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ── Pro Login (unified endpoint) ──────────────────────────────────────────────
+router.post('/login/pro', requireDatabase, async (req, res) => {
+  const { phone, password } = req.body || {};
+  if (!phone || !password) {
+    return res.status(400).json({ error: 'Phone number and password are required' });
+  }
+  try {
+    const normResult = normalizePhoneToE164(phone);
+    if (!normResult.success) {
+      return res.status(400).json({ error: 'Invalid phone number format' });
+    }
+    const pro = await Pro.findOne({ phone: normResult.phone });
+    if (!pro) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!pro.password) {
+      return res.status(403).json({ error: 'Password not set. Please reset your password.', requiresPasswordReset: true });
+    }
+    const ok = await bcrypt.compare(password, pro.password);
+    if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
+    const OWNER_EMAIL = process.env.OWNER_EMAIL || 'pro4u.improvements@gmail.com';
+    const isOwner = pro.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
+    const token = sign({ role: pro.role || 'pro', id: pro._id, phone: pro.phone, isAdmin: isOwner });
+    return res.json({
+      token,
+      pro: {
+        id: pro._id,
+        name: pro.name,
+        trade: pro.trade,
+        email: pro.email,
+        phone: pro.phone,
+        isAdmin: isOwner
+      }
+    });
+  } catch (err) {
+    console.error('Pro login error:', err);
+    return res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ── Recruiter Login (unified endpoint) ────────────────────────────────────────
+router.post('/login/recruiter', requireDatabase, async (req, res) => {
+  const { email, password } = req.body || {};
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required' });
+  }
+  try {
+    const recruiter = await RecruiterProfile.findOne({ email: email.toLowerCase().trim() });
+    if (!recruiter) return res.status(401).json({ error: 'Invalid credentials' });
+    if (recruiter.status === 'suspended') {
+      return res.status(403).json({ error: 'Account suspended. Contact support.' });
+    }
+    const ok = await bcrypt.compare(password, recruiter.password);
+    if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
+    const token = sign({ role: 'recruiter', id: recruiter._id, email: recruiter.email });
+    return res.json({
+      token,
+      recruiter: {
+        id: recruiter._id,
+        name: recruiter.name,
+        email: recruiter.email,
+        recruiterCode: recruiter.recruiterCode,
+        recruiterLink: recruiter.recruiterLink,
+        proReferralLink: recruiter.proReferralLink || recruiter.recruiterLink,
+        recruiterReferralLink: recruiter.recruiterReferralLink || recruiter.recruiterRecruiterLink
+      }
+    });
+  } catch (err) {
+    console.error('Recruiter login error:', err);
+    return res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ── Homeowner Signup ──────────────────────────────────────────────────────────
+router.post('/signup/homeowner', requireDatabase, async (req, res) => {
+  const { name, email, phone, password, confirmPassword, smsOptIn } = req.body || {};
+  if (!name || !email || !password) {
+    return res.status(400).json({ error: 'Name, email, and password are required' });
+  }
+  if (password !== confirmPassword) {
+    return res.status(400).json({ error: 'Passwords do not match' });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  }
+  try {
+    const existing = await Homeowner.findOne({ email: email.toLowerCase().trim() });
+    if (existing) {
+      return res.status(409).json({ error: 'An account with that email already exists' });
+    }
+    const hashed = await bcrypt.hash(password, 12);
+    const homeowner = await Homeowner.create({
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      phone: phone ? phone.trim() : undefined,
+      password: hashed,
+      smsOptIn: !!smsOptIn,
+      smsOptInDate: smsOptIn ? new Date() : null
+    });
+    const token = sign({ role: 'homeowner', id: homeowner._id, email: homeowner.email });
+    return res.status(201).json({
+      token,
+      homeowner: {
+        id: homeowner._id,
+        name: homeowner.name,
+        email: homeowner.email,
+        phone: homeowner.phone
+      }
+    });
+  } catch (err) {
+    console.error('Homeowner signup error:', err);
+    if (err.code === 11000) {
+      return res.status(409).json({ error: 'An account with that email already exists' });
+    }
+    return res.status(500).json({ error: 'Server error during signup' });
+  }
+});
+
+// ── Pro Signup (direct account creation) ─────────────────────────────────────
+router.post('/signup/pro', requireDatabase, async (req, res) => {
+  const { name, email, phone, trade, location, password, confirmPassword, smsOptIn } = req.body || {};
+  if (!name || !email || !phone || !trade || !location || !password) {
+    return res.status(400).json({ error: 'All required fields must be provided' });
+  }
+  if (password !== confirmPassword) {
+    return res.status(400).json({ error: 'Passwords do not match' });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  }
+  try {
+    const normResult = normalizePhoneToE164(phone);
+    if (!normResult.success) {
+      return res.status(400).json({ error: 'Invalid phone number format. Please use a valid US phone number.' });
+    }
+    const existing = await Pro.findOne({
+      $or: [{ email: email.toLowerCase().trim() }, { phone: normResult.phone }]
+    });
+    if (existing) {
+      return res.status(409).json({ error: 'An account with that email or phone already exists' });
+    }
+    const allowedTrades = [
+      'plumbing', 'electrical', 'landscaping', 'cleaning', 'junk_removal',
+      'handyman', 'hvac', 'painting', 'roofing', 'flooring', 'carpentry', 'appliance_repair'
+    ];
+    const normalizedTrade = trade.toLowerCase().replace(/[^a-z]/g, '_');
+    if (!allowedTrades.includes(normalizedTrade)) {
+      return res.status(400).json({ error: 'Invalid trade specified' });
+    }
+    const hashed = await bcrypt.hash(password, 12);
+    const pro = await Pro.create({
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      phone: normResult.phone,
+      trade: normalizedTrade,
+      location: { type: 'Point', coordinates: [-74.006, 40.7128], address: location.trim() },
+      password: hashed,
+      smsConsent: !!smsOptIn,
+      isActive: false,
+      paymentStatus: 'pending'
+    });
+    const token = sign({ role: 'pro', id: pro._id, phone: pro.phone });
+    return res.status(201).json({
+      token,
+      pro: {
+        id: pro._id,
+        name: pro.name,
+        email: pro.email,
+        trade: pro.trade,
+        phone: pro.phone,
+        paymentStatus: pro.paymentStatus,
+        requiresSubscription: true
+      }
+    });
+  } catch (err) {
+    console.error('Pro signup error:', err);
+    if (err.code === 11000) {
+      return res.status(409).json({ error: 'An account with that email or phone already exists' });
+    }
+    return res.status(500).json({ error: 'Server error during signup' });
+  }
+});
+
+// ── Recruiter Signup (unified endpoint) ───────────────────────────────────────
+router.post('/signup/recruiter', requireDatabase, async (req, res) => {
+  const { name, email, phone, password, confirmPassword, smsOptIn } = req.body || {};
+  if (!name || !email || !phone || !password) {
+    return res.status(400).json({ error: 'Name, email, phone, and password are required' });
+  }
+  if (password !== confirmPassword) {
+    return res.status(400).json({ error: 'Passwords do not match' });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  }
+  try {
+    const existing = await RecruiterProfile.findOne({ email: email.toLowerCase().trim() });
+    if (existing) {
+      return res.status(409).json({ error: 'An account with that email already exists' });
+    }
+    const phoneResult = normalizePhoneToE164(phone);
+    if (!phoneResult.success) {
+      return res.status(400).json({ error: 'A valid US phone number is required' });
+    }
+    const hashed = await bcrypt.hash(password, 12);
+    const recruiterCode = await RecruiterProfile.generateUniqueCode();
+    const baseUrl = process.env.FRONTEND_URL || 'https://www.fixloapp.com';
+    const proReferralLink = `${baseUrl}/pros/signup?ref=${encodeURIComponent(recruiterCode)}`;
+    const recruiterReferralLink = `${baseUrl}/recruiter/signup?ref=${encodeURIComponent(recruiterCode)}`;
+    const recruiter = await RecruiterProfile.create({
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      phoneNumber: phoneResult.phone,
+      password: hashed,
+      smsOptIn: !!smsOptIn,
+      smsOptInDate: smsOptIn ? new Date() : null,
+      recruiterCode,
+      recruiterLink: proReferralLink,
+      recruiterRecruiterLink: recruiterReferralLink,
+      proReferralLink,
+      recruiterReferralLink,
+      signupIp: req.ip || ''
+    });
+    const token = sign({ role: 'recruiter', id: recruiter._id, email: recruiter.email });
+    return res.status(201).json({
+      token,
+      recruiter: {
+        id: recruiter._id,
+        name: recruiter.name,
+        email: recruiter.email,
+        recruiterCode: recruiter.recruiterCode,
+        recruiterLink: recruiter.recruiterLink,
+        proReferralLink: recruiter.proReferralLink,
+        recruiterReferralLink: recruiter.recruiterReferralLink
+      }
+    });
+  } catch (err) {
+    console.error('Recruiter signup error:', err);
+    if (err.code === 11000) {
+      return res.status(409).json({ error: 'An account with that email already exists' });
+    }
+    return res.status(500).json({ error: 'Server error during signup' });
+  }
+});
+
+// ── Forgot Password (unified, safe) ──────────────────────────────────────────
+router.post('/forgot-password', async (req, res) => {
+  // Always return a safe success message regardless of whether the email exists
+  // This prevents email enumeration attacks.
+  const { email } = req.body || {};
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
+  // Non-blocking: attempt to send reset instructions if email system is configured.
+  // If no email system is configured, silently succeed.
+  // The response is always the same to prevent email enumeration.
+  try {
+    if (mongoose.connection.readyState === 1) {
+      // Check for the account (homeowner or recruiter) but do not reveal result
+      const [homeowner, recruiter] = await Promise.allSettled([
+        Homeowner.findOne({ email: email.toLowerCase().trim() }),
+        RecruiterProfile.findOne({ email: email.toLowerCase().trim() })
+      ]);
+      // In the future, integrate an email service here to send a reset link.
+      // For now, log internally (never to client).
+      const found = (homeowner.value) || (recruiter.value);
+      if (found && process.env.NODE_ENV !== 'production') {
+        console.log(`🔑 Forgot-password requested for: ${email.toLowerCase()}`);
+      }
+    }
+  } catch (err) {
+    // Never fail — always return success to prevent enumeration
+    console.error('Forgot-password internal error:', err.message);
+  }
+
+  return res.json({
+    success: true,
+    message: 'If this account exists, password reset instructions will be sent.'
+  });
 });
 
 module.exports = router;
