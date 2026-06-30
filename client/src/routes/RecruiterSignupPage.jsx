@@ -140,7 +140,7 @@ export default function RecruiterSignupPage() {
                     className="mt-0.5 h-4 w-4 rounded border-white/30 bg-white/10 accent-blue-500 cursor-pointer flex-shrink-0"
                   />
                   <span className="text-blue-200 text-xs leading-relaxed">
-                    I agree to receive SMS notifications regarding referrals, commissions, and account updates. Reply STOP to unsubscribe.
+                    I agree to receive SMS notifications from Fixlo regarding referrals, commissions, and account updates. Reply STOP to unsubscribe or HELP for assistance.
                   </span>
                 </label>
               </div>

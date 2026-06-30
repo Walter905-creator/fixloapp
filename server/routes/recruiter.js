@@ -79,7 +79,6 @@ router.get('/me', requireRecruiter, async (req, res) => {
         id: recruiter._id,
         name: recruiter.name,
         email: recruiter.email,
-        phone: recruiter.phoneNumber,
         phoneNumber: recruiter.phoneNumber,
         recruiterCode: recruiter.recruiterCode,
         recruiterLink: recruiter.recruiterLink,
@@ -416,7 +415,11 @@ router.patch('/settings', requireRecruiter, async (req, res) => {
     if (smsNotifications) update.smsNotifications = smsNotifications;
     if (smsOptIn !== undefined) {
       update.smsOptIn = !!smsOptIn;
-      if (smsOptIn && !update.smsOptInDate) update.smsOptInDate = new Date();
+      if (smsOptIn) {
+        // Only record opt-in date the first time they consent
+        const existing = await RecruiterProfile.findById(req.user.id).select('smsOptInDate').lean();
+        if (!existing?.smsOptInDate) update.smsOptInDate = new Date();
+      }
     }
     const newPhone = phoneNumber !== undefined ? phoneNumber : phone;
     if (newPhone !== undefined) {
