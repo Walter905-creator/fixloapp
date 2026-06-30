@@ -10,10 +10,34 @@ const mainItems = [
   { to: '/recruiter', label: 'For Recruiters' }
 ];
 
-const loginItems = [
-  { to: '/my-jobs', label: 'Homeowner Login' },
-  { to: '/pros/login', label: 'Pro Login' },
-  { to: '/recruiter/login', label: 'Recruiter Login' }
+const loginGroups = [
+  {
+    heading: 'Homeowner',
+    items: [
+      { to: '/login/homeowner', label: 'Login' },
+      { to: '/signup/homeowner', label: 'Create Account' }
+    ]
+  },
+  {
+    heading: 'Pro',
+    items: [
+      { to: '/login/pro', label: 'Login' },
+      { to: '/signup/pro', label: 'Create Account' }
+    ]
+  },
+  {
+    heading: 'Recruiter',
+    items: [
+      { to: '/login/recruiter', label: 'Login' },
+      { to: '/signup/recruiter', label: 'Create Account' }
+    ]
+  },
+  {
+    heading: 'Account Help',
+    items: [
+      { to: '/forgot-password', label: 'Forgot Password' }
+    ]
+  }
 ];
 
 export default function Navbar() {
@@ -69,11 +93,23 @@ export default function Navbar() {
               Login
             </button>
             <div className={`absolute right-0 top-full mt-1 w-52 rounded-xl border border-slate-200 bg-white shadow-lg transition ${loginOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-              {loginItems.map((item) => (
-                <Link key={item.to} to={item.to} onClick={() => setLoginOpen(false)} className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 first:rounded-t-xl last:rounded-b-xl">
-                  {item.label}
-                </Link>
+              {loginGroups.map((group, gi) => (
+                <div key={group.heading}>
+                  {gi > 0 && <div className="mx-3 border-t border-slate-100" />}
+                  <p className="px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">{group.heading}</p>
+                  {group.items.map((item) => (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      onClick={() => setLoginOpen(false)}
+                      className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
               ))}
+              <div className="h-1" />
             </div>
           </div>
 
@@ -99,7 +135,7 @@ export default function Navbar() {
       </div>
 
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 top-[57px] z-40 bg-white border-t border-slate-200">
+        <div className="md:hidden fixed inset-0 top-[57px] z-40 bg-white border-t border-slate-200 overflow-y-auto">
           <nav className="container-xl py-4 flex flex-col gap-2">
             {mainItems.map((item) => (
               <NavLink
@@ -113,11 +149,21 @@ export default function Navbar() {
             ))}
 
             <div className="pt-3 mt-2 border-t border-slate-200">
-              <p className="px-4 pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Login</p>
-              {loginItems.map((item) => (
-                <Link key={item.to} to={item.to} onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 rounded-lg text-base font-semibold text-slate-700 hover:bg-slate-50">
-                  {item.label}
-                </Link>
+              {loginGroups.map((group, gi) => (
+                <div key={group.heading}>
+                  {gi > 0 && <div className="mx-4 border-t border-slate-100 my-1" />}
+                  <p className="px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">{group.heading}</p>
+                  {group.items.map((item) => (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block px-4 py-3 rounded-lg text-base font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
               ))}
             </div>
 
