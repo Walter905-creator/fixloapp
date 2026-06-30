@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 const Pro = require('../models/Pro');
 const JobRequest = require('../models/JobRequest');
 const LeadAssignment = require('../models/LeadAssignment');
+const { requireDatabase } = require('../config/database');
 const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
 const { isUSPhoneNumber } = require('../utils/twilio');
 const { processExpiredPremiumAssignments } = require('../services/leadAssignmentService');
@@ -15,6 +16,8 @@ function requireJwtSecret() {
   if (!secret) throw new Error('JWT_SECRET is not set');
   return secret;
 }
+
+router.use(requireDatabase);
 
 // Auth middleware — verifies token and attaches req.user
 function requireAuth(req, res, next) {

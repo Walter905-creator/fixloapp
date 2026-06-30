@@ -13,8 +13,11 @@ const crypto = require('crypto');
 const { sign } = require('../utils/jwt');
 const RecruiterProfile = require('../models/RecruiterProfile');
 const RecruiterReferralCode = require('../models/RecruiterReferralCode');
+const { requireDatabase } = require('../config/database');
 const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
 const { sendSms } = require('../utils/twilio');
+
+router.use(requireDatabase);
 
 // ── Signup ───────────────────────────────────────────────────────────────────
 router.post('/signup', async (req, res) => {
