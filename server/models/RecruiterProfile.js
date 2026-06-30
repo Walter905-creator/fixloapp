@@ -18,7 +18,23 @@ const recruiterProfileSchema = new mongoose.Schema({
     trim: true,
     index: true
   },
-  phone: { type: String, trim: true, default: '' },
+  phoneNumber: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  smsOptIn: {
+    type: Boolean,
+    default: false
+  },
+  smsOptInDate: {
+    type: Date,
+    default: null
+  },
+  notificationPreference: {
+    type: String,
+    default: 'sms'
+  },
   password: { type: String, required: true, minlength: 6 },
 
   // Unique recruiter code (e.g. "ABC123")

@@ -22,10 +22,10 @@ router.use(requireDatabase);
 // ── Signup ───────────────────────────────────────────────────────────────────
 router.post('/signup', async (req, res) => {
   try {
-    const { name, email, phone, password, refCode } = req.body || {};
+    const { name, email, phoneNumber, password, refCode, smsOptIn } = req.body || {};
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ error: 'Name, email, and password are required' });
+    if (!name || !email || !phoneNumber || !password) {
+      return res.status(400).json({ error: 'Name, email, phone number, and password are required' });
     }
     if (password.length < 6) {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
@@ -68,12 +68,12 @@ router.post('/signup', async (req, res) => {
       }
     }
 
-    // Normalize phone (optional)
-    let normalizedPhone = '';
-    if (phone) {
-      const result = normalizePhoneToE164(phone);
-      if (result.success) normalizedPhone = result.phone;
+    // Normalize and validate phone (required, US)
+    const phoneResult = normalizePhoneToE164(phoneNumber);
+    if (!phoneResult.success) {
+      return res.status(400).json({ error: 'A valid US phone number is required for SMS notifications' });
     }
+    const normalizedPhone = phoneResult.phone;
 
     const hashed = await bcrypt.hash(password, 12);
     const recruiterCode = await RecruiterProfile.generateUniqueCode();
@@ -85,7 +85,9 @@ router.post('/signup', async (req, res) => {
     const recruiter = await RecruiterProfile.create({
       name: name.trim(),
       email: email.toLowerCase().trim(),
-      phone: normalizedPhone,
+      phoneNumber: normalizedPhone,
+      smsOptIn: !!smsOptIn,
+      smsOptInDate: smsOptIn ? new Date() : null,
       password: hashed,
       recruiterCode,
       recruiterLink: proReferralLink,
@@ -180,10 +182,10 @@ router.post('/request-password-reset', async (req, res) => {
     const baseUrl = process.env.FRONTEND_URL || 'https://fixloapp.com';
     const resetUrl = `${baseUrl}/recruiter/reset-password?token=${token}`;
 
-    if (recruiter.phone) {
+    if (recruiter.phoneNumber) {
       try {
         await sendSms(
-          recruiter.phone,
+          recruiter.phoneNumber,
           `Fixlo: Your password reset link: ${resetUrl} (expires in 1 hour). Reply STOP to opt out.`
         );
       } catch (smsErr) {

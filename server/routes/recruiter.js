@@ -79,7 +79,7 @@ router.get('/me', requireRecruiter, async (req, res) => {
         id: recruiter._id,
         name: recruiter.name,
         email: recruiter.email,
-        phone: recruiter.phone,
+        phoneNumber: recruiter.phoneNumber,
         recruiterCode: recruiter.recruiterCode,
         recruiterLink: recruiter.recruiterLink,
         recruiterRecruiterLink: recruiter.recruiterRecruiterLink,
@@ -89,6 +89,8 @@ router.get('/me', requireRecruiter, async (req, res) => {
         stripeConnectOnboarded: recruiter.stripeConnectOnboarded,
         payoutStatus: recruiter.payoutStatus,
         smsNotifications: recruiter.smsNotifications,
+        smsOptIn: recruiter.smsOptIn,
+        smsOptInDate: recruiter.smsOptInDate,
         status: recruiter.status,
         createdAt: recruiter.createdAt
       },
@@ -407,14 +409,23 @@ router.post('/stripe-connect/verify', requireRecruiter, async (req, res) => {
 // ── SMS Preferences ─────────────────────────────────────────────────────────────
 router.patch('/settings', requireRecruiter, async (req, res) => {
   try {
-    const { smsNotifications, phone } = req.body || {};
+    const { smsNotifications, phone, phoneNumber, smsOptIn } = req.body || {};
 
     const update = {};
     if (smsNotifications) update.smsNotifications = smsNotifications;
-    if (phone !== undefined) {
+    if (smsOptIn !== undefined) {
+      update.smsOptIn = !!smsOptIn;
+      if (smsOptIn) {
+        // Only record opt-in date the first time they consent
+        const existing = await RecruiterProfile.findById(req.user.id).select('smsOptInDate').lean();
+        if (!existing?.smsOptInDate) update.smsOptInDate = new Date();
+      }
+    }
+    const newPhone = phoneNumber !== undefined ? phoneNumber : phone;
+    if (newPhone !== undefined) {
       const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
-      const result = normalizePhoneToE164(phone);
-      if (result.success) update.phone = result.phone;
+      const result = normalizePhoneToE164(newPhone);
+      if (result.success) update.phoneNumber = result.phone;
       else return res.status(400).json({ error: 'Invalid phone number format' });
     }
 

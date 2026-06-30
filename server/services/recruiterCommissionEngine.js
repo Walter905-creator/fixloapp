@@ -75,7 +75,7 @@ async function generateCommissionsForFirstPayment(stripeSubscriptionId, amountCe
   // Send SMS to level-1 recruiter
   try {
     const recruiter = await RecruiterProfile.findById(referral.recruiterId);
-    if (recruiter?.phone) {
+    if (recruiter?.phoneNumber) {
       await sendRecruiterSms(recruiter, 'commission_generated', {
         amount: (l1Amount / 100).toFixed(2)
       });
@@ -108,7 +108,7 @@ async function generateCommissionsForFirstPayment(stripeSubscriptionId, amountCe
     // SMS for level-2 recruiter
     try {
       const parentRecruiter = await RecruiterProfile.findById(referral.parentRecruiterId);
-      if (parentRecruiter?.phone) {
+      if (parentRecruiter?.phoneNumber) {
         await sendRecruiterSms(parentRecruiter, 'commission_generated', {
           amount: (l2Amount / 100).toFixed(2)
         });
@@ -196,7 +196,7 @@ async function releaseApprovedCommissions() {
 
       // SMS notification
       try {
-        if (recruiter.phone && recruiter.smsNotifications?.commissions) {
+        if (recruiter.phoneNumber && recruiter.smsOptIn) {
           await sendRecruiterSms(recruiter, 'commission_approved', {
             amount: (totalAmount / 100).toFixed(2)
           });
@@ -282,7 +282,7 @@ async function processWeeklyPayouts() {
 
       // SMS notification
       try {
-        if (recruiter.phone && recruiter.smsNotifications?.payouts) {
+        if (recruiter.phoneNumber && recruiter.smsOptIn) {
           await sendRecruiterSms(recruiter, 'payout_sent', {
             amount: (totalCents / 100).toFixed(2)
           });

@@ -39,7 +39,7 @@ export default function RecruiterSettingsPage() {
       if (data.ok) {
         setProfile(data.recruiter);
         setSms(data.recruiter.smsNotifications || sms);
-        setPhone(data.recruiter.phone || '');
+        setPhone(data.recruiter.phoneNumber || '');
       }
     } finally { setLoading(false); }
   };
@@ -50,7 +50,7 @@ export default function RecruiterSettingsPage() {
     try {
       const res = await authFetch(`${API_BASE}/api/recruiter/settings`, {
         method: 'PATCH',
-        body: JSON.stringify({ smsNotifications: sms, phone })
+        body: JSON.stringify({ smsNotifications: sms, phoneNumber: phone })
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Failed to save'); return; }
