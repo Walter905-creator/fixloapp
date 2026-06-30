@@ -16,6 +16,7 @@ const RecruiterReferralCode = require('../models/RecruiterReferralCode');
 const { requireDatabase } = require('../config/database');
 const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
 const { sendSms } = require('../utils/twilio');
+const { sendOwnerAlert } = require('../utils/sendOwnerAlert');
 
 router.use(requireDatabase);
 
@@ -99,6 +100,17 @@ router.post('/signup', async (req, res) => {
     });
 
     const token = sign({ role: 'recruiter', id: recruiter._id, email: recruiter.email });
+
+    // Fire-and-forget owner SMS alert — must not block signup or throw
+    sendOwnerAlert(
+      'recruiter_signup',
+      {
+        name: recruiter.name,
+        phone: recruiter.phone || 'N/A',
+        source: refCode ? `ref:${refCode.trim().toUpperCase()}` : 'direct'
+      },
+      `recruiter_signup:${recruiter._id}`
+    ).catch((err) => console.warn('[OwnerAlert] Unexpected error:', err.message));
 
     return res.status(201).json({
       token,

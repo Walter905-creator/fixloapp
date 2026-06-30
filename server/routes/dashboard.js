@@ -4,9 +4,11 @@ const mongoose = require('mongoose');
 const RecruiterProfile = require('../models/RecruiterProfile');
 const RecruiterReferral = require('../models/RecruiterReferral');
 const RecruiterCommission = require('../models/RecruiterCommission');
+const RecruiterPayout = require('../models/RecruiterPayout');
 const Pro = require('../models/Pro');
 const LeadAssignment = require('../models/LeadAssignment');
 const JobRequest = require('../models/JobRequest');
+const SmsNotification = require('../models/SmsNotification');
 const { requireDatabase } = require('../config/database');
 
 const TOTAL_COMMISSION_STATUSES = ['pending', 'held', 'approved', 'paid'];
@@ -291,6 +293,342 @@ router.get('/pro', async (req, res) => {
   } catch (error) {
     console.error('Dashboard pro error:', error);
     return res.status(500).json({ error: 'Failed to load pro dashboard' });
+  }
+});
+
+// ── Owner Executive Dashboard ──────────────────────────────────────────────────
+// GET /api/dashboard/owner
+// Access: authenticated recruiter whose email matches OWNER_EMAIL env var
+
+router.get('/owner', async (req, res) => {
+  try {
+    // Auth check
+    const auth = req.headers.authorization || '';
+    const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+    if (!token || !process.env.JWT_SECRET) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Owner-only gate: email must match OWNER_EMAIL env var
+    const ownerEmail = (process.env.OWNER_EMAIL || '').toLowerCase().trim();
+    const userEmail = (decoded.email || '').toLowerCase().trim();
+    if (!ownerEmail || userEmail !== ownerEmail) {
+      return res.status(403).json({ error: 'Owner access required' });
+    }
+
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfWeek = new Date(startOfToday);
+    startOfWeek.setDate(startOfToday.getDate() - 6);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+
+    // ── Referral / Recruiter Metrics ─────────────────────────────────────────────
+    const [
+      totalRecruiters,
+      weeklyReferrals,
+      monthlyReferrals,
+      lastMonthReferrals,
+      sourceAgg
+    ] = await Promise.all([
+      RecruiterProfile.countDocuments(),
+      RecruiterReferral.countDocuments({ createdAt: { $gte: startOfWeek } }),
+      RecruiterReferral.countDocuments({ createdAt: { $gte: startOfMonth } }),
+      RecruiterReferral.countDocuments({ createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth } }),
+      RecruiterReferral.aggregate([
+        { $group: { _id: { $ifNull: ['$referralSource', 'unknown'] }, count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 10 }
+      ])
+    ]);
+
+    // Conversion metrics
+    const [convertedTotal, convertedMonth] = await Promise.all([
+      RecruiterReferral.countDocuments({ status: 'active' }),
+      RecruiterReferral.countDocuments({ status: 'active', createdAt: { $gte: startOfMonth } })
+    ]);
+    const totalReferralsAll = await RecruiterReferral.countDocuments();
+    const conversionRate = totalReferralsAll > 0
+      ? Number(((convertedTotal / totalReferralsAll) * 100).toFixed(2))
+      : 0;
+
+    // ── Commission Analytics ──────────────────────────────────────────────────────
+    const [commissionAgg, monthCommissionAgg, payoutAgg] = await Promise.all([
+      RecruiterCommission.aggregate([
+        { $group: { _id: '$status', total: { $sum: '$amount' }, count: { $sum: 1 } } }
+      ]),
+      RecruiterCommission.aggregate([
+        { $match: { createdAt: { $gte: startOfMonth } } },
+        { $group: { _id: '$status', total: { $sum: '$amount' }, count: { $sum: 1 } } }
+      ]),
+      RecruiterPayout.aggregate([
+        { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } }
+      ])
+    ]);
+
+    const commissionByStatus = commissionAgg.reduce((acc, item) => {
+      if (item._id) acc[item._id] = { total: item.total || 0, count: item.count || 0 };
+      return acc;
+    }, {});
+    const monthCommissionByStatus = monthCommissionAgg.reduce((acc, item) => {
+      if (item._id) acc[item._id] = { total: item.total || 0, count: item.count || 0 };
+      return acc;
+    }, {});
+
+    // ── Pro Onboarding & Subscription ────────────────────────────────────────────
+    const [
+      totalPros,
+      activePros,
+      prosThisWeek,
+      prosThisMonth,
+      prosLastMonth,
+      subTypeAgg,
+      checkrAgg
+    ] = await Promise.all([
+      Pro.countDocuments(),
+      Pro.countDocuments({ subscriptionActive: true }),
+      Pro.countDocuments({ createdAt: { $gte: startOfWeek } }),
+      Pro.countDocuments({ createdAt: { $gte: startOfMonth } }),
+      Pro.countDocuments({ createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth } }),
+      Pro.aggregate([
+        { $group: { _id: { $ifNull: ['$subscriptionType', 'none'] }, count: { $sum: 1 } } }
+      ]),
+      Pro.aggregate([
+        { $group: { _id: { $ifNull: ['$backgroundCheckStatus', 'pending'] }, count: { $sum: 1 } } }
+      ])
+    ]);
+
+    const proGrowthMoM = prosLastMonth > 0
+      ? Number((((prosThisMonth - prosLastMonth) / prosLastMonth) * 100).toFixed(1))
+      : null;
+
+    const subscriptionBreakdown = subTypeAgg.reduce((acc, item) => {
+      if (item._id) acc[item._id] = item.count;
+      return acc;
+    }, {});
+
+    const checkrBreakdown = checkrAgg.reduce((acc, item) => {
+      if (item._id) acc[item._id] = item.count;
+      return acc;
+    }, {});
+
+    // Revenue projection: active subscribers × monthly price
+    const monthlyPriceCents = 5999; // $59.99
+    const projectedMonthlyRevenueCents = activePros * monthlyPriceCents;
+
+    // ── Service Request Statistics ────────────────────────────────────────────────
+    const [
+      totalLeads,
+      leadsThisWeek,
+      leadsThisMonth,
+      leadsLastMonth,
+      leadsToday,
+      leadStatusAgg,
+      leadStateAgg
+    ] = await Promise.all([
+      JobRequest.countDocuments(),
+      JobRequest.countDocuments({ createdAt: { $gte: startOfWeek } }),
+      JobRequest.countDocuments({ createdAt: { $gte: startOfMonth } }),
+      JobRequest.countDocuments({ createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth } }),
+      JobRequest.countDocuments({ createdAt: { $gte: startOfToday } }),
+      JobRequest.aggregate([
+        { $group: { _id: { $ifNull: ['$status', 'pending'] }, count: { $sum: 1 } } }
+      ]),
+      // US map: referral distribution by state
+      JobRequest.aggregate([
+        { $match: { state: { $exists: true, $ne: null, $ne: '' } } },
+        { $group: { _id: '$state', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 50 }
+      ])
+    ]);
+
+    const leadGrowthMoM = leadsLastMonth > 0
+      ? Number((((leadsThisMonth - leadsLastMonth) / leadsLastMonth) * 100).toFixed(1))
+      : null;
+
+    const leadStatusBreakdown = leadStatusAgg.reduce((acc, item) => {
+      if (item._id) acc[item._id] = item.count;
+      return acc;
+    }, {});
+
+    const stateDistribution = leadStateAgg.map((s) => ({ state: s._id, count: s.count }));
+
+    // ── Twilio SMS Dashboard ──────────────────────────────────────────────────────
+    let smsSentTotal = 0;
+    let smsFailedTotal = 0;
+    let smsSentThisMonth = 0;
+    let recentSmsCount = 0;
+    let twilioConfigured = false;
+
+    try {
+      twilioConfigured = !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN);
+
+      const [smsAllAgg, smsMonthAgg, smsRecentAgg] = await Promise.all([
+        SmsNotification.aggregate([
+          { $group: { _id: '$status', count: { $sum: 1 } } }
+        ]),
+        SmsNotification.aggregate([
+          { $match: { createdAt: { $gte: startOfMonth } } },
+          { $group: { _id: null, count: { $sum: 1 } } }
+        ]),
+        SmsNotification.countDocuments({ createdAt: { $gte: startOfWeek } })
+      ]);
+
+      smsAllAgg.forEach((s) => {
+        if (s._id === 'sent') smsSentTotal = s.count;
+        if (s._id === 'failed') smsFailedTotal = s.count;
+      });
+      smsSentThisMonth = smsMonthAgg[0]?.count || 0;
+      recentSmsCount = smsRecentAgg || 0;
+    } catch {
+      // SmsNotification model may not exist in all environments
+    }
+
+    // ── Owner Alert Logs ──────────────────────────────────────────────────────────
+    let ownerAlertsEnabled = false;
+    let lastAlertSentAt = null;
+    let recentAlerts = [];
+
+    try {
+      const OwnerAlertLog = require('../models/OwnerAlertLog');
+      ownerAlertsEnabled = !!(
+        process.env.OWNER_PHONE_NUMBER &&
+        process.env.TWILIO_ACCOUNT_SID &&
+        (process.env.NODE_ENV === 'production' || process.env.ENABLE_OWNER_SMS_ALERTS === 'true')
+      );
+
+      const [lastAlert, alertHistory] = await Promise.all([
+        OwnerAlertLog.findOne({ status: 'sent' }).sort({ createdAt: -1 }).select('createdAt type').lean(),
+        OwnerAlertLog.find().sort({ createdAt: -1 }).limit(20).select('type status message createdAt twilioMessageSid errorMessage').lean()
+      ]);
+
+      lastAlertSentAt = lastAlert?.createdAt || null;
+      recentAlerts = alertHistory.map((a) => ({
+        type: a.type,
+        status: a.status,
+        message: a.message,
+        sentAt: a.createdAt,
+        twilioMessageSid: a.twilioMessageSid,
+        errorMessage: a.errorMessage
+      }));
+    } catch {
+      // OwnerAlertLog may not be initialized yet
+    }
+
+    // ── Weekly bar chart data (last 7 days) ───────────────────────────────────────
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const day = new Date(now);
+      day.setDate(now.getDate() - i);
+      day.setHours(0, 0, 0, 0);
+      days.push(day);
+    }
+
+    const dailyMetrics = await Promise.all(
+      days.map(async (day) => {
+        const next = new Date(day);
+        next.setDate(day.getDate() + 1);
+        const [leads, pros, referrals] = await Promise.all([
+          JobRequest.countDocuments({ createdAt: { $gte: day, $lt: next } }),
+          Pro.countDocuments({ createdAt: { $gte: day, $lt: next } }),
+          RecruiterReferral.countDocuments({ createdAt: { $gte: day, $lt: next } })
+        ]);
+        return {
+          date: day.toISOString(),
+          label: day.toLocaleDateString('en-US', { weekday: 'short' }),
+          leads,
+          pros,
+          referrals
+        };
+      })
+    );
+
+    // ── Referral source breakdown ─────────────────────────────────────────────────
+    const totalSourceCount = sourceAgg.reduce((s, i) => s + i.count, 0) || 1;
+    const referralSources = sourceAgg.map((s) => ({
+      source: s._id,
+      count: s.count,
+      percentage: Number(((s.count / totalSourceCount) * 100).toFixed(2))
+    }));
+
+    // ── Stripe subscription overview ──────────────────────────────────────────────
+    const stripeConfigured = !!(process.env.STRIPE_SECRET_KEY);
+
+    return res.json({
+      generatedAt: now.toISOString(),
+      referrals: {
+        total: totalReferralsAll,
+        weekly: weeklyReferrals,
+        monthly: monthlyReferrals,
+        lastMonth: lastMonthReferrals,
+        converted: convertedTotal,
+        convertedThisMonth: convertedMonth,
+        conversionRate,
+        sources: referralSources,
+        totalRecruiters
+      },
+      commissions: {
+        byStatus: commissionByStatus,
+        thisMonth: monthCommissionByStatus,
+        totalPaid: payoutAgg[0]?.total || 0,
+        totalPayouts: payoutAgg[0]?.count || 0
+      },
+      pros: {
+        total: totalPros,
+        active: activePros,
+        thisWeek: prosThisWeek,
+        thisMonth: prosThisMonth,
+        lastMonth: prosLastMonth,
+        growthMoM: proGrowthMoM,
+        subscriptionBreakdown,
+        checkrStatus: checkrBreakdown
+      },
+      leads: {
+        total: totalLeads,
+        today: leadsToday,
+        thisWeek: leadsThisWeek,
+        thisMonth: leadsThisMonth,
+        lastMonth: leadsLastMonth,
+        growthMoM: leadGrowthMoM,
+        statusBreakdown: leadStatusBreakdown,
+        stateDistribution
+      },
+      revenue: {
+        projectedMonthly: projectedMonthlyRevenueCents,
+        activeSubs: activePros,
+        monthlyPriceCents
+      },
+      sms: {
+        twilioConfigured,
+        sentTotal: smsSentTotal,
+        failedTotal: smsFailedTotal,
+        sentThisMonth: smsSentThisMonth,
+        sentThisWeek: recentSmsCount
+      },
+      ownerAlerts: {
+        enabled: ownerAlertsEnabled,
+        lastSentAt: lastAlertSentAt,
+        recentAlerts
+      },
+      stripe: {
+        configured: stripeConfigured
+      },
+      growth: {
+        daily: dailyMetrics
+      }
+    });
+  } catch (error) {
+    console.error('Dashboard owner error:', error);
+    return res.status(500).json({ error: 'Failed to load owner dashboard' });
   }
 });
 

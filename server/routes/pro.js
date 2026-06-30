@@ -10,6 +10,7 @@ const { requireDatabase } = require('../config/database');
 const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
 const { isUSPhoneNumber } = require('../utils/twilio');
 const { processExpiredPremiumAssignments } = require('../services/leadAssignmentService');
+const { sendOwnerAlert } = require('../utils/sendOwnerAlert');
 
 function requireJwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -117,6 +118,18 @@ router.post('/register', async (req, res) => {
       requireJwtSecret(),
       { expiresIn: '7d' }
     );
+
+    // Fire-and-forget owner SMS alert — must not block signup or throw
+    sendOwnerAlert(
+      'pro_signup',
+      {
+        name: pro.name,
+        trade: pro.trade,
+        location: 'United States',
+        phone: pro.phone
+      },
+      `pro_signup:${pro._id}`
+    ).catch((err) => console.warn('[OwnerAlert] Unexpected error:', err.message));
 
     return res.status(201).json({
       token,
