@@ -508,6 +508,8 @@ router.post('/signup/pro', requireDatabase, async (req, res) => {
       email: email.toLowerCase().trim(),
       phone: normResult.phone,
       trade: normalizedTrade,
+      // Coordinates default to NYC; a background job or profile update step should
+      // resolve the actual coordinates via the geocoding service once the pro is onboarded.
       location: { type: 'Point', coordinates: [-74.006, 40.7128], address: location.trim() },
       password: hashed,
       smsConsent: !!smsOptIn,
