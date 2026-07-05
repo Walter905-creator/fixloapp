@@ -160,65 +160,14 @@ router.post('/create-setup-intent', async (req, res) => {
   }
 });
 
-// Create Stripe Checkout session for $49.99 homeowner request fee (one-time, nationwide)
+// Homeowner quote requests are free — this endpoint is kept for backwards compatibility
+// but no longer creates a Stripe checkout session
 router.post('/homeowner-checkout', async (req, res) => {
-  try {
-    const { email, name, phone, serviceType, city, state, requestId } = req.body;
-
-    if (!email) {
-      return res.status(400).json({ success: false, message: 'Email is required' });
-    }
-
-    if (!stripe) {
-      return res.status(500).json({ success: false, message: 'Payment system not configured' });
-    }
-
-    const priceId = process.env.STRIPE_HOMEOWNER_REQUEST_PRICE_ID;
-    if (!priceId) {
-      console.error('❌ STRIPE_HOMEOWNER_REQUEST_PRICE_ID not configured');
-      return res.status(500).json({ success: false, message: 'Homeowner request payment not configured' });
-    }
-
-    // Create or retrieve Stripe customer
-    const customers = await stripe.customers.list({ email, limit: 1 });
-    let customer;
-    if (customers.data.length > 0) {
-      customer = customers.data[0];
-    } else {
-      customer = await stripe.customers.create({
-        email,
-        name,
-        phone,
-        metadata: { source: 'fixlo-homeowner-request' }
-      });
-    }
-
-    const baseUrl = process.env.CLIENT_URL || 'https://fixloapp.com';
-    const successUrl = `${baseUrl}/request-confirmed?session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = `${baseUrl}/request-cancelled`;
-
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      customer: customer.id,
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      metadata: {
-        fee_type: 'homeowner_request',
-        requestId: requestId || '',
-        serviceType: serviceType || '',
-        city: city || '',
-        state: state || ''
-      }
-    });
-
-    console.log(`✅ Homeowner checkout session created: ${session.id} for ${email}`);
-
-    res.json({ success: true, sessionId: session.id, url: session.url });
-  } catch (error) {
-    console.error('❌ Error creating homeowner checkout session:', error.message);
-    res.status(500).json({ success: false, message: 'Failed to create checkout session', error: error.message });
-  }
+  return res.json({
+    success: true,
+    free: true,
+    message: 'Homeowner quote requests are completely free. No payment required.'
+  });
 });
 
 // Create checkout session for subscription with 30-day free trial

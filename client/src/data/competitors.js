@@ -239,7 +239,7 @@ export function generateCompetitorFAQ(competitorId) {
     },
     {
       question: `How much does Fixlo cost for homeowners?`,
-      answer: `Homeowners pay a fixed $49.99 nationwide matching fee to submit a service request and get connected with trusted local professionals. This one-time fee applies to all cities, all states, and all services. No membership fees, no hidden charges — just $49.99 to get matched.`
+      answer: `Homeowner quote requests on Fixlo are completely free — no upfront fees, no membership fees, no hidden charges. Submit a free request and get connected with trusted local professionals. You only pay for the actual work once you've reviewed and accepted a quote.`
     },
     {
       question: `Does Fixlo do background checks on professionals?`,

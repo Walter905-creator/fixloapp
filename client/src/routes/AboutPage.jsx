@@ -46,8 +46,8 @@ export default function AboutPage() {
             <p className="text-slate-700">
               We connect you with verified, background-checked professionals for all your home service needs. 
               Whether you need emergency plumbing, electrical work, HVAC repair, cleaning, landscaping, or any 
-              other home service, Fixlo makes it easy to find qualified contractors in your area. For only $49.99, 
-              homeowners get matched with trusted local professionals nationwide.
+              other home service, Fixlo makes it easy to find qualified contractors in your area. Get a free quote 
+              from verified local professionals — no upfront fees, no obligations.
             </p>
           </div>
           
@@ -80,7 +80,7 @@ export default function AboutPage() {
             <div className="text-4xl mb-3">💰</div>
             <h3 className="text-lg font-semibold mb-2 text-emerald-700">Fair & Transparent</h3>
             <p className="text-sm text-slate-700">
-              No hidden fees. A fixed $49.99 matching fee for homeowners. One flat rate for professionals. We believe in honest, transparent pricing.
+            No hidden fees. Free quotes for homeowners. One flat rate for professionals. We believe in honest, transparent pricing.
             </p>
           </div>
           

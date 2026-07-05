@@ -96,7 +96,7 @@ export default function JobManagementPage() {
           <div className="mt-6 bg-slate-50 border border-slate-200 rounded-lg p-6">
             <h3 className="font-semibold text-slate-900 mb-3">Pricing Details</h3>
             <ul className="space-y-2 text-slate-700 text-sm">
-              <li>• <strong>Homeowner Matching Fee:</strong> $49.99 (one-time, charged at request)</li>
+              <li>• <strong>Homeowner Quote Request:</strong> Free — no upfront fees</li>
               <li>• <strong>Materials:</strong> Itemized and billed separately</li>
             </ul>
           </div>
