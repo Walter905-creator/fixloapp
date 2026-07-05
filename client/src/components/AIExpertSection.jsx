@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 /**
- * AIExpertSection - Professional, premium section for Fixlo AI Home Expert
+ * AIExpertSection - Professional, trusted section for Fixlo AI Home Expert
  * 
  * Clean, minimal SaaS design aesthetic (Stripe/Apple-like)
  * - Neutral color palette

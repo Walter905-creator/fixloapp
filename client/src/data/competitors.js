@@ -103,7 +103,7 @@ export const COMPETITORS = {
     category: 'cleaning-handyman',
     strengths: [
       'Focus on cleaning and handyman services',
-      'Online booking convenience',
+      'Simple online booking process',
       'Regular service scheduling'
     ],
     weaknesses: [

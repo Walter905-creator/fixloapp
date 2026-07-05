@@ -26,6 +26,7 @@ export default function ProDashboardPage(){
   const todayDateLabel = React.useMemo(() => new Date().toDateString(), []);
   
   const displayName = user?.name || user?.phone || 'Pro User';
+  const isVerifiedPlusPlan = proData?.subscriptionPlan === 'premium';
   
   function getToken() {
     return localStorage.getItem('fixlo_token') || '';
@@ -229,8 +230,8 @@ export default function ProDashboardPage(){
             </span>
           )}
           {proData?.subscriptionPlan && (
-            <span className={`ml-3 inline-block px-2 py-0.5 rounded text-xs font-semibold ${proData.subscriptionPlan === 'premium' ? 'bg-slate-900 text-white' : 'bg-blue-100 text-blue-800'}`}>
-              {proData.subscriptionPlan === 'premium' ? 'Premium' : 'Pro'}
+            <span className={`ml-3 inline-block px-2 py-0.5 rounded text-xs font-semibold ${isVerifiedPlusPlan ? 'bg-slate-900 text-white' : 'bg-blue-100 text-blue-800'}`}>
+              {isVerifiedPlusPlan ? 'Verified Plus' : 'Pro'}
             </span>
           )}
         </p>
@@ -346,7 +347,7 @@ export default function ProDashboardPage(){
           <h3 className="font-semibold text-slate-900 mb-3">One-click actions</h3>
           <div className="flex flex-wrap gap-2">
             <button className="btn-primary text-sm px-3 py-2" disabled>
-              {proData?.subscriptionPlan === 'premium' ? 'Premium Lead Ready' : 'Lead Actions Below'}
+              {isVerifiedPlusPlan ? 'Verified Lead Ready' : 'Lead Actions Below'}
             </button>
             {quickContactPhone ? (
               <>

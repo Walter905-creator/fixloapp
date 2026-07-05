@@ -44,7 +44,7 @@ export default function PricingPage(){
   }, []);
 
   const getProPrice = () => pricingStatus?.proPriceFormatted || pricing?.prices?.proMonthlySubscription?.formatted || '$59.99';
-  const getPremiumPrice = () => pricingStatus?.premiumPriceFormatted || pricing?.prices?.premiumMonthlySubscription?.formatted || '$179.99';
+  const getVerifiedPlusPrice = () => pricingStatus?.premiumPriceFormatted || pricing?.prices?.premiumMonthlySubscription?.formatted || '$179.99';
 
   const getCountryName = () => {
     return countryInfo?.countryName || 'your country';
@@ -91,15 +91,15 @@ export default function PricingPage(){
               <a href="/pros/signup" className="btn-primary mt-5 inline-block">Join Fixlo Pro</a>
             </div>
             <div className="card p-5 border-2 border-slate-900 bg-slate-900 text-white">
-              <h3 className="font-semibold text-lg">Fixlo Premium</h3>
-              <strong className="mt-2 block text-3xl">{getPremiumPrice()}<span className="text-base font-medium">/month</span></strong>
+              <h3 className="font-semibold text-lg">Fixlo Verified Plus</h3>
+              <strong className="mt-2 block text-3xl">{getVerifiedPlusPrice()}<span className="text-base font-medium">/month</span></strong>
               <p className="text-sm text-slate-200 mt-3">
                 Get priority access to new leads before regular pros. One exclusive lead at a time with a 1-hour response window.
               </p>
               <ul className="mt-4 space-y-2 text-sm text-slate-100">
-                <li>✓ Premium pros get first access</li>
+                <li>✓ Verified Plus pros get first access</li>
                 <li>✓ 1-hour exclusive response window</li>
-                <li>✓ Falls back to Fixlo Pro after premium expires</li>
+                <li>✓ Falls back to Fixlo Pro after Verified Plus access expires</li>
               </ul>
               <a href="/pros/signup" className="mt-5 inline-block rounded-lg bg-white px-4 py-2 font-semibold text-slate-900">Get Priority Leads</a>
             </div>
@@ -125,7 +125,7 @@ export default function PricingPage(){
           <li>✓ Profile listing in search results</li>
           <li>✓ Customer review system</li>
           <li>✓ Mobile app access</li>
-          <li>✓ Plan-based lead routing with premium priority options</li>
+          <li>✓ Plan-based lead routing with verified priority options</li>
         </ul>
       </div>
 

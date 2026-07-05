@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
  * 
  * Promotes the new commission-based referral program at /earn.
  * Detects authentication state and shows appropriate CTA.
- * Updated with professional, premium styling.
+ * Updated with professional, trusted styling.
  */
 export default function HomeReferralSection() {
   const navigate = useNavigate();

@@ -7,7 +7,7 @@ export default function ProLandingPage() {
     <>
       <HelmetSEO
         title="For Pros | Fixlo"
-        description="Join Fixlo Pro or Fixlo Premium and get matched with nearby homeowner leads."
+        description="Join Fixlo Pro or Fixlo Verified Plus and get matched with nearby homeowner leads."
         canonicalPathname="/pros"
       />
 
@@ -42,14 +42,14 @@ export default function ProLandingPage() {
           </div>
 
           <div className="card p-6 border-slate-900 bg-slate-900 text-white">
-            <p className="text-sm font-semibold text-slate-300">Fixlo Premium</p>
+            <p className="text-sm font-semibold text-slate-300">Fixlo Verified Plus</p>
             <h2 className="text-3xl font-extrabold mt-2">$179.99/month</h2>
             <p className="mt-3 text-slate-100">
-              Premium leads are routed to you first with a 1-hour exclusive lead priority window.
+              Verified leads are routed to you first with a 1-hour exclusive lead priority window.
             </p>
             <ul className="mt-4 space-y-2 text-slate-100">
-              <li>• Premium 1-hour exclusive lead priority</li>
-              <li>• Premium-first lead routing</li>
+              <li>• Verified 1-hour exclusive lead priority</li>
+              <li>• Verified-first lead routing</li>
               <li>• Priority response opportunities</li>
             </ul>
             <Link to="/pros/signup" className="mt-5 inline-block rounded-lg bg-white px-4 py-2 font-semibold text-slate-900">Get Priority Leads</Link>

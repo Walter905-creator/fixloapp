@@ -1,9 +1,9 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-const PROBLEM_CATEGORIES = [
+const SERVICE_CATEGORIES = [
   { to: '/us/services/plumbing', title: 'Emergency Plumbing', icon: '🚨' },
-  { to: '/us/services/electrical', title: 'Electrical Problems', icon: '⚡' },
+  { to: '/us/services/electrical', title: 'Electrical Repairs', icon: '⚡' },
   { to: '/us/services/hvac', title: 'AC Repair', icon: '❄️' },
   { to: '/us/services/house-cleaning', title: 'House Cleaning', icon: '🧼' },
   { to: '/us/services/junk-removal', title: 'Junk Removal', icon: '🗑️' },
@@ -14,7 +14,7 @@ const PROBLEM_CATEGORIES = [
   { to: '/us/services/painting', title: 'Painting', icon: '🎨' },
 ];
 
-const QUICK_PROBLEMS = [
+const QUICK_SERVICE_NEEDS = [
   'My AC stopped working',
   'I have a water leak',
   'I need junk removed',
@@ -22,7 +22,7 @@ const QUICK_PROBLEMS = [
   'I need landscaping',
 ];
 
-const CONVENIENCE_FEATURES = [
+const EASY_EXPERIENCE_FEATURES = [
   'One-click service request flow',
   'Auto-detect location',
   'Photo upload',
@@ -48,10 +48,10 @@ export default function HomeownerExperienceSections() {
     <>
       <section className="py-12 md:py-16 bg-slate-50">
         <div className="container-xl">
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3 text-center">Problem-based service categories</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3 text-center">Home service categories</h2>
           <p className="text-center text-slate-600 mb-8 max-w-2xl mx-auto">Fast service, verified professionals, instant matching, and multiple categories in one place.</p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {PROBLEM_CATEGORIES.map((service) => (
+            {SERVICE_CATEGORIES.map((service) => (
               <Link key={service.title} to={service.to} className="card p-5 text-center hover:border-emerald-400 hover:shadow-md transition">
                 <div className="text-3xl mb-2" aria-hidden="true">{service.icon}</div>
                 <p className="font-semibold text-slate-900 text-sm">{service.title}</p>
@@ -63,11 +63,11 @@ export default function HomeownerExperienceSections() {
 
       <section className="py-12 bg-white">
         <div className="container-xl">
-          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-6 text-center">Pick your problem in one click</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-6 text-center">Pick your service need in one click</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            {QUICK_PROBLEMS.map((problem) => (
-              <button key={problem} onClick={() => navigate(`/request?problem=${encodeURIComponent(problem)}`)} className="card p-4 text-left hover:border-brand hover:shadow-md transition">
-                <span className="text-sm font-semibold text-slate-900">{problem}</span>
+            {QUICK_SERVICE_NEEDS.map((serviceNeed) => (
+              <button key={serviceNeed} onClick={() => navigate(`/request?service=${encodeURIComponent(serviceNeed)}`)} className="card p-4 text-left hover:border-brand hover:shadow-md transition">
+                <span className="text-sm font-semibold text-slate-900">{serviceNeed}</span>
               </button>
             ))}
           </div>
@@ -77,9 +77,9 @@ export default function HomeownerExperienceSections() {
       <section className="py-12 md:py-16 bg-slate-50">
         <div className="container-xl grid gap-8 lg:grid-cols-2">
           <div className="card p-6">
-            <h3 className="text-2xl font-bold text-slate-900 mb-4">Convenience that feels effortless</h3>
+            <h3 className="text-2xl font-bold text-slate-900 mb-4">Simple process that feels effortless</h3>
             <ul className="grid gap-2 text-sm text-slate-700">
-              {CONVENIENCE_FEATURES.map((item) => (
+              {EASY_EXPERIENCE_FEATURES.map((item) => (
                 <li key={item} className="flex items-start gap-2"><span className="text-emerald-600">✓</span><span>{item}</span></li>
               ))}
             </ul>
@@ -100,7 +100,7 @@ export default function HomeownerExperienceSections() {
 
       <section className="py-12 md:py-16 bg-white">
         <div className="container-xl">
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-8 text-center">Premium homeowner experience</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-8 text-center">Trusted homeowner experience</h2>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {[
               'Professional onboarding flow',
