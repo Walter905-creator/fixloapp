@@ -75,90 +75,14 @@ const upload = multer({
   }
 });
 
-// Create Stripe Payment Intent (authorization only)
+// Homeowner quote requests are free — no payment intent needed
+// This endpoint is retained for backwards compatibility but returns a no-op response
 router.post('/payment-intent', async (req, res) => {
-  try {
-    // Check database connection (needed for customer lookup)
-    if (mongoose.connection.readyState !== 1) {
-      console.warn('⚠️ Payment intent requested but database not connected - proceeding with Stripe only');
-    }
-    
-    const { email, name, phone } = req.body;
-
-    if (!email || !name) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email and name are required'
-      });
-    }
-
-    if (!stripe) {
-      return res.status(500).json({
-        success: false,
-        message: 'Payment system not configured'
-      });
-    }
-
-    // Create or get Stripe customer
-    const customers = await stripe.customers.list({
-      email: email,
-      limit: 1
-    });
-
-    let customer;
-    if (customers.data.length > 0) {
-      customer = customers.data[0];
-    } else {
-      customer = await stripe.customers.create({
-        email: email,
-        name: name,
-        phone: phone,
-        metadata: {
-          source: 'fixlo-service-intake'
-        }
-      });
-    }
-
-    // Create a Setup Intent to save payment method for later
-    const setupIntent = await stripe.setupIntents.create({
-      customer: customer.id,
-      payment_method_types: ['card'],
-      metadata: {
-        type: 'homeowner-request-fee',
-        request_fee: String(HOMEOWNER_REQUEST_PRICE), // 49.99
-        email: email,
-        source: 'fixlo-service-intake',
-        timestamp: new Date().toISOString()
-      }
-    });
-
-    // Audit log
-    console.log(`✅ Setup intent created: ${setupIntent.id} for customer ${customer.id}`);
-
-    res.json({
-      success: true,
-      clientSecret: setupIntent.client_secret,
-      customerId: customer.id
-    });
-
-  } catch (error) {
-    console.error('❌ Error creating payment intent:', error);
-    
-    // Enhanced error handling for 401 and authentication issues
-    if (error.statusCode === 401) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid Stripe API key. Ensure you are using the correct test mode key (sk_test_).',
-        error: error.message
-      });
-    }
-    
-    res.status(500).json({
-      success: false,
-      message: 'Error setting up payment authorization',
-      error: error.message
-    });
-  }
+  return res.json({
+    success: true,
+    free: true,
+    message: 'Homeowner quote requests are free. No payment required.'
+  });
 });
 
 // Submit service intake request

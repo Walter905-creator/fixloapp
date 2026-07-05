@@ -71,10 +71,10 @@ export default function PricingPage(){
           <div className="grid md:grid-cols-3 gap-4 mt-6">
             <div className="card p-5">
               <h3 className="font-semibold">Homeowners</h3>
-              <strong className="mt-2 block text-3xl">$49.99</strong>
-              <p className="text-sm text-slate-600 mt-1">one-time matching fee</p>
+              <strong className="mt-2 block text-3xl text-emerald-600">Free</strong>
+              <p className="text-sm text-slate-600 mt-1">free quote, no upfront fees</p>
               <p className="text-sm text-slate-500 mt-2">
-                Get matched with trusted local professionals for only $49.99. Nationwide — all cities, all services.
+                Get a free quote from verified local professionals. No upfront fees, no obligations. Nationwide — all cities, all services.
               </p>
             </div>
             <div className="card p-5 border-2 border-slate-200">

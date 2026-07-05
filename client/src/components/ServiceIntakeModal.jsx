@@ -1,16 +1,7 @@
 import React, { useState } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { STRIPE_PUBLISHABLE_KEY, API_BASE } from '../utils/config';
+import { API_BASE } from '../utils/config';
 import { normalizeUSPhone } from '../utils/phoneUtils';
 import { trackMetaPixelEvent } from '../utils/metaPixel';
-
-// Initialize Stripe with validated key
-if (!STRIPE_PUBLISHABLE_KEY) {
-  console.warn('⚠️ STRIPE_PUBLISHABLE_KEY is not configured - payment features will be disabled');
-}
-
-const stripePromise = STRIPE_PUBLISHABLE_KEY ? loadStripe(STRIPE_PUBLISHABLE_KEY) : null;
 
 const API_URL = API_BASE;
 
@@ -32,160 +23,6 @@ const URGENCY_OPTIONS = [
   'Flexible'
 ];
 
-function PaymentForm({ formData, onSuccess, onError }) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  // Single handler for the two-phase submission flow
-  const handleAuthorizeAndSubmit = async () => {
-    if (!stripe || !elements) {
-      onError('Payment system not ready. Please try again.');
-      return;
-    }
-
-    setIsProcessing(true);
-
-    try {
-      // Normalize phone number to E.164 format before submission
-      const normalizedPhone = normalizeUSPhone(formData.phone);
-      
-      if (!normalizedPhone) {
-        onError('Please enter a valid U.S. phone number (10 digits).');
-        setIsProcessing(false);
-        return;
-      }
-
-      // PHASE 1: Create service request
-      const payload = {
-        serviceType: formData.serviceType === 'Other' ? formData.otherServiceType : formData.serviceType,
-        fullName: formData.name,
-        phone: normalizedPhone,
-        city: formData.city,
-        state: formData.state,
-        smsConsent: formData.smsConsent || false,
-        details: formData.description || ''
-      };
-
-      console.log('🚀 Creating service request:', payload);
-
-      const res = await fetch(`${API_URL}/api/requests`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(errorText || 'Failed to submit request');
-      }
-
-      const responseData = await res.json();
-      const { requestId, clientSecret } = responseData;
-
-      if (!requestId) {
-        throw new Error('Request was not created properly - missing request ID');
-      }
-
-      console.log('✅ Service request created:', requestId);
-
-      // Check if Stripe is configured and clientSecret was returned
-      if (!clientSecret) {
-        console.warn('⚠️ No clientSecret returned - Stripe may not be configured');
-        // Still consider this a success since the request was created
-        onSuccess({ requestId, skipPayment: true });
-        return;
-      }
-
-      // PHASE 2: Stripe authorization (ONLY after requestId exists)
-      console.log('💳 Authorizing payment for request:', requestId);
-
-      // Wrap Stripe confirmation in explicit try-catch
-      let paymentResult;
-      try {
-        paymentResult = await stripe.confirmCardPayment(clientSecret, {
-          payment_method: {
-            card: elements.getElement(CardElement),
-            billing_details: {
-              name: formData.name,
-              phone: formData.phone,
-              address: {
-                line1: formData.address,
-                city: formData.city,
-                state: formData.state,
-                postal_code: formData.zip
-              }
-            }
-          }
-        });
-      } catch (err) {
-        console.error('❌ Payment authorization exception:', err);
-        onError('Payment authorization failed. Please try again.');
-        setIsProcessing(false);
-        return;
-      }
-
-      // Handle Stripe result, not console noise
-      if (paymentResult.error) {
-        console.error('❌ Stripe authorization failed:', paymentResult.error.message);
-        onError(paymentResult.error.message);
-        setIsProcessing(false);
-        return;
-      }
-
-      // Validate payment intent status
-      if (paymentResult.paymentIntent?.status !== 'requires_capture' &&
-          paymentResult.paymentIntent?.status !== 'succeeded') {
-        console.error('❌ Unexpected payment status:', paymentResult.paymentIntent?.status);
-        onError('Payment could not be authorized.');
-        setIsProcessing(false);
-        return;
-      }
-
-      // Final success confirmation
-      console.log('✅ Request submitted and payment authorized');
-      console.log('✅ Payment Intent ID:', paymentResult.paymentIntent.id);
-      console.log('✅ Payment Intent Status:', paymentResult.paymentIntent.status);
-      onSuccess({ requestId, paymentIntentId: paymentResult.paymentIntent.id });
-
-    } catch (err) {
-      console.error('❌ Error in authorize and submit:', err);
-      onError(err.message || 'Failed to submit request');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="p-4 border border-slate-200 rounded-lg">
-        <CardElement
-          options={{
-            style: {
-              base: {
-                fontSize: '16px',
-                color: '#1e293b',
-                '::placeholder': {
-                  color: '#94a3b8',
-                },
-              },
-            },
-          }}
-        />
-      </div>
-      
-      <button
-        type="button"
-        disabled={!stripe || isProcessing}
-        onClick={handleAuthorizeAndSubmit}
-        className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {isProcessing ? 'Processing...' : 'Pay $49.99 & Submit Request'}
-      </button>
-    </div>
-  );
-}
-
 export default function ServiceIntakeModal({ open, onClose, defaultCity, defaultService, customHeading }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -201,15 +38,13 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
     name: '',
     phone: '',
     termsAccepted: false,
-    smsConsent: false,
-    stripeCustomerId: '',
-    stripePaymentMethodId: ''
+    smsConsent: false
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  const totalSteps = 8;
+  const totalSteps = 7;
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -253,7 +88,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
 
     if (step === 6) {
       if (!formData.termsAccepted) {
-        newErrors.termsAccepted = 'You must accept the pricing terms';
+        newErrors.termsAccepted = 'You must accept the terms to continue';
       }
     }
 
@@ -302,23 +137,60 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
     }));
   };
 
-  const handlePaymentSuccess = (paymentData) => {
-    // Success! Request was created and payment authorized
-    console.log('✅ Request submitted successfully:', paymentData);
-    
-    // Track Meta Pixel Lead event
-    trackMetaPixelEvent('Lead', {
-      content_name: 'Service Request',
-      content_category: 'Service Request Submission'
-    });
-    
-    setSubmitSuccess(true);
-    setCurrentStep(totalSteps);
-  };
+  const handleSubmitRequest = async () => {
+    // Free quote submission — no payment required
+    setIsSubmitting(true);
+    setErrors({});
 
-  const handlePaymentError = (error) => {
-    console.error('❌ Submission error:', error);
-    setErrors({ payment: error });
+    try {
+      const normalizedPhone = normalizeUSPhone(formData.phone);
+      if (!normalizedPhone) {
+        setErrors({ phone: 'Please enter a valid U.S. phone number (10 digits).' });
+        setIsSubmitting(false);
+        return;
+      }
+
+      const payload = {
+        serviceType: formData.serviceType === 'Other' ? formData.otherServiceType : formData.serviceType,
+        fullName: formData.name,
+        phone: normalizedPhone,
+        city: formData.city,
+        state: formData.state,
+        smsConsent: formData.smsConsent || false,
+        details: formData.description || ''
+      };
+
+      const res = await fetch(`${API_URL}/api/requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || 'Failed to submit request');
+      }
+
+      const responseData = await res.json();
+      if (!responseData.requestId && !responseData.ok) {
+        throw new Error(responseData.error || 'Request was not created properly');
+      }
+
+      // Track Meta Pixel Lead event
+      trackMetaPixelEvent('Lead', {
+        content_name: 'Service Request',
+        content_category: 'Service Request Submission'
+      });
+
+      setSubmitSuccess(true);
+      setCurrentStep(totalSteps);
+
+    } catch (err) {
+      console.error('❌ Submission error:', err);
+      setErrors({ submit: err.message });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const submitForm = async (data) => {
@@ -339,8 +211,6 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
       submitData.append('phone', data.phone);
       submitData.append('termsAccepted', data.termsAccepted);
       submitData.append('smsConsent', data.smsConsent || false);
-      submitData.append('stripeCustomerId', data.stripeCustomerId);
-      submitData.append('stripePaymentMethodId', data.stripePaymentMethodId);
 
       // Add photos
       data.photos.forEach(photo => {
@@ -549,29 +419,29 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
       case 6:
         return (
           <div className="space-y-4">
-            <h3 className="text-xl font-bold text-slate-900">Matching Fee & Terms</h3>
-            <div className="bg-slate-50 p-6 rounded-lg space-y-3 text-slate-800">
-              <p className="font-semibold text-lg">Please review and accept:</p>
+            <h3 className="text-xl font-bold text-slate-900">Free Quote & Terms</h3>
+            <div className="bg-emerald-50 p-6 rounded-lg space-y-3 text-slate-800 border border-emerald-200">
+              <p className="font-semibold text-lg text-emerald-800">✓ Your quote request is completely free!</p>
               <ul className="space-y-2 text-sm">
                 <li className="flex items-start">
                   <span className="font-semibold mr-2">•</span>
-                  <span><strong>Nationwide matching fee:</strong> $49.99 one-time</span>
+                  <span><strong>No upfront fees</strong> — getting a quote costs nothing</span>
                 </li>
                 <li className="flex items-start">
                   <span className="font-semibold mr-2">•</span>
-                  <span>Get matched with trusted local professionals for only $49.99.</span>
+                  <span>Get matched with verified local professionals for free</span>
                 </li>
                 <li className="flex items-start">
                   <span className="font-semibold mr-2">•</span>
-                  <span>You will receive a detailed quote before any repair begins</span>
+                  <span>You will receive a detailed quote before any work begins</span>
                 </li>
                 <li className="flex items-start">
                   <span className="font-semibold mr-2">•</span>
-                  <span>No additional work will start without your approval</span>
+                  <span>No work will start without your approval</span>
                 </li>
                 <li className="flex items-start">
                   <span className="font-semibold mr-2">•</span>
-                  <span>Materials (if needed) will be itemized in the final invoice</span>
+                  <span>Materials (if needed) will be itemized in the final quote</span>
                 </li>
               </ul>
             </div>
@@ -584,7 +454,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
                 className="mt-1 h-5 w-5 text-brand border-slate-300 rounded focus:ring-brand"
               />
               <span className="text-slate-700">
-                I understand and agree to the $49.99 nationwide matching fee.
+                I understand and agree to the terms. I acknowledge that getting a free quote has no upfront fees or obligations.
               </span>
             </label>
             {errors.termsAccepted && <p className="text-red-600 text-sm">{errors.termsAccepted}</p>}
@@ -592,9 +462,42 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
         );
 
       case 7:
+        if (submitSuccess) {
+          return (
+            <div className="text-center space-y-4 py-8">
+              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-slate-900">Free Quote Request Submitted! 🎉</h3>
+              <div className="bg-green-50 p-4 rounded-lg space-y-2 text-sm text-slate-800">
+                <p className="font-semibold text-green-800">✓ Free quote request created</p>
+                <p className="font-semibold text-green-800">✓ Verified professionals notified</p>
+                <p className="text-green-700">No upfront fees charged</p>
+              </div>
+              <p className="text-slate-700 font-medium">
+                Your free quote request has been submitted successfully. A professional will contact you soon.
+              </p>
+              <p className="text-slate-700 font-medium">
+                📞 Expect a call or text shortly to discuss your project.
+              </p>
+              <button
+                onClick={onClose}
+                className="btn-primary mt-4"
+              >
+                Close
+              </button>
+            </div>
+          );
+        }
+
         return (
           <div className="space-y-4">
             <h3 className="text-xl font-bold text-slate-900">Contact Information</h3>
+            <div className="bg-emerald-50 p-3 rounded-lg text-sm text-emerald-800 border border-emerald-200">
+              <strong>Free Quote</strong> — No payment required to submit your request.
+            </div>
             <input
               type="text"
               placeholder="Full Name"
@@ -635,61 +538,21 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
                 </div>
               </label>
             </div>
-          </div>
-        );
 
-      case 8:
-        if (submitSuccess) {
-          return (
-            <div className="text-center space-y-4 py-8">
-              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h3 className="text-2xl font-bold text-slate-900">Request Submitted Successfully 🎉</h3>
-              <div className="bg-green-50 p-4 rounded-lg space-y-2 text-sm text-slate-800">
-                <p className="font-semibold text-green-800">✓ Service request created</p>
-                <p className="font-semibold text-green-800">✓ $49.99 matching fee authorized</p>
-              </div>
-              <p className="text-slate-600">
-                We've notified a verified Fixlo Pro in your area.
-              </p>
-              <p className="text-slate-700 font-medium">
-                📞 Expect a call or text shortly to confirm your estimate visit.
-              </p>
-              <button
-                onClick={onClose}
-                className="btn-primary mt-4"
-              >
-                Close
-              </button>
-            </div>
-          );
-        }
-
-        return (
-          <div className="space-y-4">
-            <h3 className="text-xl font-bold text-slate-900">Payment — $49.99 Matching Fee</h3>
-            <div className="bg-blue-50 p-4 rounded-lg space-y-2 text-sm text-slate-800">
-              <p className="font-semibold">How it works:</p>
-              <ul className="space-y-1 ml-4">
-                <li>• A one-time <strong>$49.99 nationwide matching fee</strong> is charged now</li>
-                <li>• Get matched with trusted local professionals for only $49.99</li>
-                <li>• Professionals will contact you to discuss the job and pricing</li>
-              </ul>
-            </div>
-            
-            <Elements stripe={stripePromise}>
-              <PaymentForm
-                formData={formData}
-                onSuccess={handlePaymentSuccess}
-                onError={handlePaymentError}
-              />
-            </Elements>
-            
-            {errors.payment && <p className="text-red-600 text-sm">{errors.payment}</p>}
             {errors.submit && <p className="text-red-600 text-sm">{errors.submit}</p>}
+
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={() => {
+                if (validateStep(7)) {
+                  handleSubmitRequest();
+                }
+              }}
+              className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? 'Submitting...' : 'Request Free Quote'}
+            </button>
           </div>
         );
 
@@ -756,7 +619,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
                 onClick={nextStep}
                 className="btn-primary"
               >
-                {currentStep === 7 ? 'Continue to Payment' : 'Next →'}
+                {'Next →'}
               </button>
             )}
           </div>

@@ -17,13 +17,13 @@ export default function HomePricingBlock() {
         <div className="grid gap-4 md:grid-cols-3 text-left">
           <div className="rounded-2xl border-2 border-emerald-400 bg-white p-6 shadow-sm">
             <p className="text-sm font-semibold text-emerald-600">Homeowners</p>
-            <p className="mt-2 text-3xl font-extrabold text-slate-900">$49.99<span className="text-base font-medium"> one-time</span></p>
-            <p className="mt-3 text-slate-700">Get matched with trusted local professionals for only $49.99. Nationwide — all cities, all services.</p>
+            <p className="mt-2 text-3xl font-extrabold text-slate-900">Free<span className="text-base font-medium"> quote</span></p>
+            <p className="mt-3 text-slate-700">Get a free quote from verified local professionals. No upfront fees, no obligations. Nationwide — all cities, all services.</p>
             <button
               onClick={() => navigate('/services')}
               className="mt-5 inline-flex items-center justify-center rounded-lg bg-emerald-600 px-6 py-3 font-semibold text-white hover:bg-emerald-700 transition-colors"
             >
-              Request Service
+              Get Free Quote
             </button>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

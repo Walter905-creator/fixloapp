@@ -12,8 +12,8 @@ const { routeLead } = require('../services/leadAssignmentService');
 const { getPriorityConfig, getOwnerPhone } = require('../config/priorityRouting');
 const { HOMEOWNER_REQUEST_PRICE_CENTS } = require('../config/pricing');
 
-// Constants — $49.99 fixed nationwide homeowner request fee
-const HOMEOWNER_REQUEST_AMOUNT_CENTS = HOMEOWNER_REQUEST_PRICE_CENTS; // 4999
+// Homeowner quote requests are free — no upfront charge
+const HOMEOWNER_REQUEST_AMOUNT_CENTS = HOMEOWNER_REQUEST_PRICE_CENTS; // 0
 
 // ---------- Helpers ----------
 
@@ -73,9 +73,7 @@ router.post('/', async (req, res) => {
       city,
       state,
       smsConsent,
-      details,
-      paymentProvider = 'stripe',
-      applePayToken
+      details
     } = req.body || {};
 
     // Normalize service field — accept trade, service, or serviceType
@@ -156,8 +154,7 @@ router.post('/', async (req, res) => {
         status: 'pending',
         smsConsent,
         smsConsentAt: smsConsent ? new Date() : null,
-        source: 'website',
-        paymentProvider
+        source: 'website'
       };
 
       savedLead = await JobRequest.create(jobData);
@@ -206,61 +203,16 @@ router.post('/', async (req, res) => {
       }
     }
 
-    // ---------- Stripe Authorization ----------
-
-    let clientSecret = null;
-    let stripeCustomerId = null;
-
-    if (paymentProvider === 'stripe' && stripe && savedLead) {
-      const customer = await stripe.customers.create({
-        name: fullName,
-        phone: normalizedPhone,
-        metadata: { requestId }
-      });
-
-      stripeCustomerId = customer.id;
-
-      const intent = await stripe.paymentIntents.create({
-        amount: HOMEOWNER_REQUEST_AMOUNT_CENTS, // $49.99 fixed nationwide fee
-        currency: 'usd',
-        customer: customer.id,
-        capture_method: 'automatic', // $49.99 matching fee — charged immediately, non-refundable upfront fee for being matched with professionals
-        payment_method_types: ['card'],
-        metadata: {
-          requestId,
-          serviceType,
-          city,
-          state,
-          fee_type: 'homeowner_request'
-        }
-      });
-
-      clientSecret = intent.client_secret;
-
-      savedLead.stripeCustomerId = customer.id;
-      savedLead.stripePaymentIntentId = intent.id;
-      await savedLead.save();
-    }
-
-    // ---------- Apple Pay ----------
-
-    if (paymentProvider === 'apple_pay' && applePayToken && savedLead) {
-      savedLead.visitFeeAuthorized = true;
-      savedLead.applePayToken = applePayToken;
-      await savedLead.save();
-    }
-
     // ---------- Response ----------
+    // Homeowner quote requests are completely free — no payment required
 
     return res.status(201).json({
       ok: true,
       success: true,
       requestId,
-      clientSecret,
-      message: 'Request submitted successfully',
+      message: 'Your free quote request has been submitted successfully. A professional will contact you soon.',
       data: {
-        leadId: savedLead?._id || null,
-        matchedPros: pros.length
+        leadId: savedLead?._id || null
       }
     });
   } catch (err) {
