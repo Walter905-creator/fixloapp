@@ -108,6 +108,7 @@ export default function CustomerPortalPage() {
   const getProgressStep = (status) => {
     if (status === 'completed') return 4;
     if (status === 'in-progress') return 3;
+    if (status === 'scheduled') return 2;
     if (status === 'assigned') return 1;
     return 0;
   };
