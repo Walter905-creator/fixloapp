@@ -218,7 +218,7 @@ export default function MultiStepLeadForm({
           state: draft.state.trim(),
           zipCode: draft.zip,
           preferredTime: draft.preferredDate,
-          smsConsent: true,
+          smsConsent: draft.smsConsent,
           details: 'Requested from homeowners funnel.'
         })
       });
