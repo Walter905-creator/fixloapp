@@ -38,7 +38,7 @@ export default function HomePricingBlock() {
             </button>
           </div>
           <div className="rounded-2xl border border-slate-900 bg-slate-900 p-6 text-white shadow-lg">
-            <p className="text-sm font-semibold text-slate-200">Fixlo Premium</p>
+            <p className="text-sm font-semibold text-slate-200">Fixlo Verified Plus</p>
             <p className="mt-2 text-3xl font-extrabold">$179.99<span className="text-base font-medium">/month</span></p>
             <p className="mt-3 text-slate-100">Get priority access to new leads before regular pros with a 1-hour exclusive window.</p>
             <button

@@ -76,7 +76,7 @@ export default function ConversionGrowthWidgets({
             <p className="text-sm text-slate-600 mt-2">
               {audience === 'pro'
                 ? 'Get customers ready to hire and build a steady stream of jobs.'
-                : 'Fixlo solves your home problems fast with verified local professionals.'}
+                : 'Fixlo connects you with trusted local professionals for your home projects.'}
             </p>
             <div className="mt-5 flex gap-3">
               <Link to={ctaLink} className="btn-primary px-5 py-2 text-sm" onClick={() => setShowExitIntent(false)}>

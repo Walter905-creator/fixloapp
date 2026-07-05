@@ -190,11 +190,11 @@ export default function ProSignupPage(){
           },
           {
             id: 'premium',
-            title: 'Fixlo Premium',
+            title: 'Fixlo Verified Plus',
             price: pricingStatus?.premiumPriceFormatted || '$179.99',
             cta: 'Get Priority Leads',
             copy: 'Get priority access to new leads before regular pros. One exclusive lead at a time with a 1-hour response window.',
-            benefits: ['Premium-first routing', '1-hour exclusive response window', 'One active exclusive lead at a time']
+            benefits: ['Verified-first routing', '1-hour exclusive response window', 'One active exclusive lead at a time']
           }
         ].map((plan) => (
           <button
@@ -245,7 +245,7 @@ export default function ProSignupPage(){
         <p className="text-slate-700 mb-6">
           Start getting quality leads in your area. Background check and onboarding included.
           <span className="block mt-2 font-semibold text-slate-900">
-            Selected plan: {selectedPlan === 'premium' ? 'Fixlo Premium' : 'Fixlo Pro'}
+            Selected plan: {selectedPlan === 'premium' ? 'Fixlo Verified Plus' : 'Fixlo Pro'}
           </span>
         </p>
         <form onSubmit={onSubmit} className="space-y-4">

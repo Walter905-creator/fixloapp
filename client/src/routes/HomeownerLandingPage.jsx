@@ -10,8 +10,8 @@ export default function HomeownerLandingPage() {
   return (
     <>
       <HelmetSEO
-        title="Fixlo solves your home problems fast | Verified local pros"
-        description="Solve your home problem today. Get help in minutes with verified professionals and instant matching across all major home service categories."
+        title="Fixlo helps with home projects fast | Verified local pros"
+        description="Start your home project today. Get help in minutes with verified professionals and instant matching across all major home service categories."
         canonicalPathname="/for-homeowners"
       />
 
@@ -22,11 +22,11 @@ export default function HomeownerLandingPage() {
           <div className="max-w-3xl">
             <p className="text-emerald-400 font-semibold uppercase tracking-widest text-sm mb-3">For Homeowners</p>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
-              Fixlo solves your home problems fast.
+              Fixlo helps with home projects fast.
             </h1>
             <p className="mt-4 text-lg md:text-xl text-slate-200">Find verified professionals in minutes.</p>
             <p className="mt-4 text-lg text-slate-200">
-              Solve your home problem today. Get help in minutes. One place for every home service.
+              Start your home project today. Get help in minutes. One place for every home service.
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
               {['Fast', 'Trusted', 'Local', 'Easy'].map((item) => (

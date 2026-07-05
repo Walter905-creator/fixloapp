@@ -244,7 +244,7 @@ export default function CustomerPortalPage() {
               <button onClick={() => (window.location.href = '/request')} className="btn-primary text-sm px-4 py-2">Request Service</button>
             </div>
             <div className="bg-white rounded-lg shadow p-4">
-              <h3 className="font-semibold text-gray-900 mb-2">Convenience tools</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">Simple process tools</h3>
               <div className="space-y-2">
                 <button onClick={detectLocation} className="btn-ghost text-xs px-3 py-2">Auto-detect location</button>
                 <p className="text-xs text-gray-600">{locationStatus}</p>

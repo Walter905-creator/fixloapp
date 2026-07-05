@@ -22,10 +22,10 @@ const INTRO_VARIATIONS = [
     `Find trusted ${service} experts in ${city} for ${trend} projects. All professionals are verified, licensed, and ready to help.`
 ];
 
-const PROBLEM_VARIATIONS = [
+const CHALLENGE_VARIATIONS = [
   (trend) => `Many homeowners struggle to find reliable professionals for ${trend} situations. Traditional methods can be time-consuming and risky.`,
   (trend) => `During ${trend} periods, finding qualified professionals quickly becomes critical. That's where Fixlo makes the difference.`,
-  (trend) => `The challenge with ${trend} services is ensuring quality while meeting urgent timelines. Fixlo solves this problem.`
+  (trend) => `The challenge with ${trend} services is ensuring quality while meeting urgent timelines. Fixlo connects you quickly with trusted professionals.`
 ];
 
 const SOLUTION_VARIATIONS = [
@@ -170,7 +170,7 @@ export default function TrendServicePage() {
     return a & a;
   }, 0);
   const introIndex = Math.abs(hash) % INTRO_VARIATIONS.length;
-  const problemIndex = Math.abs(hash >> 8) % PROBLEM_VARIATIONS.length;
+  const challengeIndex = Math.abs(hash >> 8) % CHALLENGE_VARIATIONS.length;
   const solutionIndex = Math.abs(hash >> 16) % SOLUTION_VARIATIONS.length;
 
   return (
@@ -229,7 +229,7 @@ export default function TrendServicePage() {
             Why {trendName} {serviceName} Matters in {cityName}
           </h2>
           <p className="text-slate-700 mb-4">
-            {PROBLEM_VARIATIONS[problemIndex](trendName.toLowerCase())}
+            {CHALLENGE_VARIATIONS[challengeIndex](trendName.toLowerCase())}
           </p>
           <p className="text-slate-700">
             {SOLUTION_VARIATIONS[solutionIndex]}

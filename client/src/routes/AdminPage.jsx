@@ -101,11 +101,11 @@ export default function AdminPage() {
               <div className="text-2xl font-bold">{overview.proPlanCounts?.pro ?? 0}</div>
             </div>
             <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <div className="text-xs text-gray-500 mb-1">Premium Pros</div>
+              <div className="text-xs text-gray-500 mb-1">Verified Plus Pros</div>
               <div className="text-2xl font-bold text-slate-900">{overview.proPlanCounts?.premium ?? 0}</div>
             </div>
             <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <div className="text-xs text-gray-500 mb-1">Premium Pending</div>
+              <div className="text-xs text-gray-500 mb-1">Verified Plus Pending</div>
               <div className="text-2xl font-bold text-amber-700">{overview.leadAssignments?.pendingPremiumAssignments ?? 0}</div>
             </div>
             <div className="bg-white rounded-lg border border-gray-200 p-4">
@@ -113,7 +113,7 @@ export default function AdminPage() {
               <div className="text-2xl font-bold text-red-600">{overview.leadAssignments?.expiredAssignments ?? 0}</div>
             </div>
             <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <div className="text-xs text-gray-500 mb-1">Premium Response Rate</div>
+              <div className="text-xs text-gray-500 mb-1">Verified Plus Response Rate</div>
               <div className="text-2xl font-bold text-green-700">{overview.leadAssignments?.premiumResponseRate ?? 0}%</div>
             </div>
           </div>
