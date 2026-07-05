@@ -45,9 +45,6 @@ import EarnStartPage from './routes/EarnStartPage.jsx';
 import EarnDashboardPage from './routes/EarnDashboardPage.jsx';
 import ReferralSignInPage from './routes/ReferralSignInPage.jsx';
 import RequestPage from './routes/RequestPage.jsx';
-import HomeownerLandingPage from './routes/HomeownerLandingPage.jsx';
-import ProLandingPage from './routes/ProLandingPage.jsx';
-import RecruiterLandingPage from './routes/RecruiterLandingPage.jsx';
 // Recruiter Network
 import RecruiterSignupPage from './routes/RecruiterSignupPage.jsx';
 import RecruiterLoginPage from './routes/RecruiterLoginPage.jsx';
@@ -71,6 +68,27 @@ import HomeownerSignup from './pages/auth/HomeownerSignup.jsx';
 import ProSignup from './pages/auth/ProSignup.jsx';
 import RecruiterSignup from './pages/auth/RecruiterSignup.jsx';
 import ForgotPassword from './pages/auth/ForgotPassword.jsx';
+
+const HomeownerLanding = React.lazy(() => import('./pages/HomeownerLanding.jsx'));
+const ProLanding = React.lazy(() => import('./pages/ProLanding.jsx'));
+const RecruiterLanding = React.lazy(() => import('./pages/RecruiterLanding.jsx'));
+
+function LazyRoute({ children }) {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="container-xl py-16">
+          <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-emerald-600">Loading</p>
+            <p className="mt-3 text-lg font-semibold text-slate-900">Preparing your Fixlo page…</p>
+          </div>
+        </div>
+      }
+    >
+      {children}
+    </React.Suspense>
+  );
+}
 export default function App(){
   return (<>
     <MetaPixelTracker />
@@ -108,7 +126,8 @@ export default function App(){
       <Route path="/charlotte" element={<Navigate to="/request?city=charlotte-nc" replace/>}/>
       <Route path="/country/:countryCode" element={<CountryPage/>}/>
       <Route path="/signup" element={<SignupPage/>}/>
-      <Route path="/pros" element={<ProLandingPage/>}/>
+      <Route path="/homeowners" element={<LazyRoute><HomeownerLanding /></LazyRoute>}/>
+      <Route path="/pros" element={<LazyRoute><ProLanding /></LazyRoute>}/>
       <Route path="/pros/signup" element={<ProSignupPage/>}/>
       <Route path="/pros/register" element={<ProSignupPage/>}/>
       <Route path="/pros/login" element={<ProSignInPage/>}/>
@@ -221,7 +240,8 @@ export default function App(){
           <RecruiterSettingsPage/>
         </RecruiterProtectedRoute>
       }/>
-      <Route path="/recruiter" element={<RecruiterLandingPage/>}/>
+      <Route path="/recruiter" element={<LazyRoute><RecruiterLanding /></LazyRoute>}/>
+      <Route path="/recruiters" element={<LazyRoute><RecruiterLanding /></LazyRoute>}/>
       
       {/* Admin Recruiter Pages */}
       <Route path="/admin/recruiters" element={
@@ -233,7 +253,7 @@ export default function App(){
       <Route path="/admin/payouts" element={
         <RequireAdmin><AdminPayoutsPage/></RequireAdmin>
       }/>
-      <Route path="/for-homeowners" element={<HomeownerLandingPage/>}/>
+      <Route path="/for-homeowners" element={<LazyRoute><HomeownerLanding /></LazyRoute>}/>
       <Route path="/for-pros" element={<Navigate to="/pros" replace/>}/>
       <Route path="/for-professionals" element={<Navigate to="/pros" replace/>}/>
       <Route path="/terms" element={<Terms/>}/>
