@@ -27,6 +27,17 @@ const INITIAL_FORM = {
   smsConsent: false
 };
 
+function getPersistedFormState(form) {
+  return {
+    serviceType: form.serviceType,
+    zip: form.zip,
+    city: form.city,
+    state: form.state,
+    preferredDate: form.preferredDate,
+    smsConsent: form.smsConsent
+  };
+}
+
 const STEP_LABELS = [
   'Select service',
   'Set location',
@@ -72,7 +83,7 @@ export default function MultiStepLeadForm({
     try {
       const parsed = JSON.parse(raw);
       setForm((current) => ({ ...current, ...parsed.form }));
-      setStep(parsed.step || 1);
+      setStep(Math.min(parsed.step || 1, 4));
     } catch {
       window.sessionStorage.removeItem(storageKey);
     }
@@ -83,7 +94,7 @@ export default function MultiStepLeadForm({
       return;
     }
 
-    window.sessionStorage.setItem(storageKey, JSON.stringify({ form, step }));
+    window.sessionStorage.setItem(storageKey, JSON.stringify({ form: getPersistedFormState(form), step }));
   }, [form, step, storageKey, success]);
 
   const updateField = (field, value) => {
@@ -241,11 +252,13 @@ export default function MultiStepLeadForm({
           serviceType: draft.serviceType,
           fullName: draft.name.trim(),
           phone: normalizedPhone,
+          email: draft.email.trim(),
           city: draft.city.trim(),
           state: draft.state.trim(),
+          zipCode: draft.zip,
           preferredTime: draft.preferredDate,
           smsConsent: true,
-          details: `Requested from homeowners funnel. ZIP code: ${draft.zip}. Preferred date: ${draft.preferredDate}. Email: ${draft.email.trim()}.`
+          details: 'Requested from homeowners funnel.'
         })
       });
 
@@ -266,7 +279,11 @@ export default function MultiStepLeadForm({
         window.sessionStorage.removeItem(storageKey);
       }
     } catch (error) {
-      setSubmitError(error.message || 'We could not submit your request.');
+      setSubmitError(
+        error instanceof TypeError
+          ? 'We could not reach Fixlo right now. Please check your connection and try again.'
+          : (error.message || 'We could not submit your request.')
+      );
     } finally {
       setIsSubmitting(false);
     }

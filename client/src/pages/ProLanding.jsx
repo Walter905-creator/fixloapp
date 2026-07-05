@@ -150,7 +150,11 @@ function ProSignupForm() {
 
       navigate(data.pro.requiresSubscription ? '/pricing' : '/dashboard/pro');
     } catch (submitError) {
-      setError(submitError.message || 'Signup failed.');
+      setError(
+        submitError instanceof TypeError
+          ? 'We could not reach Fixlo right now. Please check your connection and try again.'
+          : (submitError.message || 'Signup failed.')
+      );
     } finally {
       setLoading(false);
     }
