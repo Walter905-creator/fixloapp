@@ -25,7 +25,7 @@ const INTRO_VARIATIONS = [
 const CHALLENGE_VARIATIONS = [
   (trend) => `Many homeowners struggle to find reliable professionals for ${trend} situations. Traditional methods can be time-consuming and risky.`,
   (trend) => `During ${trend} periods, finding qualified professionals quickly becomes critical. That's where Fixlo makes the difference.`,
-  (trend) => `The challenge with ${trend} services is ensuring quality while meeting urgent timelines. Fixlo helps you handle this service need quickly.`
+  (trend) => `The challenge with ${trend} services is ensuring quality while meeting urgent timelines. Fixlo connects you quickly with trusted professionals.`
 ];
 
 const SOLUTION_VARIATIONS = [

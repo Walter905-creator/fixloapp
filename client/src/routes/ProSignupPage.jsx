@@ -141,7 +141,7 @@ export default function ProSignupPage(){
         body: JSON.stringify({
           email,
           phone: (form.get('phone') || '').trim(),
-          plan: selectedPlan === 'verifiedPlus' ? 'premium' : selectedPlan,
+          plan: selectedPlan,
           referralCode: referralCode && referralValid ? referralCode : '',
           tier: 'PRO'
         })
@@ -189,7 +189,7 @@ export default function ProSignupPage(){
             benefits: ['Leads for your trade', '30-mile lead matching', 'Dashboard access']
           },
           {
-            id: 'verifiedPlus',
+            id: 'premium',
             title: 'Fixlo Verified Plus',
             price: pricingStatus?.premiumPriceFormatted || '$179.99',
             cta: 'Get Priority Leads',
@@ -245,7 +245,7 @@ export default function ProSignupPage(){
         <p className="text-slate-700 mb-6">
           Start getting quality leads in your area. Background check and onboarding included.
           <span className="block mt-2 font-semibold text-slate-900">
-            Selected plan: {selectedPlan === 'verifiedPlus' ? 'Fixlo Verified Plus' : 'Fixlo Pro'}
+            Selected plan: {selectedPlan === 'premium' ? 'Fixlo Verified Plus' : 'Fixlo Pro'}
           </span>
         </p>
         <form onSubmit={onSubmit} className="space-y-4">
@@ -340,14 +340,14 @@ export default function ProSignupPage(){
           <button type="submit" className="btn-primary w-full" disabled={checkoutLoading}>
             {checkoutLoading
               ? 'Starting Checkout...'
-              : selectedPlan === 'verifiedPlus'
+              : selectedPlan === 'premium'
                 ? 'Get Priority Leads'
                 : 'Join Fixlo Pro'}
           </button>
         </form>
         {pricingStatus && (
           <p className="text-xs text-slate-600 mt-4 text-center">
-            {(selectedPlan === 'verifiedPlus' ? pricingStatus.premiumPriceFormatted : pricingStatus.proPriceFormatted) || (selectedPlan === 'verifiedPlus' ? '$179.99' : '$59.99')}
+            {(selectedPlan === 'premium' ? pricingStatus.premiumPriceFormatted : pricingStatus.proPriceFormatted) || (selectedPlan === 'premium' ? '$179.99' : '$59.99')}
             /month includes background check, lead notifications, and platform access.
           </p>
         )}

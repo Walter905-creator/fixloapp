@@ -26,7 +26,8 @@ export default function ProDashboardPage(){
   const todayDateLabel = React.useMemo(() => new Date().toDateString(), []);
   
   const displayName = user?.name || user?.phone || 'Pro User';
-  const isVerifiedPlusPlan = proData?.subscriptionPlan === 'premium';
+  const VERIFIED_PLUS_PLAN_ID = 'premium';
+  const isVerifiedPlusPlan = proData?.subscriptionPlan === VERIFIED_PLUS_PLAN_ID;
   
   function getToken() {
     return localStorage.getItem('fixlo_token') || '';

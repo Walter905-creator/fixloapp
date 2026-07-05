@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 
 const SERVICE_CATEGORIES = [
   { to: '/us/services/plumbing', title: 'Emergency Plumbing', icon: '🚨' },
-  { to: '/us/services/electrical', title: 'Electrical Repairs', icon: '⚡' },
+  { to: '/us/services/electrical', title: 'Electrical Service', icon: '⚡' },
   { to: '/us/services/hvac', title: 'AC Repair', icon: '❄️' },
   { to: '/us/services/house-cleaning', title: 'House Cleaning', icon: '🧼' },
   { to: '/us/services/junk-removal', title: 'Junk Removal', icon: '🗑️' },
@@ -66,7 +66,7 @@ export default function HomeownerExperienceSections() {
           <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-6 text-center">Pick your service need in one click</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             {QUICK_SERVICE_NEEDS.map((serviceNeed) => (
-              <button key={serviceNeed} onClick={() => navigate(`/request?service=${encodeURIComponent(serviceNeed)}`)} className="card p-4 text-left hover:border-brand hover:shadow-md transition">
+              <button key={serviceNeed} onClick={() => navigate(`/request?problem=${encodeURIComponent(serviceNeed)}`)} className="card p-4 text-left hover:border-brand hover:shadow-md transition">
                 <span className="text-sm font-semibold text-slate-900">{serviceNeed}</span>
               </button>
             ))}
