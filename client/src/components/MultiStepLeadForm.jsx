@@ -27,17 +27,6 @@ const INITIAL_FORM = {
   smsConsent: false
 };
 
-function getPersistedFormState(form) {
-  return {
-    serviceType: form.serviceType,
-    zip: form.zip,
-    city: form.city,
-    state: form.state,
-    preferredDate: form.preferredDate,
-    smsConsent: form.smsConsent
-  };
-}
-
 const STEP_LABELS = [
   'Select service',
   'Set location',
@@ -54,7 +43,6 @@ function LoadingSpinner() {
 
 export default function MultiStepLeadForm({
   title = 'Tell us about your project',
-  storageKey = 'fixlo_homeowner_funnel',
   serviceOptions = DEFAULT_SERVICE_OPTIONS,
   submitLabel = 'Get matched now',
   successTitle = 'You are all set',
@@ -69,33 +57,6 @@ export default function MultiStepLeadForm({
   const [zipLookupError, setZipLookupError] = React.useState('');
   const [submitError, setSubmitError] = React.useState('');
   const [success, setSuccess] = React.useState(false);
-
-  React.useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    const raw = window.sessionStorage.getItem(storageKey);
-    if (!raw) {
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(raw);
-      setForm((current) => ({ ...current, ...parsed.form }));
-      setStep(Math.min(parsed.step || 1, 4));
-    } catch {
-      window.sessionStorage.removeItem(storageKey);
-    }
-  }, [storageKey]);
-
-  React.useEffect(() => {
-    if (typeof window === 'undefined' || success) {
-      return;
-    }
-
-    window.sessionStorage.setItem(storageKey, JSON.stringify({ form: getPersistedFormState(form), step }));
-  }, [form, step, storageKey, success]);
 
   const updateField = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -275,9 +236,6 @@ export default function MultiStepLeadForm({
 
       setSuccess(true);
       setStep(STEP_LABELS.length);
-      if (typeof window !== 'undefined') {
-        window.sessionStorage.removeItem(storageKey);
-      }
     } catch (error) {
       setSubmitError(
         error instanceof TypeError
