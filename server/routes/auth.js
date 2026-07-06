@@ -473,7 +473,7 @@ router.post('/signup/homeowner', requireDatabase, async (req, res) => {
 
 // ── Pro Signup (direct account creation) ─────────────────────────────────────
 router.post('/signup/pro', requireDatabase, async (req, res) => {
-  const { name, email, phone, trade, location, password, confirmPassword, smsOptIn } = req.body || {};
+  const { name, email, phone, trade, location, password, confirmPassword, smsOptIn, inviteCode } = req.body || {};
   if (!name || !email || !phone || !trade || !location || !password) {
     return res.status(400).json({ error: 'All required fields must be provided' });
   }
@@ -483,6 +483,18 @@ router.post('/signup/pro', requireDatabase, async (req, res) => {
   if (password.length < 6) {
     return res.status(400).json({ error: 'Password must be at least 6 characters' });
   }
+
+  // Validate invite code before creating the account
+  let inviteDoc = null;
+  if (inviteCode && inviteCode.trim()) {
+    const InviteCode = require('../models/InviteCode');
+    const normalizedCode = inviteCode.trim().toUpperCase();
+    inviteDoc = await InviteCode.findOne({ code: normalizedCode });
+    if (!inviteDoc || inviteDoc.redeemed || (inviteDoc.expiresAt && inviteDoc.expiresAt < new Date())) {
+      return res.status(400).json({ error: 'This invitation code is invalid, expired, or already used.' });
+    }
+  }
+
   try {
     const normResult = normalizePhoneToE164(phone);
     if (!normResult.success) {
@@ -503,19 +515,36 @@ router.post('/signup/pro', requireDatabase, async (req, res) => {
       return res.status(400).json({ error: 'Invalid trade specified' });
     }
     const hashed = await bcrypt.hash(password, 12);
+
+    // Build pro document; grant free year if valid invite code
+    const freeAccessUntil = inviteDoc
+      ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+      : null;
+
     const pro = await Pro.create({
       name: name.trim(),
       email: email.toLowerCase().trim(),
       phone: normResult.phone,
       trade: normalizedTrade,
-      // Coordinates default to NYC; a background job or profile update step should
-      // resolve the actual coordinates via the geocoding service once the pro is onboarded.
       location: { type: 'Point', coordinates: [-74.006, 40.7128], address: location.trim() },
       password: hashed,
       smsConsent: !!smsOptIn,
-      isActive: false,
-      paymentStatus: 'pending'
+      isActive: !!inviteDoc,          // activate immediately with free invite
+      paymentStatus: inviteDoc ? 'active' : 'pending',
+      subscriptionActive: !!inviteDoc,
+      freeAccessUntil,
+      inviteCodeUsed: inviteDoc ? inviteDoc.code : null
     });
+
+    // Atomically mark the invite code as redeemed — cannot be reused
+    if (inviteDoc) {
+      const InviteCode = require('../models/InviteCode');
+      await InviteCode.findOneAndUpdate(
+        { _id: inviteDoc._id, redeemed: false }, // atomic guard
+        { redeemed: true, redeemedAt: new Date(), redeemedByProId: pro._id }
+      );
+    }
+
     const token = sign({ role: 'pro', id: pro._id, phone: pro.phone });
     return res.status(201).json({
       token,
@@ -526,7 +555,9 @@ router.post('/signup/pro', requireDatabase, async (req, res) => {
         trade: pro.trade,
         phone: pro.phone,
         paymentStatus: pro.paymentStatus,
-        requiresSubscription: true
+        requiresSubscription: !inviteDoc,
+        freeAccessUntil: pro.freeAccessUntil,
+        inviteCodeAccepted: !!inviteDoc
       }
     });
   } catch (err) {
