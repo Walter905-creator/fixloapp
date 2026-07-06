@@ -15,6 +15,13 @@ export default function ProSignupPage(){
   const [pricingStatus, setPricingStatus] = useState(null);
   const [selectedPlan, setSelectedPlan] = useState('pro');
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+
+  // Invitation code state (Fixlo internal invite codes — one-year-free)
+  const [inviteCode, setInviteCode] = useState('');
+  const [inviteCodeStatus, setInviteCodeStatus] = useState(''); // '' | 'valid' | 'invalid' | 'checking'
+  const [inviteCodeMsg, setInviteCodeMsg] = useState('');
+  // Minimum length before attempting to validate a Fixlo invite code (e.g. FIXLO-XXXXXX = 12 chars)
+  const MIN_INVITE_CODE_LENGTH = 8;
   
   const stripeUrlRaw = STRIPE_CHECKOUT_URL;
   const [country, setCountry] = React.useState('US'); // Default to US
@@ -101,6 +108,40 @@ export default function ProSignupPage(){
       }
     } catch (err) {
       console.error('Error validating referral code:', err);
+    }
+  };
+
+  // Validate a Fixlo invitation code (one-year-free)
+  const validateInviteCode = async (code) => {
+    if (!code) {
+      setInviteCodeStatus('');
+      setInviteCodeMsg('');
+      return;
+    }
+    setInviteCodeStatus('checking');
+    setInviteCodeMsg('');
+    try {
+      const response = await fetch(`${API_BASE}/api/invite-codes/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: code.trim().toUpperCase() })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.valid) {
+          setInviteCodeStatus('valid');
+          setInviteCodeMsg('Invitation code accepted. Your first year of Fixlo Pro is free.');
+        } else {
+          setInviteCodeStatus('invalid');
+          setInviteCodeMsg('This invitation code is invalid, expired, revoked, or already used.');
+        }
+      } else {
+        setInviteCodeStatus('invalid');
+        setInviteCodeMsg('Could not validate code. Please try again.');
+      }
+    } catch {
+      setInviteCodeStatus('invalid');
+      setInviteCodeMsg('Could not validate code. Please try again.');
     }
   };
 
@@ -316,6 +357,58 @@ export default function ProSignupPage(){
             )}
             <p className="text-xs text-slate-500 mt-1">
               Have a referral code? Enter it here to support your referrer.
+            </p>
+          </div>
+
+          {/* Invitation Code Field — for Fixlo internal one-year-free codes */}
+          <div className="pt-2 border-t border-slate-200">
+            <label className="block text-sm text-slate-800 mb-1">
+              Invitation Code <span className="text-slate-500 font-normal">(optional)</span>
+            </label>
+            <input
+              name="inviteCode"
+              value={inviteCode}
+              onChange={(e) => {
+                const val = e.target.value.toUpperCase();
+                setInviteCode(val);
+                // Reset status while typing; validation fires on blur or on paste of a complete code
+                if (inviteCodeStatus) {
+                  setInviteCodeStatus('');
+                  setInviteCodeMsg('');
+                }
+              }}
+              onBlur={(e) => {
+                // Validate when user leaves the field if there's a meaningful code entered
+                const val = e.target.value.trim().toUpperCase();
+                if (val.length >= MIN_INVITE_CODE_LENGTH) {
+                  validateInviteCode(val);
+                }
+              }}
+              className={`mt-1 w-full rounded-xl ${
+                inviteCodeStatus === 'valid' ? 'border-green-500 ring-1 ring-green-500'
+                : inviteCodeStatus === 'invalid' ? 'border-red-400 ring-1 ring-red-400'
+                : ''
+              }`}
+              placeholder="Enter your one-time Fixlo code"
+              maxLength="30"
+              autoComplete="off"
+            />
+            {inviteCodeStatus === 'checking' && (
+              <p className="text-xs text-slate-500 mt-1">Checking code…</p>
+            )}
+            {inviteCodeStatus === 'valid' && (
+              <p className="text-xs text-green-700 mt-1 flex items-center gap-1">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                </svg>
+                {inviteCodeMsg}
+              </p>
+            )}
+            {inviteCodeStatus === 'invalid' && (
+              <p className="text-xs text-red-600 mt-1">{inviteCodeMsg}</p>
+            )}
+            <p className="text-xs text-slate-500 mt-1">
+              Have a personal Fixlo invitation? Enter your code here to claim your free year.
             </p>
           </div>
           

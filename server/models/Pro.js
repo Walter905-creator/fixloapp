@@ -156,10 +156,24 @@ const proSchema = new mongoose.Schema({
   },
   // Subscription status: Tracks operational state (can be paused without affecting payment)
   // This allows pros to temporarily stop receiving leads while keeping subscription active
+  // 'free_year' is set when an invitation code is redeemed (one free year of pro access)
   subscriptionStatus: {
     type: String,
-    enum: ['active', 'inactive', 'cancelled', 'past_due', 'paused', 'pending'],
+    enum: ['active', 'inactive', 'cancelled', 'past_due', 'paused', 'pending', 'free_year'],
     default: 'pending'
+  },
+
+  // Free access expiry date — set when a valid invite code is redeemed
+  // After this date the pro must subscribe normally via Stripe
+  freeAccessUntil: {
+    type: Date,
+    default: null
+  },
+
+  // Invite code that was redeemed during signup (stored for audit)
+  redeemedInviteCode: {
+    type: String,
+    default: null
   },
   subscriptionPlan: {
     type: String,

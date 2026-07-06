@@ -1,6 +1,14 @@
+/**
+ * InviteCode Model
+ * Stores invitation codes for the Fixlo internal dashboard.
+ * Admins can generate codes and assign them to pros by name/email/phone/state/trade.
+ * Redeeming a valid code grants one free year of Fixlo Pro (plan: "pro", subscriptionStatus: "free_year").
+ */
 const mongoose = require('mongoose');
+const crypto = require('crypto');
 
 const inviteCodeSchema = new mongoose.Schema({
+  // The unique invite code string (e.g. FIXLO-8K4P2M, PRO365-X9A7Q)
   code: {
     type: String,
     required: true,
@@ -9,93 +17,64 @@ const inviteCodeSchema = new mongoose.Schema({
     trim: true,
     index: true
   },
-  assignedName: {
-    type: String,
-    trim: true
-  },
-  assignedEmail: {
-    type: String,
-    trim: true,
-    lowercase: true
-  },
-  assignedPhone: {
-    type: String,
-    trim: true
-  },
+
+  // Assignment details (optional — admin can pre-assign to a specific person)
+  assignedName: { type: String, trim: true },
+  assignedEmail: { type: String, lowercase: true, trim: true },
+  assignedPhone: { type: String, trim: true },
+  assignedState: { type: String, trim: true },
+  assignedTrade: { type: String, trim: true },
+
+  // Plan type — currently only one-year-free
   planType: {
     type: String,
     enum: ['one-year-free'],
     default: 'one-year-free'
   },
-  redeemed: {
-    type: Boolean,
-    default: false
-  },
-  redeemedAt: {
-    type: Date
-  },
-  redeemedByProId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Pro'
-  },
-  expiresAt: {
-    type: Date
-  },
-  notes: {
-    type: String,
-    trim: true
-  }
+
+  // Redemption tracking
+  redeemed: { type: Boolean, default: false },
+  redeemedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'Pro', default: null },
+  redeemedAt: { type: Date, default: null },
+
+  // Expiration date (optional — null means never expires)
+  expiresAt: { type: Date, default: null },
+
+  // Revoked by admin
+  revoked: { type: Boolean, default: false },
+
+  // Admin who created this code
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Pro', default: null }
 }, {
   timestamps: true
 });
 
-// Static: generate a cryptographically random invite code
-inviteCodeSchema.statics.generateCode = function (prefix = 'FIXLO') {
-  const crypto = require('crypto');
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let random = '';
-  for (let i = 0; i < 6; i++) {
-    random += chars[crypto.randomInt(chars.length)];
-  }
-  return `${prefix}-${random}`;
-};
+// Computed status virtual: pending | redeemed | expired | revoked
+inviteCodeSchema.virtual('status').get(function () {
+  if (this.revoked) return 'revoked';
+  if (this.redeemed) return 'redeemed';
+  if (this.expiresAt && new Date() > this.expiresAt) return 'expired';
+  return 'pending';
+});
 
-// Static: create a unique code with collision checking
-inviteCodeSchema.statics.createUniqueCode = async function (options = {}) {
-  const { assignedName, assignedEmail, assignedPhone, notes, prefix, expiresAt } = options;
+inviteCodeSchema.set('toJSON', { virtuals: true });
+inviteCodeSchema.set('toObject', { virtuals: true });
+
+/**
+ * Generate a secure random invite code.
+ * Format options: FIXLO-XXXXXX, PRO365-XXXXX, VIP-FREE-YEAR-XXX
+ */
+inviteCodeSchema.statics.generateCode = function (prefix = null) {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Remove ambiguous chars (0/O, 1/I)
+  const random = (len) => Array.from({ length: len }, () => chars[crypto.randomInt(chars.length)]).join('');
 
   const prefixes = ['FIXLO', 'PRO365', 'VIP-FREE-YEAR'];
-  const chosenPrefix = prefix || prefixes[Math.floor(Math.random() * prefixes.length)];
+  const chosen = prefix || prefixes[crypto.randomInt(prefixes.length)];
 
-  let code;
-  let attempts = 0;
-  const maxAttempts = 10;
-
-  while (attempts < maxAttempts) {
-    const candidate = this.generateCode(chosenPrefix);
-    const existing = await this.findOne({ code: candidate });
-    if (!existing) {
-      code = candidate;
-      break;
-    }
-    attempts++;
+  if (chosen === 'VIP-FREE-YEAR') {
+    return `VIP-FREE-YEAR-${random(3)}`;
   }
-
-  if (!code) {
-    throw new Error('Failed to generate unique invite code after max attempts');
-  }
-
-  const doc = await this.create({
-    code,
-    assignedName: assignedName || undefined,
-    assignedEmail: assignedEmail || undefined,
-    assignedPhone: assignedPhone || undefined,
-    planType: 'one-year-free',
-    notes: notes || undefined,
-    expiresAt: expiresAt || undefined
-  });
-
-  return doc;
+  return `${chosen}-${random(6)}`;
 };
 
 module.exports = mongoose.model('InviteCode', inviteCodeSchema);
