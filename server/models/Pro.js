@@ -402,6 +402,16 @@ const proSchema = new mongoose.Schema({
     default: false
   },
 
+  // Invitation code free-year membership
+  freeAccessUntil: {
+    type: Date,
+    default: null
+  },
+  inviteCodeUsed: {
+    type: String,
+    default: null
+  },
+
   // Role-based access control
   role: {
     type: String,
