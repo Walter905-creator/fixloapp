@@ -10,6 +10,8 @@ const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
 // Admin owner email (Walter Arevalo) - should be set via environment variable
 const OWNER_EMAIL = process.env.OWNER_EMAIL || 'pro4u.improvements@gmail.com';
 const OWNER_USER_ID = process.env.OWNER_USER_ID; // Optional: match by user ID as well
+// Admin owner phone - allows login by phone number in addition to email match
+const OWNER_PHONE_RAW = process.env.OWNER_PHONE; // E.g. "+15164449953" or "1516-444-9953"
 
 router.use(requireDatabase);
 
@@ -43,8 +45,10 @@ router.post('/login', async (req, res) => {
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
 
     // Check if this user is the owner
+    const ownerPhoneNorm = OWNER_PHONE_RAW ? (normalizePhoneToE164(OWNER_PHONE_RAW).phone || null) : null;
     const isOwner = pro.email?.toLowerCase() === OWNER_EMAIL.toLowerCase() || 
-                    (OWNER_USER_ID && pro._id.toString() === OWNER_USER_ID);
+                    (OWNER_USER_ID && pro._id.toString() === OWNER_USER_ID) ||
+                    (ownerPhoneNorm && normalizedPhone === ownerPhoneNorm);
     
     if (isOwner && process.env.NODE_ENV !== 'production') {
       console.log('🔐 Owner logged in - granting admin access');
