@@ -381,7 +381,9 @@ export default function InternalDashboardPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-600 mb-1">Expiration Date</label>
+                  <label className="block text-xs text-slate-600 mb-1">
+                    Expiration Date <span className="text-slate-400 font-normal">(defaults to 30 days)</span>
+                  </label>
                   <input
                     type="date"
                     value={genForm.expiresAt}
