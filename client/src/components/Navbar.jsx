@@ -120,8 +120,13 @@ export default function Navbar() {
             </>
           )}
 
+          {/* Fixlo Dashboard button — visible only to admin users */}
           {isAdmin && (
-            <NavLink to="/admin" className="px-3 py-1 rounded-lg text-sm font-semibold text-slate-700 hover:text-brand">Admin</NavLink>
+            <>
+              <NavLink to="/dashboard" className="px-3 py-1 rounded-lg text-sm font-semibold bg-slate-900 text-white hover:bg-slate-700 transition-colors">Fixlo Dashboard</NavLink>
+              <NavLink to="/admin" className="px-3 py-1 rounded-lg text-sm font-semibold text-slate-700 hover:text-brand">Admin</NavLink>
+              <button onClick={handleLogout} className="px-3 py-1 rounded-lg text-sm font-semibold text-slate-700 hover:text-brand">Logout</button>
+            </>
           )}
         </nav>
 
@@ -174,8 +179,13 @@ export default function Navbar() {
               </>
             )}
 
+            {/* Fixlo Dashboard — admin only (mobile) */}
             {isAdmin && (
-              <NavLink to="/admin" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-lg text-base font-semibold text-slate-700 hover:bg-slate-50">Admin</NavLink>
+              <>
+                <NavLink to="/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-lg text-base font-semibold bg-slate-900 text-white hover:bg-slate-700">Fixlo Dashboard</NavLink>
+                <NavLink to="/admin" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-lg text-base font-semibold text-slate-700 hover:bg-slate-50">Admin</NavLink>
+                <button onClick={handleLogout} className="px-4 py-3 rounded-lg text-base font-semibold text-slate-700 hover:bg-slate-50 text-left">Logout</button>
+              </>
             )}
           </nav>
         </div>

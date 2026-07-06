@@ -45,6 +45,8 @@ import EarnStartPage from './routes/EarnStartPage.jsx';
 import EarnDashboardPage from './routes/EarnDashboardPage.jsx';
 import ReferralSignInPage from './routes/ReferralSignInPage.jsx';
 import RequestPage from './routes/RequestPage.jsx';
+// Internal admin dashboard (private — requires admin role)
+import InternalDashboardPage from './routes/InternalDashboardPage.jsx';
 // Recruiter Network
 import RecruiterSignupPage from './routes/RecruiterSignupPage.jsx';
 import RecruiterLoginPage from './routes/RecruiterLoginPage.jsx';
@@ -152,6 +154,13 @@ export default function App(){
       <Route path="/pro/forgot-password" element={<Navigate to="/pros/forgot-password" replace/>}/>
       <Route path="/pro/reset-password" element={<Navigate to="/pros/reset-password" replace/>}/>
       
+      {/* Fixlo Internal Dashboard — /dashboard — admin only, not public */}
+      <Route path="/dashboard" element={
+        <RequireAdmin>
+          <InternalDashboardPage/>
+        </RequireAdmin>
+      }/>
+
       {/* Admin routes - PRIVATE ONLY, not public, not linked anywhere */}
       <Route path="/dashboard/admin" element={
         <RequireAdmin>

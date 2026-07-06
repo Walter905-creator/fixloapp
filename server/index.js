@@ -414,6 +414,11 @@ app.use("/api/recruiter", generalRateLimit, require("./routes/recruiter"));
 app.use("/api/recruiter", generalRateLimit, require("./routes/recruiterTracking")); // pro signup tracking
 app.use("/api/admin", adminRateLimit, require("./routes/recruiterAdmin")); // admin recruiter mgmt
 
+// ── Invite Codes (admin dashboard + pro signup) ────────────────────────────────
+// Admin routes (create, bulk-create, list, revoke) require requireAuth + requireAdmin (enforced in routes).
+// Validate and redeem routes are open/auth-only (enforced per-route).
+app.use("/api/invite-codes", adminRateLimit, require("./routes/inviteCodes"));
+
 // Direct messaging
 app.use("/api", generalRateLimit, require("./routes/messages")); // messaging API
 
