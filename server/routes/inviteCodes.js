@@ -107,11 +107,16 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { search = '', status, page = 1, limit = 50 } = req.query;
 
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(200, Math.max(1, parseInt(limit) || 50));
+
     const query = {};
 
-    // Text search across code / assignedName / assignedEmail
+    // Text search across code / assignedName / assignedEmail / assignedPhone
+    // Properly escape all special regex characters to prevent ReDoS
     if (search) {
-      const re = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      const escaped = search.replace(/[\\.*+?^${}()|[\]]/g, '\\$&');
+      const re = new RegExp(escaped, 'i');
       query.$or = [
         { code: re },
         { assignedName: re },
@@ -121,34 +126,59 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
     }
 
     // Status filter — computed after fetch (virtual), so filter in-memory below
+    // Use skip/limit for proper pagination
     const invites = await InviteCode.find(query)
       .populate('redeemedByUserId', 'name email phone')
       .sort({ createdAt: -1 })
-      .limit(parseInt(limit) * parseInt(page)) // fetch enough for pagination
+      .skip((pageNum - 1) * limitNum)
+      .limit(limitNum)
       .lean({ virtuals: true });
 
-    // Apply status filter in-memory (because 'status' is a virtual)
+    // Apply status filter in-memory (because 'status' is a virtual field)
     let filtered = invites;
     if (status && ['pending', 'redeemed', 'expired', 'revoked'].includes(status)) {
       filtered = invites.filter((c) => c.status === status);
     }
 
-    // Summary counts for overview panel
-    const all = await InviteCode.find({}).lean({ virtuals: true });
-    const summary = {
-      total: all.length,
-      pending: all.filter((c) => {
-        if (c.revoked) return false;
-        if (c.redeemed) return false;
-        if (c.expiresAt && new Date() > c.expiresAt) return false;
-        return true;
-      }).length,
-      redeemed: all.filter((c) => c.redeemed).length,
-      expired: all.filter((c) => !c.revoked && !c.redeemed && c.expiresAt && new Date() > c.expiresAt).length,
-      revoked: all.filter((c) => c.revoked).length
-    };
+    // Summary counts using MongoDB aggregation (efficient — no full collection scan)
+    const now = new Date();
+    const [aggResult] = await InviteCode.aggregate([
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          redeemed: { $sum: { $cond: ['$redeemed', 1, 0] } },
+          revoked: { $sum: { $cond: ['$revoked', 1, 0] } },
+          // Expired: not revoked, not redeemed, has expiresAt in the past
+          expired: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$revoked', false] },
+                    { $eq: ['$redeemed', false] },
+                    { $lt: ['$expiresAt', now] },
+                    { $ne: ['$expiresAt', null] }
+                  ]
+                },
+                1, 0
+              ]
+            }
+          }
+        }
+      }
+    ]);
 
-    return res.json({ ok: true, invites: filtered, summary });
+    const total = aggResult?.total || 0;
+    const reagg = aggResult ? {
+      total,
+      redeemed: aggResult.redeemed,
+      revoked: aggResult.revoked,
+      expired: aggResult.expired,
+      pending: total - aggResult.redeemed - aggResult.revoked - aggResult.expired
+    } : { total: 0, pending: 0, redeemed: 0, expired: 0, revoked: 0 };
+
+    return res.json({ ok: true, invites: filtered, summary: reagg });
   } catch (err) {
     console.error('❌ invite-codes GET error:', err.message);
     return res.status(500).json({ ok: false, error: err.message });

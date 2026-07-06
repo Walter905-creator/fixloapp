@@ -369,11 +369,17 @@ export default function ProSignupPage(){
               onChange={(e) => {
                 const val = e.target.value.toUpperCase();
                 setInviteCode(val);
-                if (val.length >= 8) {
-                  validateInviteCode(val);
-                } else {
+                // Reset status while typing; validation fires on blur or on paste of a complete code
+                if (inviteCodeStatus) {
                   setInviteCodeStatus('');
                   setInviteCodeMsg('');
+                }
+              }}
+              onBlur={(e) => {
+                // Validate when user leaves the field if there's a meaningful code entered
+                const val = e.target.value.trim().toUpperCase();
+                if (val.length >= 8) {
+                  validateInviteCode(val);
                 }
               }}
               className={`mt-1 w-full rounded-xl ${

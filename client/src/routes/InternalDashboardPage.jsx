@@ -500,7 +500,11 @@ export default function InternalDashboardPage() {
                       {/* Redeemed by */}
                       <td className="px-3 py-2 text-slate-600 whitespace-nowrap">
                         {c.redeemedByUserId
-                          ? (c.redeemedByUserId.name || c.redeemedByUserId.email || String(c.redeemedByUserId._id || c.redeemedByUserId))
+                          ? (
+                              typeof c.redeemedByUserId === 'object'
+                                ? (c.redeemedByUserId.name || c.redeemedByUserId.email || String(c.redeemedByUserId._id))
+                                : String(c.redeemedByUserId)
+                            )
                           : '—'}
                       </td>
                       {/* Redeemed at */}
