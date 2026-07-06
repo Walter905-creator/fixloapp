@@ -37,7 +37,7 @@ const inviteCodeSchema = new mongoose.Schema({
   redeemedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'Pro', default: null },
   redeemedAt: { type: Date, default: null },
 
-  // Who redeemed the code — stores pro ObjectId (as string) or phone number
+  // Who redeemed the code — stores the redeeming pro's ObjectId as a string
   redeemedBy: { type: String, default: null },
 
   // Expiration date — auto-set to 30 days after creation when not explicitly provided

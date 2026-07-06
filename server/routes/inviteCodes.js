@@ -52,7 +52,6 @@ router.post('/create', requireAuth, requireAdmin, async (req, res) => {
 
     const code = await generateUniqueCode();
 
-    const createdAt = new Date();
     const invite = await InviteCode.create({
       code,
       assignedName,
@@ -61,7 +60,7 @@ router.post('/create', requireAuth, requireAdmin, async (req, res) => {
       assignedState,
       assignedTrade,
       planType,
-      expiresAt: expiresAt ? new Date(expiresAt) : defaultExpiresAt(createdAt),
+      expiresAt: expiresAt ? new Date(expiresAt) : defaultExpiresAt(),
       createdBy: req.user?.id || null
     });
 
@@ -89,13 +88,12 @@ router.post('/bulk-create', requireAuth, requireAdmin, async (req, res) => {
     const created = [];
     for (let i = 0; i < qty; i++) {
       const code = await generateUniqueCode();
-      const createdAt = new Date();
       const invite = await InviteCode.create({
         code,
         assignedState,
         assignedTrade,
         planType,
-        expiresAt: expiresAt ? new Date(expiresAt) : defaultExpiresAt(createdAt),
+        expiresAt: expiresAt ? new Date(expiresAt) : defaultExpiresAt(),
         createdBy: req.user?.id || null
       });
       created.push(invite);
