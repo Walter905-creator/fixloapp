@@ -53,10 +53,9 @@ const inviteCodeSchema = new mongoose.Schema({
 inviteCodeSchema.statics.generateCode = function (prefix = 'FIXLO') {
   const crypto = require('crypto');
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  const bytes = crypto.randomBytes(6);
   let random = '';
   for (let i = 0; i < 6; i++) {
-    random += chars[bytes[i] % chars.length];
+    random += chars[crypto.randomInt(chars.length)];
   }
   return `${prefix}-${random}`;
 };

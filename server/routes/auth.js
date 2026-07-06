@@ -4,6 +4,7 @@ const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const { sign } = require('../utils/jwt');
 const Pro = require("../models/Pro");
+const InviteCode = require("../models/InviteCode");
 const Homeowner = require("../models/Homeowner");
 const RecruiterProfile = require("../models/RecruiterProfile");
 const mongoose = require("mongoose");
@@ -487,7 +488,6 @@ router.post('/signup/pro', requireDatabase, async (req, res) => {
   // Validate invite code before creating the account
   let inviteDoc = null;
   if (inviteCode && inviteCode.trim()) {
-    const InviteCode = require('../models/InviteCode');
     const normalizedCode = inviteCode.trim().toUpperCase();
     inviteDoc = await InviteCode.findOne({ code: normalizedCode });
     if (!inviteDoc || inviteDoc.redeemed || (inviteDoc.expiresAt && inviteDoc.expiresAt < new Date())) {
@@ -538,7 +538,6 @@ router.post('/signup/pro', requireDatabase, async (req, res) => {
 
     // Atomically mark the invite code as redeemed — cannot be reused
     if (inviteDoc) {
-      const InviteCode = require('../models/InviteCode');
       await InviteCode.findOneAndUpdate(
         { _id: inviteDoc._id, redeemed: false }, // atomic guard
         { redeemed: true, redeemedAt: new Date(), redeemedByProId: pro._id }

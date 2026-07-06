@@ -19,13 +19,13 @@ router.post('/validate', async (req, res) => {
     const invite = await InviteCode.findOne({ code: code.trim().toUpperCase() });
 
     if (!invite) {
-      return res.status(404).json({ valid: false, error: 'This invitation code is invalid, expired, or already used.' });
+      return res.status(400).json({ valid: false, error: 'This invitation code is invalid, expired, or already used.' });
     }
     if (invite.redeemed) {
-      return res.status(409).json({ valid: false, error: 'This invitation code is invalid, expired, or already used.' });
+      return res.status(400).json({ valid: false, error: 'This invitation code is invalid, expired, or already used.' });
     }
     if (invite.expiresAt && invite.expiresAt < new Date()) {
-      return res.status(410).json({ valid: false, error: 'This invitation code is invalid, expired, or already used.' });
+      return res.status(400).json({ valid: false, error: 'This invitation code is invalid, expired, or already used.' });
     }
 
     return res.json({
