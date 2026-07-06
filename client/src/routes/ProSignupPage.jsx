@@ -20,6 +20,8 @@ export default function ProSignupPage(){
   const [inviteCode, setInviteCode] = useState('');
   const [inviteCodeStatus, setInviteCodeStatus] = useState(''); // '' | 'valid' | 'invalid' | 'checking'
   const [inviteCodeMsg, setInviteCodeMsg] = useState('');
+  // Minimum length before attempting to validate a Fixlo invite code (e.g. FIXLO-XXXXXX = 12 chars)
+  const MIN_INVITE_CODE_LENGTH = 8;
   
   const stripeUrlRaw = STRIPE_CHECKOUT_URL;
   const [country, setCountry] = React.useState('US'); // Default to US
@@ -378,7 +380,7 @@ export default function ProSignupPage(){
               onBlur={(e) => {
                 // Validate when user leaves the field if there's a meaningful code entered
                 const val = e.target.value.trim().toUpperCase();
-                if (val.length >= 8) {
+                if (val.length >= MIN_INVITE_CODE_LENGTH) {
                   validateInviteCode(val);
                 }
               }}

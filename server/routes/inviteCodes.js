@@ -113,9 +113,9 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
     const query = {};
 
     // Text search across code / assignedName / assignedEmail / assignedPhone
-    // Properly escape all special regex characters to prevent ReDoS
+    // Properly escape all special regex characters (including ] and \) to prevent ReDoS
     if (search) {
-      const escaped = search.replace(/[\\.*+?^${}()|[\]]/g, '\\$&');
+      const escaped = search.replace(/[\\.*+?^${}()|[\]\\]/g, '\\$&');
       const re = new RegExp(escaped, 'i');
       query.$or = [
         { code: re },

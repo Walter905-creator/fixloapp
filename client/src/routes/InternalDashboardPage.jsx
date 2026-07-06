@@ -470,14 +470,9 @@ export default function InternalDashboardPage() {
                           </button>
                         </span>
                       </td>
-                      {/* Status */}
+                      {/* Status — uses the virtual 'status' field from the API */}
                       <td className="px-3 py-2">
-                        <StatusBadge status={
-                          c.revoked ? 'revoked'
-                          : c.redeemed ? 'redeemed'
-                          : (c.expiresAt && new Date() > new Date(c.expiresAt)) ? 'expired'
-                          : 'pending'
-                        } />
+                        <StatusBadge status={c.status || 'pending'} />
                       </td>
                       {/* Assigned to */}
                       <td className="px-3 py-2 text-slate-700 whitespace-nowrap">
