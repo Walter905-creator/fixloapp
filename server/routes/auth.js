@@ -375,7 +375,9 @@ router.post('/login/pro', requireDatabase, async (req, res) => {
     const ok = await bcrypt.compare(password, pro.password);
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
     const OWNER_EMAIL = process.env.OWNER_EMAIL || 'pro4u.improvements@gmail.com';
-    const isOwner = pro.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
+    const ownerPhoneNorm = process.env.OWNER_PHONE ? (normalizePhoneToE164(process.env.OWNER_PHONE).phone || null) : null;
+    const isOwner = pro.email?.toLowerCase() === OWNER_EMAIL.toLowerCase() ||
+                    (ownerPhoneNorm && normResult.phone === ownerPhoneNorm);
     const token = sign({ role: pro.role || 'pro', id: pro._id, phone: pro.phone, isAdmin: isOwner });
     return res.json({
       token,
