@@ -29,19 +29,53 @@ export default function ProSignup() {
     phone: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    inviteCode: ''
   });
   const [smsOptIn, setSmsOptIn] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [inviteStatus, setInviteStatus] = useState(null); // null | 'valid' | 'invalid'
+  const [inviteValidating, setInviteValidating] = useState(false);
 
-  const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+  const handleChange = (e) => {
+    setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+    // Reset invite status when code changes
+    if (e.target.name === 'inviteCode') {
+      setInviteStatus(null);
+    }
+  };
+
+  const handleValidateInviteCode = async () => {
+    const code = form.inviteCode.trim();
+    if (!code) return;
+    setInviteValidating(true);
+    setInviteStatus(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/invite-codes/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code })
+      });
+      const data = await res.json();
+      setInviteStatus(data.valid ? 'valid' : 'invalid');
+    } catch {
+      setInviteStatus('invalid');
+    } finally {
+      setInviteValidating(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     if (form.password !== form.confirmPassword) {
       setError('Passwords do not match');
+      return;
+    }
+    // If an invite code is entered but not yet validated (or was invalid), block submit
+    if (form.inviteCode.trim() && inviteStatus !== 'valid') {
+      setError('Please validate your invitation code before continuing.');
       return;
     }
     setLoading(true);
@@ -57,7 +91,8 @@ export default function ProSignup() {
           email: form.email,
           password: form.password,
           confirmPassword: form.confirmPassword,
-          smsOptIn
+          smsOptIn,
+          inviteCode: form.inviteCode.trim() || undefined
         })
       });
       const data = await res.json();
@@ -188,6 +223,56 @@ export default function ProSignup() {
                 className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2.5 text-white placeholder-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 placeholder="Repeat password"
               />
+            </div>
+
+            {/* Invitation Code */}
+            <div>
+              <label className="block text-blue-100 text-sm font-medium mb-1">
+                Invitation Code <span className="text-blue-300/70 font-normal">(optional)</span>
+              </label>
+              <div className="flex gap-2">
+                <input
+                  name="inviteCode"
+                  type="text"
+                  value={form.inviteCode}
+                  onChange={handleChange}
+                  disabled={loading}
+                  className={`flex-1 bg-white/10 border rounded-lg px-4 py-2.5 text-white placeholder-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-400 uppercase tracking-wider ${
+                    inviteStatus === 'valid'
+                      ? 'border-green-400/60'
+                      : inviteStatus === 'invalid'
+                      ? 'border-red-400/60'
+                      : 'border-white/20'
+                  }`}
+                  placeholder="Enter your one-time Fixlo code"
+                  autoComplete="off"
+                />
+                {form.inviteCode.trim() && inviteStatus !== 'valid' && (
+                  <button
+                    type="button"
+                    onClick={handleValidateInviteCode}
+                    disabled={inviteValidating || loading}
+                    className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60 whitespace-nowrap"
+                  >
+                    {inviteValidating ? '…' : 'Apply'}
+                  </button>
+                )}
+              </div>
+              {inviteStatus === 'valid' && (
+                <p className="mt-1.5 text-green-400 text-xs font-medium">
+                  ✓ Invitation code accepted. Your first year of Fixlo Pro is free.
+                </p>
+              )}
+              {inviteStatus === 'invalid' && (
+                <p className="mt-1.5 text-red-400 text-xs">
+                  This invitation code is invalid, expired, or already used.
+                </p>
+              )}
+              {!inviteStatus && (
+                <p className="mt-1.5 text-blue-300/60 text-xs">
+                  Have a personal Fixlo invitation? Enter your code here to claim your free year.
+                </p>
+              )}
             </div>
 
             <div className="bg-white/5 border border-white/10 rounded-lg p-3">

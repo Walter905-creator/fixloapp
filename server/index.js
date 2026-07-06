@@ -317,6 +317,7 @@ function preflight(path, methods = "POST, OPTIONS") {
 preflight("/api/pro-signup");
 preflight("/api/homeowner-lead");
 preflight("/api/requests");
+preflight("/api/invite-codes/validate");
 preflight("/api/*", "POST, OPTIONS, GET, PUT, DELETE, HEAD");
 
 // ----------------------- Routes -----------------------
@@ -403,6 +404,7 @@ app.use("/api/pricing-status", require("./routes/pricingStatus")); // Early acce
 app.use("/api/compliance", require("./routes/compliance")); // Legal & tax compliance
 app.use("/api/ai", require("./routes/ai")); // AI assistant
 app.use("/api/contact", require("./routes/contact")); // contact form
+app.use("/api/invite-codes", generalRateLimit, require("./routes/inviteCodes")); // one-time invite codes for free-year membership
 app.use("/api/referrals", require("./routes/referrals")); // referral rewards (Pro-to-Pro)
 app.use("/api/commission-referrals", generalRateLimit, require("./routes/commissionReferrals")); // public commission referrals
 app.use("/api/payouts", generalRateLimit, require("./routes/payouts")); // commission payouts
