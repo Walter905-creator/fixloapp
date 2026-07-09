@@ -442,4 +442,83 @@ router.patch('/settings', requireRecruiter, async (req, res) => {
   }
 });
 
+// ── Invite Code Requests (recruiters cannot generate codes; they can request) ──
+
+const InviteCodeRequest = require('../models/InviteCodeRequest');
+
+/**
+ * POST /api/recruiter/code-requests
+ * Submit a request for admin to generate a promotional invitation code.
+ * Recruiters CANNOT generate codes themselves — only admins can.
+ */
+router.post('/code-requests', requireRecruiter, async (req, res) => {
+  try {
+    const {
+      reason,
+      requestedDuration = '12months',
+      targetName,
+      targetEmail,
+      targetPhone,
+      targetState,
+      targetTrade
+    } = req.body || {};
+
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ error: 'A reason is required for the code request.' });
+    }
+
+    const validDurations = ['30days', '90days', '6months', '12months', 'unlimited'];
+    if (!validDurations.includes(requestedDuration)) {
+      return res.status(400).json({ error: 'Invalid requested membership duration.' });
+    }
+
+    const recruiter = await RecruiterProfile.findById(req.user.id).select('name email').lean();
+    if (!recruiter) return res.status(404).json({ error: 'Recruiter profile not found' });
+
+    const codeRequest = await InviteCodeRequest.create({
+      requestedBy: req.user.id,
+      requesterName: recruiter.name,
+      requesterEmail: recruiter.email,
+      reason: reason.trim().slice(0, 1000),
+      requestedDuration,
+      targetName: targetName?.trim(),
+      targetEmail: targetEmail?.toLowerCase().trim(),
+      targetPhone: targetPhone?.trim(),
+      targetState: targetState?.trim(),
+      targetTrade: targetTrade?.trim()
+    });
+
+    return res.status(201).json({ ok: true, request: codeRequest });
+  } catch (err) {
+    console.error('❌ recruiter/code-requests POST error:', err.message);
+    return res.status(500).json({ error: 'Could not submit code request' });
+  }
+});
+
+/**
+ * GET /api/recruiter/code-requests
+ * List this recruiter's own code requests.
+ */
+router.get('/code-requests', requireRecruiter, async (req, res) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit) || 20));
+
+    const [requests, total] = await Promise.all([
+      InviteCodeRequest.find({ requestedBy: req.user.id })
+        .sort({ createdAt: -1 })
+        .skip((pageNum - 1) * limitNum)
+        .limit(limitNum)
+        .lean(),
+      InviteCodeRequest.countDocuments({ requestedBy: req.user.id })
+    ]);
+
+    return res.json({ ok: true, requests, total });
+  } catch (err) {
+    console.error('❌ recruiter/code-requests GET error:', err.message);
+    return res.status(500).json({ error: 'Could not load code requests' });
+  }
+});
+
 module.exports = router;

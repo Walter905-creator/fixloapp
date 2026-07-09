@@ -492,7 +492,14 @@ router.post('/signup/pro', requireDatabase, async (req, res) => {
   if (inviteCode && inviteCode.trim()) {
     const normalizedCode = inviteCode.trim().toUpperCase();
     inviteDoc = await InviteCode.findOne({ code: normalizedCode });
-    if (!inviteDoc || inviteDoc.redeemed || (inviteDoc.expiresAt && inviteDoc.expiresAt < new Date())) {
+    if (
+      !inviteDoc ||
+      inviteDoc.revoked ||
+      inviteDoc.disabled ||
+      inviteDoc.redeemed ||
+      (inviteDoc.usesAllowed > 0 && inviteDoc.usesRemaining <= 0) ||
+      (inviteDoc.expiresAt && inviteDoc.expiresAt < new Date())
+    ) {
       return res.status(400).json({ error: 'This invitation code is invalid, expired, or already used.' });
     }
   }
@@ -518,10 +525,11 @@ router.post('/signup/pro', requireDatabase, async (req, res) => {
     }
     const hashed = await bcrypt.hash(password, 12);
 
-    // Build pro document; grant free year if valid invite code
+    // Every new contractor gets a 30-day free trial automatically.
+    // If a valid invite code is provided, its duration replaces the default 30 days.
     const freeAccessUntil = inviteDoc
-      ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-      : null;
+      ? InviteCode.calcFreeAccessUntil(inviteDoc.membershipDuration || '12months')
+      : InviteCode.calcFreeAccessUntil('30days');
 
     const pro = await Pro.create({
       name: name.trim(),
@@ -531,18 +539,38 @@ router.post('/signup/pro', requireDatabase, async (req, res) => {
       location: { type: 'Point', coordinates: [-74.006, 40.7128], address: location.trim() },
       password: hashed,
       smsConsent: !!smsOptIn,
-      isActive: !!inviteDoc,          // activate immediately with free invite
-      paymentStatus: inviteDoc ? 'active' : 'pending',
-      subscriptionActive: !!inviteDoc,
+      isActive: true,              // all new contractors start active on free trial
+      paymentStatus: 'active',
+      subscriptionActive: true,
+      subscriptionStatus: inviteDoc ? 'invite_redeemed' : 'active',
       freeAccessUntil,
       inviteCodeUsed: inviteDoc ? inviteDoc.code : null
     });
 
-    // Atomically mark the invite code as redeemed — cannot be reused
+    // Atomically mark the invite code as used — handle multi-use codes
     if (inviteDoc) {
+      const newRemaining = inviteDoc.usesAllowed === 0 ? 0 : Math.max(0, inviteDoc.usesRemaining - 1);
+      const nowFullyUsed = inviteDoc.usesAllowed > 0 && newRemaining === 0;
       await InviteCode.findOneAndUpdate(
-        { _id: inviteDoc._id, redeemed: false }, // atomic guard
-        { redeemed: true, redeemedAt: new Date(), redeemedByProId: pro._id }
+        { _id: inviteDoc._id },
+        {
+          $set: {
+            usesRemaining: newRemaining,
+            redeemed: nowFullyUsed,
+            redeemedAt: nowFullyUsed ? new Date() : inviteDoc.redeemedAt,
+            redeemedBy: nowFullyUsed ? String(pro._id) : inviteDoc.redeemedBy,
+            redeemedByUserId: nowFullyUsed ? pro._id : inviteDoc.redeemedByUserId
+          },
+          $push: {
+            redeemedByList: {
+              proId: pro._id,
+              proName: pro.name,
+              proEmail: pro.email,
+              proPhone: pro.phone,
+              redeemedAt: new Date()
+            }
+          }
+        }
       );
     }
 
@@ -556,9 +584,10 @@ router.post('/signup/pro', requireDatabase, async (req, res) => {
         trade: pro.trade,
         phone: pro.phone,
         paymentStatus: pro.paymentStatus,
-        requiresSubscription: !inviteDoc,
+        freeTrialActive: true,
         freeAccessUntil: pro.freeAccessUntil,
-        inviteCodeAccepted: !!inviteDoc
+        inviteCodeAccepted: !!inviteDoc,
+        requiresSubscription: false
       }
     });
   } catch (err) {
