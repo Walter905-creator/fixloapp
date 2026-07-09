@@ -185,22 +185,22 @@ app.use(express.json());
 // A signing secret makes cookies tamper-evident (signed cookies cannot be
 // forged by an attacker even if they know the cookie name).
 const cookieParser = require('cookie-parser');
-const { csrfMiddleware, generateCsrfToken } = require('./middleware/csrf');
+const { doubleCsrfProtection, generateCsrfToken } = require('./middleware/csrf');
 app.use(cookieParser(process.env.COOKIE_SECRET || process.env.JWT_SECRET));
 
 // ----------------------- CSRF Protection -----------------------
 // Applies double-submit cookie token validation (csrf-csrf) to all
 // state-changing requests (POST, PUT, PATCH, DELETE).
 //
-// Exempt from CSRF token checks (use their own cryptographic auth):
+// Exempt from CSRF token checks (configured via skipCsrfProtection in middleware/csrf.js):
 //   - /webhook/*           — Stripe-Signature, Checkr secret, etc.
-//   - Authorization: ****** JWT bearer auth is immune to CSRF
+//   - Authorization: ****** — JWT bearer auth is immune to CSRF
 //   - GET / HEAD / OPTIONS  — safe methods per RFC 7231
 //
 // The CSRF token is issued via GET /api/csrf-token (see below).
 // Axios clients pick it up automatically from the XSRF-TOKEN cookie.
 // See server/middleware/csrf.js for full documentation.
-app.use(csrfMiddleware);
+app.use(doubleCsrfProtection);
 
 // ----------------------- Static serving (API assets only) -----------------------
 app.use(express.static(__dirname)); // e.g., admin assets, images used by API docs, etc.
