@@ -181,9 +181,19 @@ app.use(
 app.use("/webhook/stripe", express.raw({ type: "application/json" }));
 app.use(express.json());
 
-// Cookie parser for country detection caching
+// Cookie parser for country detection caching.
+// A signing secret makes cookies tamper-evident (signed cookies cannot be
+// forged by an attacker even if they know the cookie name).
 const cookieParser = require('cookie-parser');
-app.use(cookieParser());
+const { csrfProtection } = require('./middleware/csrf');
+app.use(cookieParser(process.env.COOKIE_SECRET || process.env.JWT_SECRET));
+
+// ----------------------- CSRF Protection -----------------------
+// Applies Origin/Referer validation to all state-changing requests
+// (POST, PUT, PATCH, DELETE).  Webhook routes are exempt because they
+// carry their own cryptographic proof of origin (Stripe-Signature, etc.).
+// See server/middleware/csrf.js for full documentation.
+app.use(csrfProtection(isOriginAllowed));
 
 // ----------------------- Static serving (API assets only) -----------------------
 app.use(express.static(__dirname)); // e.g., admin assets, images used by API docs, etc.
