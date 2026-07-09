@@ -635,7 +635,7 @@ router.post('/redeem', requireAuth, async (req, res) => {
 
     // Apply membership to the pro account
     pro.subscriptionPlan = 'pro';
-    pro.subscriptionStatus = 'free_year';
+    pro.subscriptionStatus = 'invite_redeemed';
     pro.subscriptionActive = true;
     pro.isActive = true;
     pro.freeAccessUntil = freeAccessUntil;
@@ -675,7 +675,8 @@ router.post('/redeem', requireAuth, async (req, res) => {
       freeUntil: freeAccessUntil
     });
 
-    const isHighValue = invite.membershipDuration === '12months' || invite.membershipDuration === 'unlimited';
+    const HIGH_VALUE_DURATIONS = ['12months', 'unlimited'];
+    const isHighValue = HIGH_VALUE_DURATIONS.includes(invite.membershipDuration);
     const notifyMsg = isHighValue
       ? `🔑 HIGH-VALUE code ${invite.code} (${invite.membershipDuration}) redeemed by ${pro.email}`
       : `Code ${invite.code} (${invite.membershipDuration}) redeemed by ${pro.email}`;

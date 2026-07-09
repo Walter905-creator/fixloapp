@@ -44,6 +44,19 @@ function MetricBox({ label, value, color = 'text-white' }) {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
+const DEFAULT_CREATE_FORM = {
+  assignedName: '',
+  assignedEmail: '',
+  assignedPhone: '',
+  assignedState: '',
+  assignedTrade: '',
+  membershipDuration: '12months',
+  usesAllowed: '1',
+  expiresAt: '',
+  notes: '',
+  count: '1'
+};
+
 export default function AdminInviteCodesPage() {
   const navigate = useNavigate();
 
@@ -69,18 +82,7 @@ export default function AdminInviteCodesPage() {
   // Modal state
   const [showCreate, setShowCreate] = useState(false);
   const [showHistory, setShowHistory] = useState(null); // code object
-  const [createForm, setCreateForm] = useState({
-    assignedName: '',
-    assignedEmail: '',
-    assignedPhone: '',
-    assignedState: '',
-    assignedTrade: '',
-    membershipDuration: '12months',
-    usesAllowed: '1',
-    expiresAt: '',
-    notes: '',
-    count: '1'
-  });
+  const [createForm, setCreateForm] = useState(DEFAULT_CREATE_FORM);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
 
@@ -185,7 +187,7 @@ export default function AdminInviteCodesPage() {
       const data = await res.json();
       if (!data.ok) { setCreateError(data.error || 'Failed to create code'); return; }
       setShowCreate(false);
-      setCreateForm({ assignedName:'',assignedEmail:'',assignedPhone:'',assignedState:'',assignedTrade:'',membershipDuration:'12months',usesAllowed:'1',expiresAt:'',notes:'',count:'1' });
+      setCreateForm(DEFAULT_CREATE_FORM);
       loadCodes();
       loadStats();
     } catch {

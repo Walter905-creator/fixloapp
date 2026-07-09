@@ -542,7 +542,7 @@ router.post('/signup/pro', requireDatabase, async (req, res) => {
       isActive: true,              // all new contractors start active on free trial
       paymentStatus: 'active',
       subscriptionActive: true,
-      subscriptionStatus: inviteDoc ? 'free_year' : 'active',
+      subscriptionStatus: inviteDoc ? 'invite_redeemed' : 'active',
       freeAccessUntil,
       inviteCodeUsed: inviteDoc ? inviteDoc.code : null
     });

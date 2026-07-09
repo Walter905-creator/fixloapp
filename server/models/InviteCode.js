@@ -135,7 +135,7 @@ inviteCodeSchema.statics.calcFreeAccessUntil = function (duration, from = new Da
   switch (duration) {
     case '30days':   return ms(30);
     case '90days':   return ms(90);
-    case '6months':  return ms(183); // ~6 months in days
+    case '6months':  return ms(183); // average 6 months (≈183 days)
     case '12months': return ms(365);
     case 'unlimited': return null;
     default:         return ms(365);
