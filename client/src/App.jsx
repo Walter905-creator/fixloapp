@@ -47,6 +47,8 @@ import ReferralSignInPage from './routes/ReferralSignInPage.jsx';
 import RequestPage from './routes/RequestPage.jsx';
 // Internal admin dashboard (private — requires admin role)
 import InternalDashboardPage from './routes/InternalDashboardPage.jsx';
+// Admin Invite Codes Management
+import AdminInviteCodesPage from './routes/AdminInviteCodesPage.jsx';
 // Recruiter Network
 import RecruiterSignupPage from './routes/RecruiterSignupPage.jsx';
 import RecruiterLoginPage from './routes/RecruiterLoginPage.jsx';
@@ -190,6 +192,11 @@ export default function App(){
       <Route path="/dashboard/admin/seo-ai" element={
         <RequireAdmin>
           <AdminSEOAIPage/>
+        </RequireAdmin>
+      }/>
+      <Route path="/dashboard/admin/invite-codes" element={
+        <RequireAdmin>
+          <AdminInviteCodesPage/>
         </RequireAdmin>
       }/>
       <Route path="/admin" element={

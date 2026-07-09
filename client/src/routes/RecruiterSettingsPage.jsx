@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { API_BASE } from '../utils/config';
 import { useRecruiterAuth } from '../context/RecruiterAuthContext';
@@ -19,6 +19,41 @@ export default function RecruiterSettingsPage() {
   const [connectLoading, setConnectLoading] = useState(false);
   const [connectStatus, setConnectStatus] = useState('');
 
+  // Promo code request state
+  const [myCodeRequests, setMyCodeRequests] = useState([]);
+  const [codeReqForm, setCodeReqForm] = useState({ reason: '', requestedDuration: '12months', targetName: '', targetEmail: '', targetState: '', targetTrade: '' });
+  const [codeReqLoading, setCodeReqLoading] = useState(false);
+  const [codeReqError, setCodeReqError] = useState('');
+  const [codeReqSuccess, setCodeReqSuccess] = useState('');
+  const [showCodeReqForm, setShowCodeReqForm] = useState(false);
+
+  const loadMyCodeRequests = useCallback(async () => {
+    try {
+      const res = await authFetch(`${API_BASE}/api/recruiter/code-requests?limit=10`);
+      const data = await res.json();
+      if (data.ok) setMyCodeRequests(data.requests || []);
+    } catch { /* silent */ }
+  }, [authFetch]);
+
+  const submitCodeRequest = async (e) => {
+    e.preventDefault();
+    if (!codeReqForm.reason.trim()) { setCodeReqError('Please provide a reason.'); return; }
+    setCodeReqLoading(true); setCodeReqError(''); setCodeReqSuccess('');
+    try {
+      const res = await authFetch(`${API_BASE}/api/recruiter/code-requests`, {
+        method: 'POST',
+        body: JSON.stringify(codeReqForm)
+      });
+      const data = await res.json();
+      if (!res.ok) { setCodeReqError(data.error || 'Submission failed'); return; }
+      setCodeReqSuccess('Request submitted! The admin will review it shortly.');
+      setShowCodeReqForm(false);
+      setCodeReqForm({ reason: '', requestedDuration: '12months', targetName: '', targetEmail: '', targetState: '', targetTrade: '' });
+      loadMyCodeRequests();
+    } catch { setCodeReqError('Network error. Please try again.'); }
+    finally { setCodeReqLoading(false); }
+  };
+
   useEffect(() => {
     if (!authLoading && !isAuthenticated) navigate('/recruiter/login', { replace: true });
   }, [authLoading, isAuthenticated, navigate]);
@@ -26,6 +61,7 @@ export default function RecruiterSettingsPage() {
   useEffect(() => {
     if (!isAuthenticated) return;
     loadProfile();
+    loadMyCodeRequests();
     // Handle return from Stripe Connect
     if (searchParams.get('connect_return')) verifyConnect();
   }, [isAuthenticated]);
@@ -195,6 +231,95 @@ export default function RecruiterSettingsPage() {
               </dl>
             </div>
           )}
+
+          {/* Request a Promo Code */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+            <h2 className="font-bold text-lg mb-1">Request a Promotional Code</h2>
+            <p className="text-white/50 text-sm mb-4">
+              Recruiters cannot generate invitation codes directly. Submit a request and an admin will review it.
+            </p>
+
+            {codeReqSuccess && (
+              <div className="mb-4 bg-emerald-500/20 border border-emerald-400/30 rounded-lg p-3 text-emerald-200 text-sm">{codeReqSuccess}</div>
+            )}
+
+            {!showCodeReqForm ? (
+              <button onClick={() => setShowCodeReqForm(true)}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition-colors">
+                + Submit Code Request
+              </button>
+            ) : (
+              <form onSubmit={submitCodeRequest} className="space-y-3">
+                {codeReqError && (
+                  <div className="bg-red-500/20 border border-red-400/30 rounded-lg p-3 text-red-200 text-sm">{codeReqError}</div>
+                )}
+                <div>
+                  <label className="block text-white/70 text-sm mb-1">Reason for Request <span className="text-red-400">*</span></label>
+                  <textarea rows={3} required value={codeReqForm.reason}
+                    onChange={e => setCodeReqForm(f => ({...f, reason: e.target.value}))}
+                    placeholder="Explain who this code is for and why…"
+                    className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/30 focus:outline-none text-sm resize-none" />
+                </div>
+                <div>
+                  <label className="block text-white/70 text-sm mb-1">Requested Duration</label>
+                  <select value={codeReqForm.requestedDuration}
+                    onChange={e => setCodeReqForm(f => ({...f, requestedDuration: e.target.value}))}
+                    className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none text-sm">
+                    <option value="30days" className="bg-slate-900">30 Days</option>
+                    <option value="90days" className="bg-slate-900">90 Days</option>
+                    <option value="6months" className="bg-slate-900">6 Months</option>
+                    <option value="12months" className="bg-slate-900">12 Months</option>
+                    <option value="unlimited" className="bg-slate-900">Unlimited</option>
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <input placeholder="Target's name" value={codeReqForm.targetName}
+                    onChange={e => setCodeReqForm(f => ({...f, targetName: e.target.value}))}
+                    className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/30 focus:outline-none text-sm" />
+                  <input placeholder="Target's email" type="email" value={codeReqForm.targetEmail}
+                    onChange={e => setCodeReqForm(f => ({...f, targetEmail: e.target.value}))}
+                    className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/30 focus:outline-none text-sm" />
+                  <input placeholder="State (e.g. TX)" value={codeReqForm.targetState}
+                    onChange={e => setCodeReqForm(f => ({...f, targetState: e.target.value}))}
+                    className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/30 focus:outline-none text-sm" />
+                  <input placeholder="Trade (e.g. plumbing)" value={codeReqForm.targetTrade}
+                    onChange={e => setCodeReqForm(f => ({...f, targetTrade: e.target.value}))}
+                    className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/30 focus:outline-none text-sm" />
+                </div>
+                <div className="flex gap-3">
+                  <button type="submit" disabled={codeReqLoading}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60">
+                    {codeReqLoading ? 'Submitting…' : 'Submit Request'}
+                  </button>
+                  <button type="button" onClick={() => { setShowCodeReqForm(false); setCodeReqError(''); }}
+                    className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition-colors">
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* My past requests */}
+            {myCodeRequests.length > 0 && (
+              <div className="mt-4 border-t border-white/10 pt-4 space-y-2">
+                <p className="text-white/50 text-xs uppercase tracking-wider">My Requests</p>
+                {myCodeRequests.map(req => (
+                  <div key={req._id} className="flex items-center justify-between text-sm">
+                    <div>
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs mr-2 ${
+                        req.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300' :
+                        req.status === 'approved' ? 'bg-emerald-500/20 text-emerald-300' :
+                        'bg-red-500/20 text-red-300'
+                      }`}>{req.status}</span>
+                      <span className="text-white/70">{req.requestedDuration}</span>
+                      {req.generatedCode && <span className="ml-2 font-mono text-blue-300 text-xs">{req.generatedCode}</span>}
+                    </div>
+                    <span className="text-white/40 text-xs">{new Date(req.createdAt).toLocaleDateString()}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="text-center">
             <button onClick={() => { logout(); navigate('/recruiter/login'); }}

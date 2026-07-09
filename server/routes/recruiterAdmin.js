@@ -265,4 +265,118 @@ router.get('/recruiter-analytics', requireAdmin, async (req, res) => {
   }
 });
 
+// ── Invite Code Request Admin Routes ──────────────────────────────────────────
+const InviteCodeRequest = require('../models/InviteCodeRequest');
+const InviteCode = require('../models/InviteCode');
+
+/**
+ * GET /api/admin/code-requests
+ * List all recruiter code requests with optional filtering.
+ */
+router.get('/code-requests', requireAdmin, async (req, res) => {
+  try {
+    const { status, page = 1, limit = 20 } = req.query;
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 20));
+
+    const filter = {};
+    if (status && ['pending', 'approved', 'rejected'].includes(status)) {
+      filter.status = status;
+    }
+
+    const [requests, total] = await Promise.all([
+      InviteCodeRequest.find(filter)
+        .sort({ createdAt: -1 })
+        .skip((pageNum - 1) * limitNum)
+        .limit(limitNum)
+        .lean(),
+      InviteCodeRequest.countDocuments(filter)
+    ]);
+
+    const [counts] = await InviteCodeRequest.aggregate([
+      { $group: { _id: '$status', count: { $sum: 1 } } }
+    ]).then((agg) => {
+      const summary = { pending: 0, approved: 0, rejected: 0, total: 0 };
+      agg.forEach(({ _id, count }) => { summary[_id] = count; summary.total += count; });
+      return [summary];
+    });
+
+    return res.json({ ok: true, requests, total, summary: counts });
+  } catch (err) {
+    console.error('❌ admin/code-requests GET error:', err.message);
+    return res.status(500).json({ error: 'Could not load code requests' });
+  }
+});
+
+/**
+ * PATCH /api/admin/code-requests/:id
+ * Approve or reject a recruiter code request.
+ * When approving, optionally generate a code immediately.
+ */
+router.patch('/code-requests/:id', requireAdmin, async (req, res) => {
+  try {
+    const { action, adminNotes = '', generateCode = false } = req.body || {};
+
+    if (!['approve', 'reject'].includes(action)) {
+      return res.status(400).json({ error: 'action must be "approve" or "reject"' });
+    }
+
+    const codeRequest = await InviteCodeRequest.findById(req.params.id);
+    if (!codeRequest) return res.status(404).json({ error: 'Code request not found' });
+    if (codeRequest.status !== 'pending') {
+      return res.status(400).json({ error: `Request is already ${codeRequest.status}` });
+    }
+
+    codeRequest.status = action === 'approve' ? 'approved' : 'rejected';
+    codeRequest.adminNotes = adminNotes.trim().slice(0, 500);
+    codeRequest.reviewedBy = req.user?.email || 'admin';
+    codeRequest.reviewedAt = new Date();
+
+    let generatedInvite = null;
+
+    // When approving + generateCode flag, create the code immediately
+    if (action === 'approve' && generateCode) {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      const random = (len) => Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+      let newCode = null;
+      for (let i = 0; i < 10; i++) {
+        const candidate = `FIXLO-${random(6)}`;
+        const exists = await InviteCode.findOne({ code: candidate }).lean();
+        if (!exists) { newCode = candidate; break; }
+      }
+      if (!newCode) return res.status(500).json({ error: 'Failed to generate a unique code' });
+
+      generatedInvite = await InviteCode.create({
+        code: newCode,
+        assignedName: codeRequest.targetName,
+        assignedEmail: codeRequest.targetEmail,
+        assignedPhone: codeRequest.targetPhone,
+        assignedState: codeRequest.targetState,
+        assignedTrade: codeRequest.targetTrade,
+        membershipDuration: codeRequest.requestedDuration || '12months',
+        usesAllowed: 1,
+        usesRemaining: 1,
+        notes: `Requested by recruiter: ${codeRequest.requesterEmail}. Reason: ${codeRequest.reason}`,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        createdByEmail: req.user?.email || 'admin',
+        codeRequestId: codeRequest._id
+      });
+
+      codeRequest.generatedCodeId = generatedInvite._id;
+      codeRequest.generatedCode = newCode;
+    }
+
+    await codeRequest.save();
+
+    return res.json({
+      ok: true,
+      request: codeRequest,
+      generatedInvite: generatedInvite || null
+    });
+  } catch (err) {
+    console.error('❌ admin/code-requests PATCH error:', err.message);
+    return res.status(500).json({ error: 'Could not update code request' });
+  }
+});
+
 module.exports = router;

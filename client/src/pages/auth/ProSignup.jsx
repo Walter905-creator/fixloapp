@@ -260,7 +260,7 @@ export default function ProSignup() {
               </div>
               {inviteStatus === 'valid' && (
                 <p className="mt-1.5 text-green-400 text-xs font-medium">
-                  ✓ Invitation code accepted. Your first year of Fixlo Pro is free.
+                  ✓ Invitation code accepted. Your extended free membership has been applied.
                 </p>
               )}
               {inviteStatus === 'invalid' && (
@@ -270,7 +270,7 @@ export default function ProSignup() {
               )}
               {!inviteStatus && (
                 <p className="mt-1.5 text-blue-300/60 text-xs">
-                  Have a personal Fixlo invitation? Enter your code here to claim your free year.
+                  Have an invitation code? Enter it here to extend your free trial.
                 </p>
               )}
             </div>
