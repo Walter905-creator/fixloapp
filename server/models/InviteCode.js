@@ -37,7 +37,10 @@ const inviteCodeSchema = new mongoose.Schema({
   redeemedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'Pro', default: null },
   redeemedAt: { type: Date, default: null },
 
-  // Expiration date (optional — null means never expires)
+  // Who redeemed the code — stores the redeeming pro's ObjectId as a string
+  redeemedBy: { type: String, default: null },
+
+  // Expiration date — auto-set to 30 days after creation when not explicitly provided
   expiresAt: { type: Date, default: null },
 
   // Revoked by admin
@@ -56,6 +59,10 @@ inviteCodeSchema.virtual('status').get(function () {
   if (this.expiresAt && new Date() > this.expiresAt) return 'expired';
   return 'pending';
 });
+
+// Alias virtuals for spec compatibility
+inviteCodeSchema.virtual('used').get(function () { return this.redeemed; });
+inviteCodeSchema.virtual('usedAt').get(function () { return this.redeemedAt; });
 
 inviteCodeSchema.set('toJSON', { virtuals: true });
 inviteCodeSchema.set('toObject', { virtuals: true });

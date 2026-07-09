@@ -31,6 +31,11 @@ async function generateUniqueCode(prefix = null, maxAttempts = 10) {
   throw new Error('Failed to generate a unique invite code after multiple attempts');
 }
 
+// ─── Helper: default expiry = 30 days from now ────────────────────────────────
+function defaultExpiresAt(from = new Date()) {
+  return new Date(from.getTime() + 30 * 24 * 60 * 60 * 1000);
+}
+
 // ─── POST /api/invite-codes/create ───────────────────────────────────────────
 // Admin only — create one invite code
 router.post('/create', requireAuth, requireAdmin, async (req, res) => {
@@ -55,7 +60,7 @@ router.post('/create', requireAuth, requireAdmin, async (req, res) => {
       assignedState,
       assignedTrade,
       planType,
-      expiresAt: expiresAt ? new Date(expiresAt) : null,
+      expiresAt: expiresAt ? new Date(expiresAt) : defaultExpiresAt(),
       createdBy: req.user?.id || null
     });
 
@@ -88,7 +93,7 @@ router.post('/bulk-create', requireAuth, requireAdmin, async (req, res) => {
         assignedState,
         assignedTrade,
         planType,
-        expiresAt: expiresAt ? new Date(expiresAt) : null,
+        expiresAt: expiresAt ? new Date(expiresAt) : defaultExpiresAt(),
         createdBy: req.user?.id || null
       });
       created.push(invite);
@@ -195,16 +200,16 @@ router.post('/validate', async (req, res) => {
     const invite = await InviteCode.findOne({ code: code.trim().toUpperCase() }).lean({ virtuals: true });
 
     if (!invite) {
-      return res.json({ ok: true, valid: false, reason: 'Code not found' });
+      return res.json({ ok: true, valid: false, reason: 'Invalid invitation code.' });
     }
     if (invite.revoked) {
       return res.json({ ok: true, valid: false, reason: 'Code has been revoked' });
     }
     if (invite.redeemed) {
-      return res.json({ ok: true, valid: false, reason: 'Code has already been used' });
+      return res.json({ ok: true, valid: false, reason: 'This code has already been used.' });
     }
     if (invite.expiresAt && new Date() > invite.expiresAt) {
-      return res.json({ ok: true, valid: false, reason: 'Code has expired' });
+      return res.json({ ok: true, valid: false, reason: 'This code has expired. Please request a new invitation code.' });
     }
 
     // Optionally return partial assignment info (first name only, no PII)
@@ -235,12 +240,12 @@ router.post('/redeem', requireAuth, async (req, res) => {
 
     // Fetch the invite code
     const invite = await InviteCode.findOne({ code: code.trim().toUpperCase() });
-    if (!invite) return res.status(404).json({ ok: false, error: 'Invalid invitation code' });
+    if (!invite) return res.status(404).json({ ok: false, error: 'Invalid invitation code.' });
 
     if (invite.revoked) return res.status(400).json({ ok: false, error: 'This invitation code has been revoked' });
-    if (invite.redeemed) return res.status(400).json({ ok: false, error: 'This invitation code has already been used' });
+    if (invite.redeemed) return res.status(400).json({ ok: false, error: 'This code has already been used.' });
     if (invite.expiresAt && new Date() > invite.expiresAt) {
-      return res.status(400).json({ ok: false, error: 'This invitation code has expired' });
+      return res.status(400).json({ ok: false, error: 'This code has expired. Please request a new invitation code.' });
     }
 
     // Check if the pro has already redeemed an invite code
@@ -278,6 +283,7 @@ router.post('/redeem', requireAuth, async (req, res) => {
     invite.redeemed = true;
     invite.redeemedByUserId = pro._id;
     invite.redeemedAt = new Date();
+    invite.redeemedBy = String(pro._id);
     await invite.save();
 
     console.log(`✅ Invite code ${invite.code} redeemed by pro ${pro._id} (${pro.email})`);
