@@ -20,6 +20,11 @@ const Campaign = require('../models/Campaign');
 const FGEImage = require('../models/FGEImage');
 const { enqueue } = require('../services/queue');
 const ai = require('../services/aiGenerator');
+const { allowedEnum, regexFilter, posInt } = require('../middleware/sanitize');
+
+const CAMPAIGN_TYPES   = ['email','sms','blog','facebook','instagram','linkedin','x','google_business','landing_page','seasonal'];
+const CAMPAIGN_STATUSES = ['draft','scheduled','active','paused','completed','failed'];
+const AUDIENCE_VALUES   = ['homeowners','contractors','recruiters','all'];
 
 // Apply admin guard to all marketing routes
 router.use(requireAuth, requireAdmin);
@@ -103,21 +108,24 @@ router.post('/campaign', async (req, res) => {
 
 router.get('/campaigns', async (req, res) => {
   try {
-    const { type, status, page = 1, limit = 20 } = req.query;
+    const page  = posInt(req.query.page, 1);
+    const limit = posInt(req.query.limit, 20);
+    const type   = allowedEnum(req.query.type,   CAMPAIGN_TYPES);
+    const status = allowedEnum(req.query.status, CAMPAIGN_STATUSES);
     const filter = {};
-    if (type) filter.type = type;
+    if (type)   filter.type   = type;
     if (status) filter.status = status;
 
     const [campaigns, total] = await Promise.all([
       Campaign.find(filter)
         .sort({ createdAt: -1 })
-        .skip((Number(page) - 1) * Number(limit))
-        .limit(Number(limit))
+        .skip((page - 1) * limit)
+        .limit(limit)
         .lean(),
       Campaign.countDocuments(filter),
     ]);
 
-    return res.json({ ok: true, campaigns, total, page: Number(page), limit: Number(limit) });
+    return res.json({ ok: true, campaigns, total, page, limit });
   } catch (err) {
     return res.status(500).json({ ok: false, error: err.message });
   }

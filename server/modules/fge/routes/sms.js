@@ -16,6 +16,10 @@ const requireAdmin = require('../../../middleware/requireAdmin');
 const SmsTemplate = require('../models/SmsTemplate');
 const { sendSms } = require('../services/smsSender');
 const ai = require('../services/aiGenerator');
+const { allowedEnum } = require('../middleware/sanitize');
+
+const SMS_TRIGGERS = ['quote_confirmation','job_reminder','job_follow_up','seasonal_reminder',
+  'referral_invite','recruiter_update','manual'];
 
 router.use(requireAuth, requireAdmin);
 
@@ -23,10 +27,10 @@ router.use(requireAuth, requireAdmin);
 
 router.get('/templates', async (req, res) => {
   try {
-    const { trigger, active } = req.query;
+    const trigger = allowedEnum(req.query.trigger, SMS_TRIGGERS);
     const filter = {};
     if (trigger) filter.trigger = trigger;
-    if (active !== undefined) filter.active = active === 'true';
+    if (req.query.active !== undefined) filter.active = req.query.active === 'true';
     const templates = await SmsTemplate.find(filter).sort({ createdAt: -1 }).lean();
     return res.json({ ok: true, templates });
   } catch (err) {

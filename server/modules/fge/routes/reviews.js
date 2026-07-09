@@ -15,6 +15,10 @@ const requireAdmin = require('../../../middleware/requireAdmin');
 const Review = require('../../../models/Review'); // use existing Review model
 const { sendEmail } = require('../services/emailSender');
 const { sendSms } = require('../services/smsSender');
+const { allowedEnum, posInt } = require('../middleware/sanitize');
+
+const REVIEW_STATUSES = ['pending','approved','rejected'];
+const CHANNEL_VALUES  = ['email','sms','both'];
 
 const SITE_BASE_URL = process.env.SITE_BASE_URL || 'https://fixloapp.com';
 
@@ -40,15 +44,17 @@ router.use(requireAuth, requireAdmin);
 
 router.get('/admin', async (req, res) => {
   try {
-    const { status, page = 1, limit = 20 } = req.query;
+    const page   = posInt(req.query.page, 1);
+    const limit  = posInt(req.query.limit, 20);
+    const status = allowedEnum(req.query.status, REVIEW_STATUSES);
     const filter = {};
     if (status) filter.status = status;
 
     const [reviews, total] = await Promise.all([
       Review.find(filter)
         .sort({ createdAt: -1 })
-        .skip((Number(page) - 1) * Number(limit))
-        .limit(Number(limit))
+        .skip((page - 1) * limit)
+        .limit(limit)
         .lean(),
       Review.countDocuments(filter),
     ]);
@@ -68,7 +74,8 @@ router.get('/admin', async (req, res) => {
  */
 router.post('/request', async (req, res) => {
   try {
-    const { jobId, homeownerEmail, homeownerPhone, proName, channel = 'email' } = req.body;
+    const { jobId, homeownerEmail, homeownerPhone, proName } = req.body;
+    const channel = allowedEnum(req.body.channel, CHANNEL_VALUES) || 'email';
     if (!homeownerEmail && !homeownerPhone) {
       return res.status(400).json({ ok: false, error: 'homeownerEmail or homeownerPhone required.' });
     }

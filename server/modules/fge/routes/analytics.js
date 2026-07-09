@@ -13,6 +13,7 @@ const router = require('express').Router();
 const requireAuth = require('../../../middleware/requireAuth');
 const requireAdmin = require('../../../middleware/requireAdmin');
 const FGEAnalytics = require('../models/FGEAnalytics');
+const { posInt } = require('../middleware/sanitize');
 
 router.use(requireAuth, requireAdmin);
 
@@ -98,8 +99,8 @@ router.post('/record', async (req, res) => {
 
 router.get('/top-cities', async (req, res) => {
   try {
-    const { days = 30 } = req.query;
-    const since = new Date(Date.now() - Number(days) * 24 * 60 * 60 * 1000);
+    const days = posInt(req.query.days, 30);
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
     const records = await FGEAnalytics.find({ date: { $gte: since } })
       .select('topCities')
@@ -126,8 +127,8 @@ router.get('/top-cities', async (req, res) => {
 
 router.get('/top-services', async (req, res) => {
   try {
-    const { days = 30 } = req.query;
-    const since = new Date(Date.now() - Number(days) * 24 * 60 * 60 * 1000);
+    const days = posInt(req.query.days, 30);
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
     const records = await FGEAnalytics.find({ date: { $gte: since } })
       .select('topServices')

@@ -22,10 +22,8 @@ const requireAuth = require('../../../middleware/requireAuth');
 const requireAdmin = require('../../../middleware/requireAdmin');
 
 // Use existing models that already track referrals
-let CommissionReferral, RecruiterReferral;
+let CommissionReferral;
 try { CommissionReferral = require('../../../models/CommissionReferral'); } catch (_) {}
-try { RecruiterReferral = require('../../../models/RecruiterReferral'); } catch (_) {}
-try { RecruiterProfile = require('../../../models/RecruiterProfile'); } catch (_) {}
 
 router.use(requireAuth, requireAdmin);
 

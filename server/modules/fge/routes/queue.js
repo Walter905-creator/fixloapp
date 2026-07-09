@@ -13,6 +13,11 @@ const requireAuth = require('../../../middleware/requireAuth');
 const requireAdmin = require('../../../middleware/requireAdmin');
 const MarketingQueue = require('../models/MarketingQueue');
 const { getQueueStats } = require('../services/queue');
+const { allowedEnum, posInt } = require('../middleware/sanitize');
+
+const JOB_STATUSES = ['pending','processing','completed','failed','retrying'];
+const JOB_TYPES    = ['email','sms','ai_content','seo_page','blog_post','image_generation',
+  'sitemap_update','indexing_request','ai_report','newsletter'];
 
 router.use(requireAuth, requireAdmin);
 
@@ -27,16 +32,19 @@ router.get('/stats', async (req, res) => {
 
 router.get('/jobs', async (req, res) => {
   try {
-    const { status, type, page = 1, limit = 30 } = req.query;
+    const page   = posInt(req.query.page, 1);
+    const limit  = posInt(req.query.limit, 30);
+    const status = allowedEnum(req.query.status, JOB_STATUSES);
+    const type   = allowedEnum(req.query.type,   JOB_TYPES);
     const filter = {};
     if (status) filter.status = status;
-    if (type) filter.type = type;
+    if (type)   filter.type   = type;
 
     const [jobs, total] = await Promise.all([
       MarketingQueue.find(filter)
         .sort({ createdAt: -1 })
-        .skip((Number(page) - 1) * Number(limit))
-        .limit(Number(limit))
+        .skip((page - 1) * limit)
+        .limit(limit)
         .lean(),
       MarketingQueue.countDocuments(filter),
     ]);

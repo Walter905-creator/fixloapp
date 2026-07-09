@@ -181,9 +181,8 @@ async function queueIndexingRequest(url) {
 
 /**
  * Append new landing page URLs to the existing sitemap.xml.
- * This is a lightweight fallback for when the full sitemap generator
- * cannot be run (e.g. during tests). The production generate-sitemap.js
- * script should be run periodically via cron.
+ * Checks for existing entries to avoid duplicates.
+ * The production generate-sitemap.js script should be run periodically via cron.
  */
 async function updateSitemap() {
   try {
@@ -196,8 +195,17 @@ async function updateSitemap() {
 
     let xmlContent = fs.readFileSync(SITEMAP_PATH, 'utf8');
 
-    // Build URL entries for newly published pages
-    const newEntries = pages
+    // Only add pages whose URL is not already present in the sitemap
+    const newPages = pages.filter(
+      (p) => !xmlContent.includes(`<loc>${SITE_BASE_URL}/${p.slug}</loc>`)
+    );
+
+    if (newPages.length === 0) {
+      console.log('[FGE SEO] Sitemap already up to date.');
+      return;
+    }
+
+    const newEntries = newPages
       .map(
         (p) =>
           `  <url>\n    <loc>${SITE_BASE_URL}/${p.slug}</loc>\n    <lastmod>${new Date(p.updatedAt).toISOString().split('T')[0]}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.7</priority>\n  </url>`
@@ -208,7 +216,7 @@ async function updateSitemap() {
     if (xmlContent.includes('</urlset>') && newEntries) {
       xmlContent = xmlContent.replace('</urlset>', `${newEntries}\n</urlset>`);
       fs.writeFileSync(SITEMAP_PATH, xmlContent, 'utf8');
-      console.log(`[FGE SEO] Sitemap updated with ${pages.length} landing pages.`);
+      console.log(`[FGE SEO] Sitemap updated — added ${newPages.length} new landing pages.`);
     }
   } catch (err) {
     console.error('[FGE SEO] Sitemap update failed:', err.message);

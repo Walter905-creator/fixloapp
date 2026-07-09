@@ -19,6 +19,12 @@ const EmailTemplate = require('../models/EmailTemplate');
 const Campaign = require('../models/Campaign');
 const { sendEmail, sendBulkEmail } = require('../services/emailSender');
 const ai = require('../services/aiGenerator');
+const { allowedEnum } = require('../middleware/sanitize');
+
+const EMAIL_TRIGGERS = ['new_homeowner','new_contractor','recruiter_signup','quote_request',
+  'inactive_user','job_completed','seasonal_spring','seasonal_summer','seasonal_fall',
+  'seasonal_winter','referral_invite','manual'];
+const AUDIENCE_VALUES = ['homeowners','contractors','recruiters','all'];
 
 router.use(requireAuth, requireAdmin);
 
@@ -26,10 +32,10 @@ router.use(requireAuth, requireAdmin);
 
 router.get('/templates', async (req, res) => {
   try {
-    const { trigger, active } = req.query;
+    const trigger = allowedEnum(req.query.trigger, EMAIL_TRIGGERS);
     const filter = {};
     if (trigger) filter.trigger = trigger;
-    if (active !== undefined) filter.active = active === 'true';
+    if (req.query.active !== undefined) filter.active = req.query.active === 'true';
 
     const templates = await EmailTemplate.find(filter).sort({ createdAt: -1 }).lean();
     return res.json({ ok: true, templates });

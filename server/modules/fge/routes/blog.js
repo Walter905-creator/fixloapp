@@ -18,13 +18,19 @@ const requireAuth = require('../../../middleware/requireAuth');
 const requireAdmin = require('../../../middleware/requireAdmin');
 const Blog = require('../models/Blog');
 const ai = require('../services/aiGenerator');
+const { allowedEnum, regexFilter, posInt } = require('../middleware/sanitize');
+
+const BLOG_STATUSES = ['draft','scheduled','published'];
 
 // ─── Public routes ────────────────────────────────────────────────────────────
 
 /** GET /api/fge/blog/public — list published articles for the website */
 router.get('/public', async (req, res) => {
   try {
-    const { category, tag, page = 1, limit = 12 } = req.query;
+    const page  = posInt(req.query.page, 1);
+    const limit = posInt(req.query.limit, 12);
+    const category = typeof req.query.category === 'string' ? req.query.category : undefined;
+    const tag      = typeof req.query.tag      === 'string' ? req.query.tag      : undefined;
     const filter = { status: 'published' };
     if (category) filter.category = category;
     if (tag) filter.tags = tag;
@@ -32,8 +38,8 @@ router.get('/public', async (req, res) => {
     const [posts, total] = await Promise.all([
       Blog.find(filter)
         .sort({ publishedAt: -1 })
-        .skip((Number(page) - 1) * Number(limit))
-        .limit(Number(limit))
+        .skip((page - 1) * limit)
+        .limit(limit)
         .select('-body')
         .lean(),
       Blog.countDocuments(filter),
@@ -112,25 +118,25 @@ router.post('/', async (req, res) => {
 
 router.get('/', async (req, res) => {
   try {
-    const { status, page = 1, limit = 20, search } = req.query;
+    const page   = posInt(req.query.page, 1);
+    const limit  = posInt(req.query.limit, 20);
+    const status = allowedEnum(req.query.status, BLOG_STATUSES);
+    const searchRx = regexFilter(req.query.search);
     const filter = {};
     if (status) filter.status = status;
-    if (search) filter.$or = [
-      { title: { $regex: search, $options: 'i' } },
-      { tags: { $regex: search, $options: 'i' } },
-    ];
+    if (searchRx) filter.$or = [{ title: searchRx }, { tags: searchRx }];
 
     const [posts, total] = await Promise.all([
       Blog.find(filter)
         .sort({ createdAt: -1 })
-        .skip((Number(page) - 1) * Number(limit))
-        .limit(Number(limit))
+        .skip((page - 1) * limit)
+        .limit(limit)
         .select('-body')
         .lean(),
       Blog.countDocuments(filter),
     ]);
 
-    return res.json({ ok: true, posts, total, page: Number(page) });
+    return res.json({ ok: true, posts, total, page });
   } catch (err) {
     return res.status(500).json({ ok: false, error: err.message });
   }

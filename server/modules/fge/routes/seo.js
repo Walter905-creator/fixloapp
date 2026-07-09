@@ -19,6 +19,9 @@ const LandingPage = require('../models/LandingPage');
 const SeoJob = require('../models/SeoJob');
 const { createLandingPage, updateSitemap } = require('../services/seoGenerator');
 const { enqueue } = require('../services/queue');
+const { allowedEnum, regexFilter, posInt } = require('../middleware/sanitize');
+
+const PAGE_STATUSES = ['draft','published','archived'];
 
 router.use(requireAuth, requireAdmin);
 
@@ -79,26 +82,27 @@ router.post('/batch', async (req, res) => {
 
 router.get('/pages', async (req, res) => {
   try {
-    const { status, service, page = 1, limit = 20, search } = req.query;
+    const page   = posInt(req.query.page, 1);
+    const limit  = posInt(req.query.limit, 20);
+    const status  = allowedEnum(req.query.status,  PAGE_STATUSES);
+    const service = typeof req.query.service === 'string' ? req.query.service.toLowerCase() : undefined;
+    const searchRx = regexFilter(req.query.search);
     const filter = {};
-    if (status) filter.status = status;
-    if (service) filter.service = service.toLowerCase();
-    if (search) filter.$or = [
-      { title: { $regex: search, $options: 'i' } },
-      { slug: { $regex: search, $options: 'i' } },
-    ];
+    if (status)  filter.status  = status;
+    if (service) filter.service = service;
+    if (searchRx) filter.$or = [{ title: searchRx }, { slug: searchRx }];
 
     const [pages, total] = await Promise.all([
       LandingPage.find(filter)
         .sort({ createdAt: -1 })
-        .skip((Number(page) - 1) * Number(limit))
-        .limit(Number(limit))
-        .select('-body -schemaJson')  // exclude heavy fields from list view
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .select('-body -schemaJson')
         .lean(),
       LandingPage.countDocuments(filter),
     ]);
 
-    return res.json({ ok: true, pages, total, page: Number(page) });
+    return res.json({ ok: true, pages, total, page });
   } catch (err) {
     return res.status(500).json({ ok: false, error: err.message });
   }

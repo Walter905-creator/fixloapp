@@ -12,6 +12,11 @@ const requireAuth = require('../../../middleware/requireAuth');
 const requireAdmin = require('../../../middleware/requireAdmin');
 const Campaign = require('../models/Campaign');
 const ai = require('../services/aiGenerator');
+const { allowedEnum } = require('../middleware/sanitize');
+
+const SEASON_VALUES   = ['spring','summer','fall','winter'];
+const CAMPAIGN_TYPES  = ['email','sms','blog','facebook','instagram','linkedin','x','google_business'];
+const AUDIENCE_VALUES = ['homeowners','contractors','recruiters','all'];
 
 router.use(requireAuth, requireAdmin);
 
@@ -54,7 +59,7 @@ router.get('/current', async (req, res) => {
 
 router.get('/campaigns', async (req, res) => {
   try {
-    const { season } = req.query;
+    const season = allowedEnum(req.query.season, SEASON_VALUES);
     const filter = { type: 'seasonal' };
     if (season) filter.season = season;
 
@@ -73,7 +78,11 @@ router.get('/campaigns', async (req, res) => {
  */
 router.post('/generate', async (req, res) => {
   try {
-    const { season: requestedSeason, service, type = 'email', audience = 'homeowners' } = req.body;
+    const requestedSeason = allowedEnum(req.body.season, SEASON_VALUES);
+    const type     = allowedEnum(req.body.type, CAMPAIGN_TYPES) || 'email';
+    const audience = allowedEnum(req.body.audience, AUDIENCE_VALUES) || 'homeowners';
+    const service  = typeof req.body.service === 'string' ? req.body.service : undefined;
+
     if (!ai.isAvailable) return res.status(503).json({ ok: false, error: 'OpenAI not configured.' });
 
     const season = requestedSeason || getCurrentSeason();
