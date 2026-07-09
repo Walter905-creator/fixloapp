@@ -65,4 +65,27 @@ function posInt(value, defaultVal = 1) {
   return Number.isFinite(n) && n > 0 ? n : defaultVal;
 }
 
-module.exports = { allowedEnum, safeString, escapeRegex, regexFilter, posInt };
+/**
+ * Sanitize a request body object for use in a Mongoose update.
+ *
+ * Strips any keys that begin with '$' (MongoDB operators) or are prototype
+ * pollution vectors (__proto__, constructor, prototype) so that an attacker
+ * cannot inject arbitrary query operators via a PUT/PATCH body.
+ *
+ * Returns a `{ $set: <clean> }` update expression safe for findByIdAndUpdate.
+ *
+ * @param {*} body
+ * @returns {{ $set: object }}
+ */
+function sanitizeBody(body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return { $set: {} };
+  const clean = {};
+  const BLOCKED = new Set(['__proto__', 'constructor', 'prototype']);
+  for (const [key, val] of Object.entries(body)) {
+    if (key.startsWith('$') || BLOCKED.has(key)) continue;
+    clean[key] = val;
+  }
+  return { $set: clean };
+}
+
+module.exports = { allowedEnum, safeString, escapeRegex, regexFilter, posInt, sanitizeBody };

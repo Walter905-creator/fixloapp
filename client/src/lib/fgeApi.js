@@ -3,6 +3,8 @@
  * All requests include the admin JWT stored in localStorage.
  */
 
+// VITE_API_URL must be set in .env for local development (e.g. http://localhost:3001).
+// The production URL is used as fallback for deployed builds where the env var may be absent.
 const API_BASE = import.meta.env.VITE_API_URL || 'https://fixloapp.onrender.com';
 const FGE_BASE = `${API_BASE}/api/fge`;
 

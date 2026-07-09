@@ -13,7 +13,7 @@ const router = require('express').Router();
 const requireAuth = require('../../../middleware/requireAuth');
 const requireAdmin = require('../../../middleware/requireAdmin');
 const FGEAnalytics = require('../models/FGEAnalytics');
-const { posInt } = require('../middleware/sanitize');
+const { posInt, sanitizeBody } = require('../middleware/sanitize');
 
 router.use(requireAuth, requireAdmin);
 
@@ -79,13 +79,21 @@ router.get('/range', async (req, res) => {
 
 router.post('/record', async (req, res) => {
   try {
-    const { date, ...data } = req.body;
+    const { date, ...rawData } = req.body;
     const day = date ? new Date(date) : new Date();
     day.setHours(0, 0, 0, 0);
 
+    // Sanitize numeric fields — strip any keys that are MongoDB operator expressions
+    const BLOCKED = new Set(['__proto__', 'constructor', 'prototype']);
+    const data = {};
+    for (const [key, val] of Object.entries(rawData)) {
+      if (key.startsWith('$') || BLOCKED.has(key)) continue;
+      data[key] = val;
+    }
+
     const record = await FGEAnalytics.findOneAndUpdate(
       { date: day },
-      { date: day, ...data },
+      { $set: { date: day, ...data } },
       { upsert: true, new: true }
     );
 

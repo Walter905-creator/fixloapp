@@ -213,7 +213,7 @@ async function updateSitemap() {
       .join('\n');
 
     // Insert before closing </urlset>
-    if (xmlContent.includes('</urlset>') && newEntries) {
+    if (xmlContent.includes('</urlset>') && newEntries.trim().length > 0) {
       xmlContent = xmlContent.replace('</urlset>', `${newEntries}\n</urlset>`);
       fs.writeFileSync(SITEMAP_PATH, xmlContent, 'utf8');
       console.log(`[FGE SEO] Sitemap updated — added ${newPages.length} new landing pages.`);

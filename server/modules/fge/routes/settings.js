@@ -51,18 +51,28 @@ router.get('/', async (req, res) => {
 
 // ─── Update settings ──────────────────────────────────────────────────────────
 
+/**
+ * Returns true if a string value is a masked placeholder (e.g. "••••••••1234" or "****").
+ * These are sent back from the GET endpoint to avoid exposing secrets; we skip them on save.
+ */
+function isMaskedValue(value) {
+  if (typeof value !== 'string') return false;
+  // A masked value has its middle characters replaced with 3+ asterisks
+  return /^\*{3,}$/.test(value.replace(/^.{4}/, '').replace(/.{4}$/, ''));
+}
+
 router.put('/', async (req, res) => {
   try {
-    // Strip masked placeholder values before saving
+    const BLOCKED = new Set(['__proto__', 'constructor', 'prototype']);
+    // Build a clean update object: skip masked placeholders and operator keys
     const updates = {};
     for (const [key, value] of Object.entries(req.body)) {
-      if (typeof value === 'string' && /^\*{3,}$/.test(value.replace(/^.{4}/, '').replace(/.{4}$/, ''))) {
-        continue; // skip masked values
-      }
+      if (key.startsWith('$') || BLOCKED.has(key)) continue;
+      if (isMaskedValue(value)) continue; // skip masked values — retain existing secret
       updates[key] = value;
     }
 
-    const settings = await AdminSettings.findOneAndUpdate({}, updates, {
+    const settings = await AdminSettings.findOneAndUpdate({}, { $set: updates }, {
       upsert: true,
       new: true,
     });

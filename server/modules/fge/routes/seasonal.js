@@ -12,7 +12,7 @@ const requireAuth = require('../../../middleware/requireAuth');
 const requireAdmin = require('../../../middleware/requireAdmin');
 const Campaign = require('../models/Campaign');
 const ai = require('../services/aiGenerator');
-const { allowedEnum } = require('../middleware/sanitize');
+const { allowedEnum, safeString } = require('../middleware/sanitize');
 
 const SEASON_VALUES   = ['spring','summer','fall','winter'];
 const CAMPAIGN_TYPES  = ['email','sms','blog','facebook','instagram','linkedin','x','google_business'];
@@ -81,7 +81,7 @@ router.post('/generate', async (req, res) => {
     const requestedSeason = allowedEnum(req.body.season, SEASON_VALUES);
     const type     = allowedEnum(req.body.type, CAMPAIGN_TYPES) || 'email';
     const audience = allowedEnum(req.body.audience, AUDIENCE_VALUES) || 'homeowners';
-    const service  = typeof req.body.service === 'string' ? req.body.service : undefined;
+    const service  = safeString(req.body.service);
 
     if (!ai.isAvailable) return res.status(503).json({ ok: false, error: 'OpenAI not configured.' });
 

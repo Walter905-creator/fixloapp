@@ -16,7 +16,7 @@ const requireAdmin = require('../../../middleware/requireAdmin');
 const SmsTemplate = require('../models/SmsTemplate');
 const { sendSms } = require('../services/smsSender');
 const ai = require('../services/aiGenerator');
-const { allowedEnum } = require('../middleware/sanitize');
+const { allowedEnum, sanitizeBody } = require('../middleware/sanitize');
 
 const SMS_TRIGGERS = ['quote_confirmation','job_reminder','job_follow_up','seasonal_reminder',
   'referral_invite','recruiter_update','manual'];
@@ -49,7 +49,7 @@ router.post('/templates', async (req, res) => {
 
 router.put('/templates/:id', async (req, res) => {
   try {
-    const tmpl = await SmsTemplate.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const tmpl = await SmsTemplate.findByIdAndUpdate(req.params.id, sanitizeBody(req.body), { new: true });
     if (!tmpl) return res.status(404).json({ ok: false, error: 'Template not found.' });
     return res.json({ ok: true, template: tmpl });
   } catch (err) {

@@ -19,7 +19,7 @@ const LandingPage = require('../models/LandingPage');
 const SeoJob = require('../models/SeoJob');
 const { createLandingPage, updateSitemap } = require('../services/seoGenerator');
 const { enqueue } = require('../services/queue');
-const { allowedEnum, regexFilter, posInt } = require('../middleware/sanitize');
+const { allowedEnum, regexFilter, posInt, safeString, sanitizeBody } = require('../middleware/sanitize');
 
 const PAGE_STATUSES = ['draft','published','archived'];
 
@@ -85,7 +85,7 @@ router.get('/pages', async (req, res) => {
     const page   = posInt(req.query.page, 1);
     const limit  = posInt(req.query.limit, 20);
     const status  = allowedEnum(req.query.status,  PAGE_STATUSES);
-    const service = typeof req.query.service === 'string' ? req.query.service.toLowerCase() : undefined;
+    const service = safeString(req.query.service)?.toLowerCase();
     const searchRx = regexFilter(req.query.search);
     const filter = {};
     if (status)  filter.status  = status;
@@ -120,7 +120,7 @@ router.get('/pages/:id', async (req, res) => {
 
 router.put('/pages/:id', async (req, res) => {
   try {
-    const page = await LandingPage.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const page = await LandingPage.findByIdAndUpdate(req.params.id, sanitizeBody(req.body), { new: true });
     if (!page) return res.status(404).json({ ok: false, error: 'Landing page not found.' });
     return res.json({ ok: true, page });
   } catch (err) {

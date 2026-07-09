@@ -20,7 +20,7 @@ const Campaign = require('../models/Campaign');
 const FGEImage = require('../models/FGEImage');
 const { enqueue } = require('../services/queue');
 const ai = require('../services/aiGenerator');
-const { allowedEnum, regexFilter, posInt } = require('../middleware/sanitize');
+const { allowedEnum, regexFilter, posInt, sanitizeBody } = require('../middleware/sanitize');
 
 const CAMPAIGN_TYPES   = ['email','sms','blog','facebook','instagram','linkedin','x','google_business','landing_page','seasonal'];
 const CAMPAIGN_STATUSES = ['draft','scheduled','active','paused','completed','failed'];
@@ -143,7 +143,7 @@ router.get('/campaigns/:id', async (req, res) => {
 
 router.put('/campaigns/:id', async (req, res) => {
   try {
-    const campaign = await Campaign.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const campaign = await Campaign.findByIdAndUpdate(req.params.id, sanitizeBody(req.body), { new: true });
     if (!campaign) return res.status(404).json({ ok: false, error: 'Campaign not found.' });
     return res.json({ ok: true, campaign });
   } catch (err) {

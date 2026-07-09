@@ -19,7 +19,7 @@ const EmailTemplate = require('../models/EmailTemplate');
 const Campaign = require('../models/Campaign');
 const { sendEmail, sendBulkEmail } = require('../services/emailSender');
 const ai = require('../services/aiGenerator');
-const { allowedEnum } = require('../middleware/sanitize');
+const { allowedEnum, sanitizeBody } = require('../middleware/sanitize');
 
 const EMAIL_TRIGGERS = ['new_homeowner','new_contractor','recruiter_signup','quote_request',
   'inactive_user','job_completed','seasonal_spring','seasonal_summer','seasonal_fall',
@@ -65,7 +65,7 @@ router.get('/templates/:id', async (req, res) => {
 
 router.put('/templates/:id', async (req, res) => {
   try {
-    const tmpl = await EmailTemplate.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const tmpl = await EmailTemplate.findByIdAndUpdate(req.params.id, sanitizeBody(req.body), { new: true });
     if (!tmpl) return res.status(404).json({ ok: false, error: 'Template not found.' });
     return res.json({ ok: true, template: tmpl });
   } catch (err) {

@@ -18,7 +18,7 @@ const requireAuth = require('../../../middleware/requireAuth');
 const requireAdmin = require('../../../middleware/requireAdmin');
 const Blog = require('../models/Blog');
 const ai = require('../services/aiGenerator');
-const { allowedEnum, regexFilter, posInt } = require('../middleware/sanitize');
+const { allowedEnum, regexFilter, posInt, safeString, sanitizeBody } = require('../middleware/sanitize');
 
 const BLOG_STATUSES = ['draft','scheduled','published'];
 
@@ -29,8 +29,8 @@ router.get('/public', async (req, res) => {
   try {
     const page  = posInt(req.query.page, 1);
     const limit = posInt(req.query.limit, 12);
-    const category = typeof req.query.category === 'string' ? req.query.category : undefined;
-    const tag      = typeof req.query.tag      === 'string' ? req.query.tag      : undefined;
+    const category = safeString(req.query.category);
+    const tag      = safeString(req.query.tag);
     const filter = { status: 'published' };
     if (category) filter.category = category;
     if (tag) filter.tags = tag;
@@ -154,7 +154,7 @@ router.get('/:id', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
-    const post = await Blog.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const post = await Blog.findByIdAndUpdate(req.params.id, sanitizeBody(req.body), { new: true });
     if (!post) return res.status(404).json({ ok: false, error: 'Article not found.' });
     return res.json({ ok: true, post });
   } catch (err) {
