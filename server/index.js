@@ -421,6 +421,17 @@ app.use("/api/admin", adminRateLimit, require("./routes/recruiterAdmin")); // ad
 // Validate and redeem routes are open/auth-only (enforced per-route).
 app.use("/api/invite-codes", adminRateLimit, require("./routes/inviteCodes"));
 
+// ── Fixlo Growth Engine (FGE) ─────────────────────────────────────────────────
+// Feature-flagged: set FGE_ENABLED=true to activate all growth engine routes.
+// All /api/fge/* endpoints return 503 when FGE_ENABLED is not set.
+try {
+  const fge = require('./modules/fge');
+  app.use('/api/fge', adminRateLimit, fge.router);
+  console.log('✅ FGE routes mounted at /api/fge');
+} catch (e) {
+  console.warn('⚠️ FGE module failed to load:', e?.message || e);
+}
+
 // Direct messaging
 app.use("/api", generalRateLimit, require("./routes/messages")); // messaging API
 
@@ -1022,6 +1033,15 @@ async function start() {
       }
     } catch (e) {
       console.warn("⚠️ Social Media Manager initialization skipped:", e?.message || e);
+    }
+
+    // Initialize Fixlo Growth Engine (FGE)
+    // Guarded by FGE_ENABLED env var — safe to call even when disabled.
+    try {
+      const fge = require('./modules/fge');
+      fge.initialize();
+    } catch (e) {
+      console.warn('⚠️ FGE initialization skipped:', e?.message || e);
     }
 
     // Initialize SEO Agent Scheduler
