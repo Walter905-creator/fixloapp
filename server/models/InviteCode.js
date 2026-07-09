@@ -131,14 +131,14 @@ inviteCodeSchema.statics.generateCode = function (prefix = 'FIXLO') {
  * @returns {Date|null} - null means unlimited (no expiry)
  */
 inviteCodeSchema.statics.calcFreeAccessUntil = function (duration, from = new Date()) {
-  const t = new Date(from);
+  const ms = (days) => new Date(from.getTime() + days * 24 * 60 * 60 * 1000);
   switch (duration) {
-    case '30days':   t.setDate(t.getDate() + 30);   return t;
-    case '90days':   t.setDate(t.getDate() + 90);   return t;
-    case '6months':  t.setMonth(t.getMonth() + 6);  return t;
-    case '12months': t.setFullYear(t.getFullYear() + 1); return t;
+    case '30days':   return ms(30);
+    case '90days':   return ms(90);
+    case '6months':  return ms(183); // ~6 months in days
+    case '12months': return ms(365);
     case 'unlimited': return null;
-    default:         t.setFullYear(t.getFullYear() + 1); return t;
+    default:         return ms(365);
   }
 };
 

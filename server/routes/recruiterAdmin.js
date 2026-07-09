@@ -280,9 +280,10 @@ router.get('/code-requests', requireAdmin, async (req, res) => {
     const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 20));
 
     const filter = {};
-    if (status && ['pending', 'approved', 'rejected'].includes(status)) {
-      filter.status = status;
-    }
+    // Use explicit lookup map to prevent NoSQL injection via user-controlled status value
+    const STATUS_MAP = { pending: 'pending', approved: 'approved', rejected: 'rejected' };
+    const safeStatus = STATUS_MAP[status];
+    if (safeStatus) filter.status = safeStatus;
 
     const [requests, total] = await Promise.all([
       InviteCodeRequest.find(filter)

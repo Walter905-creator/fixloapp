@@ -197,23 +197,26 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
 
     const query = {};
 
+    // Explicitly map user input to safe string values to prevent NoSQL injection
+    const DURATION_MAP = { '30days': '30days', '90days': '90days', '6months': '6months', '12months': '12months', 'unlimited': 'unlimited' };
+    const SORT_MAP = { createdAt: 'createdAt', code: 'code', expiresAt: 'expiresAt' };
+
     if (search) {
-      const escaped = search.replace(/[\\.*+?^${}()|[\]\\]/g, '\\$&');
-      const re = new RegExp(escaped, 'i');
+      // Escape all special regex metacharacters to prevent ReDoS
+      const safeTerm = String(search).slice(0, 200).replace(/[\\.*+?^${}()|[\]]/g, '\\$&');
       query.$or = [
-        { code: re },
-        { assignedName: re },
-        { assignedEmail: re },
-        { assignedPhone: re },
-        { notes: re }
+        { code: { $regex: safeTerm, $options: 'i' } },
+        { assignedName: { $regex: safeTerm, $options: 'i' } },
+        { assignedEmail: { $regex: safeTerm, $options: 'i' } },
+        { assignedPhone: { $regex: safeTerm, $options: 'i' } },
+        { notes: { $regex: safeTerm, $options: 'i' } }
       ];
     }
 
-    if (membershipDuration && ['30days', '90days', '6months', '12months', 'unlimited'].includes(membershipDuration)) {
-      query.membershipDuration = membershipDuration;
-    }
+    const safeDuration = DURATION_MAP[membershipDuration];
+    if (safeDuration) query.membershipDuration = safeDuration;
 
-    const sortField = ['createdAt', 'code', 'expiresAt'].includes(sort) ? sort : 'createdAt';
+    const sortField = SORT_MAP[sort] || 'createdAt';
     const sortOrder = order === 'asc' ? 1 : -1;
 
     const invites = await InviteCode.find(query)
@@ -225,9 +228,10 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
 
     // Apply virtual-field status filter in-memory
     let filtered = invites;
-    const validStatuses = ['active', 'disabled', 'redeemed', 'expired', 'revoked'];
-    if (status && validStatuses.includes(status)) {
-      filtered = invites.filter((c) => c.status === status);
+    const STATUS_FILTER_MAP = { active: 'active', disabled: 'disabled', redeemed: 'redeemed', expired: 'expired', revoked: 'revoked' };
+    const safeStatus = STATUS_FILTER_MAP[status];
+    if (safeStatus) {
+      filtered = invites.filter((c) => c.status === safeStatus);
     }
 
     // Aggregated summary counts
@@ -334,18 +338,22 @@ router.get('/export', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { status, membershipDuration } = req.query;
 
+    // Use explicit lookup maps to prevent any NoSQL injection
+    const DURATION_MAP = { '30days': '30days', '90days': '90days', '6months': '6months', '12months': '12months', 'unlimited': 'unlimited' };
+    const STATUS_MAP = { active: 'active', disabled: 'disabled', redeemed: 'redeemed', expired: 'expired', revoked: 'revoked' };
+
     const query = {};
-    if (membershipDuration && ['30days', '90days', '6months', '12months', 'unlimited'].includes(membershipDuration)) {
-      query.membershipDuration = membershipDuration;
-    }
+    const safeDuration = DURATION_MAP[membershipDuration];
+    if (safeDuration) query.membershipDuration = safeDuration;
 
     const invites = await InviteCode.find(query)
       .sort({ createdAt: -1 })
       .lean({ virtuals: true });
 
     // Filter by virtual status if requested
-    const filtered = status && ['active', 'disabled', 'redeemed', 'expired', 'revoked'].includes(status)
-      ? invites.filter((c) => c.status === status)
+    const safeStatus = STATUS_MAP[status];
+    const filtered = safeStatus
+      ? invites.filter((c) => c.status === safeStatus)
       : invites;
 
     const csvHeader = [

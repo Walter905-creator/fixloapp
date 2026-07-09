@@ -527,10 +527,9 @@ router.post('/signup/pro', requireDatabase, async (req, res) => {
 
     // Every new contractor gets a 30-day free trial automatically.
     // If a valid invite code is provided, its duration replaces the default 30 days.
-    const thirtyDayTrial = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     const freeAccessUntil = inviteDoc
       ? InviteCode.calcFreeAccessUntil(inviteDoc.membershipDuration || '12months')
-      : thirtyDayTrial;
+      : InviteCode.calcFreeAccessUntil('30days');
 
     const pro = await Pro.create({
       name: name.trim(),
