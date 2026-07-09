@@ -1,82 +1,95 @@
 /**
  * CSRF Protection Middleware
  *
- * Implements OWASP's "Verifying Origin with Standard Headers" technique.
- * Reference: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#verifying-origin-with-standard-headers
+ * Uses the double-submit cookie pattern via the `csrf-csrf` package.
+ * Reference: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#double-submit-cookie
  *
- * This API uses JWT ****** in Authorization headers for authentication
- * (not cookies), which largely eliminates CSRF risk for authenticated endpoints.
- * The country-detection cookie uses sameSite: 'lax' which also mitigates CSRF.
- * Origin-header validation provides defence-in-depth for all state-changing routes.
+ * How it works:
+ *   1. On any GET /api/csrf-token request the server sets a signed `_csrf_token`
+ *      cookie and returns the corresponding token value.
+ *   2. Clients include that value in the `x-csrf-token` header on every
+ *      state-changing request (POST, PUT, PATCH, DELETE).
+ *   3. The middleware validates the header token against the signed cookie.
  *
- * Routes excluded from CSRF checks (they use their own cryptographic verification):
- *   - /webhook/stripe   — validated via Stripe-Signature header (HMAC)
- *   - /webhook/checkr   — validated via Checkr webhook secret
- *   - /webhook/*        — all other webhook integrations
+ * Axios automatic XSRF support:
+ *   Axios reads the `XSRF-TOKEN` cookie and sends `X-XSRF-TOKEN` automatically.
+ *   This is handled by setting the cookie name to `XSRF-TOKEN` and configuring
+ *   csrf-csrf to also accept the `x-xsrf-token` header.
  *
- * Safe HTTP methods (GET, HEAD, OPTIONS) are never checked — they must not
- * cause side-effects per HTTP spec (RFC 7231 §4.2.1).
+ * Routes excluded from CSRF checks (they use their own cryptographic auth):
+ *   - /webhook/*   — all webhook endpoints (Stripe-Signature, Checkr, etc.)
+ *   - GET, HEAD, OPTIONS — safe / idempotent methods per RFC 7231 §4.2.1
+ *
+ * JWT ******
+ *   Because this API uses JWT ****** in Authorization headers (not
+ *   cookies) for all authenticated endpoints, those calls are architecturally
+ *   immune to CSRF. Requests that carry a valid `Authorization: ******
+ *   header bypass the CSRF token check so that existing API clients continue
+ *   to work unmodified.  The cookie-based country-detection data is the only
+ *   session artefact where CSRF is a theoretical concern, and it is already
+ *   guarded by `sameSite: lax` on the cookie itself.
  */
 
+const { doubleCsrf } = require('csrf-csrf');
+
 // Webhook paths that carry their own cryptographic proof of origin.
-// They must be exempt so Stripe/Checkr/Twilio server IPs (which send no
+// Must be exempt so Stripe/Checkr/Twilio server IPs (which send no
 // browser-style Origin header) can reach them.
 const CSRF_EXEMPT_PREFIXES = [
-  '/webhook/', // All webhook endpoints: /webhook/stripe, /webhook/checkr, etc.
+  '/webhook/', // /webhook/stripe, /webhook/checkr, etc.
 ];
 
 /**
- * Returns true if the request path is exempt from CSRF origin checks.
+ * Returns true if the request path is exempt from CSRF token checks.
  * @param {string} path - Express req.path
  */
 function isCsrfExempt(path) {
   return CSRF_EXEMPT_PREFIXES.some((prefix) => path.startsWith(prefix));
 }
 
+// Configure csrf-csrf with the double-submit cookie pattern.
+// Cookie is named XSRF-TOKEN so that axios sends it automatically as
+// the X-XSRF-TOKEN header (axios built-in XSRF support).
+const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
+  getSecret: () => process.env.COOKIE_SECRET || process.env.JWT_SECRET || 'fixlo-csrf-secret',
+  cookieName: 'XSRF-TOKEN',
+  cookieOptions: {
+    httpOnly: false,       // Must be readable by client-side JS (axios picks it up)
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/',
+  },
+  // Accept either the standard header name or the axios default
+  getTokenFromRequest: (req) =>
+    req.headers['x-csrf-token'] || req.headers['x-xsrf-token'],
+  ignoredMethods: ['GET', 'HEAD', 'OPTIONS'], // safe methods never checked
+});
+
 /**
- * Factory that returns an Express CSRF-protection middleware.
+ * Wraps doubleCsrfProtection with additional exemptions:
+ *   - Webhook routes (carry own cryptographic auth)
+ *   - Requests with Authorization: ****** (JWT ****** CSRF immune)
  *
- * @param {function(string): boolean} isOriginAllowed - Predicate that returns
- *   true when an origin string is on the allow-list.  Pass the same function
- *   used for CORS so the two lists stay in sync.
+ * @param {import('express').Request}  req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
-function csrfProtection(isOriginAllowed) {
-  return function csrfMiddleware(req, res, next) {
-    // GET / HEAD / OPTIONS are safe (idempotent) methods — skip.
-    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+function csrfMiddleware(req, res, next) {
+  // Safe methods are never CSRF targets (also handled by csrf-csrf itself).
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
 
-    // Webhook routes authenticate via cryptographic signatures — skip.
-    if (isCsrfExempt(req.path)) return next();
+  // Webhook routes authenticate via cryptographic signatures — skip.
+  if (isCsrfExempt(req.path)) return next();
 
-    const origin = req.headers.origin;
-    const referer = req.headers.referer;
+  // JWT Bearer-authenticated requests are immune to CSRF:
+  // the browser cannot auto-attach an Authorization header, so a cross-site
+  // attacker cannot forge a credentialed request even without CSRF protection.
+  const authHeader = req.headers.authorization || '';
+  if (authHeader.startsWith('Bearer ')) return next();
 
-    // Requests with no Origin and no Referer header are allowed.
-    // These originate from non-browser clients (mobile apps, server-to-server
-    // calls, cURL) that are not vulnerable to CSRF.  Because authentication
-    // uses JWT ****** — not cookies — a cross-site attacker cannot
-    // inject credentials into such requests anyway.
-    if (!origin && !referer) return next();
-
-    // Derive an origin string from the Referer header when Origin is absent.
-    let requestOrigin = origin;
-    if (!requestOrigin && referer) {
-      try {
-        requestOrigin = new URL(referer).origin;
-      } catch {
-        // Malformed Referer — reject to be safe.
-        console.warn(`[CSRF] Rejected ${req.method} ${req.path} — malformed Referer: ${referer}`);
-        return res.status(403).json({ error: 'CSRF validation failed: malformed referer' });
-      }
-    }
-
-    if (!isOriginAllowed(requestOrigin)) {
-      console.warn(`[CSRF] Rejected ${req.method} ${req.path} from disallowed origin: ${requestOrigin}`);
-      return res.status(403).json({ error: 'CSRF validation failed: origin not allowed' });
-    }
-
-    return next();
-  };
+  // All other state-changing requests must carry a valid CSRF token.
+  return doubleCsrfProtection(req, res, next);
 }
 
-module.exports = { csrfProtection, isCsrfExempt };
+module.exports = { csrfMiddleware, generateCsrfToken, isCsrfExempt };
+

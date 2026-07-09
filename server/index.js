@@ -185,15 +185,22 @@ app.use(express.json());
 // A signing secret makes cookies tamper-evident (signed cookies cannot be
 // forged by an attacker even if they know the cookie name).
 const cookieParser = require('cookie-parser');
-const { csrfProtection } = require('./middleware/csrf');
+const { csrfMiddleware, generateCsrfToken } = require('./middleware/csrf');
 app.use(cookieParser(process.env.COOKIE_SECRET || process.env.JWT_SECRET));
 
 // ----------------------- CSRF Protection -----------------------
-// Applies Origin/Referer validation to all state-changing requests
-// (POST, PUT, PATCH, DELETE).  Webhook routes are exempt because they
-// carry their own cryptographic proof of origin (Stripe-Signature, etc.).
+// Applies double-submit cookie token validation (csrf-csrf) to all
+// state-changing requests (POST, PUT, PATCH, DELETE).
+//
+// Exempt from CSRF token checks (use their own cryptographic auth):
+//   - /webhook/*           — Stripe-Signature, Checkr secret, etc.
+//   - Authorization: ****** JWT bearer auth is immune to CSRF
+//   - GET / HEAD / OPTIONS  — safe methods per RFC 7231
+//
+// The CSRF token is issued via GET /api/csrf-token (see below).
+// Axios clients pick it up automatically from the XSRF-TOKEN cookie.
 // See server/middleware/csrf.js for full documentation.
-app.use(csrfProtection(isOriginAllowed));
+app.use(csrfMiddleware);
 
 // ----------------------- Static serving (API assets only) -----------------------
 app.use(express.static(__dirname)); // e.g., admin assets, images used by API docs, etc.
@@ -820,6 +827,17 @@ app.post("/api/signup/pro", async (req, res) => {
       .status(500)
       .json({ success: false, message: err.message || "Server error" });
   }
+});
+
+// ----------------------- CSRF Token Endpoint -----------------------
+// Issues a CSRF token for clients that cannot use the XSRF-TOKEN cookie
+// automatically (e.g., non-axios HTTP clients, custom fetch wrappers).
+// Axios picks up the XSRF-TOKEN cookie automatically; most clients will
+// not need to call this endpoint explicitly.
+// GET /api/csrf-token → { csrfToken: "..." }
+app.get('/api/csrf-token', (req, res) => {
+  const token = generateCsrfToken(req, res);
+  return res.json({ csrfToken: token });
 });
 
 // ----------------------- Health & Meta -----------------------
