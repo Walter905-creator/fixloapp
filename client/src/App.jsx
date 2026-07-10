@@ -73,6 +73,21 @@ import ProSignup from './pages/auth/ProSignup.jsx';
 import RecruiterSignup from './pages/auth/RecruiterSignup.jsx';
 import ForgotPassword from './pages/auth/ForgotPassword.jsx';
 
+// Fixlo Growth Engine (FGE) — lazy-loaded for performance
+const FGEGrowthDashboard    = React.lazy(() => import('./pages/fge/GrowthDashboard.jsx'));
+const FGEMarketingCenter    = React.lazy(() => import('./pages/fge/MarketingCenter.jsx'));
+const FGESeoEngine          = React.lazy(() => import('./pages/fge/SeoEngine.jsx'));
+const FGEBlogEngine         = React.lazy(() => import('./pages/fge/BlogEngine.jsx'));
+const FGEEmailAutomation    = React.lazy(() => import('./pages/fge/EmailAutomation.jsx'));
+const FGESmsAutomation      = React.lazy(() => import('./pages/fge/SmsAutomation.jsx'));
+const FGEReferralSystem     = React.lazy(() => import('./pages/fge/ReferralSystem.jsx'));
+const FGEAnalyticsDashboard = React.lazy(() => import('./pages/fge/AnalyticsDashboard.jsx'));
+const FGEAiInsights         = React.lazy(() => import('./pages/fge/AiInsights.jsx'));
+const FGEReviewSystem       = React.lazy(() => import('./pages/fge/ReviewSystem.jsx'));
+const FGESeasonalCampaigns  = React.lazy(() => import('./pages/fge/SeasonalCampaigns.jsx'));
+const FGEQueueMonitor       = React.lazy(() => import('./pages/fge/QueueMonitor.jsx'));
+const FGEAdminSettings      = React.lazy(() => import('./pages/fge/FGEAdminSettings.jsx'));
+
 const HomeownerLanding = React.lazy(() => import('./pages/HomeownerLanding.jsx'));
 const ProLanding = React.lazy(() => import('./pages/ProLanding.jsx'));
 const RecruiterLanding = React.lazy(() => import('./pages/RecruiterLanding.jsx'));
@@ -199,6 +214,22 @@ export default function App(){
           <AdminInviteCodesPage/>
         </RequireAdmin>
       }/>
+
+      {/* Fixlo Growth Engine (FGE) — /dashboard/admin/fge/* — admin only */}
+      <Route path="/dashboard/admin/fge" element={<RequireAdmin><LazyRoute><FGEGrowthDashboard /></LazyRoute></RequireAdmin>} />
+      <Route path="/dashboard/admin/fge/marketing" element={<RequireAdmin><LazyRoute><FGEMarketingCenter /></LazyRoute></RequireAdmin>} />
+      <Route path="/dashboard/admin/fge/seo" element={<RequireAdmin><LazyRoute><FGESeoEngine /></LazyRoute></RequireAdmin>} />
+      <Route path="/dashboard/admin/fge/blog" element={<RequireAdmin><LazyRoute><FGEBlogEngine /></LazyRoute></RequireAdmin>} />
+      <Route path="/dashboard/admin/fge/email" element={<RequireAdmin><LazyRoute><FGEEmailAutomation /></LazyRoute></RequireAdmin>} />
+      <Route path="/dashboard/admin/fge/sms" element={<RequireAdmin><LazyRoute><FGESmsAutomation /></LazyRoute></RequireAdmin>} />
+      <Route path="/dashboard/admin/fge/referral" element={<RequireAdmin><LazyRoute><FGEReferralSystem /></LazyRoute></RequireAdmin>} />
+      <Route path="/dashboard/admin/fge/analytics" element={<RequireAdmin><LazyRoute><FGEAnalyticsDashboard /></LazyRoute></RequireAdmin>} />
+      <Route path="/dashboard/admin/fge/insights" element={<RequireAdmin><LazyRoute><FGEAiInsights /></LazyRoute></RequireAdmin>} />
+      <Route path="/dashboard/admin/fge/reviews" element={<RequireAdmin><LazyRoute><FGEReviewSystem /></LazyRoute></RequireAdmin>} />
+      <Route path="/dashboard/admin/fge/seasonal" element={<RequireAdmin><LazyRoute><FGESeasonalCampaigns /></LazyRoute></RequireAdmin>} />
+      <Route path="/dashboard/admin/fge/queue" element={<RequireAdmin><LazyRoute><FGEQueueMonitor /></LazyRoute></RequireAdmin>} />
+      <Route path="/dashboard/admin/fge/settings" element={<RequireAdmin><LazyRoute><FGEAdminSettings /></LazyRoute></RequireAdmin>} />
+
       <Route path="/admin" element={
         <RequireAdmin>
           <AdminPage/>

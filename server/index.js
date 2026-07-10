@@ -181,9 +181,28 @@ app.use(
 app.use("/webhook/stripe", express.raw({ type: "application/json" }));
 app.use(express.json());
 
-// Cookie parser for country detection caching
+// Cookie parser for country detection caching.
+// A signing secret makes cookies tamper-evident (signed cookies cannot be
+// forged by an attacker even if they know the cookie name).
 const cookieParser = require('cookie-parser');
-app.use(cookieParser());
+const { csrfProtection, csrfErrorHandler } = require('./middleware/csrf');
+app.use(cookieParser(process.env.COOKIE_SECRET || process.env.JWT_SECRET));
+
+// ----------------------- CSRF Protection -----------------------
+// Applies csurf token validation to all state-changing requests
+// (POST, PUT, PATCH, DELETE) on non-webhook paths.
+//
+// The regex `/^(?!\/webhook).*$/` excludes /webhook/* so that
+// Stripe and Checkr webhooks — which carry their own cryptographic
+// proof of origin (Stripe-Signature header, Checkr webhook secret)
+// — are never asked for a CSRF token.
+//
+// GET / HEAD / OPTIONS are safe methods and are excluded by csurf itself.
+//
+// The CSRF token is issued via GET /api/csrf-token (see below).
+// See server/middleware/csrf.js for full documentation.
+app.use(/^(?!\/webhook).*$/, csrfProtection);
+app.use(csrfErrorHandler);
 
 // ----------------------- Static serving (API assets only) -----------------------
 app.use(express.static(__dirname)); // e.g., admin assets, images used by API docs, etc.
@@ -420,6 +439,17 @@ app.use("/api/admin", adminRateLimit, require("./routes/recruiterAdmin")); // ad
 // Admin routes (create, bulk-create, list, revoke) require requireAuth + requireAdmin (enforced in routes).
 // Validate and redeem routes are open/auth-only (enforced per-route).
 app.use("/api/invite-codes", adminRateLimit, require("./routes/inviteCodes"));
+
+// ── Fixlo Growth Engine (FGE) ─────────────────────────────────────────────────
+// Feature-flagged: set FGE_ENABLED=true to activate all growth engine routes.
+// All /api/fge/* endpoints return 503 when FGE_ENABLED is not set.
+try {
+  const fge = require('./modules/fge');
+  app.use('/api/fge', adminRateLimit, fge.router);
+  console.log('✅ FGE routes mounted at /api/fge');
+} catch (e) {
+  console.warn('⚠️ FGE module failed to load:', e?.message || e);
+}
 
 // Direct messaging
 app.use("/api", generalRateLimit, require("./routes/messages")); // messaging API
@@ -801,6 +831,15 @@ app.post("/api/signup/pro", async (req, res) => {
   }
 });
 
+// ----------------------- CSRF Token Endpoint -----------------------
+// Issues a CSRF token so that browser-based clients can include it as
+// the `x-csrf-token` (or `_csrf` body field) in subsequent state-changing
+// requests.  Call this endpoint first from your SPA/form before any POST.
+// GET /api/csrf-token → { csrfToken: "..." }
+app.get('/api/csrf-token', (req, res) => {
+  return res.json({ csrfToken: req.csrfToken() });
+});
+
 // ----------------------- Health & Meta -----------------------
 app.get("/api/health", async (req, res) => {
   const db =
@@ -1022,6 +1061,15 @@ async function start() {
       }
     } catch (e) {
       console.warn("⚠️ Social Media Manager initialization skipped:", e?.message || e);
+    }
+
+    // Initialize Fixlo Growth Engine (FGE)
+    // Guarded by FGE_ENABLED env var — safe to call even when disabled.
+    try {
+      const fge = require('./modules/fge');
+      fge.initialize();
+    } catch (e) {
+      console.warn('⚠️ FGE initialization skipped:', e?.message || e);
     }
 
     // Initialize SEO Agent Scheduler

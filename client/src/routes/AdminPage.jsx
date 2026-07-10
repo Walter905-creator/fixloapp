@@ -181,6 +181,10 @@ export default function AdminPage() {
           <h2 className="text-xl font-bold mb-1">⚙️ Admin Settings</h2>
           <p className="text-sm text-gray-600">Configure lead radius, auto-assign, and integrations</p>
         </a>
+        <a href="/dashboard/admin/fge" className="card p-6 hover:shadow-lg transition-shadow border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-100">
+          <h2 className="text-xl font-bold mb-1">⚡ Growth Engine (FGE)</h2>
+          <p className="text-sm text-gray-600">AI marketing, SEO pages, blog, email/SMS automation, analytics, and insights</p>
+        </a>
       </div>
 
       {/* Charlotte Test Workflow Panel */}
