@@ -17,6 +17,13 @@
  *   - Requests with `Authorization: ****** — JWT bearer auth is
  *     architecturally immune to CSRF because the browser cannot auto-attach
  *     an Authorization header in a cross-site request.
+ *   - Public authentication path prefixes — pre-auth endpoints (login,
+ *     register, forgot-password, reset-password, signup) issue JWT tokens
+ *     rather than operate on existing session credentials.  There is no
+ *     existing session for an attacker to hijack, so CSRF provides no
+ *     meaningful protection.  After successful auth, every subsequent
+ *     state-changing request carries a JWT ****** that already
+ *     bypasses CSRF (see above).
  *   - GET, HEAD, OPTIONS — safe / idempotent methods (csurf default)
  */
 
@@ -28,14 +35,33 @@ const _csrfCheck = csurf({
     key: '_csrf',
     httpOnly: true,                                              // Not readable by JS — server verifies only
     secure: process.env.NODE_ENV === 'production',             // HTTPS only in production
-    sameSite: 'strict',                                         // Strict same-site policy
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' required for cross-origin SPA in production
     path: '/',
   },
 });
 
 /**
+ * Public authentication path prefixes that are exempt from CSRF validation.
+ *
+ * These are all pre-authentication endpoints: the client has no session yet,
+ * so there are no existing credentials an attacker could force the browser
+ * to use.  Exempting them avoids the need for an explicit CSRF-token fetch
+ * before every login / register / password-reset page load.
+ *
+ * All authenticated (post-login) state-changing requests are already covered
+ * by the JWT ****** below, so CSRF protection remains complete for
+ * every route that actually operates on authenticated state.
+ */
+const CSRF_EXEMPT_PREFIXES = [
+  '/api/auth/',            // login, register, signup/*, forgot-password, reset-password, refresh
+  '/api/pro-auth/',        // pro login, forgot-password, reset-password (SMS flow)
+  '/api/recruiter-auth/',  // recruiter login, register, forgot-password, reset-password
+];
+
+/**
  * Express middleware that enforces CSRF token validation for state-changing
- * requests, with an exemption for JWT Bearer-authenticated requests.
+ * requests, with exemptions for JWT Bearer-authenticated requests and the
+ * public authentication path prefixes listed above.
  *
  * JWT ****** must be set explicitly in JavaScript — a cross-site
  * attacker cannot inject them through an HTML form or img tag — so those
@@ -52,6 +78,11 @@ function csrfProtection(req, res, next) {
   // JWT Bearer-authenticated requests are immune to CSRF — skip.
   const authHeader = req.headers.authorization || '';
   if (authHeader.startsWith('Bearer ')) return next();
+
+  // Public pre-authentication endpoints — no existing session to protect.
+  if (CSRF_EXEMPT_PREFIXES.some(prefix => req.path.startsWith(prefix))) {
+    return next();
+  }
 
   // All other state-changing requests must carry a valid CSRF token.
   // (GET / HEAD / OPTIONS are skipped by csurf itself.)

@@ -137,7 +137,7 @@ app.use((req, res, next) => {
     )
     .header(
       "Access-Control-Allow-Headers",
-      "Content-Type, Authorization, X-Requested-With, Accept, Origin, Expires, Cache-Control, Pragma, x-admin-key"
+      "Content-Type, Authorization, X-Requested-With, Accept, Origin, Expires, Cache-Control, Pragma, x-admin-key, x-csrf-token"
     )
     .header("Access-Control-Allow-Credentials", "true")
     .header("Access-Control-Max-Age", "86400")
@@ -168,6 +168,7 @@ app.use(
       "Cache-Control",
       "Pragma",
       "x-admin-key",
+      "x-csrf-token",
     ],
     exposedHeaders: [
       "Access-Control-Allow-Origin",
@@ -326,7 +327,7 @@ function preflight(path, methods = "POST, OPTIONS") {
       .header("Access-Control-Allow-Methods", methods)
       .header(
         "Access-Control-Allow-Headers",
-        "Content-Type, Authorization, X-Requested-With, Accept, Origin"
+        "Content-Type, Authorization, X-Requested-With, Accept, Origin, x-csrf-token"
       )
       .header("Access-Control-Allow-Credentials", "true")
       .header("Access-Control-Max-Age", "86400")
