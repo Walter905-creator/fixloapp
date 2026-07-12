@@ -1,5 +1,4 @@
 const axios = require('axios');
-const { tokenEncryption } = require('../security');
 
 /**
  * Meta Platform Adapter (Instagram + Facebook)
@@ -9,6 +8,80 @@ const { tokenEncryption } = require('../security');
 class MetaAdapter {
   constructor() {
     this.graphApiUrl = 'https://graph.facebook.com/v18.0';
+  }
+
+  sanitizeForLogs(payload) {
+    if (Array.isArray(payload)) {
+      return payload.map(item => this.sanitizeForLogs(item));
+    }
+    if (!payload || typeof payload !== 'object') {
+      return payload;
+    }
+
+    const sanitized = {};
+    for (const [key, value] of Object.entries(payload)) {
+      const lower = key.toLowerCase();
+      if (lower.includes('token') || lower.includes('authorization') || lower.includes('secret')) {
+        sanitized[key] = '[REDACTED]';
+      } else {
+        sanitized[key] = this.sanitizeForLogs(value);
+      }
+    }
+    return sanitized;
+  }
+
+  logGraphRequest(method, url, payload = {}) {
+    console.info('[Meta Graph API] Request', {
+      method,
+      url,
+      payload: this.sanitizeForLogs(payload),
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  logGraphResponse(method, url, response) {
+    console.info('[Meta Graph API] Response', {
+      method,
+      url,
+      status: response?.status,
+      data: this.sanitizeForLogs(response?.data),
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  logGraphError(method, url, error) {
+    console.error('[Meta Graph API] Error', {
+      method,
+      url,
+      status: error?.response?.status,
+      data: this.sanitizeForLogs(error?.response?.data),
+      message: error?.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  async graphPost(url, data) {
+    this.logGraphRequest('POST', url, data);
+    try {
+      const response = await axios.post(url, data);
+      this.logGraphResponse('POST', url, response);
+      return response;
+    } catch (error) {
+      this.logGraphError('POST', url, error);
+      throw error;
+    }
+  }
+
+  async graphGet(url, config = {}) {
+    this.logGraphRequest('GET', url, config);
+    try {
+      const response = await axios.get(url, config);
+      this.logGraphResponse('GET', url, response);
+      return response;
+    } catch (error) {
+      this.logGraphError('GET', url, error);
+      throw error;
+    }
   }
   
   /**
@@ -53,7 +126,7 @@ class MetaAdapter {
     const { igAccountId, accessToken, imageUrl, caption } = params;
     
     // Step 1: Create media container
-    const containerResponse = await axios.post(
+    const containerResponse = await this.graphPost(
       `${this.graphApiUrl}/${igAccountId}/media`,
       {
         image_url: imageUrl,
@@ -65,7 +138,7 @@ class MetaAdapter {
     const containerId = containerResponse.data.id;
     
     // Step 2: Publish container
-    const publishResponse = await axios.post(
+    const publishResponse = await this.graphPost(
       `${this.graphApiUrl}/${igAccountId}/media_publish`,
       {
         creation_id: containerId,
@@ -87,7 +160,7 @@ class MetaAdapter {
     // Step 1: Create media containers for each item
     const containerIds = [];
     for (const mediaUrl of mediaUrls) {
-      const response = await axios.post(
+      const response = await this.graphPost(
         `${this.graphApiUrl}/${igAccountId}/media`,
         {
           image_url: mediaUrl,
@@ -99,7 +172,7 @@ class MetaAdapter {
     }
     
     // Step 2: Create carousel container
-    const carouselResponse = await axios.post(
+    const carouselResponse = await this.graphPost(
       `${this.graphApiUrl}/${igAccountId}/media`,
       {
         media_type: 'CAROUSEL',
@@ -112,7 +185,7 @@ class MetaAdapter {
     const carouselId = carouselResponse.data.id;
     
     // Step 3: Publish carousel
-    const publishResponse = await axios.post(
+    const publishResponse = await this.graphPost(
       `${this.graphApiUrl}/${igAccountId}/media_publish`,
       {
         creation_id: carouselId,
@@ -152,7 +225,7 @@ class MetaAdapter {
         }));
       }
       
-      const response = await axios.post(
+      const response = await this.graphPost(
         `${this.graphApiUrl}/${pageId}/feed`,
         postData
       );
@@ -184,7 +257,7 @@ class MetaAdapter {
    */
   async fetchInstagramMetrics(postId, accessToken) {
     try {
-      const response = await axios.get(
+      const response = await this.graphGet(
         `${this.graphApiUrl}/${postId}/insights`,
         {
           params: {
@@ -220,7 +293,7 @@ class MetaAdapter {
    */
   async fetchFacebookMetrics(postId, accessToken) {
     try {
-      const response = await axios.get(
+      const response = await this.graphGet(
         `${this.graphApiUrl}/${postId}`,
         {
           params: {

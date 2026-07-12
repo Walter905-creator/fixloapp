@@ -1,5 +1,5 @@
 /**
- * Vercel Serverless Function: POST /api/social/scheduler/run
+ * Vercel Serverless Function: /api/social/scheduler/run
  * 
  * Execute one scheduler cycle (serverless-compatible)
  * 
@@ -22,16 +22,16 @@ const dbConnect = require('../../lib/dbConnect');
  */
 function verifyAdminToken(req) {
   const authHeader = req.headers.authorization;
-  
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return { valid: false, error: 'Missing or invalid Authorization header' };
-  }
-
-  const token = authHeader.slice(7);
+  const bearerToken = authHeader && authHeader.startsWith('Bearer ')
+    ? authHeader.slice(7)
+    : null;
+  const adminHeaderKey = req.headers['x-admin-key'];
+  const cronHeaderSecret = req.headers['x-cron-secret'];
   
   // Check for special admin key (for CI/CD and monitoring tools)
   // SECURITY: Set ADMIN_SECRET_KEY environment variable in production
   const ADMIN_SECRET_KEY = process.env.ADMIN_SECRET_KEY;
+  const CRON_SECRET = process.env.CRON_SECRET || process.env.SOCIAL_SCHEDULER_SECRET;
   const DEFAULT_KEY = 'fixlo_admin_2026_super_secret_key';
   
   // Use default key only in development/testing
@@ -42,8 +42,21 @@ function verifyAdminToken(req) {
     console.warn('[scheduler-run] ⚠️  WARNING: Using default ADMIN_SECRET_KEY in production. Set ADMIN_SECRET_KEY environment variable.');
   }
   
-  if (token === effectiveKey) {
-    return { valid: true, userId: 'admin', isAdminKey: true };
+  const tokenCandidates = [bearerToken, adminHeaderKey, cronHeaderSecret].filter(Boolean);
+
+  if (CRON_SECRET && tokenCandidates.includes(CRON_SECRET)) {
+    return { valid: true, userId: 'cron', isAdminKey: false, authSource: 'cron-secret' };
+  }
+
+  if (tokenCandidates.includes(effectiveKey)) {
+    return { valid: true, userId: 'admin', isAdminKey: true, authSource: 'admin-secret' };
+  }
+
+  if (!bearerToken) {
+    return {
+      valid: false,
+      error: 'Missing authentication token (Authorization Bearer, X-Admin-Key, or X-Cron-Secret)'
+    };
   }
   
   // Otherwise, verify JWT token
@@ -56,14 +69,14 @@ function verifyAdminToken(req) {
       return { valid: false, error: 'Server configuration error' };
     }
     
-    const decoded = jwt.verify(token, secret);
+    const decoded = jwt.verify(bearerToken, secret);
     
     // Verify admin role
     if (decoded.role !== 'admin' && decoded.userType !== 'admin') {
       return { valid: false, error: 'Admin access required' };
     }
     
-    return { valid: true, userId: decoded.userId || decoded.id, isAdminKey: false };
+    return { valid: true, userId: decoded.userId || decoded.id, isAdminKey: false, authSource: 'jwt' };
   } catch (error) {
     return { valid: false, error: 'Invalid or expired token' };
   }
@@ -96,8 +109,8 @@ module.exports = async (req, res) => {
   
   if (origin && (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app'))) {
     res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Admin-Key, X-Cron-Secret');
   }
   
   // Handle preflight OPTIONS request
@@ -105,12 +118,12 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
   
-  // Only allow POST requests
-  if (req.method !== 'POST') {
+  // Only allow GET/POST requests
+  if (!['GET', 'POST'].includes(req.method)) {
     return res.status(405).json({
       success: false,
       error: 'Method not allowed',
-      allowedMethods: ['POST'],
+      allowedMethods: ['GET', 'POST'],
       requestId
     });
   }
@@ -139,7 +152,9 @@ module.exports = async (req, res) => {
       });
     }
 
-    console.log('[scheduler-run] Database connected, loading scheduler...');
+    console.log('[scheduler-run] Database connected, loading scheduler...', {
+      authSource: authResult.authSource
+    });
 
     // Load scheduler dynamically to avoid issues with serverless cold starts
     const schedulerPath = require.resolve('../../../server/modules/social-manager/scheduler');

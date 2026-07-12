@@ -15,12 +15,11 @@ const { SocialAuditLog } = require('../models');
  * TODO: Before production:
  * 1. Register app at https://developers.facebook.com/
  * 2. Add Instagram Graph API and Pages API permissions
- * 3. Request ONLY pages_show_list permission (no App Review needed)
- *    Note: pages_read_engagement requires Advanced Access/App Review
- *    Note: Instagram permissions are NOT requested in OAuth URL
- *    Note: Engagement data accessed later via Page access token
- * 4. Configure OAuth redirect URI in app settings
- * 5. Obtain App ID and App Secret
+ * 3. Request required Meta publishing scopes (Pages + Instagram Graph)
+ * 4. Ensure app has required advanced permissions in Meta App Dashboard
+ * 5. Engagement and publishing use Page/Instagram Graph access tokens
+ * 6. Configure OAuth redirect URI in app settings
+ * 7. Obtain App ID and App Secret
  * 
  * SECURITY NOTES:
  * - Uses OAuth 2.0 with authorization code flow
@@ -44,6 +43,15 @@ const ERROR_MESSAGES = {
   [ERROR_REASONS.NO_IG_BUSINESS]: 'No Instagram Business Account found. Please connect an Instagram Business Account to your Facebook Page.',
   [ERROR_REASONS.APP_NOT_LIVE]: 'App permissions error. Ensure your Meta app is approved and in Live mode.'
 };
+
+const META_REQUIRED_SCOPES = [
+  'pages_show_list',
+  'pages_manage_posts',
+  'pages_read_engagement',
+  'instagram_content_publish',
+  'instagram_basic',
+  'business_management'
+];
 
 class MetaOAuthHandler {
   constructor() {
@@ -86,18 +94,13 @@ class MetaOAuthHandler {
    * Facebook Page permissions). It's passed through state for post-OAuth processing
    * to determine which account type to retrieve and save.
    * 
-   * SCOPE RESTRICTION: Only pages_show_list is used because pages_read_engagement
-   * requires App Review/Advanced Access. Engagement data will be accessed later
-   * using the Page access token after OAuth completion.
    */
   getAuthorizationUrl(ownerId, accountType = 'instagram') {
     if (!this.isConfigured()) {
       throw new Error('Meta OAuth not configured. Set SOCIAL_META_CLIENT_ID and SOCIAL_META_CLIENT_SECRET');
     }
     
-    // Use ONLY pages_show_list (pages_read_engagement requires App Review/Advanced Access)
-    // Engagement data will be accessed later using Page access token
-    const scopes = ['pages_show_list'];
+    const scopes = this.getRequiredScopes();
     
     const params = new URLSearchParams({
       client_id: this.clientId,
@@ -108,6 +111,10 @@ class MetaOAuthHandler {
     });
     
     return `${this.authUrl}?${params.toString()}`;
+  }
+
+  getRequiredScopes() {
+    return [...META_REQUIRED_SCOPES];
   }
   
   /**
@@ -444,40 +451,60 @@ class MetaOAuthHandler {
         platform = 'meta_facebook';
       }
       
-      // Step 4: Store encrypted token
-      const storedToken = await tokenEncryption.storeToken({
-        tokenValue: longTokenData.access_token,
-        tokenType: 'access',
-        accountRef: null, // Will update after creating account
-        platform,
-        expiresIn: longTokenData.expires_in
-      });
-      
-      // Step 5: Create social account
-      const socialAccount = new SocialAccount({
+      // Step 4: Create or update social account
+      let socialAccount = await SocialAccount.findOne({
         ownerId,
         platform,
-        platformAccountId: accountInfo.id,
-        platformUsername: accountInfo.username,
-        accountName: accountInfo.name || accountInfo.username,
-        profileUrl: accountType === 'instagram'
-          ? `https://instagram.com/${accountInfo.username}`
-          : `https://facebook.com/${accountInfo.id}`,
-        profileImageUrl: accountInfo.profile_picture_url || accountInfo.picture?.data?.url,
-        accessTokenRef: storedToken._id,
-        tokenExpiresAt: new Date(Date.now() + longTokenData.expires_in * 1000),
-        platformSettings: {
-          pageId: accountInfo.pageId,
-          pageName: accountInfo.pageName
-        },
-        grantedScopes: ['pages_show_list']
+        platformAccountId: accountInfo.id
       });
-      
+
+      if (!socialAccount) {
+        socialAccount = new SocialAccount({
+          ownerId,
+          platform,
+          platformAccountId: accountInfo.id,
+          connectedAt: new Date()
+        });
+      }
+
+      socialAccount.platformUsername = accountInfo.username || accountInfo.name;
+      socialAccount.accountName = accountInfo.name || accountInfo.username;
+      socialAccount.profileUrl = accountType === 'instagram'
+        ? `https://instagram.com/${accountInfo.username}`
+        : `https://facebook.com/${accountInfo.id}`;
+      socialAccount.profileImageUrl = accountInfo.profile_picture_url || accountInfo.picture?.data?.url;
+      socialAccount.platformSettings = {
+        ...socialAccount.platformSettings,
+        pageId: accountInfo.pageId || accountInfo.id,
+        pageName: accountInfo.pageName || accountInfo.name
+      };
+      socialAccount.grantedScopes = this.getRequiredScopes();
+      socialAccount.isActive = true;
+      socialAccount.isTokenValid = true;
+      socialAccount.requiresReauth = false;
+      socialAccount.tokenExpiresAt = new Date(Date.now() + longTokenData.expires_in * 1000);
       await socialAccount.save();
-      
-      // Update token with account reference
-      storedToken.accountRef = socialAccount._id;
-      await storedToken.save();
+
+      // Step 5: Store encrypted token with valid accountRef
+      let storedToken;
+      if (socialAccount.accessTokenRef) {
+        storedToken = await tokenEncryption.rotateToken({
+          oldTokenId: socialAccount.accessTokenRef,
+          newTokenValue: longTokenData.access_token,
+          expiresIn: longTokenData.expires_in
+        });
+      } else {
+        storedToken = await tokenEncryption.storeToken({
+          tokenValue: longTokenData.access_token,
+          tokenType: 'access',
+          accountRef: socialAccount._id,
+          platform,
+          expiresIn: longTokenData.expires_in
+        });
+      }
+
+      socialAccount.accessTokenRef = storedToken._id;
+      await socialAccount.save();
       
       console.info('[Meta OAuth] Final decision: CONNECTED', {
         accountId: socialAccount._id,

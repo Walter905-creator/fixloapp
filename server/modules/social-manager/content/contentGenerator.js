@@ -24,6 +24,22 @@ class ContentGenerator {
       emphasize: ['quality', 'trust', 'verification', 'expertise', 'peace of mind']
     };
   }
+
+  getDefaultMediaUrl() {
+    return (
+      process.env.SOCIAL_DEFAULT_MEDIA_URL ||
+      (process.env.CLIENT_URL ? `${process.env.CLIENT_URL.replace(/\/+$/, '')}/fixlo-logo.png` : null) ||
+      'https://fixloapp.com/fixlo-logo.png'
+    );
+  }
+
+  generateMediaUrls(params = {}) {
+    const { platform } = params;
+    if (!['meta_instagram', 'meta_facebook'].includes(platform)) {
+      return [];
+    }
+    return [this.getDefaultMediaUrl()];
+  }
   
   isConfigured() {
     return !!this.apiKey;
@@ -90,6 +106,14 @@ class ContentGenerator {
       
       return {
         content: generatedContent,
+        mediaUrls: this.generateMediaUrls({
+          platform,
+          contentType,
+          service,
+          city,
+          season,
+          trend
+        }),
         metadata: {
           model: this.model,
           prompt,

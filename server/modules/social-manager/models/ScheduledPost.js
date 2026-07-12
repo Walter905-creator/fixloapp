@@ -64,7 +64,7 @@ const scheduledPostSchema = new mongoose.Schema({
   status: {
     type: String,
     required: true,
-    enum: ['pending', 'approved', 'scheduled', 'publishing', 'published', 'failed', 'cancelled'],
+    enum: ['pending', 'pending_approval', 'approved', 'scheduled', 'publishing', 'published', 'failed', 'cancelled'],
     default: 'pending',
     index: true
   },
