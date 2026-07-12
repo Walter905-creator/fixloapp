@@ -28,7 +28,7 @@ class DailyPoster {
       services: ['plumbing', 'electrical', 'hvac', 'landscaping', 'general-maintenance'],
       
       // Require manual approval before posting
-      requiresApproval: process.env.SOCIAL_DAILY_POST_REQUIRE_APPROVAL !== 'false',
+      requiresApproval: ['true', '1'].includes(String(process.env.SOCIAL_DAILY_POST_REQUIRE_APPROVAL || '').toLowerCase()),
       
       // City/location for localized content
       defaultCity: process.env.SOCIAL_DAILY_POST_CITY || 'Miami',
@@ -293,15 +293,22 @@ class DailyPoster {
       publishDate.setDate(publishDate.getDate() + 1);
     }
     
+    const normalizedMediaUrls = Array.isArray(generatedContent.mediaUrls)
+      ? generatedContent.mediaUrls.filter(url => typeof url === 'string' && url.trim().length > 0)
+      : [];
+    const mediaUrls = normalizedMediaUrls.length > 0
+      ? normalizedMediaUrls
+      : (platform === 'meta_instagram' ? [contentGenerator.getDefaultMediaUrl()] : []);
+
     // Create scheduled post
     const scheduledPost = new ScheduledPost({
       ownerId: account.ownerId,
       accountId: account._id,
       platform: account.platform,
       content: generatedContent.content,
-      mediaUrls: generatedContent.mediaUrls || [],
+      mediaUrls,
       scheduledFor: publishDate,
-      status: this.config.requiresApproval ? 'pending_approval' : 'scheduled',
+      status: this.config.requiresApproval ? 'pending' : 'scheduled',
       requiresApproval: this.config.requiresApproval,
       metadata: {
         generationType: 'daily_auto',

@@ -207,7 +207,7 @@ class AnalyticsService {
     // Get upcoming posts
     const upcomingPosts = await ScheduledPost.find({
       accountId: { $in: accountIds },
-      status: { $in: ['pending', 'approved', 'scheduled'] },
+      status: { $in: ['pending', 'pending_approval', 'approved', 'scheduled'] },
       scheduledFor: { $gte: new Date() }
     })
       .sort({ scheduledFor: 1 })
@@ -224,7 +224,7 @@ class AnalyticsService {
     // Get pending approval
     const pendingApproval = await ScheduledPost.find({
       accountId: { $in: accountIds },
-      status: 'pending',
+      status: { $in: ['pending', 'pending_approval'] },
       requiresApproval: true
     })
       .sort({ createdAt: -1 });

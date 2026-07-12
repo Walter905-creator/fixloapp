@@ -120,29 +120,9 @@ router.get('/oauth/meta/callback', async (req, res) => {
         instagramUsername: metaAccountInfo.instagramUsername
       });
       
-      // STEP 4: Store Page access token (encrypted)
-      console.info('[Meta OAuth Backend] Step 4: Storing encrypted tokens...');
-      const pageTokenStored = await tokenEncryption.storeToken({
-        tokenValue: metaAccountInfo.pageAccessToken,
-        tokenType: 'access',
-        accountRef: null, // Will update after creating account
-        platform: 'meta_facebook',
-        expiresIn: longTokenData.expires_in
-      });
-      
-      // Store Instagram access token if available (uses same token as Page)
-      let instagramTokenStored = null;
-      if (metaAccountInfo.hasInstagram) {
-        instagramTokenStored = await tokenEncryption.storeToken({
-          tokenValue: metaAccountInfo.instagramAccessToken,
-          tokenType: 'access',
-          accountRef: null, // Will update after creating account
-          platform: 'meta_instagram',
-          expiresIn: longTokenData.expires_in
-        });
-      }
-      
-      console.info('[Meta OAuth Backend] Token storage: SUCCESS');
+      const grantedScopes = handler.getRequiredScopes
+        ? handler.getRequiredScopes()
+        : ['pages_show_list', 'pages_manage_posts', 'pages_read_engagement', 'instagram_content_publish', 'instagram_basic', 'business_management'];
       
       // STEP 5: Create or update SocialAccount for Facebook Page
       let facebookAccount = await SocialAccount.findOne({
@@ -153,11 +133,9 @@ router.get('/oauth/meta/callback', async (req, res) => {
       
       if (facebookAccount) {
         // Update existing account
-        facebookAccount.accessTokenRef = pageTokenStored._id;
-        facebookAccount.tokenExpiresAt = new Date(Date.now() + longTokenData.expires_in * 1000);
-        facebookAccount.isActive = true;
-        facebookAccount.isTokenValid = true;
-        facebookAccount.requiresReauth = false;
+        facebookAccount.platformUsername = metaAccountInfo.pageName;
+        facebookAccount.accountName = metaAccountInfo.pageName;
+        facebookAccount.profileUrl = `https://facebook.com/${metaAccountInfo.pageId}`;
         facebookAccount.platformSettings = {
           ...facebookAccount.platformSettings,
           pageId: metaAccountInfo.pageId,
@@ -174,24 +152,43 @@ router.get('/oauth/meta/callback', async (req, res) => {
           platformUsername: metaAccountInfo.pageName,
           accountName: metaAccountInfo.pageName,
           profileUrl: `https://facebook.com/${metaAccountInfo.pageId}`,
-          accessTokenRef: pageTokenStored._id,
-          tokenExpiresAt: new Date(Date.now() + longTokenData.expires_in * 1000),
           platformSettings: {
             pageId: metaAccountInfo.pageId,
             pageName: metaAccountInfo.pageName
           },
-          grantedScopes: ['pages_show_list'],
+          grantedScopes,
           connectedAt: new Date()
         });
         await facebookAccount.save();
         console.info('[Meta OAuth Backend] Facebook account created');
       }
       
-      // Update token with account reference
-      pageTokenStored.accountRef = facebookAccount._id;
-      await pageTokenStored.save();
+      // STEP 6: Store or rotate Facebook token (accountRef required)
+      let pageTokenStored;
+      if (facebookAccount.accessTokenRef) {
+        pageTokenStored = await tokenEncryption.rotateToken({
+          oldTokenId: facebookAccount.accessTokenRef,
+          newTokenValue: metaAccountInfo.pageAccessToken,
+          expiresIn: longTokenData.expires_in
+        });
+      } else {
+        pageTokenStored = await tokenEncryption.storeToken({
+          tokenValue: metaAccountInfo.pageAccessToken,
+          tokenType: 'access',
+          accountRef: facebookAccount._id,
+          platform: 'meta_facebook',
+          expiresIn: longTokenData.expires_in
+        });
+      }
+      facebookAccount.accessTokenRef = pageTokenStored._id;
+      facebookAccount.tokenExpiresAt = new Date(Date.now() + longTokenData.expires_in * 1000);
+      facebookAccount.isActive = true;
+      facebookAccount.isTokenValid = true;
+      facebookAccount.requiresReauth = false;
+      facebookAccount.grantedScopes = grantedScopes;
+      await facebookAccount.save();
       
-      // STEP 6: Create or update SocialAccount for Instagram (if available)
+      // STEP 7: Create or update SocialAccount for Instagram (if available)
       let instagramAccount = null;
       if (metaAccountInfo.hasInstagram) {
         instagramAccount = await SocialAccount.findOne({
@@ -202,13 +199,9 @@ router.get('/oauth/meta/callback', async (req, res) => {
         
         if (instagramAccount) {
           // Update existing account
-          instagramAccount.accessTokenRef = instagramTokenStored._id;
-          instagramAccount.tokenExpiresAt = new Date(Date.now() + longTokenData.expires_in * 1000);
-          instagramAccount.isActive = true;
-          instagramAccount.isTokenValid = true;
-          instagramAccount.requiresReauth = false;
           instagramAccount.platformUsername = metaAccountInfo.instagramUsername;
           instagramAccount.accountName = metaAccountInfo.instagramName;
+          instagramAccount.profileUrl = `https://instagram.com/${metaAccountInfo.instagramUsername}`;
           instagramAccount.profileImageUrl = metaAccountInfo.instagramProfilePicture;
           instagramAccount.platformSettings = {
             ...instagramAccount.platformSettings,
@@ -228,26 +221,45 @@ router.get('/oauth/meta/callback', async (req, res) => {
             accountName: metaAccountInfo.instagramName,
             profileUrl: `https://instagram.com/${metaAccountInfo.instagramUsername}`,
             profileImageUrl: metaAccountInfo.instagramProfilePicture,
-            accessTokenRef: instagramTokenStored._id,
-            tokenExpiresAt: new Date(Date.now() + longTokenData.expires_in * 1000),
             platformSettings: {
               pageId: metaAccountInfo.pageId,
               pageName: metaAccountInfo.pageName,
               instagramBusinessId: metaAccountInfo.instagramBusinessId
             },
-            grantedScopes: ['pages_show_list'],
+            grantedScopes,
             connectedAt: new Date()
           });
           await instagramAccount.save();
           console.info('[Meta OAuth Backend] Instagram account created');
         }
         
-        // Update token with account reference
-        instagramTokenStored.accountRef = instagramAccount._id;
-        await instagramTokenStored.save();
+        // Store or rotate Instagram token (accountRef required)
+        let instagramTokenStored;
+        if (instagramAccount.accessTokenRef) {
+          instagramTokenStored = await tokenEncryption.rotateToken({
+            oldTokenId: instagramAccount.accessTokenRef,
+            newTokenValue: metaAccountInfo.instagramAccessToken,
+            expiresIn: longTokenData.expires_in
+          });
+        } else {
+          instagramTokenStored = await tokenEncryption.storeToken({
+            tokenValue: metaAccountInfo.instagramAccessToken,
+            tokenType: 'access',
+            accountRef: instagramAccount._id,
+            platform: 'meta_instagram',
+            expiresIn: longTokenData.expires_in
+          });
+        }
+        instagramAccount.accessTokenRef = instagramTokenStored._id;
+        instagramAccount.tokenExpiresAt = new Date(Date.now() + longTokenData.expires_in * 1000);
+        instagramAccount.isActive = true;
+        instagramAccount.isTokenValid = true;
+        instagramAccount.requiresReauth = false;
+        instagramAccount.grantedScopes = grantedScopes;
+        await instagramAccount.save();
       }
       
-      // STEP 7: Log successful connection
+      // STEP 8: Log successful connection
       await SocialAuditLog.logAction({
         actorId: ownerId,
         actorType: 'admin',
@@ -266,7 +278,7 @@ router.get('/oauth/meta/callback', async (req, res) => {
         connectedBy: ownerId
       });
       
-      // STEP 8: Return JSON response (NO frontend redirect)
+      // STEP 9: Return JSON response (NO frontend redirect)
       return res.status(200).json({
         success: true,
         platform: 'meta',
@@ -709,6 +721,8 @@ router.post('/post', async (req, res) => {
       postDate = scheduler.getOptimalPostingTime(account.platform);
     }
     
+    const shouldRequireApproval = requiresApproval !== undefined ? Boolean(requiresApproval) : true;
+
     const post = new ScheduledPost({
       ownerId,
       accountId: account._id,
@@ -717,8 +731,8 @@ router.post('/post', async (req, res) => {
       mediaUrls: mediaUrls || [],
       mediaType: mediaUrls && mediaUrls.length > 0 ? 'image' : 'none',
       scheduledFor: postDate,
-      requiresApproval: requiresApproval !== undefined ? requiresApproval : true,
-      status: requiresApproval ? 'pending' : 'scheduled'
+      requiresApproval: shouldRequireApproval,
+      status: shouldRequireApproval ? 'pending' : 'scheduled'
     });
     
     await post.save();

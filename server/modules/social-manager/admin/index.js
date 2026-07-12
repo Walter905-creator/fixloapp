@@ -112,7 +112,7 @@ class AdminService {
     const result = await ScheduledPost.updateMany(
       {
         ownerId,
-        status: { $in: ['pending', 'scheduled'] }
+        status: { $in: ['pending', 'pending_approval', 'scheduled'] }
       },
       {
         $set: { requiresApproval }
@@ -148,7 +148,7 @@ class AdminService {
       throw new Error('Post not found');
     }
     
-    if (post.status !== 'pending') {
+    if (!['pending', 'pending_approval'].includes(post.status)) {
       throw new Error(`Post cannot be approved in status: ${post.status}`);
     }
     
@@ -188,7 +188,7 @@ class AdminService {
       throw new Error('Post not found');
     }
     
-    if (!['pending', 'approved', 'scheduled'].includes(post.status)) {
+    if (!['pending', 'pending_approval', 'approved', 'scheduled'].includes(post.status)) {
       throw new Error(`Post cannot be cancelled in status: ${post.status}`);
     }
     
