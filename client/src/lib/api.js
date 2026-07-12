@@ -1,5 +1,10 @@
 const API_BASE = import.meta.env.VITE_API_URL || 'https://fixloapp.onrender.com';
 
+// Re-export CSRF fetch helper so callers can import from one place.
+// Use csrfFetch() for any public (non-JWT) state-changing requests such as
+// contact forms, homeowner-lead, service-request, etc.
+export { csrfFetch, getCsrfToken, clearCsrfToken } from '../utils/csrf';
+
 function getTokenByRole(role) {
   if (role === 'recruiter') {
     return localStorage.getItem('fixlo_recruiter_token') || '';
