@@ -680,13 +680,14 @@ router.post('/forgot-password', async (req, res) => {
 
   try {
     // Step 3: Database connectivity check
+    console.log('[forgot-password] Step 3: Checking database connection (readyState=%d)', mongoose.connection.readyState);
     if (mongoose.connection.readyState !== 1) {
       console.error('[forgot-password] EARLY RETURN: MongoDB not connected (readyState=%d)', mongoose.connection.readyState);
       return res.status(503).json({ error: 'Service temporarily unavailable. Please try again.' });
     }
 
     // Step 4: User lookup
-    console.log('[forgot-password] Step 3: Looking up user with email:', normalizedEmail);
+    console.log('[forgot-password] Step 4: Looking up user with email:', normalizedEmail);
     const [homeownerResult, recruiterResult] = await Promise.allSettled([
       Homeowner.findOne({ email: normalizedEmail }),
       RecruiterProfile.findOne({ email: normalizedEmail })
@@ -706,40 +707,43 @@ router.post('/forgot-password', async (req, res) => {
     const user = homeowner || recruiter;
     if (!user) {
       // Do not reveal whether the account exists (anti-enumeration)
-      console.log('[forgot-password] Step 4: No account found for email (not revealing to client):', normalizedEmail);
+      console.log('[forgot-password] Step 5: No account found for email (not revealing to client):', normalizedEmail);
       return res.json({
         success: true,
         message: 'If this account exists, password reset instructions will be sent.'
       });
     }
-    console.log('[forgot-password] Step 4: User found — type:', homeowner ? 'Homeowner' : 'RecruiterProfile', '| id:', user._id);
+    console.log('[forgot-password] Step 5: User found — type:', homeowner ? 'Homeowner' : 'RecruiterProfile', '| id:', user._id);
 
     // Step 6: Generate reset token
     const rawToken = crypto.randomBytes(32).toString('hex');
+    // Always store the SHA-256 hash, never the raw token, regardless of model
     const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
     const tokenExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-    console.log('[forgot-password] Step 5: Reset token generated (not logged for security)');
+    console.log('[forgot-password] Step 6: Reset token generated (raw token not logged for security)');
 
     // Persist token hash to the correct model
+    // RecruiterProfile.resetToken stores the hash here; the /api/recruiter-auth/reset-password
+    // endpoint must hash the incoming token before lookup to match.
     if (homeowner) {
       homeowner.passwordResetTokenHash = tokenHash;
       homeowner.passwordResetExpires = tokenExpires;
       await homeowner.save();
     } else {
-      recruiter.resetToken = rawToken; // RecruiterProfile stores raw token (existing schema)
+      recruiter.resetToken = tokenHash;
       recruiter.resetTokenExpires = tokenExpires;
       await recruiter.save();
     }
-    console.log('[forgot-password] Step 5b: Reset token saved to database for user:', user._id);
+    console.log('[forgot-password] Step 6b: Reset token hash saved to database for user:', user._id);
 
     // Step 7: Build email payload (handled inside sendPasswordResetEmail)
-    console.log('[forgot-password] Step 6: Email payload being constructed for:', normalizedEmail);
+    console.log('[forgot-password] Step 7: Email payload being constructed for:', normalizedEmail);
 
     // Step 8: Call SendGrid
-    console.log('[forgot-password] Step 7: Calling sendPasswordResetEmail() via SendGrid for:', normalizedEmail);
+    console.log('[forgot-password] Step 8: Calling sendPasswordResetEmail() via SendGrid for:', normalizedEmail);
     try {
       await sendPasswordResetEmail(normalizedEmail, rawToken);
-      console.log('[forgot-password] Step 8: SendGrid accepted the email for:', normalizedEmail);
+      console.log('[forgot-password] Step 9: SendGrid accepted the email for:', normalizedEmail);
     } catch (emailErr) {
       // Step 9: SendGrid error — log full error and fail loudly
       console.error('[forgot-password] Step 9: SendGrid send() threw an exception:');
