@@ -35,7 +35,15 @@ const _csrfCheck = csurf({
     key: '_csrf',
     httpOnly: true,                                              // Not readable by JS — server verifies only
     secure: process.env.NODE_ENV === 'production',             // HTTPS only in production
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' required for cross-origin SPA in production
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    // Rationale: the frontend (fixloapp.com / Vercel) and the backend
+    // (fixloapp.onrender.com) are on different origins.  With SameSite=Strict
+    // the browser would never send the _csrf cookie in cross-origin requests,
+    // making CSRF protection impossible for any non-JWT public route.
+    // SameSite=None is required for cross-origin credentialed requests and is
+    // only enabled in production (where Secure=true enforces HTTPS).
+    // Cross-origin access is already restricted by the CORS allowedOrigins
+    // list in index.js, so only trusted domains can make credentialed requests.
     path: '/',
   },
 });

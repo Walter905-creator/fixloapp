@@ -108,7 +108,10 @@ export async function csrfFetch(url, options = {}) {
 
   // If the token was rejected (e.g. rotated after a long session), retry once.
   if (res.status === 403) {
-    const body = await res.clone().json().catch(() => ({}));
+    const body = await res.clone().json().catch(parseErr => {
+      console.warn('[CSRF] Could not parse 403 response body:', parseErr.message);
+      return {};
+    });
     if (body.error === 'Invalid or missing CSRF token') {
       clearCsrfToken();
       const freshToken = await getCsrfToken();
