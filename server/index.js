@@ -191,18 +191,20 @@ app.use(cookieParser(process.env.COOKIE_SECRET || process.env.JWT_SECRET));
 
 // ----------------------- CSRF Protection -----------------------
 // Applies csurf token validation to all state-changing requests
-// (POST, PUT, PATCH, DELETE) on non-webhook paths.
+// (POST, PUT, PATCH, DELETE).
 //
-// The regex `/^(?!\/webhook).*$/` excludes /webhook/* so that
-// Stripe and Checkr webhooks — which carry their own cryptographic
-// proof of origin (Stripe-Signature header, Checkr webhook secret)
-// — are never asked for a CSRF token.
+// IMPORTANT: mounted WITHOUT a path pattern so that req.path inside the
+// middleware is always the full request path.  When Express mounts middleware
+// with a path or regex it strips the matched portion from req.url, making
+// req.path === '/' for all routes and breaking prefix-based exemptions such
+// as CSRF_EXEMPT_PREFIXES.  Webhook exclusion and all other path checks are
+// handled inside csrfProtection itself.
 //
 // GET / HEAD / OPTIONS are safe methods and are excluded by csurf itself.
 //
 // The CSRF token is issued via GET /api/csrf-token (see below).
 // See server/middleware/csrf.js for full documentation.
-app.use(/^(?!\/webhook).*$/, csrfProtection);
+app.use(csrfProtection);
 app.use(csrfErrorHandler);
 
 // ----------------------- Static serving (API assets only) -----------------------

@@ -12,8 +12,13 @@
  *   3. `csurf` validates the header/body token against the signed cookie.
  *
  * Routes excluded from CSRF token checks:
- *   - /webhook/*   — applied via regex path in index.js; webhooks carry their
- *                    own cryptographic proof of origin (Stripe-Signature, etc.)
+ *   - /webhook/*   — webhook paths carry their own cryptographic proof of
+ *                    origin (Stripe-Signature, Checkr webhook secret, etc.).
+ *                    NOTE: this exclusion is handled INSIDE csrfProtection so
+ *                    that req.path is always the full path.  The previous
+ *                    pattern app.use(/regex/, fn) caused Express to strip the
+ *                    entire matched URL before calling fn, making req.path='/'
+ *                    for every route and breaking all prefix-based exemptions.
  *   - Requests with `Authorization: ****** — JWT bearer auth is
  *     architecturally immune to CSRF because the browser cannot auto-attach
  *     an Authorization header in a cross-site request.
@@ -68,38 +73,78 @@ const CSRF_EXEMPT_PREFIXES = [
 
 /**
  * Express middleware that enforces CSRF token validation for state-changing
- * requests, with exemptions for JWT Bearer-authenticated requests and the
- * public authentication path prefixes listed above.
+ * requests, with exemptions for webhook paths, JWT Bearer-authenticated
+ * requests, and the public authentication path prefixes listed above.
+ *
+ * IMPORTANT: Register this middleware WITHOUT a path pattern:
+ *   app.use(csrfProtection)           ✓ correct — req.path is the full URL path
+ *   app.use(/regex/, csrfProtection)  ✗ WRONG  — Express strips the entire
+ *     regex match from req.url before calling the middleware, making
+ *     req.path === '/' for every route and preventing prefix-based exemptions
+ *     from ever matching.
+ *
+ * Webhook exclusion is therefore handled explicitly inside this function where
+ * req.path is reliably the full path.
  *
  * JWT ****** must be set explicitly in JavaScript — a cross-site
  * attacker cannot inject them through an HTML form or img tag — so those
  * requests carry no CSRF risk.
- *
- * Webhook exemption is handled at the mount level in index.js via
- * a regex path so csurf never runs for /webhook/* paths at all.
  *
  * @param {import('express').Request}  req
  * @param {import('express').Response} res
  * @param {import('express').NextFunction} next
  */
 function csrfProtection(req, res, next) {
-  // JWT Bearer-authenticated requests are immune to CSRF — skip.
-  const authHeader = req.headers.authorization || '';
-  if (authHeader.startsWith('Bearer ')) return next();
+  const isDev = process.env.NODE_ENV !== 'production';
 
-  // Public pre-authentication endpoints — no existing session to protect.
-  if (CSRF_EXEMPT_PREFIXES.some(prefix => req.path.startsWith(prefix))) {
+  // ── Webhooks ──────────────────────────────────────────────────────────────────
+  // Webhook paths carry their own cryptographic proof of origin
+  // (Stripe-Signature, Checkr webhook secret, etc.) and must not be asked for
+  // a CSRF token.  Previously this was handled by mounting this middleware with
+  // a regex path exclusion in index.js, but that caused Express to strip
+  // req.path to '/' inside the middleware and broke all prefix-based exemptions.
+  if (req.path.startsWith('/webhook')) {
+    if (isDev) console.log(`[CSRF] SKIP webhook     | ${req.method} ${req.path}`);
     return next();
   }
 
-  // All other state-changing requests must carry a valid CSRF token.
-  // (GET / HEAD / OPTIONS are skipped by csurf itself.)
+  // ── JWT ****** ─────────────────────────────────────────────────────────────────
+  // JWT bearer tokens must be set explicitly in JavaScript — a cross-site
+  // attacker cannot inject them via an HTML form — so these requests carry no
+  // CSRF risk.
+  const authHeader = req.headers.authorization || '';
+  if (authHeader.startsWith('Bearer ')) {
+    if (isDev) console.log(`[CSRF] SKIP jwt-bearer  | ${req.method} ${req.path}`);
+    return next();
+  }
+
+  // ── Public auth endpoints ─────────────────────────────────────────────────────
+  // Pre-authentication routes (login, register, forgot-password, reset-password)
+  // operate before any session exists, so there is no state for an attacker to
+  // hijack.
+  if (CSRF_EXEMPT_PREFIXES.some(prefix => req.path.startsWith(prefix))) {
+    if (isDev) console.log(`[CSRF] SKIP public-auth | ${req.method} ${req.path}`);
+    return next();
+  }
+
+  // ── CSRF token validation ─────────────────────────────────────────────────────
+  // All other state-changing requests (POST, PUT, PATCH, DELETE) must carry a
+  // valid CSRF token.  GET / HEAD / OPTIONS are safe methods and are skipped
+  // by csurf automatically.
+  if (isDev) {
+    const hasCookie = !!(req.headers.cookie && req.headers.cookie.includes('_csrf'));
+    const hasToken  = !!req.headers['x-csrf-token'];
+    console.log(
+      `[CSRF] ENFORCE          | ${req.method} ${req.path} | _csrf: ${hasCookie ? 'yes' : 'NO'} | x-csrf-token: ${hasToken ? 'yes' : 'NO'}`
+    );
+  }
   return _csrfCheck(req, res, next);
 }
 
 /**
  * Error handler for CSRF token validation failures.
  * Returns structured JSON instead of csurf's default plain-text 403.
+ * In development mode, logs detailed diagnostics to help identify the cause.
  *
  * @param {Error} err
  * @param {import('express').Request} req
@@ -108,7 +153,23 @@ function csrfProtection(req, res, next) {
  */
 function csrfErrorHandler(err, req, res, next) {
   if (err.code !== 'EBADCSRFTOKEN') return next(err);
-  console.warn(`[CSRF] Token validation failed: ${req.method} ${req.path}`);
+
+  const isDev = process.env.NODE_ENV !== 'production';
+  if (isDev) {
+    const cookieHeader = req.headers.cookie || '';
+    const hasCsrfCookie = cookieHeader.includes('_csrf');
+    console.warn('[CSRF] ─── VALIDATION FAILED ───────────────────────────────');
+    console.warn(`[CSRF]   route          : ${req.method} ${req.path}`);
+    console.warn(`[CSRF]   middleware      : csurf (_csrfCheck)`);
+    console.warn(`[CSRF]   x-csrf-token   : ${req.headers['x-csrf-token'] || '(missing)'}`);
+    console.warn(`[CSRF]   _csrf cookie    : ${hasCsrfCookie ? 'present' : '(missing)'}`);
+    console.warn(`[CSRF]   origin          : ${req.headers.origin || '(none)'}`);
+    console.warn(`[CSRF]   referer         : ${req.headers.referer || '(none)'}`);
+    console.warn('[CSRF] ─────────────────────────────────────────────────────');
+  } else {
+    console.warn(`[CSRF] Token validation failed: ${req.method} ${req.path}`);
+  }
+
   return res.status(403).json({ error: 'Invalid or missing CSRF token' });
 }
 
