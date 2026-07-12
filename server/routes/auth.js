@@ -10,6 +10,7 @@ const RecruiterProfile = require("../models/RecruiterProfile");
 const mongoose = require("mongoose");
 const { requireDatabase } = require('../config/database');
 const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
+const { sendPasswordResetEmail } = require('../utils/email');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@fixloapp.com';
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH; // store hash, not raw
@@ -663,39 +664,115 @@ router.post('/signup/recruiter', requireDatabase, async (req, res) => {
 
 // ── Forgot Password (unified, safe) ──────────────────────────────────────────
 router.post('/forgot-password', async (req, res) => {
-  // Always return a safe success message regardless of whether the email exists
-  // This prevents email enumeration attacks.
+  // Step 1: Request received
+  console.log('[forgot-password] Step 1: Request received at POST /api/auth/forgot-password');
+
+  // Step 2: Extract email
   const { email } = req.body || {};
+  console.log('[forgot-password] Step 2: Email received:', email || '(none)');
+
   if (!email) {
+    console.log('[forgot-password] EARLY RETURN: No email provided in request body');
     return res.status(400).json({ error: 'Email is required' });
   }
 
-  // Non-blocking: attempt to send reset instructions if email system is configured.
-  // If no email system is configured, silently succeed.
-  // The response is always the same to prevent email enumeration.
-  try {
-    if (mongoose.connection.readyState === 1) {
-      // Check for the account (homeowner or recruiter) but do not reveal result
-      const [homeowner, recruiter] = await Promise.allSettled([
-        Homeowner.findOne({ email: email.toLowerCase().trim() }),
-        RecruiterProfile.findOne({ email: email.toLowerCase().trim() })
-      ]);
-      // In the future, integrate an email service here to send a reset link.
-      // For now, log internally (never to client).
-      const found = (homeowner.value) || (recruiter.value);
-      if (found && process.env.NODE_ENV !== 'production') {
-        console.log(`🔑 Forgot-password requested for: ${email.toLowerCase()}`);
-      }
-    }
-  } catch (err) {
-    // Never fail — always return success to prevent enumeration
-    console.error('Forgot-password internal error:', err.message);
-  }
+  const normalizedEmail = email.toLowerCase().trim();
 
-  return res.json({
-    success: true,
-    message: 'If this account exists, password reset instructions will be sent.'
-  });
+  try {
+    // Step 3: Database connectivity check
+    if (mongoose.connection.readyState !== 1) {
+      console.error('[forgot-password] EARLY RETURN: MongoDB not connected (readyState=%d)', mongoose.connection.readyState);
+      return res.status(503).json({ error: 'Service temporarily unavailable. Please try again.' });
+    }
+
+    // Step 4: User lookup
+    console.log('[forgot-password] Step 3: Looking up user with email:', normalizedEmail);
+    const [homeownerResult, recruiterResult] = await Promise.allSettled([
+      Homeowner.findOne({ email: normalizedEmail }),
+      RecruiterProfile.findOne({ email: normalizedEmail })
+    ]);
+
+    const homeowner = homeownerResult.status === 'fulfilled' ? homeownerResult.value : null;
+    const recruiter = recruiterResult.status === 'fulfilled' ? recruiterResult.value : null;
+
+    if (homeownerResult.status === 'rejected') {
+      console.error('[forgot-password] Homeowner lookup error:', homeownerResult.reason);
+    }
+    if (recruiterResult.status === 'rejected') {
+      console.error('[forgot-password] RecruiterProfile lookup error:', recruiterResult.reason);
+    }
+
+    // Step 5: Found / not found
+    const user = homeowner || recruiter;
+    if (!user) {
+      // Do not reveal whether the account exists (anti-enumeration)
+      console.log('[forgot-password] Step 4: No account found for email (not revealing to client):', normalizedEmail);
+      return res.json({
+        success: true,
+        message: 'If this account exists, password reset instructions will be sent.'
+      });
+    }
+    console.log('[forgot-password] Step 4: User found — type:', homeowner ? 'Homeowner' : 'RecruiterProfile', '| id:', user._id);
+
+    // Step 6: Generate reset token
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const tokenExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    console.log('[forgot-password] Step 5: Reset token generated (not logged for security)');
+
+    // Persist token hash to the correct model
+    if (homeowner) {
+      homeowner.passwordResetTokenHash = tokenHash;
+      homeowner.passwordResetExpires = tokenExpires;
+      await homeowner.save();
+    } else {
+      recruiter.resetToken = rawToken; // RecruiterProfile stores raw token (existing schema)
+      recruiter.resetTokenExpires = tokenExpires;
+      await recruiter.save();
+    }
+    console.log('[forgot-password] Step 5b: Reset token saved to database for user:', user._id);
+
+    // Step 7: Build email payload (handled inside sendPasswordResetEmail)
+    console.log('[forgot-password] Step 6: Email payload being constructed for:', normalizedEmail);
+
+    // Step 8: Call SendGrid
+    console.log('[forgot-password] Step 7: Calling sendPasswordResetEmail() via SendGrid for:', normalizedEmail);
+    try {
+      await sendPasswordResetEmail(normalizedEmail, rawToken);
+      console.log('[forgot-password] Step 8: SendGrid accepted the email for:', normalizedEmail);
+    } catch (emailErr) {
+      // Step 9: SendGrid error — log full error and fail loudly
+      console.error('[forgot-password] Step 9: SendGrid send() threw an exception:');
+      console.error('[forgot-password]   message:', emailErr.message);
+      if (emailErr.response) {
+        console.error('[forgot-password]   status:', emailErr.response.status);
+        console.error('[forgot-password]   body:', JSON.stringify(emailErr.response.body));
+      }
+      console.error('[forgot-password]   full error:', emailErr);
+      // Rollback token so it cannot be exploited even though the email failed
+      if (homeowner) {
+        homeowner.passwordResetTokenHash = undefined;
+        homeowner.passwordResetExpires = undefined;
+        await homeowner.save();
+      } else {
+        recruiter.resetToken = null;
+        recruiter.resetTokenExpires = null;
+        await recruiter.save();
+      }
+      return res.status(502).json({ error: 'Failed to send reset email. Please try again later.' });
+    }
+
+    return res.json({
+      success: true,
+      message: 'If this account exists, password reset instructions will be sent.'
+    });
+
+  } catch (err) {
+    console.error('[forgot-password] Step 9: Unhandled exception in forgot-password controller:');
+    console.error('[forgot-password]   message:', err.message);
+    console.error('[forgot-password]   stack:', err.stack);
+    return res.status(500).json({ error: 'An unexpected error occurred. Please try again.' });
+  }
 });
 
 module.exports = router;
