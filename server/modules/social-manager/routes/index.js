@@ -120,7 +120,9 @@ router.get('/oauth/meta/callback', async (req, res) => {
         instagramUsername: metaAccountInfo.instagramUsername
       });
       
-      const grantedScopes = handler.getRequiredScopes ? handler.getRequiredScopes() : ['pages_show_list'];
+      const grantedScopes = handler.getRequiredScopes
+        ? handler.getRequiredScopes()
+        : ['pages_show_list', 'pages_manage_posts', 'pages_read_engagement', 'instagram_content_publish', 'instagram_basic', 'business_management'];
       
       // STEP 5: Create or update SocialAccount for Facebook Page
       let facebookAccount = await SocialAccount.findOne({

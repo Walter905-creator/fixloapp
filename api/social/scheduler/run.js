@@ -42,14 +42,23 @@ function verifyAdminToken(req) {
     console.warn('[scheduler-run] ⚠️  WARNING: Using default ADMIN_SECRET_KEY in production. Set ADMIN_SECRET_KEY environment variable.');
   }
   
-  const tokenCandidates = [bearerToken, adminHeaderKey, cronHeaderSecret].filter(Boolean);
-
-  if (CRON_SECRET && tokenCandidates.includes(CRON_SECRET)) {
-    return { valid: true, userId: 'cron', isAdminKey: false, authSource: 'cron-secret' };
+  const providedCredentials = [bearerToken, adminHeaderKey, cronHeaderSecret].filter(Boolean);
+  if (providedCredentials.length > 1) {
+    return { valid: false, error: 'Provide only one authentication credential per request' };
   }
 
-  if (tokenCandidates.includes(effectiveKey)) {
-    return { valid: true, userId: 'admin', isAdminKey: true, authSource: 'admin-secret' };
+  if (cronHeaderSecret) {
+    if (CRON_SECRET && cronHeaderSecret === CRON_SECRET) {
+      return { valid: true, userId: 'cron', isAdminKey: false, authSource: 'cron-secret' };
+    }
+    return { valid: false, error: 'Invalid cron secret' };
+  }
+
+  if (adminHeaderKey) {
+    if (adminHeaderKey === effectiveKey) {
+      return { valid: true, userId: 'admin', isAdminKey: true, authSource: 'admin-secret-header' };
+    }
+    return { valid: false, error: 'Invalid admin key' };
   }
 
   if (!bearerToken) {
@@ -57,6 +66,14 @@ function verifyAdminToken(req) {
       valid: false,
       error: 'Missing authentication token (Authorization Bearer, X-Admin-Key, or X-Cron-Secret)'
     };
+  }
+
+  if (CRON_SECRET && bearerToken === CRON_SECRET) {
+    return { valid: true, userId: 'cron', isAdminKey: false, authSource: 'cron-secret-bearer' };
+  }
+
+  if (bearerToken === effectiveKey) {
+    return { valid: true, userId: 'admin', isAdminKey: true, authSource: 'admin-secret-bearer' };
   }
   
   // Otherwise, verify JWT token

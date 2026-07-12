@@ -45,9 +45,12 @@ const ERROR_MESSAGES = {
 };
 
 const META_REQUIRED_SCOPES = [
+  // Baseline page listing
   'pages_show_list',
+  // Publishing and engagement scopes (typically require Advanced Access/App Review)
   'pages_manage_posts',
   'pages_read_engagement',
+  // Instagram Graph publishing scopes (require Instagram Graph API product + app review)
   'instagram_content_publish',
   'instagram_basic',
   'business_management'
