@@ -11,6 +11,7 @@ const { sendOwnerNotification, sendHomeownerConfirmation, sendProLeadAlert } = r
 const { routeLead } = require('../services/leadAssignmentService');
 const { getPriorityConfig, getOwnerPhone } = require('../config/priorityRouting');
 const { HOMEOWNER_REQUEST_PRICE_CENTS } = require('../config/pricing');
+const { notify: ownerNotify } = require('../services/ownerNotificationService');
 
 // Homeowner quote requests are free — no upfront charge
 const HOMEOWNER_REQUEST_AMOUNT_CENTS = HOMEOWNER_REQUEST_PRICE_CENTS; // 0
@@ -191,6 +192,18 @@ router.post('/', async (req, res) => {
           console.error('❌ Owner notification error:', ownerErr.message);
         }
       }
+
+      // Fire-and-forget owner email notification for service request
+      ownerNotify('service_request', {
+        service:       rawService,
+        homeownerName: savedLead.name,
+        email:         savedLead.email || 'N/A',
+        phone:         savedLead.phone,
+        city:          savedLead.city || city?.trim() || 'N/A',
+        state:         savedLead.state || state?.trim() || 'N/A',
+        requestedDate: savedLead.createdAt?.toISOString() || new Date().toISOString(),
+        leadId:        String(savedLead._id)
+      }).catch(() => {});
     }
 
     // ---------- Notify Pros ----------

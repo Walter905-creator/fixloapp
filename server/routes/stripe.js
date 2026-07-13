@@ -8,6 +8,7 @@ const Referral = require('../models/Referral');
 const EarlyAccessSpots = require('../models/EarlyAccessSpots');
 const { applyReferralFreeMonth, hasExistingReward } = require('../services/applyReferralFreeMonth');
 const { sendSms } = require('../utils/twilio');
+const { notify: ownerNotify } = require('../services/ownerNotificationService');
 
 // Initialize Stripe with validation
 let stripe;
@@ -382,6 +383,15 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
               job.status = 'completed';
               await job.save();
               console.log(`✅ Job ${jobId} marked as completed and paid`);
+
+              // Owner notification — quote purchased
+              ownerNotify('quote_purchased', {
+                homeowner:            job.name || 'N/A',
+                amountPaid:           (paymentIntent.amount / 100).toFixed(2),
+                stripePaymentIntentId: paymentIntent.id,
+                service:              job.trade || 'N/A',
+                city:                 job.city  || 'N/A'
+              }).catch(() => {});
             } else {
               console.warn(`⚠️ No job found with ID: ${jobId}`);
             }
@@ -535,6 +545,15 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
             
             await pro.save();
             console.log(`✅ Pro ${pro._id} updated with subscription details`);
+
+            // Owner notification — pro subscription created
+            ownerNotify('pro_subscription', {
+              proName:          pro.name || 'Unknown',
+              plan:             updateData.subscriptionPlan || updateData.subscriptionTier || 'pro',
+              amount:           unitAmountFromSubscription ? (unitAmountFromSubscription / 100).toFixed(2) : 'N/A',
+              stripeCustomerId: session.customer,
+              subscriptionEvent: 'created'
+            }).catch(() => {});
 
             // Track recruiter attribution for /pros/signup?ref=RECRUITER_CODE
             if (!isAiHomeSubscription && session.metadata?.referralCode && session.subscription) {
@@ -723,6 +742,15 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
             
             await pro.save();
             console.log(`✅ Pro ${pro._id} payment status updated to active`);
+
+            // Owner notification — subscription renewed (invoice.payment_succeeded)
+            ownerNotify('pro_subscription', {
+              proName:           pro.name || 'Unknown',
+              plan:              pro.subscriptionPlan || pro.subscriptionTier || 'pro',
+              amount:            invoice.amount_paid ? (invoice.amount_paid / 100).toFixed(2) : 'N/A',
+              stripeCustomerId:  invoice.customer,
+              subscriptionEvent: 'renewed'
+            }).catch(() => {});
             
             // Check if this is a referred user completing their first PAID invoice (PRO/AI_PLUS only)
             // Only process if this is NOT a $0 invoice (i.e., after trial period)
@@ -897,9 +925,15 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
             
             await pro.save();
             console.log(`⚠️ Pro ${pro._id} payment status updated to failed`);
-            
-            // TODO: Send payment failure notification email
-            // TODO: Send SMS notification if enabled
+
+            // Owner notification — subscription payment failed
+            ownerNotify('pro_subscription', {
+              proName:           pro.name || 'Unknown',
+              plan:              pro.subscriptionPlan || pro.subscriptionTier || 'pro',
+              amount:            invoice.amount_due ? (invoice.amount_due / 100).toFixed(2) : 'N/A',
+              stripeCustomerId:  invoice.customer,
+              subscriptionEvent: 'payment_failed'
+            }).catch(() => {});
           } else {
             console.warn(`⚠️ No Pro found with customer ID: ${invoice.customer}`);
           }
@@ -978,6 +1012,15 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
             
             await pro.save();
             console.log(`✅ Pro ${pro._id} subscription cancelled`);
+
+            // Owner notification — subscription cancelled
+            ownerNotify('pro_subscription', {
+              proName:           pro.name || 'Unknown',
+              plan:              pro.subscriptionPlan || pro.subscriptionTier || 'pro',
+              amount:            'N/A',
+              stripeCustomerId:  subscription.customer,
+              subscriptionEvent: 'cancelled'
+            }).catch(() => {});
           }
         } catch (err) {
           console.error('❌ Failed to update cancelled subscription:', err.message);
