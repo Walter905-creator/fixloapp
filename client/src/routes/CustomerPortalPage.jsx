@@ -344,12 +344,14 @@ export default function CustomerPortalPage() {
   const [invoice, setInvoice] = useState(null);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('home');
+  // TODO: Replace with API-driven notifications when backend endpoint is available
   const [notifications, setNotifications] = useState([
     { id: 1, type: 'quote',    text: 'New quote received for your Plumbing request',     time: '2 hours ago',  unread: true },
     { id: 2, type: 'accepted', text: 'A professional accepted your Electrical request',  time: '1 day ago',    unread: true },
     { id: 3, type: 'reminder', text: 'Appointment reminder: HVAC service tomorrow',      time: '2 days ago',   unread: false },
     { id: 4, type: 'review',   text: 'How was your recent Plumbing service? Leave a review.', time: '3 days ago', unread: false },
   ]);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [savedPros] = useState([]);
   const [showNotifPanel, setShowNotifPanel] = useState(false);
 
@@ -378,8 +380,9 @@ export default function CustomerPortalPage() {
         setJobs(data.jobs || []);
         setAuthenticated(true);
       }
-    } catch {
-      // silently fail — user will see login
+    } catch (err) {
+      console.warn('Session restore failed:', err);
+      // silently fail — user will see login screen
     } finally {
       setLoading(false);
     }
@@ -420,7 +423,9 @@ export default function CustomerPortalPage() {
       try {
         const res = await fetch(`${API_BASE}/api/customer/jobs/${job._id}/invoice`);
         if (res.ok) setInvoice(await res.json());
-      } catch { /* ignore */ }
+      } catch (err) {
+        console.warn('Invoice load failed:', err);
+      }
     }
   };
 
@@ -455,8 +460,10 @@ export default function CustomerPortalPage() {
   const activeJobs    = jobs.filter(j => ['pending','matching-pros','scheduled','assigned','in-progress'].includes(j.status));
 
   const todayStr = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-  const firstName = email ? email.split('@')[0].split('.')[0] : (phone ? 'there' : 'there');
-  const displayName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+  // Derive display name from email local part or show friendly fallback
+  const rawName = email ? email.split('@')[0] : '';
+  const firstName = rawName ? rawName.split(/[._-]/)[0] : 'there';
+  const displayName = firstName.length > 0 ? firstName.charAt(0).toUpperCase() + firstName.slice(1) : 'there';
 
   if (loading && !authenticated) {
     return (
@@ -569,9 +576,11 @@ export default function CustomerPortalPage() {
           {/* ── Summary Cards ─────────────────────────────────── */}
           <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
             <SummaryCard icon={Icons.tool}    label="Active Requests"    value={activeCount}          color="blue"   sub="In progress" />
+            {/* TODO: integrate with quotes API when available */}
             <SummaryCard icon={Icons.quote}   label="Pending Quotes"     value={0}                    color="yellow" sub="Awaiting review" />
             <SummaryCard icon={Icons.check}   label="Completed Jobs"     value={completedCount}       color="green"  sub="All time" />
             <SummaryCard icon={Icons.star}    label="Saved Pros"         value={savedPros.length}     color="purple" sub="Favorites" />
+            {/* TODO: integrate with messages API when available */}
             <SummaryCard icon={Icons.msg}     label="Unread Messages"    value={0}                    color="slate"  sub="No new messages" />
             <SummaryCard icon={Icons.bell}    label="Notifications"      value={unreadNotifs}         color="red"    sub="Unread" />
           </section>
@@ -581,16 +590,15 @@ export default function CustomerPortalPage() {
             <SectionHeader icon={Icons.zap} title="Quick Actions" />
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               {[
-                { icon: Icons.plus,     label: 'Request a New Service',  href: '/request',          color: 'bg-brand hover:bg-brand-dark text-white' },
-                { icon: Icons.list,     label: 'View My Requests',       href: '#requests',          color: 'bg-blue-600 hover:bg-blue-700 text-white' },
-                { icon: Icons.quote,    label: 'View Quotes',            href: '#quotes',            color: 'bg-purple-600 hover:bg-purple-700 text-white' },
-                { icon: Icons.star,     label: 'Saved Professionals',    href: '#saved-pros',        color: 'bg-amber-500 hover:bg-amber-600 text-white' },
-                { icon: Icons.settings, label: 'Account Settings',       href: '#settings',          color: 'bg-slate-700 hover:bg-slate-800 text-white' },
+                { icon: Icons.plus,     label: 'Request a New Service',  href: '/request',     color: 'bg-brand hover:bg-brand-dark text-white' },
+                { icon: Icons.list,     label: 'View My Requests',       href: '#requests',    color: 'bg-blue-600 hover:bg-blue-700 text-white' },
+                { icon: Icons.quote,    label: 'View Quotes',            href: '#history',     color: 'bg-purple-600 hover:bg-purple-700 text-white' },
+                { icon: Icons.star,     label: 'Saved Professionals',    href: '#saved-pros',  color: 'bg-amber-500 hover:bg-amber-600 text-white' },
+                { icon: Icons.settings, label: 'Account Settings',       href: '#maintenance', color: 'bg-slate-700 hover:bg-slate-800 text-white' },
               ].map(({ icon, label, href, color }) => (
                 <a
                   key={label}
                   href={href}
-                  onClick={href === '/request' ? undefined : (e) => e.preventDefault()}
                   className={`flex flex-col items-center justify-center gap-2 px-3 py-5 rounded-2xl font-semibold text-xs text-center shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 ${color}`}
                 >
                   <Icon d={icon} size={24} />
@@ -686,7 +694,7 @@ export default function CustomerPortalPage() {
               </section>
 
               {/* Home Maintenance */}
-              <section className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+              <section id="maintenance" className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
                 <SectionHeader icon={Icons.shield} title="Home Maintenance Checklist" />
                 <div className="grid sm:grid-cols-2 gap-2">
                   {MAINTENANCE_ITEMS.map(item => {
@@ -822,12 +830,16 @@ export default function CustomerPortalPage() {
                     if (navigator.share) {
                       navigator.share({ title: 'Fixlo – Home Services', url: 'https://fixloapp.com' }).catch(() => {});
                     } else {
-                      navigator.clipboard?.writeText('https://fixloapp.com').then(() => alert('Link copied!'));
+                      navigator.clipboard?.writeText('https://fixloapp.com').then(() => {
+                        setLinkCopied(true);
+                        setTimeout(() => setLinkCopied(false), 2500);
+                      });
                     }
                   }}
                   className="w-full bg-white text-blue-700 font-bold py-2.5 rounded-xl hover:bg-blue-50 transition-colors text-sm flex items-center justify-center gap-2"
                 >
-                  <Icon d={Icons.share} size={15} /> Share Fixlo
+                  <Icon d={Icons.share} size={15} />
+                  {linkCopied ? '✓ Link copied!' : 'Share Fixlo'}
                 </button>
               </section>
             </div>
@@ -838,14 +850,21 @@ export default function CustomerPortalPage() {
         <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-30 lg:hidden safe-area-inset-bottom">
           <div className="flex items-center justify-around h-16">
             {[
-              { id: 'home',     icon: Icons.home,     label: 'Home' },
-              { id: 'requests', icon: Icons.list,     label: 'Requests' },
-              { id: 'messages', icon: Icons.msg,      label: 'Messages' },
-              { id: 'account',  icon: Icons.user,     label: 'Account' },
+              { id: 'home',     icon: Icons.home,  label: 'Home',     target: null },
+              { id: 'requests', icon: Icons.list,  label: 'Requests', target: 'requests' },
+              { id: 'messages', icon: Icons.msg,   label: 'Messages', target: null },
+              { id: 'account',  icon: Icons.user,  label: 'Account',  target: null },
             ].map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  if (tab.target) {
+                    document.getElementById(tab.target)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  } else {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
                 className={`flex flex-col items-center gap-1 px-4 py-2 transition-colors ${activeTab === tab.id ? 'text-brand' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 <Icon d={tab.icon} size={20} />
