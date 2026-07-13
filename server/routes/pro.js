@@ -11,6 +11,7 @@ const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
 const { isUSPhoneNumber } = require('../utils/twilio');
 const { processExpiredPremiumAssignments } = require('../services/leadAssignmentService');
 const { sendOwnerAlert } = require('../utils/sendOwnerAlert');
+const { notify: ownerNotify } = require('../services/ownerNotificationService');
 
 function requireJwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -130,6 +131,18 @@ router.post('/register', async (req, res) => {
       },
       `pro_signup:${pro._id}`
     ).catch((err) => console.warn('[OwnerAlert] Unexpected error:', err.message));
+
+    // Fire-and-forget owner email notification
+    ownerNotify('pro_registered', {
+      name:             pro.name,
+      trade:            pro.trade,
+      email:            pro.email,
+      phone:            pro.phone,
+      city:             'N/A',
+      state:            'N/A',
+      subscriptionPlan: 'pending',
+      signupDate:       new Date().toISOString()
+    }).catch(() => {});
 
     return res.status(201).json({
       token,

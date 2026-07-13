@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const Pro = require('../models/Pro');
 const { sendSms } = require('../utils/twilio');
 const { getCheckrConfig, checkrApiRequest } = require('../utils/checkr');
+const { notify: ownerNotify } = require('../services/ownerNotificationService');
 
 const router = express.Router();
 
@@ -185,6 +186,15 @@ router.post('/createCandidate', async (req, res) => {
     
     // Step 4: Send notification to Pro
     await notifyProOfStatusChange(pro, 'pending');
+
+    // Owner notification — background check requested
+    ownerNotify('background_check', {
+      proName:     pro.name || 'Unknown',
+      proEmail:    pro.email || 'N/A',
+      checkStatus: 'requested',
+      candidateId: candidate.id,
+      timestamp:   new Date().toISOString()
+    }).catch(() => {});
     
     return res.status(201).json({
       success: true,
@@ -274,6 +284,15 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
             pro.backgroundCheckStatus = 'pending';
             await pro.save();
             console.log(`✅ Updated Pro ${pro._id} status to pending (invitation completed)`);
+
+            // Owner notification — background check completed (invitation step)
+            ownerNotify('background_check', {
+              proName:     pro.name || 'Unknown',
+              proEmail:    pro.email || 'N/A',
+              checkStatus: 'completed',
+              candidateId: data.object.candidate_id,
+              timestamp:   new Date().toISOString()
+            }).catch(() => {});
           }
         }
         break;
@@ -338,6 +357,16 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         
         // Step 6: Send notification to Pro
         await notifyProOfStatusChange(pro, newStatus);
+
+        // Owner notification — background check passed or failed
+        ownerNotify('background_check', {
+          proName:     pro.name || 'Unknown',
+          proEmail:    pro.email || 'N/A',
+          checkStatus: newStatus === 'clear' ? 'passed' : 'failed',
+          candidateId: candidateId,
+          reportId:    reportId,
+          timestamp:   new Date().toISOString()
+        }).catch(() => {});
         
         break;
         

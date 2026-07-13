@@ -19,6 +19,10 @@ const server = http.createServer(app);
 // Trust proxy (Render / Cloud proxy aware: rate-limit & IPs)
 app.set("trust proxy", 1);
 
+// ----------------------- Owner Notification Service -----------------------
+// Loaded early so it is available throughout the module (e.g. error handlers).
+const { notify: ownerNotify } = require("./services/ownerNotificationService");
+
 // ----------------------- Utilities & Middleware -----------------------
 const axios = require("axios");
 const requestLogger = require("./middleware/logger");
@@ -668,6 +672,18 @@ app.post("/api/pro-signup", async (req, res) => {
       response.backgroundCheckUrl = checkrData.invitationUrl;
     }
 
+    // Fire-and-forget owner email notification
+    ownerNotify('pro_registered', {
+      name:             pro.name,
+      trade:            pro.trade,
+      email:            pro.email,
+      phone:            pro.phone,
+      city:             'N/A',
+      state:            'N/A',
+      subscriptionPlan: 'pending',
+      signupDate:       new Date().toISOString()
+    }).catch(() => {});
+
     return res.status(201).json(response);
   } catch (err) {
     console.error("❌ Pro signup error:", err.message);
@@ -824,6 +840,18 @@ app.post("/api/signup/pro", async (req, res) => {
     if (checkrData?.invitationUrl) {
       response.backgroundCheckUrl = checkrData.invitationUrl;
     }
+
+    // Fire-and-forget owner email notification
+    ownerNotify('pro_registered', {
+      name:             pro.name,
+      trade:            pro.trade,
+      email:            pro.email,
+      phone:            pro.phone,
+      city:             'N/A',
+      state:            'N/A',
+      subscriptionPlan: 'pending',
+      signupDate:       new Date().toISOString()
+    }).catch(() => {});
 
     return res.status(201).json(response);
   } catch (err) {
@@ -992,6 +1020,13 @@ app.post("/webhook/stripe", async (req, res) => {
     }
   } catch (err) {
     console.error("❌ Stripe webhook handler error:", err.message);
+    // Fire-and-forget owner notification for Stripe webhook failure
+    ownerNotify('system_error', {
+      errorType:    'Stripe Webhook Failure',
+      errorMessage: err.message || 'Unknown error',
+      stackTrace:   err.stack  || 'No stack trace',
+      timestamp:    new Date().toISOString()
+    }).catch(() => {});
   }
 
   res.json({ received: true });
@@ -1148,7 +1183,15 @@ async function start() {
     
     console.log("=".repeat(80) + "\n");
     // ============================================================================
-    
+
+    // Fire-and-forget owner notification for MongoDB connection loss
+    ownerNotify('system_error', {
+      errorType:    'MongoDB Connection Failure',
+      errorMessage: err.message || 'Unknown error',
+      stackTrace:   err.stack  || 'No stack trace',
+      timestamp:    new Date().toISOString()
+    }).catch(() => {});
+
     console.error("❌ FATAL: Cannot start server without MongoDB connection");
     console.error("❌ Server startup FAILED");
     process.exit(1);

@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { notify: ownerNotify } = require('../services/ownerNotificationService');
 
 /**
  * Contact form submission
@@ -26,11 +27,8 @@ router.post('/', async (req, res) => {
       timestamp: new Date().toISOString()
     });
 
-    // TODO: In production, implement:
-    // 1. Save to database
-    // 2. Send email notification to admin
-    // 3. Send auto-reply email to user
-    // 4. Possibly integrate with ticketing system
+    // Fire-and-forget owner email notification
+    ownerNotify('contact_form', { name, email, subject, message }).catch(() => {});
 
     res.json({
       success: true,

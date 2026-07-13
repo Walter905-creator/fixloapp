@@ -5,6 +5,7 @@ const JobRequest = require('../models/JobRequest');
 const { geocodeAddress } = require('../utils/geocode');
 const { routeLead } = require('../services/leadAssignmentService');
 const { sendOwnerAlert } = require('../utils/sendOwnerAlert');
+const { notify: ownerNotify } = require('../services/ownerNotificationService');
 
 // Optional: Twilio SMS
 let twilioClient = null;
@@ -83,6 +84,20 @@ router.post('/', async (req, res) => {
       },
       savedLead ? `new_lead:${savedLead._id}` : undefined
     ).catch((err) => console.warn('[OwnerAlert] Unexpected error:', err.message));
+
+    // Fire-and-forget owner email notification for homeowner lead
+    if (savedLead) {
+      ownerNotify('service_request', {
+        service:       trade,
+        homeownerName: name,
+        email:         email || 'N/A',
+        phone:         phone,
+        city:          savedLead.city || 'N/A',
+        state:         savedLead.state || 'N/A',
+        requestedDate: new Date().toISOString(),
+        leadId:        String(savedLead._id)
+      }).catch(() => {});
+    }
 
     // 4) Return immediately so UI can show confirmation
     return res.json({
