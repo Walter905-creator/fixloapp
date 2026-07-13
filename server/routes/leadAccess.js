@@ -109,7 +109,7 @@ router.post('/:token/contacted', async (req, res) => {
       return res.status(404).json({ ok: false, message: 'Lead link not found.' });
     }
 
-    if (access.status !== 'accepted') {
+    if (access.status !== 'accepted' && access.assignmentId?.status !== 'accepted') {
       return res.status(409).json({ ok: false, message: 'Accept the lead before marking it contacted.' });
     }
 

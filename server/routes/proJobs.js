@@ -187,7 +187,7 @@ router.post("/jobs/:jobId/:action", auth, async (req, res) => {
         break;
       case 'decline':
         {
-          const result = await declineLead(jobId, proId);
+          const result = await declineLead(jobId, proId, req.body?.reason || '');
           if (!result.ok) {
             return res.status(result.status).json({ error: result.error });
           }

@@ -298,13 +298,21 @@ async function notifyProWithSecureLead({ lead, pro, assignment = null, assignmen
   });
 
   const isUSPro = pro.country === 'US' || isUSPhoneNumber(pro.phone);
+  const useWhatsApp = !isUSPro && !!pro.whatsappOptIn;
   const callbackUrl = `${getApiBaseUrl()}/api/lead-access/twilio/status`;
   const body = buildSecureLeadSms({ lead, assignment: activeAssignment, url });
 
+  if (isUSPro && !pro.smsConsent) {
+    return {
+      success: false,
+      reason: 'Pro has not opted into SMS'
+    };
+  }
+
   try {
-    const result = isUSPro
-      ? await sendSms(pro.phone, body, { statusCallback: callbackUrl })
-      : await sendWhatsAppMessage(pro.phone, body, { statusCallback: callbackUrl });
+    const result = useWhatsApp
+      ? await sendWhatsAppMessage(pro.phone, body, { statusCallback: callbackUrl })
+      : await sendSms(pro.phone, body, { statusCallback: callbackUrl });
 
     const notification = await SmsNotification.recordNotification({
       notificationType: 'pro',
@@ -323,7 +331,7 @@ async function notifyProWithSecureLead({ lead, pro, assignment = null, assignmen
 
     await Promise.all([
       LeadAccess.findByIdAndUpdate(access._id, {
-        channel: isUSPro ? 'sms' : 'whatsapp',
+        channel: useWhatsApp ? 'whatsapp' : 'sms',
         twilioSid: result.sid,
         smsNotificationId: notification?._id || null,
         smsSentAt: sentAt
@@ -338,7 +346,7 @@ async function notifyProWithSecureLead({ lead, pro, assignment = null, assignmen
         accessId: access._id,
         eventType: 'sms_sent',
         metadata: {
-          channel: isUSPro ? 'sms' : 'whatsapp',
+          channel: useWhatsApp ? 'whatsapp' : 'sms',
           twilioSid: result.sid
         }
       })
@@ -350,7 +358,7 @@ async function notifyProWithSecureLead({ lead, pro, assignment = null, assignmen
       accessId: access._id,
       url,
       messageId: result.sid,
-      channel: isUSPro ? 'sms' : 'whatsapp'
+      channel: useWhatsApp ? 'whatsapp' : 'sms'
     };
   } catch (error) {
     await SmsNotification.recordNotification({
@@ -531,6 +539,14 @@ async function markLeadAccepted({ assignment, req = null }) {
       firstAcceptedProfessional
     });
   }
+
+  await LeadAssignment.findByIdAndUpdate(assignment._id, {
+    acceptedAt,
+    acceptanceDelayMs,
+    responseTimeMs: acceptanceDelayMs,
+    acceptanceOrder,
+    firstAcceptedProfessional
+  });
 
   await invalidateOtherLeadAccesses(leadId, assignment._id);
 
@@ -738,7 +754,8 @@ async function buildLeadAccessPayload(access, req = null) {
       openedAt: updatedAccess.firstOpenedAt,
       acceptedAt: updatedAccess.acceptedAt,
       expiresAt: updatedAccess.expiresAt,
-      openCount: updatedAccess.openedCount
+      openCount: updatedAccess.openedCount,
+      openTimeMs: updatedAccess.openTimeMs || null
     }
   };
 }
@@ -881,6 +898,7 @@ async function getOwnerLeadAnalytics(limit = 5) {
   );
 
   const sortBy = (field, direction = 'desc') => [...proMetrics]
+    .filter(({ metrics }) => metrics.leadsReceived > 0 && metrics[field] != null)
     .sort((a, b) => direction === 'desc'
       ? (b.metrics[field] || 0) - (a.metrics[field] || 0)
       : (a.metrics[field] || 0) - (b.metrics[field] || 0))

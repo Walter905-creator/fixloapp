@@ -11,6 +11,7 @@ const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
 const { isUSPhoneNumber } = require('../utils/twilio');
 const { processExpiredPremiumAssignments } = require('../services/leadAssignmentService');
 const { sendOwnerAlert } = require('../utils/sendOwnerAlert');
+const { getProLeadMetrics } = require('../services/leadTrackingService');
 
 function requireJwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -262,6 +263,8 @@ router.get('/dashboard', requireAuth, requireActiveSubscription, async (req, res
       }
     });
 
+    const leadMetrics = await getProLeadMetrics(pro._id);
+
     console.log(`✅ Dashboard: ${dedupedLeads.length} leads for pro ${pro._id}`);
     return res.json({
       name: pro.name,
@@ -271,7 +274,8 @@ router.get('/dashboard', requireAuth, requireActiveSubscription, async (req, res
       subscriptionType: pro.subscriptionType || 'monthly',
       subscriptionPlan: pro.subscriptionPlan || 'pro',
       leadPriority: pro.leadPriority || 'standard',
-      leads: dedupedLeads
+      leads: dedupedLeads,
+      metrics: leadMetrics
     });
   } catch (err) {
     console.error('Pro dashboard error:', err);

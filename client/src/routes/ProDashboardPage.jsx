@@ -165,19 +165,19 @@ export default function ProDashboardPage(){
   
   const isUSPro = proData?.country === 'US' || proData?.phone?.startsWith('+1');
   const metrics = {
-    nearbyLeads: leads.length,
-    estimatedEarnings: leads.length ? (leads.length * 180).toFixed(0) : '0',
+    nearbyLeads: proData?.metrics?.leadsReceived ?? leads.length,
+    estimatedEarnings: proData?.metrics?.completed ? String(proData.metrics.completed) : '0',
     newJobsToday: leads.filter((lead) => {
       if (!lead.createdAt) return false;
       return new Date(lead.createdAt).toDateString() === todayDateLabel;
     }).length,
-    responseRate: leads.length ? `${Math.min(99, 70 + Math.floor(leads.length / 2))}%` : '—',
+    responseRate: proData?.metrics?.acceptanceRate != null ? `${proData.metrics.acceptanceRate}%` : '—',
     monthlyRevenue: proData?.monthlyRevenue ?? '—',
     lifetimeEarnings: proData?.lifetimeEarnings ?? '—',
-    leadsReceived: leads.length,
-    leadsWon: Math.max(0, Math.floor(leads.length * 0.62)),
+    leadsReceived: proData?.metrics?.leadsReceived ?? leads.length,
+    leadsWon: proData?.metrics?.accepted ?? 0,
     customerRating: proData?.rating || '—',
-    repeatRate: leads.length ? `${Math.min(95, 45 + Math.floor(leads.length / 3))}%` : '—',
+    repeatRate: proData?.metrics?.completionRate != null ? `${proData.metrics.completionRate}%` : '—',
   };
 
   async function respondToLead(leadId, action) {
@@ -400,7 +400,13 @@ export default function ProDashboardPage(){
               <ul className="mt-2 space-y-2">
                 {leads.map((l,i)=>(<li key={i} className="border border-white/10 rounded-xl p-3">
                   <div className="font-semibold">{l.trade || l.service || 'Service'}</div>
-                  <div className="text-sm text-slate-400">{l.name || '—'} • {l.phone || ''} • {l.city || ''}</div>
+                  <div className="text-sm text-slate-400">
+                    {l.secureLeadRequired ? 'Homeowner details unlock after acceptance' : (l.name || '—')}
+                    {' • '}
+                    {l.secureLeadRequired ? 'Secure contact only' : (l.phone || '—')}
+                    {' • '}
+                    {l.city || ''}
+                  </div>
                   <div className="mt-1 flex flex-wrap gap-2 text-xs">
                     {l.assignmentType && <span className="rounded bg-slate-100 px-2 py-1 text-slate-700">{l.assignmentType}</span>}
                     {l.assignmentStatus && <span className="rounded bg-blue-100 px-2 py-1 text-blue-700">{l.assignmentStatus}</span>}
