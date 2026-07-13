@@ -42,6 +42,25 @@ function getClientIp(req) {
   return String(ip).replace(/^::ffff:/, '');
 }
 
+function getEntityId(value) {
+  if (!value) return null;
+  return value._id || value;
+}
+
+function sanitizeDeclineReason(reason = '') {
+  return String(reason || '').trim().slice(0, 500);
+}
+
+function isValidTwilioSid(value) {
+  return /^[A-Za-z0-9]{10,64}$/.test(String(value || ''));
+}
+
+function normalizeTwilioStatus(value) {
+  const allowed = new Set(['queued', 'accepted', 'scheduled', 'sending', 'sent', 'delivered', 'undelivered', 'failed']);
+  const normalized = String(value || '').trim().toLowerCase();
+  return allowed.has(normalized) ? normalized : null;
+}
+
 function parseUserAgent(userAgent = '') {
   const ua = String(userAgent || '');
   const isMobile = /Mobile|Android|iPhone|iPad/i.test(ua);
@@ -572,20 +591,21 @@ async function markLeadAccepted({ assignment, req = null }) {
 async function markLeadDeclined({ assignment, req = null, reason = '' }) {
   if (!assignment?._id) return null;
 
-  const leadId = assignment.leadId?._id || assignment.leadId;
-  const proId = assignment.proId?._id || assignment.proId;
+  const leadId = getEntityId(assignment.leadId);
+  const proId = getEntityId(assignment.proId);
   const declinedAt = assignment.declinedAt || assignment.respondedAt || new Date();
 
   const access = await LeadAccess.findOne({
     assignmentId: assignment._id,
     status: { $in: ['active', 'asked_later', 'declined'] }
   }).sort({ createdAt: -1 });
+  const declineReason = sanitizeDeclineReason(reason || access?.declinedReason || '');
 
   if (access) {
     await LeadAccess.findByIdAndUpdate(access._id, {
       status: 'declined',
       declinedAt,
-      declinedReason: reason || access.declinedReason || ''
+      declinedReason: declineReason
     });
   }
 
@@ -598,7 +618,7 @@ async function markLeadDeclined({ assignment, req = null, reason = '' }) {
     actorType: 'pro',
     req,
     metadata: {
-      reason: reason || null
+      reason: declineReason || null
     }
   });
 
@@ -607,7 +627,11 @@ async function markLeadDeclined({ assignment, req = null, reason = '' }) {
 }
 
 async function markAskLater(access, req = null) {
-  if (!access?._id || access.status !== 'active') {
+  const assignmentId = getEntityId(access?.assignmentId);
+  const leadId = getEntityId(access?.leadId);
+  const proId = getEntityId(access?.proId);
+
+  if (!access?._id || access.status !== 'active' || !assignmentId || !leadId || !proId) {
     return access;
   }
 
@@ -617,21 +641,21 @@ async function markAskLater(access, req = null) {
     askedLaterAt: now
   });
 
-  await LeadAssignment.findByIdAndUpdate(access.assignmentId._id || access.assignmentId, {
+  await LeadAssignment.findByIdAndUpdate(assignmentId, {
     askedLaterAt: now
   });
 
   await recordLeadEvent({
-    leadId: access.leadId._id || access.leadId,
-    proId: access.proId._id || access.proId,
-    assignmentId: access.assignmentId._id || access.assignmentId,
+    leadId,
+    proId,
+    assignmentId,
     accessId: access._id,
     eventType: 'ask_later',
     actorType: 'pro',
     req
   });
 
-  await refreshProPerformanceScore(access.proId._id || access.proId);
+  await refreshProPerformanceScore(proId);
   return LeadAccess.findById(access._id);
 }
 
@@ -657,26 +681,29 @@ async function invalidateOtherLeadAccesses(leadId, acceptedAssignmentId) {
 }
 
 async function handleTwilioDeliveryStatus({ messageSid, messageStatus }) {
-  if (!messageSid || !messageStatus) {
+  const sanitizedSid = String(messageSid || '').trim();
+  const normalizedStatus = normalizeTwilioStatus(messageStatus);
+
+  if (!isValidTwilioSid(sanitizedSid) || !normalizedStatus) {
     return null;
   }
 
   const notification = await SmsNotification.findOneAndUpdate(
-    { twilioSid: messageSid },
+    { twilioSid: sanitizedSid },
     {
-      twilioStatus: messageStatus,
-      status: messageStatus === 'delivered' ? 'delivered' : undefined,
-      deliveredAt: messageStatus === 'delivered' ? new Date() : undefined
+      twilioStatus: normalizedStatus,
+      status: normalizedStatus === 'delivered' ? 'delivered' : undefined,
+      deliveredAt: normalizedStatus === 'delivered' ? new Date() : undefined
     },
     { new: true }
   );
 
-  const access = await LeadAccess.findOne({ twilioSid: messageSid });
+  const access = await LeadAccess.findOne({ twilioSid: sanitizedSid });
   if (!access) {
     return notification;
   }
 
-  if (messageStatus === 'delivered') {
+  if (normalizedStatus === 'delivered') {
     const deliveredAt = new Date();
     await Promise.all([
       LeadAccess.findByIdAndUpdate(access._id, { smsDeliveredAt: deliveredAt }),
@@ -688,7 +715,7 @@ async function handleTwilioDeliveryStatus({ messageSid, messageStatus }) {
         accessId: access._id,
         eventType: 'sms_delivered',
         actorType: 'twilio',
-        metadata: { twilioSid: messageSid, messageStatus }
+        metadata: { twilioSid: sanitizedSid, messageStatus: normalizedStatus }
       })
     ]);
   }
@@ -766,9 +793,12 @@ function calculatePerformanceScore(metrics) {
   const completionRate = Math.min(metrics.completionRate || 0, 100);
   const reliability = Math.min(metrics.reliability || 0, 100);
   const ratingScore = Math.min(((metrics.rating || 0) / 5) * 100, 100);
-  const responseScore = metrics.averageResponseTimeMs == null
+  const averageMinutes = metrics.averageResponseTimeMs == null
+    ? null
+    : Math.max(metrics.averageResponseTimeMs / 60000, 0);
+  const responseScore = averageMinutes == null
     ? 0
-    : Math.max(0, 100 - Math.min(metrics.averageResponseTimeMs / (60 * 1000), 100));
+    : Math.round(100 * Math.exp(-averageMinutes / 45));
 
   return Math.round(
     (responseScore * 0.25)
@@ -830,6 +860,9 @@ async function getProLeadMetrics(proId) {
   const acceptanceRate = leadsReceived ? (accepted / leadsReceived) * 100 : 0;
   const declineRate = leadsReceived ? (declined / leadsReceived) * 100 : 0;
   const completionRate = accepted ? (completed / accepted) * 100 : 0;
+  // Reliability rewards pros who consistently open and close out opportunities
+  // instead of leaving leads untouched. It blends view rate and acceptance rate
+  // so routing can later favor dependable responders without changing matching.
   const reliability = leadsReceived ? ((accepted + leadsViewed) / (leadsReceived * 2)) * 100 : 0;
 
   const pro = await Pro.findById(normalizedProId).select('avgRating rating');

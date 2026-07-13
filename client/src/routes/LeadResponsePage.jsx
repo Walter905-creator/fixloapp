@@ -204,7 +204,7 @@ export default function LeadResponsePage() {
 
               <div className="mt-6 rounded-2xl border border-slate-200 p-4 text-sm text-slate-600">
                 <p><strong>Opened:</strong> {payload?.tracking?.openedAt ? new Date(payload.tracking.openedAt).toLocaleString() : 'Just now'}</p>
-                <p><strong>Responses tracked:</strong> {payload?.tracking?.openCount || 0} view{payload?.tracking?.openCount === 1 ? '' : 's'}</p>
+                <p><strong>Views tracked:</strong> {payload?.tracking?.openCount || 0} view{payload?.tracking?.openCount === 1 ? '' : 's'}</p>
                 <p><strong>Time to first open:</strong> {formatResponseTime(payload?.tracking?.openTimeMs)}</p>
               </div>
             </>
