@@ -226,14 +226,24 @@ router.get('/dashboard', requireAuth, requireActiveSubscription, async (req, res
 
     const assignmentLeads = leadAssignments
       .filter((assignment) => assignment.leadId)
-      .map((assignment) => ({
-        ...assignment.leadId.toObject(),
-        assignmentId: assignment._id,
-        assignmentType: assignment.assignmentType,
-        assignmentStatus: assignment.status,
-        exclusiveUntil: assignment.exclusiveUntil,
-        canRespond: assignment.status === 'pending'
-      }));
+      .map((assignment) => {
+        const lead = assignment.leadId.toObject();
+        const homeownerUnlocked = assignment.status === 'accepted';
+
+        return {
+          ...lead,
+          name: homeownerUnlocked ? lead.name : '',
+          phone: homeownerUnlocked ? lead.phone : '',
+          email: homeownerUnlocked ? lead.email : '',
+          address: homeownerUnlocked ? lead.address : '',
+          assignmentId: assignment._id,
+          assignmentType: assignment.assignmentType,
+          assignmentStatus: assignment.status,
+          exclusiveUntil: assignment.exclusiveUntil,
+          canRespond: assignment.status === 'pending',
+          secureLeadRequired: !homeownerUnlocked
+        };
+      });
 
     const directLeads = assignedJobs.map((job) => ({
       ...job.toObject(),

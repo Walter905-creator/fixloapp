@@ -81,7 +81,7 @@ async function sendPasswordResetEmail(to, resetToken) {
 /**
  * Send new lead notification email to professional
  * @param {string} to - Recipient email address
- * @param {object} leadData - Lead information {service, location, budget, customerName, customerPhone}
+ * @param {object} leadData - Lead information {service, location, budget, secureLeadUrl}
  * @returns {Promise<void>}
  */
 async function sendLeadNotificationEmail(to, leadData) {
@@ -91,13 +91,18 @@ async function sendLeadNotificationEmail(to, leadData) {
     return;
   }
 
-  const { service, location, budget, customerName, customerPhone } = leadData;
+  const {
+    service,
+    location,
+    budget,
+    secureLeadUrl = `${process.env.FRONTEND_URL || 'https://www.fixloapp.com'}/pro/dashboard`
+  } = leadData;
   
   const msg = {
     to,
     from: FROM_EMAIL,
     subject: `New Job Lead: ${service} in ${location}`,
-    text: `You have a new job lead on Fixlo!\n\nService: ${service}\nLocation: ${location}\nBudget: ${budget || 'Contact for details'}\nCustomer: ${customerName}\nPhone: ${customerPhone}\n\nLog in to your Fixlo dashboard to view full details and contact the customer.\n\nFixlo - Connecting homeowners with trusted professionals`,
+    text: `You have a new job lead on Fixlo!\n\nService: ${service}\nLocation: ${location}\nBudget: ${budget || 'Contact for details'}\n\nOpen your secure Fixlo lead link to review the request and unlock homeowner details only after acceptance.\n\n${secureLeadUrl}\n\nFixlo - Connecting homeowners with trusted professionals`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2563eb;">🔔 New Job Lead on Fixlo</h2>
@@ -105,11 +110,9 @@ async function sendLeadNotificationEmail(to, leadData) {
           <p style="margin: 8px 0;"><strong>Service:</strong> ${service}</p>
           <p style="margin: 8px 0;"><strong>Location:</strong> ${location}</p>
           <p style="margin: 8px 0;"><strong>Budget:</strong> ${budget || 'Contact for details'}</p>
-          <p style="margin: 8px 0;"><strong>Customer:</strong> ${customerName}</p>
-          <p style="margin: 8px 0;"><strong>Phone:</strong> ${customerPhone}</p>
         </div>
-        <p>Log in to your Fixlo dashboard to view full details and contact the customer.</p>
-        <a href="${process.env.FRONTEND_URL || 'https://www.fixloapp.com'}/pro/dashboard" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">View Dashboard</a>
+        <p>Open your secure Fixlo lead link to review the request. Homeowner details stay locked until you accept the lead.</p>
+        <a href="${secureLeadUrl}" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">View Secure Lead</a>
         <hr style="border: 0; border-top: 1px solid #eee; margin: 24px 0;">
         <p style="color: #999; font-size: 12px;">Fixlo - Connecting homeowners with trusted professionals</p>
       </div>

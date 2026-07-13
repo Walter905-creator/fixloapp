@@ -17,6 +17,7 @@
 
 const { sendSms, sendWhatsAppMessage, isUSPhoneNumber } = require('./twilio');
 const SmsNotification = require('../models/SmsNotification');
+const { notifyProWithSecureLead } = require('../services/leadTrackingService');
 
 /**
  * SMS Templates for non-referral notifications
@@ -320,29 +321,8 @@ async function sendProLeadAlert(pro, lead) {
   if (!pro || !lead) {
     return { success: false, reason: 'Missing pro or lead data' };
   }
-  
-  // Determine channel based on country
-  const isUSA = pro.country === 'US' || isUSPhoneNumber(pro.phone);
-  
-  return sendNonReferralSms({
-    phone: pro.phone,
-    notificationType: 'pro',
-    templateData: {
-      service: lead.trade || lead.serviceType || 'Service Request',
-      location: lead.city && lead.state 
-        ? `${lead.city}, ${lead.state}` 
-        : lead.address || 'Location provided',
-      customerName: lead.name || 'Customer',
-      customerPhone: lead.phone || 'N/A'
-    },
-    leadId: lead._id,
-    userId: pro._id,
-    userModel: 'Pro',
-    smsConsent: pro.smsConsent,
-    smsOptOut: pro.smsOptOut || false, // Pros may have opt-out field; check if exists
-    whatsappOptIn: pro.whatsappOptIn,
-    country: pro.country || 'US'
-  });
+
+  return notifyProWithSecureLead({ lead, pro });
 }
 
 /**

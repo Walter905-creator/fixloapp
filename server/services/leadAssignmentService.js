@@ -3,7 +3,14 @@ const JobRequest = require('../models/JobRequest');
 const LeadAssignment = require('../models/LeadAssignment');
 const Pro = require('../models/Pro');
 const { calculateDistance } = require('./proMatching');
-const { sendSms, sendWhatsAppMessage, isUSPhoneNumber } = require('../utils/twilio');
+const { sendSms } = require('../utils/twilio');
+const {
+  ensureLeadCreatedEvent,
+  notifyProWithSecureLead,
+  markLeadAccepted,
+  markLeadDeclined,
+  expireAccessRecord
+} = require('./leadTrackingService');
 
 const DEFAULT_RADIUS_MILES = 30;
 const PREMIUM_WINDOW_MS = 60 * 60 * 1000;
@@ -67,27 +74,6 @@ function hasActiveSubscription(pro) {
 
 function isPremiumPro(pro) {
   return pro?.subscriptionPlan === 'premium' || pro?.leadPriority === 'premium';
-}
-
-async function sendDirectLeadMessage(pro, message) {
-  if (!pro?.phone) {
-    return { success: false, reason: 'missing phone' };
-  }
-
-  try {
-    if (pro.country === 'US' || isUSPhoneNumber(pro.phone)) {
-      await sendSms(pro.phone, message);
-    } else if (pro.whatsappOptIn) {
-      await sendWhatsAppMessage(pro.phone, message);
-    } else {
-      await sendSms(pro.phone, message);
-    }
-
-    return { success: true };
-  } catch (error) {
-    console.error(`❌ Lead message failed for ${pro._id}:`, error.message);
-    return { success: false, error: error.message };
-  }
 }
 
 async function getMatchingProsForLead(lead, maxDistanceMiles = DEFAULT_RADIUS_MILES) {
@@ -209,7 +195,11 @@ async function assignPremiumLead(lead, premiumCandidate) {
   await Promise.all([
     updateLeadAssignmentStatus(lead._id, 'assigned', assignment._id, exclusiveUntil),
     markProAssignmentStatus(premiumCandidate.pro._id, 'assigned'),
-    sendDirectLeadMessage(premiumCandidate.pro, PREMIUM_NEW_LEAD_MESSAGE)
+    notifyProWithSecureLead({
+      lead,
+      pro: premiumCandidate.pro,
+      assignment
+    })
   ]);
 
   return assignment;
@@ -245,7 +235,14 @@ async function broadcastRegularLead(lead, regularCandidates) {
   await updateLeadAssignmentStatus(lead._id, 'released', null, null);
   await Promise.all([
     ...regularCandidates.map(({ pro }) => markProAssignmentStatus(pro._id, 'released')),
-    ...regularCandidates.map(({ pro }) => sendDirectLeadMessage(pro, REGULAR_NEW_LEAD_MESSAGE))
+    ...regularCandidates.map(({ pro }) => {
+      const assignment = assignments.find((item) => String(item.proId) === String(pro._id));
+      return notifyProWithSecureLead({
+        lead,
+        pro,
+        assignment
+      });
+    })
   ]);
 
   return { type: 'regular_broadcast', assignments };
@@ -260,6 +257,8 @@ async function routeLead(leadId) {
   if (!lead || lead.status !== 'pending') {
     return { ok: false, skipped: true, reason: 'lead unavailable' };
   }
+
+  await ensureLeadCreatedEvent(lead);
 
   const state = await getLeadAssignmentState(lead._id);
   if (state.acceptedAssignment || state.pendingPremiumAssignment || state.regularAssignments.length) {
@@ -303,7 +302,12 @@ async function expirePremiumAssignment(assignment) {
   if (pro) {
     await Promise.all([
       markProAssignmentStatus(pro._id, 'expired'),
-      sendDirectLeadMessage(pro, PREMIUM_EXPIRED_MESSAGE)
+      assignment.secureAccessId
+        ? LeadAssignment.findById(assignment._id).populate('secureAccessId').then((doc) => (
+            doc?.secureAccessId ? expireAccessRecord(doc.secureAccessId, 'premium_window_expired') : null
+          ))
+        : null,
+      pro.phone ? sendSms(pro.phone, PREMIUM_EXPIRED_MESSAGE).catch(() => null) : null
     ]);
   }
 
@@ -369,6 +373,11 @@ async function acceptLead(leadId, proId) {
 
   assignment.status = 'accepted';
   assignment.respondedAt = new Date();
+  assignment.acceptedAt = assignment.respondedAt;
+  assignment.responseTimeMs = assignment.assignedAt
+    ? assignment.respondedAt.getTime() - new Date(assignment.assignedAt).getTime()
+    : null;
+  assignment.acceptanceDelayMs = assignment.responseTimeMs;
   await assignment.save();
 
   await LeadAssignment.updateMany(
@@ -396,6 +405,8 @@ async function acceptLead(leadId, proId) {
     markProAssignmentStatus(proId, 'accepted')
   ]);
 
+  await markLeadAccepted({ assignment });
+
   if (lead.phone) {
     try {
       await sendSms(lead.phone, HOMEOWNER_ACCEPTED_MESSAGE);
@@ -407,7 +418,7 @@ async function acceptLead(leadId, proId) {
   return { ok: true, assignment };
 }
 
-async function declineLead(leadId, proId) {
+async function declineLead(leadId, proId, declineReason = '') {
   const assignment = await LeadAssignment.findOne({
     leadId,
     proId,
@@ -420,8 +431,15 @@ async function declineLead(leadId, proId) {
 
   assignment.status = 'declined';
   assignment.respondedAt = new Date();
+  assignment.declinedAt = assignment.respondedAt;
+  assignment.declinedReason = declineReason;
+  assignment.responseTimeMs = assignment.assignedAt
+    ? assignment.respondedAt.getTime() - new Date(assignment.assignedAt).getTime()
+    : null;
   await assignment.save();
   await markProAssignmentStatus(proId, 'available');
+
+  await markLeadDeclined({ assignment, reason: declineReason });
 
   if (assignment.assignmentType === 'premium_exclusive') {
     await updateLeadAssignmentStatus(leadId, 'expired', null, null);

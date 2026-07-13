@@ -10,6 +10,7 @@ const AdminSettings = require('../models/AdminSettings');
 const SocialSettings = require('../models/SocialSettings');
 const { getHealth: getLeadHunterHealth, huntLeads } = require('../services/aiLeadHunter');
 const { getStats: getSeoStats } = require('../services/seoAIStats');
+const { getOwnerLeadAnalytics } = require('../services/leadTrackingService');
 
 // ── Auth guard ────────────────────────────────────────────────────────────────
 router.use(requireAuth);
@@ -32,7 +33,7 @@ router.get('/overview', async (req, res) => {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    const [totalPros, activePros, lifetimePros, monthRevenue, leadsToday, proPlans, assignmentStats, recentAssignments] = await Promise.all([
+    const [totalPros, activePros, lifetimePros, monthRevenue, leadsToday, proPlans, assignmentStats, recentAssignments, leadAnalytics] = await Promise.all([
       Pro.countDocuments(),
       Pro.countDocuments({ isActive: true }),
       Pro.countDocuments({ subscriptionType: 'lifetime' }),
@@ -95,7 +96,8 @@ router.get('/overview', async (req, res) => {
         .populate('leadId', 'trade city state createdAt')
         .populate('proId', 'name businessName subscriptionPlan')
         .sort({ assignedAt: -1 })
-        .limit(10)
+        .limit(10),
+      getOwnerLeadAnalytics()
     ]);
 
     const lhHealth = getLeadHunterHealth();
@@ -126,7 +128,8 @@ router.get('/overview', async (req, res) => {
         premiumResponseRate: assignmentSummary.totalPremiumAssignments
           ? Number(((assignmentSummary.acceptedPremiumAssignments || 0) / assignmentSummary.totalPremiumAssignments * 100).toFixed(1))
           : 0,
-        recent: recentAssignments
+        recent: recentAssignments,
+        analytics: leadAnalytics
       },
       smsSentToday: 0, // placeholder – extend with SmsNotification model if needed
       systemHealth: {
