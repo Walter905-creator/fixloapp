@@ -1,0 +1,5 @@
+const MAX_DECLINE_REASON_LENGTH = 500;
+
+module.exports = {
+  MAX_DECLINE_REASON_LENGTH
+};

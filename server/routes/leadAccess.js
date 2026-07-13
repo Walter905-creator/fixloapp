@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { MAX_DECLINE_REASON_LENGTH } = require('../constants/leadTracking');
 const {
   resolveLeadAccessByToken,
   buildLeadAccessPayload,
@@ -70,8 +71,8 @@ router.post('/:token/decline', async (req, res) => {
     }
 
     const reason = String(req.body?.reason || '').trim();
-    if (reason.length > 500) {
-      return res.status(400).json({ ok: false, message: 'Decline reason must be 500 characters or less.' });
+    if (reason.length > MAX_DECLINE_REASON_LENGTH) {
+      return res.status(400).json({ ok: false, message: `Decline reason must be ${MAX_DECLINE_REASON_LENGTH} characters or less.` });
     }
     const result = await declineLead(access.leadId._id, access.proId._id, reason);
     if (!result.ok) {

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { MAX_DECLINE_REASON_LENGTH } = require('../constants/leadTracking');
 
 const leadAccessSchema = new mongoose.Schema({
   leadId: {
@@ -85,7 +86,7 @@ const leadAccessSchema = new mongoose.Schema({
   declinedReason: {
     type: String,
     trim: true,
-    maxLength: 500
+    maxLength: MAX_DECLINE_REASON_LENGTH
   }
 }, {
   timestamps: true

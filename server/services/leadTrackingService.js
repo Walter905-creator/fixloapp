@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const mongoose = require('mongoose');
+const { MAX_DECLINE_REASON_LENGTH } = require('../constants/leadTracking');
 const LeadAssignment = require('../models/LeadAssignment');
 const LeadAccess = require('../models/LeadAccess');
 const LeadEvent = require('../models/LeadEvent');
@@ -48,7 +49,7 @@ function getEntityId(value) {
 }
 
 function sanitizeDeclineReason(reason = '') {
-  return String(reason || '').trim().slice(0, 500);
+  return String(reason || '').trim().slice(0, MAX_DECLINE_REASON_LENGTH);
 }
 
 function isValidTwilioSid(value) {
@@ -861,8 +862,9 @@ async function getProLeadMetrics(proId) {
   const declineRate = leadsReceived ? (declined / leadsReceived) * 100 : 0;
   const completionRate = accepted ? (completed / accepted) * 100 : 0;
   // Reliability rewards pros who consistently open and close out opportunities
-  // instead of leaving leads untouched. It blends view rate and acceptance rate
-  // and is currently used only for analytics/reporting in this implementation.
+  // instead of leaving leads untouched. Formula:
+  // ((accepted / received) + (viewed / received)) / 2 * 100
+  // It is currently used only for analytics/reporting in this implementation.
   const reliability = leadsReceived ? ((accepted + leadsViewed) / (leadsReceived * 2)) * 100 : 0;
 
   const pro = await Pro.findById(normalizedProId).select('avgRating rating');
