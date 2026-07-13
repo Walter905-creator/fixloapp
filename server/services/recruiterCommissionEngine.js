@@ -14,6 +14,7 @@ const RecruiterReferral = require('../models/RecruiterReferral');
 const RecruiterCommission = require('../models/RecruiterCommission');
 const RecruiterProfile = require('../models/RecruiterProfile');
 const { sendRecruiterSms } = require('./recruiterSmsService');
+const { notify: ownerNotify } = require('./ownerNotificationService');
 
 const LEVEL1_RATE = 0.50;
 const LEVEL2_RATE = 0.10;
@@ -80,6 +81,14 @@ async function generateCommissionsForFirstPayment(stripeSubscriptionId, amountCe
         amount: (l1Amount / 100).toFixed(2)
       });
     }
+    // Owner notification — level-1 referral commission
+    ownerNotify('referral_commission', {
+      recruiter:      recruiter?.name || String(referral.recruiterId),
+      professional:   String(referral.proId || 'N/A'),
+      amount:         (l1Amount / 100).toFixed(2),
+      referralLevel:  1,
+      commissionId:   String(l1Commission._id)
+    }).catch(() => {});
   } catch (smsErr) {
     console.warn('⚠️ Could not send level-1 commission SMS:', smsErr.message);
   }
@@ -113,6 +122,14 @@ async function generateCommissionsForFirstPayment(stripeSubscriptionId, amountCe
           amount: (l2Amount / 100).toFixed(2)
         });
       }
+      // Owner notification — level-2 referral commission
+      ownerNotify('referral_commission', {
+        recruiter:      parentRecruiter?.name || String(referral.parentRecruiterId),
+        professional:   String(referral.proId || 'N/A'),
+        amount:         (l2Amount / 100).toFixed(2),
+        referralLevel:  2,
+        commissionId:   String(l2Commission._id)
+      }).catch(() => {});
     } catch (smsErr) {
       console.warn('⚠️ Could not send level-2 commission SMS:', smsErr.message);
     }

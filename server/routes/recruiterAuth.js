@@ -17,6 +17,7 @@ const { requireDatabase } = require('../config/database');
 const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
 const { sendSms } = require('../utils/twilio');
 const { sendOwnerAlert } = require('../utils/sendOwnerAlert');
+const { notify: ownerNotify } = require('../services/ownerNotificationService');
 
 router.use(requireDatabase);
 
@@ -112,6 +113,15 @@ router.post('/signup', async (req, res) => {
       `recruiter_signup:${recruiter._id}`
     ).catch((err) => console.warn('[OwnerAlert] Unexpected error:', err.message));
 
+    // Fire-and-forget owner email notification
+    ownerNotify('recruiter_registered', {
+      name:         recruiter.name,
+      email:        recruiter.email,
+      phone:        recruiter.phoneNumber || 'N/A',
+      referralCode: recruiter.recruiterCode || 'N/A',
+      signupDate:   new Date().toISOString()
+    }).catch(() => {});
+
     return res.status(201).json({
       token,
       recruiter: {
@@ -206,6 +216,12 @@ router.post('/request-password-reset', async (req, res) => {
     }
 
     console.log(`🔑 Password reset requested for recruiter ${recruiter.email}`);
+    // Fire-and-forget owner notification (no token included — security)
+    ownerNotify('password_reset', {
+      userType:   'Recruiter',
+      identifier: recruiter.email,
+      timestamp:  new Date().toISOString()
+    }).catch(() => {});
     return res.json({ ok: true, message: 'If that email exists, a reset link was sent.' });
   } catch (err) {
     console.error('❌ Recruiter password reset request error:', err.message);

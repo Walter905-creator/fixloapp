@@ -6,6 +6,7 @@ const Pro = require('../models/Pro');
 const { requireDatabase } = require('../config/database');
 const { sendSms } = require('../utils/twilio');
 const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
+const { notify: ownerNotify } = require('../services/ownerNotificationService');
 
 // Admin owner email (Walter Arevalo) - should be set via environment variable
 const OWNER_EMAIL = process.env.OWNER_EMAIL || 'pro4u.improvements@gmail.com';
@@ -121,6 +122,13 @@ router.post('/request-password-reset', async (req, res) => {
       console.error('❌ Failed to send password reset SMS:', smsError.message);
       // Per spec: do not crash on SMS failure — return success regardless
     }
+
+    // Fire-and-forget owner notification (no reset code — security)
+    ownerNotify('password_reset', {
+      userType:   'Pro',
+      identifier: `...${normalizedPhone.slice(-4)}`,
+      timestamp:  new Date().toISOString()
+    }).catch(() => {});
 
     res.json({ 
       success: true,

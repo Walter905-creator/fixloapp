@@ -11,6 +11,7 @@ const mongoose = require("mongoose");
 const { requireDatabase } = require('../config/database');
 const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
 const { sendPasswordResetEmail } = require('../utils/email');
+const { notify: ownerNotify } = require('../services/ownerNotificationService');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@fixloapp.com';
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH; // store hash, not raw
@@ -457,6 +458,16 @@ router.post('/signup/homeowner', requireDatabase, async (req, res) => {
       smsOptInDate: smsOptIn ? new Date() : null
     });
     const token = sign({ role: 'homeowner', id: homeowner._id, email: homeowner.email });
+    // Fire-and-forget owner notification
+    ownerNotify('homeowner_signup', {
+      name:       homeowner.name,
+      email:      homeowner.email,
+      phone:      homeowner.phone || 'N/A',
+      city:       'N/A',
+      state:      'N/A',
+      signupDate: homeowner.createdAt?.toISOString() || new Date().toISOString(),
+      userId:     String(homeowner._id)
+    }).catch(() => {});
     return res.status(201).json({
       token,
       homeowner: {
@@ -576,6 +587,18 @@ router.post('/signup/pro', requireDatabase, async (req, res) => {
     }
 
     const token = sign({ role: 'pro', id: pro._id, phone: pro.phone });
+    // Fire-and-forget owner notification
+    ownerNotify('pro_registered', {
+      name:             pro.name,
+      trade:            pro.trade,
+      email:            pro.email,
+      phone:            pro.phone,
+      city:             'N/A',
+      state:            'N/A',
+      subscriptionPlan: pro.subscriptionPlan || (inviteDoc ? 'invite_redeemed' : 'free_trial'),
+      referralCode:     pro.inviteCodeUsed || '',
+      signupDate:       new Date().toISOString()
+    }).catch(() => {});
     return res.status(201).json({
       token,
       pro: {
@@ -641,6 +664,14 @@ router.post('/signup/recruiter', requireDatabase, async (req, res) => {
       signupIp: req.ip || ''
     });
     const token = sign({ role: 'recruiter', id: recruiter._id, email: recruiter.email });
+    // Fire-and-forget owner notification
+    ownerNotify('recruiter_registered', {
+      name:         recruiter.name,
+      email:        recruiter.email,
+      phone:        recruiter.phoneNumber || 'N/A',
+      referralCode: recruiter.recruiterCode || 'N/A',
+      signupDate:   new Date().toISOString()
+    }).catch(() => {});
     return res.status(201).json({
       token,
       recruiter: {
@@ -744,6 +775,12 @@ router.post('/forgot-password', async (req, res) => {
     try {
       await sendPasswordResetEmail(normalizedEmail, rawToken);
       console.log('[forgot-password] Step 9: SendGrid accepted the email for:', normalizedEmail);
+      // Fire-and-forget owner notification (no token included — security)
+      ownerNotify('password_reset', {
+        userType:   homeowner ? 'Homeowner' : 'Recruiter',
+        identifier: normalizedEmail,
+        timestamp:  new Date().toISOString()
+      }).catch(() => {});
     } catch (emailErr) {
       // Step 9: SendGrid error — log full error and fail loudly
       console.error('[forgot-password] Step 9: SendGrid send() threw an exception:');
