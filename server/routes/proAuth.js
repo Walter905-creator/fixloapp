@@ -126,7 +126,7 @@ router.post('/request-password-reset', async (req, res) => {
     // Fire-and-forget owner notification (no reset code — security)
     ownerNotify('password_reset', {
       userType:   'Pro',
-      identifier: normalizedPhone.slice(-4).padStart(normalizedPhone.length, '*'),
+      identifier: `...${normalizedPhone.slice(-4)}`,
       timestamp:  new Date().toISOString()
     }).catch(() => {});
 

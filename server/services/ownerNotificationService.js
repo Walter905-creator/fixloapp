@@ -160,7 +160,7 @@ const _TEMPLATES = {
         ['Phone',       p.phone],
         ['City',        p.city],
         ['State',       p.state],
-        ['Signup Date', p.signupDate || new Date().toISOString()],
+        ['Signup Date', p.signupDate || 'N/A'],
         ['User ID',     p.userId]
       ])
     };
@@ -178,7 +178,7 @@ const _TEMPLATES = {
         ['State',             p.state],
         ['Subscription Plan', p.subscriptionPlan || 'N/A'],
         ['Referral Code',     p.referralCode || 'None'],
-        ['Signup Date',       p.signupDate || new Date().toISOString()]
+        ['Signup Date',       p.signupDate || 'N/A']
       ])
     };
   },
@@ -191,7 +191,7 @@ const _TEMPLATES = {
         ['Email',         p.email],
         ['Phone',         p.phone],
         ['Referral Code', p.referralCode || 'None'],
-        ['Signup Date',   p.signupDate || new Date().toISOString()]
+        ['Signup Date',   p.signupDate || 'N/A']
       ])
     };
   },
@@ -367,22 +367,34 @@ async function notify(eventType, payload = {}) {
   // ── Log the notification attempt ─────────────────────────────────────────
   console.log(`[OwnerNotify] 📧 Sending owner notification — event: ${eventType}`);
 
-  // ── Send (with one retry) ─────────────────────────────────────────────────
+  // ── Send email (with one retry) ─────────────────────────────────────────
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       await _sendEmail(template.subject, template.html);
-      console.log(`[OwnerNotify] ✅ Sent — event: ${eventType} (attempt ${attempt})`);
-      return;
+      console.log(`[OwnerNotify] ✅ Email sent — event: ${eventType} (attempt ${attempt})`);
+      break; // success — stop retry loop
     } catch (sendErr) {
       if (attempt === 1) {
         console.warn(
-          `[OwnerNotify] ⚠️  Send failed (attempt 1), retrying — event: ${eventType} | error: ${sendErr.message}`
+          `[OwnerNotify] ⚠️  Email failed (attempt 1), retrying — event: ${eventType} | error: ${sendErr.message}`
         );
       } else {
         console.error(
-          `[OwnerNotify] ❌ Send failed after retry — event: ${eventType} | error: ${sendErr.message}`
+          `[OwnerNotify] ❌ Email failed after retry — event: ${eventType} | error: ${sendErr.message}`
         );
       }
+    }
+  }
+
+  // ── Fan out to additional registered channels (SMS, Push, etc.) ────────
+  for (const channel of _channels) {
+    try {
+      await channel.handler(eventType, payload);
+      console.log(`[OwnerNotify] ✅ Channel "${channel.name}" notified — event: ${eventType}`);
+    } catch (channelErr) {
+      console.error(
+        `[OwnerNotify] ❌ Channel "${channel.name}" failed — event: ${eventType} | error: ${channelErr.message}`
+      );
     }
   }
 }

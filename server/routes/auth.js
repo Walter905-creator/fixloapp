@@ -595,7 +595,7 @@ router.post('/signup/pro', requireDatabase, async (req, res) => {
       phone:            pro.phone,
       city:             'N/A',
       state:            'N/A',
-      subscriptionPlan: pro.subscriptionStatus || 'free_trial',
+      subscriptionPlan: pro.subscriptionPlan || (inviteDoc ? 'invite_redeemed' : 'free_trial'),
       referralCode:     pro.inviteCodeUsed || '',
       signupDate:       new Date().toISOString()
     }).catch(() => {});
