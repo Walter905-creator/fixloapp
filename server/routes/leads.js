@@ -8,6 +8,7 @@ const { sendSms, normalizeE164, isUSPhoneNumber } = require('../utils/twilio');
 const { notifyProOfLead } = require('../utils/notifications');
 const { sendHomeownerConfirmation, sendOwnerNotification } = require('../utils/smsSender');
 const { getPriorityConfig, hasPriorityRouting, getDelayMs, getOwnerPhone } = require('../config/priorityRouting');
+const { ensureLeadCreatedEvent } = require('../services/leadTrackingService');
 
 function milesToMeters(mi) { return mi * 1609.344; }
 
@@ -125,6 +126,7 @@ router.post('/', async (req, res) => {
         
         // 6️⃣ LOG CRITICAL EVENTS
         console.log('💾 Job saved:', savedLead._id);
+        await ensureLeadCreatedEvent(savedLead);
         
         // Send homeowner confirmation SMS with idempotency protection
         try {

@@ -18,7 +18,7 @@ const SmsNotificationSchema = new mongoose.Schema({
   notificationType: {
     type: String,
     required: true,
-    enum: ['lead', 'homeowner', 'pro'],
+    enum: ['lead', 'homeowner', 'pro', 'owner'],
     index: true
   },
   
@@ -60,6 +60,18 @@ const SmsNotificationSchema = new mongoose.Schema({
   
   twilioStatus: {
     type: String
+  },
+
+  assignmentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'LeadAssignment',
+    index: true
+  },
+
+  accessId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'LeadAccess',
+    index: true
   },
   
   // Error tracking

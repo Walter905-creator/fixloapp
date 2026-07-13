@@ -118,6 +118,33 @@ export default function AdminPage() {
             </div>
           </div>
 
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="text-xs text-gray-500 mb-1">Leads Viewed</div>
+              <div className="text-2xl font-bold">{overview.leadAssignments?.analytics?.viewed ?? 0}</div>
+            </div>
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="text-xs text-gray-500 mb-1">Lead Accepts</div>
+              <div className="text-2xl font-bold text-green-700">{overview.leadAssignments?.analytics?.accepted ?? 0}</div>
+            </div>
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="text-xs text-gray-500 mb-1">Avg Open Time</div>
+              <div className="text-2xl font-bold text-slate-900">
+                {overview.leadAssignments?.analytics?.averageOpenTimeMs
+                  ? `${Math.round(overview.leadAssignments.analytics.averageOpenTimeMs / 60000)}m`
+                  : '—'}
+              </div>
+            </div>
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="text-xs text-gray-500 mb-1">Avg Accept Time</div>
+              <div className="text-2xl font-bold text-slate-900">
+                {overview.leadAssignments?.analytics?.averageAcceptanceTimeMs
+                  ? `${Math.round(overview.leadAssignments.analytics.averageAcceptanceTimeMs / 60000)}m`
+                  : '—'}
+              </div>
+            </div>
+          </div>
+
           {/* System Health */}
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="text-sm font-semibold text-gray-700 mb-3">System Health</div>
@@ -155,6 +182,36 @@ export default function AdminPage() {
             ) : (
               <div className="text-sm text-gray-500">No lead assignments yet.</div>
             )}
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4 mt-4">
+            {[
+              ['Top Fastest Responders', overview.leadAssignments?.analytics?.topFastestResponders],
+              ['Top Conversion Rate', overview.leadAssignments?.analytics?.topConversionRate],
+              ['Top Completion Rate', overview.leadAssignments?.analytics?.topCompletionRate],
+              ['Slowest Responders', overview.leadAssignments?.analytics?.slowestResponders]
+            ].map(([title, items]) => (
+              <div key={title} className="bg-white rounded-lg border border-gray-200 p-4">
+                <div className="text-sm font-semibold text-gray-700 mb-3">{title}</div>
+                {items?.length ? (
+                  <div className="space-y-2 text-sm">
+                    {items.map((item) => (
+                      <div key={`${title}-${item.proId}`} className="flex items-center justify-between gap-3 rounded border border-gray-100 px-3 py-2">
+                        <div>
+                          <div className="font-semibold text-slate-900">{item.name}</div>
+                          <div className="text-xs text-slate-500">Score {item.performanceScore ?? 0}</div>
+                        </div>
+                        <div className="text-sm font-semibold text-slate-700">
+                          {title.includes('Responders') ? `${Math.round((item.value || 0) / 60000)}m` : `${Number(item.value || 0).toFixed(1)}%`}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500">No lead response data yet.</div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       ) : null}

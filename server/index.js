@@ -408,6 +408,7 @@ app.use("/api/pro/jobs", generalRateLimit, require("./routes/proJobs")); // prof
 app.use("/api/contractor", generalRateLimit, require("./routes/contractor")); // contractor workflow
 app.use("/api/customer", generalRateLimit, require("./routes/customerPortal")); // customer portal
 app.use("/api/homeowner-lead", require("./routes/homeownerLead"));
+app.use("/api/lead-access", require("./routes/leadAccess"));
 app.use("/api/leads", require("./routes/leads")); // Lead management with database storage
 
 app.use("/api/requests", require("./routes/requests")); // Homeowner service requests

@@ -36,6 +36,68 @@ const leadAssignmentSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  secureAccessId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'LeadAccess',
+    default: null
+  },
+  smsSentAt: {
+    type: Date,
+    default: null
+  },
+  smsDeliveredAt: {
+    type: Date,
+    default: null
+  },
+  firstOpenedAt: {
+    type: Date,
+    default: null
+  },
+  lastViewedAt: {
+    type: Date,
+    default: null
+  },
+  acceptedAt: {
+    type: Date,
+    default: null
+  },
+  declinedAt: {
+    type: Date,
+    default: null
+  },
+  askedLaterAt: {
+    type: Date,
+    default: null
+  },
+  openedCount: {
+    type: Number,
+    default: 0
+  },
+  declinedReason: {
+    type: String,
+    trim: true,
+    maxLength: 500
+  },
+  acceptanceOrder: {
+    type: Number,
+    default: null
+  },
+  firstAcceptedProfessional: {
+    type: Boolean,
+    default: false
+  },
+  responseTimeMs: {
+    type: Number,
+    default: null
+  },
+  openTimeMs: {
+    type: Number,
+    default: null
+  },
+  acceptanceDelayMs: {
+    type: Number,
+    default: null
+  },
   distanceMiles: {
     type: Number,
     default: null

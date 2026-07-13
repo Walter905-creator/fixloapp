@@ -258,6 +258,10 @@ const proSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  performanceScore: {
+    type: Number,
+    default: 0
+  },
   
   // Gamification features
   boostActiveUntil: { 

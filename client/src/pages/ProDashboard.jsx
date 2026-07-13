@@ -52,13 +52,14 @@ export default function ProDashboard() {
       navItems={['Overview', 'Leads', 'Earnings', 'Billing', 'Profile', 'Settings', 'Support', 'Log Out']}
     >
       <section className="dashboard-grid metrics-grid">
-        <MetricCard label="New leads" value={data?.summary?.newLeads ?? 0} />
-        <MetricCard label="Accepted jobs" value={data?.summary?.acceptedJobs ?? 0} />
-        <MetricCard label="Pending quotes" value={data?.summary?.pendingQuotes ?? 0} />
-        <MetricCard label="Estimated earnings" value={toMoney(data?.summary?.estimatedEarnings)} />
-        <MetricCard label="SMS notifications" value={data?.summary?.smsEnabled ? 'Enabled' : 'Disabled'} />
-        <MetricCard label="Subscription" value={data?.summary?.subscriptionStatus || 'N/A'} />
-        <MetricCard label="Checkr" value={data?.summary?.checkrStatus || 'N/A'} />
+        <MetricCard label="Leads received" value={data?.summary?.leadsReceived ?? 0} />
+        <MetricCard label="Leads viewed" value={data?.summary?.leadsViewed ?? 0} />
+        <MetricCard label="Accepted leads" value={data?.summary?.acceptedJobs ?? 0} />
+        <MetricCard label="Completed jobs" value={data?.summary?.completedJobs ?? 0} />
+        <MetricCard label="Avg response time" value={data?.summary?.averageResponseTimeMs ? `${Math.round(data.summary.averageResponseTimeMs / 60000)} min` : '—'} />
+        <MetricCard label="Performance score" value={data?.summary?.performanceScore ?? 0} />
+        <MetricCard label="Acceptance rate" value={data?.summary?.acceptanceRate != null ? `${data.summary.acceptanceRate}%` : '—'} />
+        <MetricCard label="Completion rate" value={data?.summary?.completionRate != null ? `${data.summary.completionRate}%` : '—'} />
       </section>
 
       <section className="dashboard-grid chart-grid">
@@ -81,7 +82,7 @@ export default function ProDashboard() {
           { key: 'dateRequested', label: 'Requested', render: (value) => value ? new Date(value).toLocaleDateString() : '—' },
           { key: 'status', label: 'Status', render: (value) => <StatusBadge status={value} /> },
           { key: 'estimatedValue', label: 'Est. Value', render: (value) => toMoney(value) },
-          { key: 'phone', label: 'Phone', render: (value) => value || '—' }
+          { key: 'phone', label: 'Phone', render: (value, row) => row?.secureLeadRequired ? 'Unlock after acceptance' : (value || '—') }
         ]}
       />
     </DashboardLayout>

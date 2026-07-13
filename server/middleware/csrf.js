@@ -69,6 +69,7 @@ const CSRF_EXEMPT_PREFIXES = [
   '/api/auth/',            // login, register, signup/*, forgot-password, reset-password, refresh
   '/api/pro-auth/',        // pro login, forgot-password, reset-password (SMS flow)
   '/api/recruiter-auth/',  // recruiter login, register, forgot-password, reset-password
+  '/api/lead-access/twilio/' // Twilio delivery callbacks
 ];
 
 /**
@@ -174,6 +175,5 @@ function csrfErrorHandler(err, req, res, next) {
 }
 
 module.exports = { csrfProtection, csrfErrorHandler };
-
 
 

@@ -95,13 +95,16 @@ router.get("/jobs", auth, async (req, res) => {
         city: assignment.leadId.city || assignment.leadId.address?.split(',').pop()?.trim() || 'Unknown',
         location: {
           city: assignment.leadId.city || assignment.leadId.address?.split(',').pop()?.trim() || 'Unknown',
-          address: assignment.leadId.address
+          address: assignment.status === 'accepted' ? assignment.leadId.address : ''
         },
         description: assignment.leadId.description,
         desc: assignment.leadId.description,
         status: assignment.status === 'pending' ? 'open' : assignment.status,
         createdAt: assignment.leadId.createdAt,
-        date: assignment.leadId.createdAt
+        date: assignment.leadId.createdAt,
+        customerName: assignment.status === 'accepted' ? assignment.leadId.name : '',
+        phone: assignment.status === 'accepted' ? assignment.leadId.phone : '',
+        secureLeadRequired: assignment.status !== 'accepted'
       }));
 
     const assignedJobs = await JobRequest.find({
@@ -184,7 +187,7 @@ router.post("/jobs/:jobId/:action", auth, async (req, res) => {
         break;
       case 'decline':
         {
-          const result = await declineLead(jobId, proId);
+          const result = await declineLead(jobId, proId, req.body?.reason || '');
           if (!result.ok) {
             return res.status(result.status).json({ error: result.error });
           }

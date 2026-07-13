@@ -62,23 +62,40 @@ function _initSendGrid() {
 // ── Constants ─────────────────────────────────────────────────────────────────
 const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || 'noreply@fixloapp.com';
 const ENV_LABEL  = (process.env.NODE_ENV || 'development').toUpperCase();
+const OWNER_TIMEZONE = process.env.OWNER_TIMEZONE || 'America/New_York';
 
 // ── HTML helpers ──────────────────────────────────────────────────────────────
 
+function _escapeHtml(value) {
+  return String(value ?? 'N/A')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
+function _truncateWithIndicator(value, limit) {
+  const text = String(value ?? '');
+  if (text.length <= limit) return text;
+  return `${text.slice(0, limit)}… [truncated]`;
+}
+
 function _htmlWrap(eventLabel, rows) {
   const now = new Date().toLocaleString('en-US', {
-    timeZone: 'America/New_York',
+    timeZone: OWNER_TIMEZONE,
     dateStyle: 'full',
     timeStyle: 'long'
   });
 
   const tableRows = rows
     .map(([label, value]) => {
-      const safe = String(value ?? 'N/A').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const safeLabel = _escapeHtml(label);
+      const safe = _escapeHtml(value);
       return `
         <tr>
           <td style="padding:8px 12px;font-weight:600;color:#374151;white-space:nowrap;
-                     border-bottom:1px solid #e5e7eb;width:35%">${label}</td>
+                     border-bottom:1px solid #e5e7eb;width:35%">${safeLabel}</td>
           <td style="padding:8px 12px;color:#111827;border-bottom:1px solid #e5e7eb;
                      word-break:break-word">${safe}</td>
         </tr>`;
@@ -100,7 +117,7 @@ function _htmlWrap(eventLabel, rows) {
           <td style="background:#1d4ed8;padding:24px 32px">
             <p style="margin:0;font-size:11px;color:#93c5fd;letter-spacing:.1em;
                       text-transform:uppercase">Fixlo Owner Notification</p>
-            <h1 style="margin:6px 0 0;font-size:22px;color:#ffffff">${eventLabel}</h1>
+            <h1 style="margin:6px 0 0;font-size:22px;color:#ffffff">${_escapeHtml(eventLabel)}</h1>
           </td>
         </tr>
 
@@ -110,10 +127,10 @@ function _htmlWrap(eventLabel, rows) {
             <table width="100%" cellpadding="0" cellspacing="0">
               <tr>
                 <td style="font-size:13px;color:#1e40af">
-                  <strong>Time:</strong> ${now}
+                  <strong>Time:</strong> ${_escapeHtml(now)}
                 </td>
                 <td align="right" style="font-size:13px;color:#1e40af">
-                  <strong>Environment:</strong> ${ENV_LABEL}
+                  <strong>Environment:</strong> ${_escapeHtml(ENV_LABEL)}
                 </td>
               </tr>
             </table>
@@ -297,7 +314,7 @@ const _TEMPLATES = {
         ['Name',      p.name],
         ['Email',     p.email],
         ['Subject',   p.subject],
-        ['Message',   (p.message || '').substring(0, 2000)]
+        ['Message',   _truncateWithIndicator(p.message, 2000)]
       ])
     };
   },
@@ -307,8 +324,8 @@ const _TEMPLATES = {
       subject: `🚨 System Error: ${p.errorType || 'Unknown'}`,
       html: _htmlWrap(`System Error: ${p.errorType || 'Unknown'}`, [
         ['Error Type',   p.errorType],
-        ['Message',      (p.errorMessage || 'No message').substring(0, 500)],
-        ['Stack Trace',  (p.stackTrace  || 'N/A').substring(0, 1000)],
+        ['Message',      _truncateWithIndicator(p.errorMessage || 'No message', 500)],
+        ['Stack Trace',  _truncateWithIndicator(p.stackTrace || 'N/A', 1000)],
         ['Timestamp',    p.timestamp || new Date().toISOString()]
       ])
     };

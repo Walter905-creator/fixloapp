@@ -10,6 +10,7 @@ const LeadAssignment = require('../models/LeadAssignment');
 const JobRequest = require('../models/JobRequest');
 const SmsNotification = require('../models/SmsNotification');
 const { requireDatabase } = require('../config/database');
+const { getOwnerLeadAnalytics, getProLeadMetrics } = require('../services/leadTrackingService');
 
 const TOTAL_COMMISSION_STATUSES = ['pending', 'held', 'approved', 'paid'];
 const PENDING_COMMISSION_STATUSES = ['pending', 'held'];
@@ -215,16 +216,20 @@ router.get('/pro', async (req, res) => {
       .map((assignment) => {
         const lead = assignment.leadId;
         const status = assignment.status === 'accepted' ? 'accepted' : assignment.status || lead.status || 'pending';
+        const homeownerUnlocked = status === 'accepted';
         return {
           id: String(lead._id),
-          customerName: lead.name || 'Customer',
+          customerName: homeownerUnlocked ? (lead.name || 'Customer') : 'Homeowner locked',
           service: lead.trade || 'Service',
-          location: [lead.city, lead.state].filter(Boolean).join(', ') || lead.address || '—',
+          location: homeownerUnlocked
+            ? ([lead.city, lead.state].filter(Boolean).join(', ') || lead.address || '—')
+            : ([lead.city, lead.state].filter(Boolean).join(', ') || '—'),
           dateRequested: lead.createdAt,
           status,
           estimatedValue: lead.totalCost || lead.laborCost || lead.visitFee || 0,
-          phone: lead.phone || '',
-          smsConsent: !!lead.smsConsent
+          phone: homeownerUnlocked ? (lead.phone || '') : '',
+          smsConsent: !!lead.smsConsent,
+          secureLeadRequired: !homeownerUnlocked
         };
       });
 
@@ -246,6 +251,7 @@ router.get('/pro', async (req, res) => {
     });
 
     const leads = Array.from(dedupe.values()).sort((a, b) => new Date(b.dateRequested) - new Date(a.dateRequested));
+    const metrics = await getProLeadMetrics(pro._id);
 
     const newLeads = leads.filter((lead) => lead.status === 'pending').length;
     const acceptedJobs = leads.filter((lead) => ACCEPTED_JOB_STATUSES.includes(lead.status)).length;
@@ -280,7 +286,16 @@ router.get('/pro', async (req, res) => {
         subscriptionStatus,
         checkrStatus: pro.backgroundCheckStatus || pro.verificationStatus || 'pending',
         smsEnabled: !!(pro.notificationSettings?.sms && pro.smsConsent),
-        estimatedEarnings
+        estimatedEarnings,
+        leadsReceived: metrics.leadsReceived,
+        leadsViewed: metrics.leadsViewed,
+        completedJobs: metrics.completed,
+        averageResponseTimeMs: metrics.averageResponseTimeMs,
+        performanceScore: metrics.performanceScore,
+        openRate: metrics.openRate,
+        acceptanceRate: metrics.acceptanceRate,
+        completionRate: metrics.completionRate,
+        declineRate: metrics.declineRate
       },
       leads,
       recentRequests,
@@ -324,6 +339,7 @@ router.get('/owner', async (req, res) => {
     }
 
     const now = new Date();
+    const leadAnalytics = await getOwnerLeadAnalytics();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const startOfWeek = new Date(startOfToday);
     startOfWeek.setDate(startOfToday.getDate() - 6);
@@ -600,7 +616,8 @@ router.get('/owner', async (req, res) => {
         lastMonth: leadsLastMonth,
         growthMoM: leadGrowthMoM,
         statusBreakdown: leadStatusBreakdown,
-        stateDistribution
+        stateDistribution,
+        analytics: leadAnalytics
       },
       revenue: {
         projectedMonthly: projectedMonthlyRevenueCents,

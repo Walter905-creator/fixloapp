@@ -11,6 +11,7 @@ const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
 const { isUSPhoneNumber } = require('../utils/twilio');
 const { processExpiredPremiumAssignments } = require('../services/leadAssignmentService');
 const { sendOwnerAlert } = require('../utils/sendOwnerAlert');
+const { getProLeadMetrics } = require('../services/leadTrackingService');
 const { notify: ownerNotify } = require('../services/ownerNotificationService');
 
 function requireJwtSecret() {
@@ -239,14 +240,24 @@ router.get('/dashboard', requireAuth, requireActiveSubscription, async (req, res
 
     const assignmentLeads = leadAssignments
       .filter((assignment) => assignment.leadId)
-      .map((assignment) => ({
-        ...assignment.leadId.toObject(),
-        assignmentId: assignment._id,
-        assignmentType: assignment.assignmentType,
-        assignmentStatus: assignment.status,
-        exclusiveUntil: assignment.exclusiveUntil,
-        canRespond: assignment.status === 'pending'
-      }));
+      .map((assignment) => {
+        const lead = assignment.leadId.toObject();
+        const homeownerUnlocked = assignment.status === 'accepted';
+
+        return {
+          ...lead,
+          name: homeownerUnlocked ? lead.name : '',
+          phone: homeownerUnlocked ? lead.phone : '',
+          email: homeownerUnlocked ? lead.email : '',
+          address: homeownerUnlocked ? lead.address : '',
+          assignmentId: assignment._id,
+          assignmentType: assignment.assignmentType,
+          assignmentStatus: assignment.status,
+          exclusiveUntil: assignment.exclusiveUntil,
+          canRespond: assignment.status === 'pending',
+          secureLeadRequired: !homeownerUnlocked
+        };
+      });
 
     const directLeads = assignedJobs.map((job) => ({
       ...job.toObject(),
@@ -265,6 +276,8 @@ router.get('/dashboard', requireAuth, requireActiveSubscription, async (req, res
       }
     });
 
+    const leadMetrics = await getProLeadMetrics(pro._id);
+
     console.log(`✅ Dashboard: ${dedupedLeads.length} leads for pro ${pro._id}`);
     return res.json({
       name: pro.name,
@@ -274,7 +287,8 @@ router.get('/dashboard', requireAuth, requireActiveSubscription, async (req, res
       subscriptionType: pro.subscriptionType || 'monthly',
       subscriptionPlan: pro.subscriptionPlan || 'pro',
       leadPriority: pro.leadPriority || 'standard',
-      leads: dedupedLeads
+      leads: dedupedLeads,
+      metrics: leadMetrics
     });
   } catch (err) {
     console.error('Pro dashboard error:', err);

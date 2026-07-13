@@ -50,8 +50,7 @@ async function notifyProOfLead(pro, lead) {
       ? `${lead.city}, ${lead.state}` 
       : lead.address || 'Location provided',
     budget: lead.budget || 'Contact for details',
-    customerName: lead.name || 'Customer',
-    customerPhone: lead.phone || 'N/A'
+    secureLeadUrl: `${process.env.CLIENT_URL || 'https://fixloapp.com'}/pro/dashboard`
   };
 
   // Determine if pro is in USA based on country field or phone number
@@ -70,6 +69,9 @@ async function notifyProOfLead(pro, lead) {
       try {
         console.log(`📲 Sending job SMS to pro via centralized sender`);
         const smsResult = await sendProLeadAlert(pro, lead);
+        if (smsResult.url) {
+          leadData.secureLeadUrl = smsResult.url;
+        }
         
         if (smsResult.success) {
           results.sms.success = true;
@@ -114,6 +116,9 @@ async function notifyProOfLead(pro, lead) {
       try {
         console.log(`💬 Sending WhatsApp via centralized sender`);
         const whatsappResult = await sendProLeadAlert(pro, lead);
+        if (whatsappResult.url) {
+          leadData.secureLeadUrl = whatsappResult.url;
+        }
         
         if (whatsappResult.success) {
           results.whatsapp.success = true;

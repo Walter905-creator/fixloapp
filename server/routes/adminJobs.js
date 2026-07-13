@@ -7,6 +7,7 @@ const requireAuth = require('../middleware/requireAuth');
 const smsService = require('../services/smsService');
 const { sendNotificationWithFallback } = require('../services/emailService');
 const { logPaymentAction, logAdminAction } = require('../services/auditLogger');
+const { recordLeadEvent, refreshProPerformanceScore } = require('../services/leadTrackingService');
 
 // Protect all routes with admin authentication
 router.use(requireAuth);
@@ -151,6 +152,18 @@ router.post('/jobs/:id/schedule', async (req, res) => {
       console.error('⚠️ Notification failed:', notificationError.message);
       // Don't fail the request if notification fails
     }
+
+    await recordLeadEvent({
+      leadId: job._id,
+      proId: job.assignedProId || job.assignedTo || null,
+      eventType: 'job_scheduled',
+      actorType: 'admin',
+      req,
+      metadata: {
+        scheduledDate: job.scheduledDate,
+        scheduledTime: job.scheduledTime
+      }
+    });
 
     res.json({
       success: true,
@@ -426,6 +439,21 @@ router.post('/jobs/:id/complete', async (req, res) => {
     } catch (notificationError) {
       console.error('⚠️ Notification failed:', notificationError.message);
       // Don't fail the request if notification fails
+    }
+
+    await recordLeadEvent({
+      leadId: updatedJob._id,
+      proId: updatedJob.assignedProId || updatedJob.assignedTo || null,
+      eventType: 'job_completed',
+      actorType: 'admin',
+      req,
+      metadata: {
+        totalCost: updatedJob.totalCost
+      }
+    });
+
+    if (updatedJob.assignedProId || updatedJob.assignedTo?._id) {
+      await refreshProPerformanceScore(updatedJob.assignedProId || updatedJob.assignedTo._id).catch(() => null);
     }
 
     res.json({

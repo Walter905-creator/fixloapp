@@ -45,6 +45,7 @@ import EarnStartPage from './routes/EarnStartPage.jsx';
 import EarnDashboardPage from './routes/EarnDashboardPage.jsx';
 import ReferralSignInPage from './routes/ReferralSignInPage.jsx';
 import RequestPage from './routes/RequestPage.jsx';
+import LeadResponsePage from './routes/LeadResponsePage.jsx';
 // Internal admin dashboard (private — requires admin role)
 import InternalDashboardPage from './routes/InternalDashboardPage.jsx';
 // Admin Invite Codes Management
@@ -142,6 +143,7 @@ export default function App(){
       <Route path="/contact" element={<ContactPage/>}/>
       <Route path="/pricing" element={<PricingPage/>}/>
       <Route path="/request" element={<RequestPage/>}/>
+      <Route path="/lead/:token" element={<LeadResponsePage/>}/>
       <Route path="/charlotte" element={<Navigate to="/request?city=charlotte-nc" replace/>}/>
       <Route path="/country/:countryCode" element={<CountryPage/>}/>
       <Route path="/signup" element={<SignupPage/>}/>
