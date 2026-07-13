@@ -862,7 +862,7 @@ async function getProLeadMetrics(proId) {
   const completionRate = accepted ? (completed / accepted) * 100 : 0;
   // Reliability rewards pros who consistently open and close out opportunities
   // instead of leaving leads untouched. It blends view rate and acceptance rate
-  // so routing can later favor dependable responders without changing matching.
+  // and is currently used only for analytics/reporting in this implementation.
   const reliability = leadsReceived ? ((accepted + leadsViewed) / (leadsReceived * 2)) * 100 : 0;
 
   const pro = await Pro.findById(normalizedProId).select('avgRating rating');
