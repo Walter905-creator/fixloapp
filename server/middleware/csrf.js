@@ -54,22 +54,41 @@ const _csrfCheck = csurf({
 });
 
 /**
- * Public authentication path prefixes that are exempt from CSRF validation.
+ * Path prefixes that are exempt from CSRF validation.
  *
- * These are all pre-authentication endpoints: the client has no session yet,
- * so there are no existing credentials an attacker could force the browser
- * to use.  Exempting them avoids the need for an explicit CSRF-token fetch
- * before every login / register / password-reset page load.
+ * Two categories:
+ *
+ * 1. Pre-authentication endpoints (login, register, forgot-password, etc.)
+ *    These operate before any session exists, so there are no existing
+ *    credentials an attacker could force the browser to use.
+ *
+ * 2. Public, unauthenticated form submissions (free quote, service request,
+ *    contact form, homeowner lead capture).
+ *    These routes have no authenticated session to hijack — the submitter is
+ *    an anonymous visitor.  The CSRF threat model requires an existing
+ *    credentialed session; with no session, CSRF provides no protection and
+ *    the token requirement only blocks legitimate public traffic.
+ *    These are equivalent in risk profile to the auth endpoints above.
  *
  * All authenticated (post-login) state-changing requests are already covered
  * by the JWT ****** below, so CSRF protection remains complete for
  * every route that actually operates on authenticated state.
  */
 const CSRF_EXEMPT_PREFIXES = [
-  '/api/auth/',            // login, register, signup/*, forgot-password, reset-password, refresh
-  '/api/pro-auth/',        // pro login, forgot-password, reset-password (SMS flow)
-  '/api/recruiter-auth/',  // recruiter login, register, forgot-password, reset-password
-  '/api/lead-access/twilio/' // Twilio delivery callbacks
+  // ── Pre-auth / identity endpoints ─────────────────────────────────────────
+  '/api/auth/',              // login, register, signup/*, forgot-password, reset-password, refresh
+  '/api/pro-auth/',          // pro login, forgot-password, reset-password (SMS flow)
+  '/api/recruiter-auth/',    // recruiter login, register, forgot-password, reset-password
+
+  // ── Public form submissions (unauthenticated visitors) ────────────────────
+  '/api/requests',           // homeowner free-quote / service request form
+  '/api/service-request/',   // legacy service request form
+  '/api/service-intake/',    // Charlotte multi-step intake form (may include photo uploads)
+  '/api/homeowner-lead/',    // homeowner lead capture
+  '/api/contact/',           // public contact / enquiry form
+
+  // ── Third-party delivery callbacks ────────────────────────────────────────
+  '/api/lead-access/twilio/', // Twilio SMS delivery status callbacks
 ];
 
 /**
@@ -119,12 +138,13 @@ function csrfProtection(req, res, next) {
     return next();
   }
 
-  // ── Public auth endpoints ─────────────────────────────────────────────────────
-  // Pre-authentication routes (login, register, forgot-password, reset-password)
-  // operate before any session exists, so there is no state for an attacker to
-  // hijack.
+  // ── Public / pre-auth endpoints ───────────────────────────────────────────────
+  // Includes pre-authentication routes (login, register, forgot-password) AND
+  // public unauthenticated form submissions (free-quote, service request,
+  // contact form).  Neither category has an authenticated session for an
+  // attacker to hijack.  See CSRF_EXEMPT_PREFIXES above for the full list.
   if (CSRF_EXEMPT_PREFIXES.some(prefix => req.path.startsWith(prefix))) {
-    if (isDev) console.log(`[CSRF] SKIP public-auth | ${req.method} ${req.path}`);
+    if (isDev) console.log(`[CSRF] SKIP public      | ${req.method} ${req.path}`);
     return next();
   }
 

@@ -66,6 +66,9 @@ if (process.env.STRIPE_SECRET_KEY) {
 // ---------- POST /api/requests ----------
 
 router.post('/', async (req, res) => {
+  const isDev = process.env.NODE_ENV !== 'production';
+  if (isDev) console.log(`[REQUESTS] ► Incoming  | POST /api/requests`);
+
   try {
     const {
       serviceType,
@@ -89,6 +92,7 @@ router.post('/', async (req, res) => {
     // ---------- Validation ----------
 
     if (!rawService || !fullName || !phone || !city || !state) {
+      if (isDev) console.log(`[REQUESTS] ✗ Validation | missing required fields`);
       return res.status(400).json({
         ok: false,
         error: 'Missing required fields'
@@ -97,6 +101,7 @@ router.post('/', async (req, res) => {
 
     const normalizedPhone = normalizeUSPhone(phone);
     if (!normalizedPhone || !isValidE164(normalizedPhone)) {
+      if (isDev) console.log(`[REQUESTS] ✗ Validation | invalid phone: ${phone}`);
       return res.status(400).json({
         ok: false,
         error: 'Phone number must be in E.164 format (+1XXXXXXXXXX)'
@@ -104,11 +109,14 @@ router.post('/', async (req, res) => {
     }
 
     if (typeof smsConsent !== 'boolean') {
+      if (isDev) console.log(`[REQUESTS] ✗ Validation | smsConsent must be boolean, got: ${typeof smsConsent}`);
       return res.status(400).json({
         ok: false,
         error: 'smsConsent must be true or false'
       });
     }
+
+    if (isDev) console.log(`[REQUESTS] ✓ Validation | service=${rawService} city=${city} state=${state}`);
 
     const requestId =
       'req_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
@@ -138,6 +146,7 @@ router.post('/', async (req, res) => {
     let savedLead = null;
 
     if (mongoose.connection.readyState === 1) {
+      if (isDev) console.log(`[REQUESTS] ► DB save    | Saving JobRequest to database`);
       // Log new service request for debugging
       console.log('New Fixlo service request:', { service: rawService, city, phone: normalizedPhone });
 
@@ -162,6 +171,7 @@ router.post('/', async (req, res) => {
 
       // 6️⃣ LOG CRITICAL EVENTS
       console.log('💾 Job saved:', requestId, '| ID:', savedLead._id);
+      if (isDev) console.log(`[REQUESTS] ✓ DB save    | JobRequest _id=${savedLead._id}`);
 
       // Send homeowner confirmation SMS
       if (smsConsent) {
@@ -204,6 +214,8 @@ router.post('/', async (req, res) => {
         requestedDate: savedLead.createdAt?.toISOString() || new Date().toISOString(),
         leadId:        String(savedLead._id)
       }).catch(() => {});
+    } else {
+      if (isDev) console.log(`[REQUESTS] ⚠ DB save    | MongoDB not connected (readyState=${mongoose.connection.readyState}), skipping save`);
     }
 
     // ---------- Notify Pros ----------
@@ -219,6 +231,7 @@ router.post('/', async (req, res) => {
     // ---------- Response ----------
     // Homeowner quote requests are completely free — no payment required
 
+    if (isDev) console.log(`[REQUESTS] ◄ Response   | 201 ok=true requestId=${requestId}`);
     return res.status(201).json({
       ok: true,
       success: true,
@@ -230,12 +243,14 @@ router.post('/', async (req, res) => {
     });
   } catch (err) {
     if (err.name === 'ValidationError') {
+      if (isDev) console.log(`[REQUESTS] ✗ Response   | 400 ValidationError: ${err.message}`);
       return res.status(400).json({
         ok: false,
         error: err.message
       });
     }
     console.error('❌ Request error:', err.message);
+    if (isDev) console.log(`[REQUESTS] ✗ Response   | 500 internal error`);
     return res.status(500).json({
       ok: false,
       error: 'Server error processing request'

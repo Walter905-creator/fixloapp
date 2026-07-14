@@ -3,6 +3,7 @@ import { API_BASE } from '../utils/config';
 import { lookupZipCode } from '../utils/zipLookup';
 import { normalizeUSPhone } from '../utils/phoneUtils';
 import { trackMetaPixelEvent } from '../utils/metaPixel';
+import { csrfFetch } from '../utils/csrf';
 
 const DEFAULT_SERVICE_OPTIONS = [
   'Plumbing',
@@ -206,7 +207,7 @@ export default function MultiStepLeadForm({
 
     try {
       const normalizedPhone = normalizeUSPhone(draft.phone);
-      const response = await fetch(`${API_BASE}/api/requests`, {
+      const response = await csrfFetch(`${API_BASE}/api/requests`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
