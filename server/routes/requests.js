@@ -243,14 +243,14 @@ router.post('/', async (req, res) => {
     });
   } catch (err) {
     if (err.name === 'ValidationError') {
-      if (process.env.NODE_ENV !== 'production') console.log(`[REQUESTS] ✗ Response   | 400 ValidationError: ${err.message}`);
+      if (isDev) console.log(`[REQUESTS] ✗ Response   | 400 ValidationError: ${err.message}`);
       return res.status(400).json({
         ok: false,
         error: err.message
       });
     }
     console.error('❌ Request error:', err.message);
-    if (process.env.NODE_ENV !== 'production') console.log(`[REQUESTS] ✗ Response   | 500 internal error`);
+    if (isDev) console.log(`[REQUESTS] ✗ Response   | 500 internal error`);
     return res.status(500).json({
       ok: false,
       error: 'Server error processing request'
