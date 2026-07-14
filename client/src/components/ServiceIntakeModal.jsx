@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { API_BASE } from '../utils/config';
 import { normalizeUSPhone } from '../utils/phoneUtils';
 import { trackMetaPixelEvent } from '../utils/metaPixel';
+import { csrfFetch, getCsrfToken } from '../utils/csrf';
 
 const API_URL = API_BASE;
 
@@ -160,7 +161,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
         details: formData.description || ''
       };
 
-      const res = await fetch(`${API_URL}/api/requests`, {
+      const res = await csrfFetch(`${API_URL}/api/requests`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -217,8 +218,17 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
         submitData.append('photos', photo);
       });
 
+      // For multipart/form-data (file uploads) we must NOT set Content-Type
+      // manually — the browser sets it with the correct boundary.  We still
+      // include the CSRF token in the header for defence-in-depth.
+      const csrfToken = await getCsrfToken();
+      const uploadHeaders = {};
+      if (csrfToken) uploadHeaders['x-csrf-token'] = csrfToken;
+
       const response = await fetch(`${API_URL}/api/service-intake/submit`, {
         method: 'POST',
+        credentials: 'include',
+        headers: uploadHeaders,
         body: submitData
       });
 
