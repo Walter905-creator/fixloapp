@@ -1,578 +1,548 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useCallback, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useRecruiterAuth } from '../context/RecruiterAuthContext';
-import { fetchOwnerDashboard } from '../lib/api';
-import HelmetSEO from '../seo/HelmetSEO';
+import { fetchRecruiterDashboard } from '../lib/api';
+import { formatUsdCents } from '../lib/format';
+import { API_BASE } from '../utils/config';
+import '../styles/dashboard.css';
 
-// ── Formatting helpers ─────────────────────────────────────────────────────────
+const SECTION_IDS = ['overview', 'activity', 'referrals', 'commissions', 'payouts', 'profile', 'settings', 'support', 'analytics'];
 
-function fmtMoney(cents) {
-  return '$' + ((cents || 0) / 100).toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
+function toMoney(value) {
+  return formatUsdCents(value || 0);
 }
 
-function fmtNum(n) {
-  return (n ?? 0).toLocaleString('en-US');
+function formatDate(value, options = {}) {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleDateString('en-US', options);
 }
 
-function fmtPct(n) {
-  if (n == null) return '—';
-  const sign = n >= 0 ? '+' : '';
-  return `${sign}${n}%`;
-}
-
-function fmtDate(d) {
-  if (!d) return '—';
-  return new Date(d).toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-}
-
-// ── Reusable UI components ─────────────────────────────────────────────────────
-
-function StatCard({ label, value, sub, color = 'blue', icon, trend }) {
-  const gradients = {
-    blue: 'from-blue-600 to-blue-800',
-    green: 'from-emerald-600 to-emerald-800',
-    yellow: 'from-amber-500 to-amber-700',
-    purple: 'from-purple-600 to-purple-800',
-    teal: 'from-teal-600 to-teal-800',
-    red: 'from-red-600 to-red-800',
-    indigo: 'from-indigo-600 to-indigo-800',
-    rose: 'from-rose-600 to-rose-800'
-  };
+function SkeletonCard() {
   return (
-    <div className={`rounded-2xl p-5 bg-gradient-to-br text-white shadow-lg ${gradients[color] || gradients.blue}`}>
-      <div className="flex items-start justify-between">
-        <div className="flex-1 min-w-0">
-          <p className="text-white/70 text-xs font-medium uppercase tracking-wider truncate">{label}</p>
-          <p className="text-2xl font-extrabold mt-1">{value}</p>
-          {sub && <p className="text-white/60 text-xs mt-1">{sub}</p>}
-          {trend != null && (
-            <p className={`text-xs mt-1 font-semibold ${trend >= 0 ? 'text-green-300' : 'text-red-300'}`}>
-              {fmtPct(trend)} MoM
-            </p>
-          )}
-        </div>
-        {icon && <span className="text-3xl opacity-40 shrink-0 ml-2">{icon}</span>}
-      </div>
+    <div className="dashboard-card skeleton-card">
+      <div className="skeleton-line w-50" />
+      <div className="skeleton-line w-80" />
+      <div className="skeleton-line w-30" />
     </div>
   );
 }
 
-function SectionHeading({ children }) {
+function EmptyBlock({ title, message }) {
   return (
-    <h2 className="text-lg font-bold text-white mb-3 mt-6 flex items-center gap-2">
-      {children}
-    </h2>
-  );
-}
-
-function Panel({ title, children, className = '' }) {
-  return (
-    <div className={`bg-white/5 border border-white/10 rounded-2xl p-5 ${className}`}>
-      {title && <h3 className="text-sm font-semibold text-blue-200 mb-3">{title}</h3>}
-      {children}
+    <div className="dashboard-empty">
+      <h3>{title}</h3>
+      <p>{message}</p>
     </div>
   );
 }
 
-function EmptyState({ message = 'No data yet' }) {
+function SparkBar({ value, max }) {
+  const pct = max > 0 ? Math.max(4, (value / max) * 100) : 4;
   return (
-    <p className="text-white/40 text-sm italic py-4 text-center">{message}</p>
-  );
-}
-
-function StatusPill({ status }) {
-  const map = {
-    sent: 'bg-emerald-500/20 text-emerald-300',
-    failed: 'bg-red-500/20 text-red-300',
-    skipped: 'bg-white/10 text-white/50',
-    pending: 'bg-amber-500/20 text-amber-300',
-    active: 'bg-emerald-500/20 text-emerald-300',
-    inactive: 'bg-red-500/20 text-red-300',
-    clear: 'bg-emerald-500/20 text-emerald-300',
-    consider: 'bg-amber-500/20 text-amber-300',
-    dispute: 'bg-red-500/20 text-red-300'
-  };
-  return (
-    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${map[status] || 'bg-white/10 text-white/60'}`}>
-      {status}
-    </span>
-  );
-}
-
-// ── Mini bar chart ─────────────────────────────────────────────────────────────
-
-function MiniBarChart({ data, valueKey, label }) {
-  if (!data?.length) return <EmptyState message="No chart data yet" />;
-  const max = Math.max(...data.map((d) => d[valueKey] || 0), 1);
-  return (
-    <div className="flex items-end gap-1 h-24 mt-2">
-      {data.map((d, i) => {
-        const pct = ((d[valueKey] || 0) / max) * 100;
-        return (
-          <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
-            <span className="text-[10px] text-white/40">{d[valueKey] || 0}</span>
-            <div className="w-full bg-white/10 rounded-t overflow-hidden" style={{ height: '60px' }}>
-              <div
-                className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-t transition-all"
-                style={{ height: `${pct}%`, marginTop: `${100 - pct}%` }}
-              />
-            </div>
-            <span className="text-[9px] text-white/30">{d.label}</span>
-          </div>
-        );
-      })}
+    <div className="spark-row">
+      <div className="spark-track"><div className="spark-fill" style={{ width: `${pct}%` }} /></div>
+      <span>{value}</span>
     </div>
   );
 }
-
-// ── Breakdown list ─────────────────────────────────────────────────────────────
-
-function BreakdownList({ items, total }) {
-  if (!items?.length) return <EmptyState />;
-  const max = Math.max(...items.map((i) => i.count), 1);
-  return (
-    <div className="space-y-2 mt-1">
-      {items.map((item) => (
-        <div key={item.label}>
-          <div className="flex justify-between text-xs text-white/60 mb-0.5">
-            <span className="capitalize">{item.label}</span>
-            <span className="font-semibold text-white/80">{item.count}</span>
-          </div>
-          <div className="bg-white/10 rounded-full h-1.5 overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-blue-500 to-indigo-400 rounded-full"
-              style={{ width: `${(item.count / max) * 100}%` }}
-            />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ── US State Map (table view) ──────────────────────────────────────────────────
-
-function USStateTable({ data }) {
-  if (!data?.length) return <EmptyState message="No state data yet. Leads with state info will appear here." />;
-  const max = Math.max(...data.map((d) => d.count), 1);
-  return (
-    <div className="space-y-1.5 mt-1 max-h-60 overflow-y-auto pr-1">
-      {data.slice(0, 20).map((row) => (
-        <div key={row.state} className="flex items-center gap-2">
-          <span className="text-xs font-mono text-white/70 w-8 shrink-0">{row.state}</span>
-          <div className="flex-1 bg-white/10 rounded-full h-2 overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-teal-500 to-emerald-400 rounded-full"
-              style={{ width: `${(row.count / max) * 100}%` }}
-            />
-          </div>
-          <span className="text-xs text-white/60 w-6 text-right shrink-0">{row.count}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ── Main Component ─────────────────────────────────────────────────────────────
 
 export default function RecruiterDashboardPage() {
-  const navigate = useNavigate();
-  const { recruiter, isAuthenticated, loading: authLoading, logout } = useRecruiterAuth();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { recruiter, logout, authFetch } = useRecruiterAuth();
+  const [searchParams] = useSearchParams();
+  const [state, setState] = useState({ loading: true, error: '', data: null });
+  const [activeSection, setActiveSection] = useState('overview');
+  const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState({ status: '', month: '', year: '', trade: '', state: '' });
+  const [saveState, setSaveState] = useState({ loading: false, message: '', error: '' });
+  const [passwordState, setPasswordState] = useState({ currentPassword: '', newPassword: '' });
 
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) navigate('/recruiter/login', { replace: true });
-  }, [authLoading, isAuthenticated, navigate]);
+  const [profileDraft, setProfileDraft] = useState({
+    phone: '',
+    photo: '',
+    city: '',
+    state: '',
+    notifications: {
+      emailNotifications: true,
+      smsNotifications: true,
+      commissionAlerts: true,
+      weeklySummaryEmails: true,
+      referralAlerts: true
+    },
+    language: 'en-US',
+    timeZone: 'UTC'
+  });
 
-  const fetchData = useCallback(async () => {
-    if (!isAuthenticated) return;
-    setLoading(true);
-    setError('');
+  const load = useCallback(async () => {
+    setState((prev) => ({ ...prev, loading: true, error: '' }));
     try {
-      const result = await fetchOwnerDashboard();
-      setData(result);
-    } catch (err) {
-      setError(err.message || 'Failed to load dashboard');
-    } finally {
-      setLoading(false);
+      const data = await fetchRecruiterDashboard({ userId: searchParams.get('userId') || '' });
+      setProfileDraft({
+        phone: data?.profile?.phone || '',
+        photo: data?.profile?.photo || '',
+        city: data?.profile?.city || '',
+        state: data?.profile?.state || '',
+        notifications: {
+          emailNotifications: data?.settings?.emailNotifications ?? true,
+          smsNotifications: data?.settings?.smsNotifications ?? true,
+          commissionAlerts: data?.settings?.commissionAlerts ?? true,
+          weeklySummaryEmails: data?.settings?.weeklySummaryEmails ?? true,
+          referralAlerts: data?.settings?.referralAlerts ?? true
+        },
+        language: data?.settings?.language || 'en-US',
+        timeZone: data?.settings?.timeZone || 'UTC'
+      });
+      setState({ loading: false, error: '', data });
+    } catch (error) {
+      setState({ loading: false, error: error.message, data: null });
     }
-  }, [isAuthenticated]);
+  }, [searchParams]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  React.useEffect(() => { load(); }, [load]);
 
-  if (authLoading || loading) {
+  const data = state.data;
+  const referrals = data?.referrals || [];
+  const activities = data?.recentActivity || [];
+  const commissions = data?.commissions?.rows || [];
+  const payouts = data?.payouts?.rows || [];
+  const analytics = data?.analytics || {};
+  const charts = {
+    monthlySignups: analytics.monthlySignups || [],
+    monthlyEarnings: analytics.monthlyEarnings || [],
+    referralConversion: analytics.referralConversion || [],
+    retention: analytics.retention || [],
+    subscriptionRenewals: analytics.subscriptionRenewals || [],
+    commissionGrowth: analytics.commissionGrowth || []
+  };
+
+  const filteredReferrals = useMemo(() => {
+    return referrals.filter((row) => {
+      const haystack = `${row.professionalName} ${row.trade} ${row.city} ${row.status}`.toLowerCase();
+      const searchOk = !search.trim() || haystack.includes(search.trim().toLowerCase());
+      const statusOk = !filters.status || row.status === filters.status;
+      const tradeOk = !filters.trade || row.trade === filters.trade;
+      const stateOk = !filters.state || row.state === filters.state;
+      const yearOk = !filters.year || String(new Date(row.signupDate).getFullYear()) === String(filters.year);
+      const monthOk = !filters.month || new Date(row.signupDate).toLocaleDateString('en-US', { month: 'short' }) === filters.month;
+      return searchOk && statusOk && tradeOk && stateOk && yearOk && monthOk;
+    });
+  }, [filters, referrals, search]);
+
+  const saveProfileSettings = useCallback(async () => {
+    setSaveState({ loading: true, error: '', message: '' });
+    try {
+      const payload = {
+        phoneNumber: profileDraft.phone,
+        profilePhotoUrl: profileDraft.photo,
+        city: profileDraft.city,
+        state: profileDraft.state,
+        notificationSettings: profileDraft.notifications,
+        language: profileDraft.language,
+        timeZone: profileDraft.timeZone
+      };
+      if (passwordState.currentPassword || passwordState.newPassword) {
+        payload.currentPassword = passwordState.currentPassword;
+        payload.newPassword = passwordState.newPassword;
+      }
+      const res = await authFetch(`${API_BASE}/api/recruiter/settings`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload)
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || 'Unable to save settings');
+      setPasswordState({ currentPassword: '', newPassword: '' });
+      setSaveState({ loading: false, error: '', message: 'Profile and settings updated.' });
+      await load();
+    } catch (error) {
+      setSaveState({ loading: false, error: error.message, message: '' });
+    }
+  }, [API_BASE, authFetch, load, passwordState.currentPassword, passwordState.newPassword, profileDraft]);
+
+  const copyReferralLink = useCallback(async () => {
+    if (!data?.referralLink?.url) return;
+    await navigator.clipboard.writeText(data.referralLink.url);
+    setSaveState((prev) => ({ ...prev, message: 'Referral link copied.' }));
+  }, [data]);
+
+  const shareReferralLink = useCallback(async () => {
+    const url = data?.referralLink?.url;
+    if (!url) return;
+    if (navigator.share) {
+      await navigator.share({ title: 'Join Fixlo', url });
+      return;
+    }
+    await navigator.clipboard.writeText(url);
+    setSaveState((prev) => ({ ...prev, message: 'Referral link copied for sharing.' }));
+  }, [data]);
+
+  const goToSection = useCallback((sectionId) => {
+    setActiveSection(sectionId);
+    const el = document.getElementById(sectionId);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
+  if (state.loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto" />
-          <p className="text-white/50 mt-4 text-sm">Loading executive dashboard…</p>
+      <div className="dashboard-shell premium">
+        <div className="dashboard-main premium-main">
+          <div className="dashboard-grid metrics-grid">{Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}</div>
+          <div className="dashboard-grid metrics-grid">{Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}</div>
         </div>
       </div>
     );
   }
 
-  if (error === 'Owner access required') {
+  if (state.error) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
-        <div className="text-center max-w-md">
-          <div className="text-6xl mb-4">🔒</div>
-          <h1 className="text-2xl font-bold text-white mb-2">Restricted Access</h1>
-          <p className="text-white/50 text-sm mb-6">
-            This executive dashboard is only accessible to the Fixlo owner.
-          </p>
-          <button
-            onClick={() => { logout(); navigate('/recruiter/login'); }}
-            className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-5 py-2 rounded-xl text-sm"
-          >
-            Sign Out
-          </button>
+      <div className="dashboard-shell premium">
+        <div className="dashboard-main premium-main">
+          <div className="dashboard-error">
+            <h3>Couldn’t load recruiter dashboard</h3>
+            <p>{state.error}</p>
+            <button type="button" className="dashboard-btn" onClick={load}>Retry</button>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
-        <div className="text-center max-w-md">
-          <div className="text-5xl mb-4">⚠️</div>
-          <h1 className="text-xl font-bold text-white mb-2">Could not load dashboard</h1>
-          <p className="text-white/50 text-sm mb-6">{error}</p>
-          <button
-            onClick={fetchData}
-            className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-5 py-2 rounded-xl text-sm"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!data) return null;
-
-  const {
-    referrals = {},
-    commissions = {},
-    pros = {},
-    leads = {},
-    revenue = {},
-    sms = {},
-    ownerAlerts = {},
-    stripe = {},
-    growth = {}
-  } = data;
-
-  // Build breakdown items for charts
-  const subBreakdown = Object.entries(pros.subscriptionBreakdown || {}).map(([label, count]) => ({ label, count }));
-  const checkrBreakdown = Object.entries(pros.checkrStatus || {}).map(([label, count]) => ({ label, count }));
-  const leadStatusBreakdown = Object.entries(leads.statusBreakdown || {}).map(([label, count]) => ({ label, count }));
-  const commissionStatuses = Object.entries(commissions.byStatus || {}).map(([label, info]) => ({
-    label,
-    count: info.count || 0,
-    total: info.total || 0
-  }));
+  const overview = data?.overview || {};
+  const commissionSummary = data?.commissions?.summary || {};
+  const maxChart = {
+    monthlySignups: Math.max(1, ...charts.monthlySignups.map((x) => x.value || 0)),
+    monthlyEarnings: Math.max(1, ...charts.monthlyEarnings.map((x) => x.value || 0)),
+    referralConversion: Math.max(1, ...charts.referralConversion.map((x) => x.value || 0)),
+    retention: Math.max(1, ...charts.retention.map((x) => x.value || 0)),
+    subscriptionRenewals: Math.max(1, ...charts.subscriptionRenewals.map((x) => x.value || 0)),
+    commissionGrowth: Math.max(1, ...charts.commissionGrowth.map((x) => Math.abs(x.value || 0)))
+  };
 
   return (
-    <>
-      <HelmetSEO
-        title="Owner Executive Dashboard | Fixlo"
-        canonicalPathname="/recruiter/dashboard"
-        description="Private Fixlo owner executive dashboard"
-      />
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 to-blue-950 text-white">
+    <div className="dashboard-shell premium">
+      <aside className="dashboard-sidebar premium-sidebar">
+        <div className="sidebar-brand">Fixlo Recruiter</div>
+        <nav>
+          <ul>
+            {SECTION_IDS.map((id) => (
+              <li key={id}>
+                <button type="button" className={`sidebar-link ${activeSection === id ? 'active' : ''}`} onClick={() => goToSection(id)}>
+                  {id.charAt(0).toUpperCase() + id.slice(1)}
+                </button>
+              </li>
+            ))}
+            <li><button type="button" className="sidebar-link" onClick={logout}>Log Out</button></li>
+          </ul>
+        </nav>
+      </aside>
 
-        {/* Top nav */}
-        <div className="border-b border-white/10 bg-white/5 backdrop-blur sticky top-0 z-10">
-          <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <img src="/fixlo-logo.png" alt="Fixlo" className="h-7" />
-              <span className="text-white/30">|</span>
-              <span className="text-sm font-semibold text-blue-300">Owner Executive Dashboard</span>
-              <span className="hidden sm:inline text-xs bg-blue-500/20 border border-blue-400/30 text-blue-300 px-2 py-0.5 rounded-full">
-                🔒 Private
-              </span>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-white/50 hidden sm:block">{recruiter?.email}</span>
-              <button
-                onClick={() => { logout(); navigate('/recruiter/login'); }}
-                className="text-sm text-white/50 hover:text-white/80 transition-colors"
-              >
-                Sign Out
-              </button>
-            </div>
+      <main className="dashboard-main premium-main">
+        <header className="dashboard-header">
+          <div>
+            <h1>Welcome back, {data?.welcome?.firstName || recruiter?.name || 'Recruiter'}</h1>
+            <p className="dashboard-user">{formatDate(data?.welcome?.today, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
           </div>
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 py-8">
-
-          {/* Page header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-extrabold">Welcome back, {recruiter?.name || 'Owner'}!</h1>
-            <p className="text-white/40 mt-1 text-sm">
-              Last refreshed: {fmtDate(data.generatedAt)}
-              &nbsp;·&nbsp;
-              <button onClick={fetchData} className="text-blue-400 hover:text-blue-300 underline">Refresh</button>
-            </p>
+          <div className="dashboard-header-right">
+            {data?.meta?.isImpersonating ? <span className="dashboard-status dashboard-status-pending">Impersonating recruiter</span> : null}
+            <span className="dashboard-range">Production Data</span>
           </div>
+        </header>
 
-          {/* ── Real-time Alerts Banner ──────────────────────────────────────── */}
-          {ownerAlerts.recentAlerts?.length > 0 && (
-            <div className="bg-blue-500/10 border border-blue-400/20 rounded-2xl p-4 mb-6 flex items-start gap-3">
-              <span className="text-xl">🔔</span>
-              <div>
-                <p className="text-sm font-semibold text-blue-200">Latest Alert</p>
-                <p className="text-xs text-white/60 mt-0.5">
-                  {ownerAlerts.recentAlerts[0].type.replace(/_/g, ' ')} — {fmtDate(ownerAlerts.recentAlerts[0].sentAt)}
-                </p>
-              </div>
+        {saveState.message ? <div className="dashboard-success">{saveState.message}</div> : null}
+        {saveState.error ? <div className="dashboard-error compact"><p>{saveState.error}</p></div> : null}
+
+        <section id="overview" className="dashboard-section">
+          <h2>Overview</h2>
+          <div className="dashboard-grid metrics-grid">
+            <article className="dashboard-card"><p className="metric-label">Pros Recruited</p><p className="metric-value">{overview.prosRecruited || 0}</p></article>
+            <article className="dashboard-card"><p className="metric-label">Pending Pros</p><p className="metric-value">{overview.pendingPros || 0}</p></article>
+            <article className="dashboard-card"><p className="metric-label">Active Pros</p><p className="metric-value">{overview.activePros || 0}</p></article>
+            <article className="dashboard-card"><p className="metric-label">Monthly Earnings</p><p className="metric-value">{toMoney(overview.monthlyEarnings)}</p></article>
+            <article className="dashboard-card"><p className="metric-label">Lifetime Earnings</p><p className="metric-value">{toMoney(overview.lifetimeEarnings)}</p></article>
+            <article className="dashboard-card"><p className="metric-label">Pending Commissions</p><p className="metric-value">{toMoney(overview.pendingCommissions)}</p></article>
+            <article className="dashboard-card"><p className="metric-label">Paid Commissions</p><p className="metric-value">{toMoney(overview.paidCommissions)}</p></article>
+            <article className="dashboard-card"><p className="metric-label">Average Pro Retention</p><p className="metric-value">{overview.averageProRetention || 0}%</p></article>
+            <article className="dashboard-card"><p className="metric-label">Referral Conversion Rate</p><p className="metric-value">{overview.referralConversionRate || 0}%</p></article>
+          </div>
+        </section>
+
+        <section id="activity" className="dashboard-section">
+          <h2>Recent Activity</h2>
+          {activities.length === 0 ? (
+            <EmptyBlock title="No recent activity." message="Activity will appear as referrals and commissions update." />
+          ) : (
+            <div className="dashboard-card timeline">
+              {activities.map((item) => (
+                <div className="timeline-item" key={item.id}>
+                  <div className="timeline-dot" />
+                  <div>
+                    <p className="timeline-title">{item.type}</p>
+                    <p className="timeline-meta">{item.professional ? `${item.professional} • ` : ''}{formatDate(item.date, { year: 'numeric', month: 'short', day: 'numeric' })}</p>
+                    {item.amount ? <p className="timeline-amount">{toMoney(item.amount)}</p> : null}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
+        </section>
 
-          {/* ── Active Users & Platform Health ──────────────────────────────── */}
-          <SectionHeading>📊 Platform Overview</SectionHeading>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-            <StatCard label="Total Pros" value={fmtNum(pros.total)} icon="👷" color="blue" />
-            <StatCard label="Active Subscribers" value={fmtNum(pros.active)} icon="✅" color="green" />
-            <StatCard label="Pros This Week" value={fmtNum(pros.thisWeek)} icon="📈" color="teal" trend={pros.growthMoM} />
-            <StatCard label="Total Leads" value={fmtNum(leads.total)} icon="📋" color="purple" />
-            <StatCard label="Leads Today" value={fmtNum(leads.today)} icon="📬" color="indigo" />
+        <section id="referrals" className="dashboard-section">
+          <h2>Referrals</h2>
+          <div className="dashboard-card controls">
+            <input className="dashboard-input" placeholder="Search by name, trade, city, status" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <select className="dashboard-input" value={filters.status} onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}>
+              <option value="">All statuses</option>
+              {(data?.filters?.statuses || []).map((status) => <option value={status} key={status}>{status}</option>)}
+            </select>
+            <select className="dashboard-input" value={filters.trade} onChange={(e) => setFilters((f) => ({ ...f, trade: e.target.value }))}>
+              <option value="">All trades</option>
+              {(data?.filters?.trades || []).map((trade) => <option value={trade} key={trade}>{trade}</option>)}
+            </select>
+            <select className="dashboard-input" value={filters.state} onChange={(e) => setFilters((f) => ({ ...f, state: e.target.value }))}>
+              <option value="">All states</option>
+              {(data?.filters?.states || []).map((stateOpt) => <option value={stateOpt} key={stateOpt}>{stateOpt}</option>)}
+            </select>
+            <select className="dashboard-input" value={filters.month} onChange={(e) => setFilters((f) => ({ ...f, month: e.target.value }))}>
+              <option value="">Any month</option>
+              {(data?.filters?.months || []).map((month) => <option value={month} key={month}>{month}</option>)}
+            </select>
+            <select className="dashboard-input" value={filters.year} onChange={(e) => setFilters((f) => ({ ...f, year: e.target.value }))}>
+              <option value="">Any year</option>
+              {(data?.filters?.years || []).map((year) => <option value={year} key={year}>{year}</option>)}
+            </select>
           </div>
-
-          {/* ── Revenue Projections ──────────────────────────────────────────── */}
-          <SectionHeading>💰 Revenue Projections</SectionHeading>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
-            <StatCard
-              label="Projected Monthly Revenue"
-              value={fmtMoney(revenue.projectedMonthly)}
-              sub={`${fmtNum(revenue.activeSubs)} active × ${fmtMoney(revenue.monthlyPriceCents)}/mo`}
-              icon="💵"
-              color="green"
-            />
-            <StatCard
-              label="Total Commission Paid"
-              value={fmtMoney(commissions.totalPaid)}
-              sub={`${fmtNum(commissions.totalPayouts)} payouts`}
-              icon="🏦"
-              color="teal"
-            />
-            <StatCard
-              label="Pending Commissions"
-              value={fmtMoney(commissions.byStatus?.pending?.total)}
-              sub="Awaiting approval"
-              icon="⏳"
-              color="yellow"
-            />
-            <StatCard
-              label="Held Commissions"
-              value={fmtMoney(commissions.byStatus?.held?.total)}
-              sub="In verification"
-              icon="🔒"
-              color="red"
-            />
-          </div>
-
-          {/* ── Growth Metrics (daily chart) ────────────────────────────────── */}
-          <SectionHeading>📈 Growth Metrics (Last 7 Days)</SectionHeading>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <Panel title="Daily Leads">
-              <MiniBarChart data={growth.daily} valueKey="leads" label="leads" />
-            </Panel>
-            <Panel title="Daily New Pros">
-              <MiniBarChart data={growth.daily} valueKey="pros" label="pros" />
-            </Panel>
-            <Panel title="Daily Referrals">
-              <MiniBarChart data={growth.daily} valueKey="referrals" label="referrals" />
-            </Panel>
-          </div>
-
-          {/* ── Referral Analytics ──────────────────────────────────────────── */}
-          <SectionHeading>🤝 Referral Analytics</SectionHeading>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
-            <StatCard label="Weekly Referrals" value={fmtNum(referrals.weekly)} icon="📅" color="blue" />
-            <StatCard label="Monthly Referrals" value={fmtNum(referrals.monthly)} icon="📆" color="indigo" />
-            <StatCard label="Converted Pros" value={fmtNum(referrals.converted)} icon="✅" color="green" />
-            <StatCard label="Conversion Rate" value={`${referrals.conversionRate ?? 0}%`} icon="🎯" color="teal" />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <Panel title="Referral Sources">
-              {referrals.sources?.length > 0 ? (
-                <BreakdownList items={referrals.sources.map((s) => ({ label: s.source, count: s.count }))} />
-              ) : (
-                <EmptyState message="No referral source data yet" />
-              )}
-            </Panel>
-            <Panel title="Commission by Status (All Time)">
-              {commissionStatuses.length > 0 ? (
-                <div className="space-y-2 mt-1">
-                  {commissionStatuses.map((s) => (
-                    <div key={s.label} className="flex justify-between text-xs">
-                      <span className="capitalize text-white/60">{s.label}</span>
-                      <span className="text-white/80 font-semibold">
-                        {fmtMoney(s.total)} <span className="text-white/40">({s.count})</span>
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <EmptyState message="No commission data yet" />
-              )}
-            </Panel>
-          </div>
-
-          {/* ── Pro Onboarding & Subscription ───────────────────────────────── */}
-          <SectionHeading>👷 Pro Onboarding & Subscriptions</SectionHeading>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <Panel title="Subscription Types">
-              <BreakdownList items={subBreakdown.sort((a, b) => b.count - a.count)} />
-            </Panel>
-            <Panel title="Checkr Background Check Status">
-              <BreakdownList items={checkrBreakdown.sort((a, b) => b.count - a.count)} />
-            </Panel>
-            <Panel title="Pro Growth">
-              <div className="space-y-2 mt-1 text-xs">
-                {[
-                  { label: 'This Week', value: fmtNum(pros.thisWeek) },
-                  { label: 'This Month', value: fmtNum(pros.thisMonth) },
-                  { label: 'Last Month', value: fmtNum(pros.lastMonth) },
-                  { label: 'MoM Growth', value: fmtPct(pros.growthMoM) }
-                ].map((row) => (
-                  <div key={row.label} className="flex justify-between">
-                    <span className="text-white/50">{row.label}</span>
-                    <span className="text-white/80 font-semibold">{row.value}</span>
+          {filteredReferrals.length === 0 ? (
+            <EmptyBlock title="You haven't recruited anyone yet." message="Invite your first professional to start building your referral network." />
+          ) : (
+            <div className="dashboard-grid referral-grid">
+              {filteredReferrals.map((row) => (
+                <article className="dashboard-card referral-card" key={row.id}>
+                  <div className="referral-card-header">
+                    <h3>{row.professionalName}</h3>
+                    <span className={`dashboard-status dashboard-status-${row.status}`}>{row.status}</span>
                   </div>
-                ))}
-              </div>
-            </Panel>
-          </div>
-
-          {/* ── Service Requests & US Map ────────────────────────────────────── */}
-          <SectionHeading>📍 Service Request Statistics &amp; US Distribution</SectionHeading>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <Panel title="Request Status Breakdown">
-              <BreakdownList items={leadStatusBreakdown.sort((a, b) => b.count - a.count)} />
-            </Panel>
-            <Panel title="Lead Growth">
-              <div className="space-y-2 mt-1 text-xs">
-                {[
-                  { label: 'Today', value: fmtNum(leads.today) },
-                  { label: 'This Week', value: fmtNum(leads.thisWeek) },
-                  { label: 'This Month', value: fmtNum(leads.thisMonth) },
-                  { label: 'Last Month', value: fmtNum(leads.lastMonth) },
-                  { label: 'MoM Growth', value: fmtPct(leads.growthMoM) }
-                ].map((row) => (
-                  <div key={row.label} className="flex justify-between">
-                    <span className="text-white/50">{row.label}</span>
-                    <span className="text-white/80 font-semibold">{row.value}</span>
+                  <p className="metric-helper">{row.trade || 'Trade not set'} • {row.city || '—'}, {row.state || '—'}</p>
+                  <p className="metric-helper">Signup Date: {formatDate(row.signupDate)}</p>
+                  <p className="metric-helper">Subscription: {row.subscriptionStatus || 'inactive'}</p>
+                  <p className="metric-helper">Referral Code: {row.referralCode || '—'}</p>
+                  <p className="metric-helper">30-Day Qualification Progress: {row.qualificationProgress}%</p>
+                  <p className="metric-helper">Current Commission Level: L{row.commissionLevel || 1}</p>
+                  <div className="referral-actions">
+                    <button type="button" className="dashboard-btn ghost">View Details</button>
+                    <button type="button" className="dashboard-btn ghost" onClick={() => navigator.clipboard.writeText(row.referralLink || '')}>Copy Referral Link</button>
                   </div>
-                ))}
-              </div>
-            </Panel>
-            <Panel title="Referral Distribution by State (US Map)">
-              <USStateTable data={leads.stateDistribution} />
-            </Panel>
-          </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
 
-          {/* ── Stripe Subscription Overview ────────────────────────────────── */}
-          <SectionHeading>💳 Stripe Subscription Overview</SectionHeading>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-            <StatCard
-              label="Stripe Status"
-              value={stripe.configured ? 'Connected' : 'Not configured'}
-              icon="💳"
-              color={stripe.configured ? 'green' : 'red'}
-            />
-            <StatCard
-              label="Active Subscriptions"
-              value={fmtNum(pros.active)}
-              sub="Paying subscribers"
-              icon="📋"
-              color="blue"
-            />
-            <StatCard
-              label="Lifetime Members"
-              value={fmtNum(pros.subscriptionBreakdown?.lifetime)}
-              icon="🌟"
-              color="purple"
-            />
-            <StatCard
-              label="Monthly Revenue (Proj.)"
-              value={fmtMoney(revenue.projectedMonthly)}
-              icon="💰"
-              color="green"
-            />
+        <section id="commissions" className="dashboard-section">
+          <h2>Commissions</h2>
+          <div className="dashboard-grid metrics-grid">
+            <article className="dashboard-card"><p className="metric-label">Pending</p><p className="metric-value">{toMoney(commissionSummary.pending)}</p></article>
+            <article className="dashboard-card"><p className="metric-label">Approved</p><p className="metric-value">{toMoney(commissionSummary.approved)}</p></article>
+            <article className="dashboard-card"><p className="metric-label">Paid</p><p className="metric-value">{toMoney(commissionSummary.paid)}</p></article>
+            <article className="dashboard-card"><p className="metric-label">Rejected</p><p className="metric-value">{toMoney(commissionSummary.rejected)}</p></article>
+            <article className="dashboard-card"><p className="metric-label">Total Earned</p><p className="metric-value">{toMoney(commissionSummary.totalEarned)}</p></article>
+            <article className="dashboard-card"><p className="metric-label">This Month</p><p className="metric-value">{toMoney(commissionSummary.thisMonth)}</p></article>
+            <article className="dashboard-card"><p className="metric-label">This Year</p><p className="metric-value">{toMoney(commissionSummary.thisYear)}</p></article>
+            <article className="dashboard-card"><p className="metric-label">Lifetime</p><p className="metric-value">{toMoney(commissionSummary.lifetime)}</p></article>
           </div>
-
-          {/* ── Twilio SMS Dashboard ─────────────────────────────────────────── */}
-          <SectionHeading>📱 Twilio SMS Dashboard</SectionHeading>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
-            <StatCard
-              label="Twilio Status"
-              value={sms.twilioConfigured ? 'Configured' : 'Not configured'}
-              icon="📡"
-              color={sms.twilioConfigured ? 'green' : 'red'}
-            />
-            <StatCard label="SMS Sent (All Time)" value={fmtNum(sms.sentTotal)} icon="✉️" color="blue" />
-            <StatCard label="SMS This Month" value={fmtNum(sms.sentThisMonth)} icon="📅" color="teal" />
-            <StatCard label="SMS Failed (All Time)" value={fmtNum(sms.failedTotal)} icon="❌" color="red" />
-          </div>
-
-          {/* ── Owner SMS Alerts Card ────────────────────────────────────────── */}
-          <SectionHeading>🚨 Owner SMS Alerts</SectionHeading>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <Panel title="Alert Configuration">
-              <div className="space-y-2 mt-1 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-white/50">Status</span>
-                  <StatusPill status={ownerAlerts.enabled ? 'active' : 'inactive'} />
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-white/50">Last Alert Sent</span>
-                  <span className="text-white/80">{fmtDate(ownerAlerts.lastSentAt)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-white/50">Triggers</span>
-                  <span className="text-white/60">Recruiter / Pro / Lead</span>
-                </div>
-              </div>
-            </Panel>
-            <Panel title="Recent Alert History" className="sm:col-span-2">
-              {ownerAlerts.recentAlerts?.length > 0 ? (
-                <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-                  {ownerAlerts.recentAlerts.map((alert, i) => (
-                    <div key={i} className="flex items-start justify-between gap-2 text-xs border-b border-white/5 pb-2">
-                      <div className="flex-1 min-w-0">
-                        <span className="text-white/70 capitalize font-semibold">
-                          {alert.type.replace(/_/g, ' ')}
-                        </span>
-                        <p className="text-white/40 truncate mt-0.5">{alert.message}</p>
-                      </div>
-                      <div className="shrink-0 flex flex-col items-end gap-1">
-                        <StatusPill status={alert.status} />
-                        <span className="text-white/30">{fmtDate(alert.sentAt)}</span>
-                      </div>
-                    </div>
+          {commissions.length === 0 ? (
+            <EmptyBlock title="No commissions yet." message="Commissions will appear once your referrals complete qualifying subscriptions." />
+          ) : (
+            <div className="dashboard-card table-scroll">
+              <table className="dashboard-table">
+                <thead><tr><th>Professional</th><th>Subscription</th><th>Amount</th><th>Date Earned</th><th>Payment Status</th><th>Expected Payout Date</th></tr></thead>
+                <tbody>
+                  {commissions.map((row) => (
+                    <tr key={row.id}>
+                      <td>{row.professional}</td>
+                      <td>{toMoney(row.subscription)}</td>
+                      <td>{toMoney(row.amount)}</td>
+                      <td>{formatDate(row.dateEarned)}</td>
+                      <td><span className={`dashboard-status dashboard-status-${row.paymentStatus}`}>{row.paymentStatus}</span></td>
+                      <td>{formatDate(row.expectedPayoutDate)}</td>
+                    </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <section id="payouts" className="dashboard-section">
+          <h2>Payouts</h2>
+          {payouts.length === 0 ? (
+            <EmptyBlock title="You haven't received a payout yet." message="Payout history will appear after your first successful payout." />
+          ) : (
+            <div className="dashboard-card table-scroll">
+              <table className="dashboard-table">
+                <thead><tr><th>Payment Date</th><th>Amount</th><th>Method</th><th>Status</th><th>Transaction ID</th></tr></thead>
+                <tbody>
+                  {payouts.map((row) => (
+                    <tr key={row.id}>
+                      <td>{formatDate(row.paymentDate)}</td>
+                      <td>{toMoney(row.amount)}</td>
+                      <td>{row.method}</td>
+                      <td><span className={`dashboard-status dashboard-status-${row.status}`}>{row.status}</span></td>
+                      <td className="mono">{row.transactionId || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <section id="profile" className="dashboard-section">
+          <h2>Profile</h2>
+          <div className="dashboard-grid profile-grid">
+            <div className="dashboard-card">
+              <div className="profile-header">
+                {profileDraft.photo ? <img src={profileDraft.photo} alt={data?.profile?.name || 'Recruiter'} className="profile-photo" /> : <div className="profile-photo placeholder">{(data?.profile?.name || 'R').charAt(0)}</div>}
+                <div>
+                  <p className="metric-value profile-name">{data?.profile?.name || 'Recruiter'}</p>
+                  <p className="metric-helper">{data?.profile?.email || '—'}</p>
                 </div>
-              ) : (
-                <EmptyState message="No owner alerts yet. Alerts will appear here after the first recruiter signup, pro signup, or homeowner lead." />
-              )}
-            </Panel>
+              </div>
+              <p className="metric-helper">Recruiter Since: {formatDate(data?.profile?.recruiterSince)}</p>
+              <p className="metric-helper">Referral Code: {data?.profile?.referralCode || '—'}</p>
+              <p className="metric-helper">Stripe Connect Status: {data?.profile?.stripeConnectStatus || 'not_connected'}</p>
+              <p className="metric-helper">Twilio Verified Status: {data?.profile?.twilioVerifiedStatus || 'not_verified'}</p>
+            </div>
+            <div className="dashboard-card">
+              <label className="dashboard-label">Phone</label>
+              <input className="dashboard-input" value={profileDraft.phone} onChange={(e) => setProfileDraft((v) => ({ ...v, phone: e.target.value }))} />
+              <label className="dashboard-label">Profile Photo URL</label>
+              <input className="dashboard-input" value={profileDraft.photo} onChange={(e) => setProfileDraft((v) => ({ ...v, photo: e.target.value }))} />
+              <label className="dashboard-label">City</label>
+              <input className="dashboard-input" value={profileDraft.city} onChange={(e) => setProfileDraft((v) => ({ ...v, city: e.target.value }))} />
+              <label className="dashboard-label">State</label>
+              <input className="dashboard-input" value={profileDraft.state} onChange={(e) => setProfileDraft((v) => ({ ...v, state: e.target.value }))} />
+            </div>
+          </div>
+        </section>
+
+        <section id="settings" className="dashboard-section">
+          <h2>Settings</h2>
+          <div className="dashboard-grid settings-grid">
+            <div className="dashboard-card">
+              {Object.entries(profileDraft.notifications).map(([key, value]) => (
+                <label className="toggle-row" key={key}>
+                  <span>{key.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase())}</span>
+                  <input type="checkbox" checked={!!value} onChange={(e) => setProfileDraft((v) => ({ ...v, notifications: { ...v.notifications, [key]: e.target.checked } }))} />
+                </label>
+              ))}
+            </div>
+            <div className="dashboard-card">
+              <label className="dashboard-label">Language</label>
+              <input className="dashboard-input" value={profileDraft.language} onChange={(e) => setProfileDraft((v) => ({ ...v, language: e.target.value }))} />
+              <label className="dashboard-label">Time Zone</label>
+              <input className="dashboard-input" value={profileDraft.timeZone} onChange={(e) => setProfileDraft((v) => ({ ...v, timeZone: e.target.value }))} />
+              <label className="dashboard-label">Current Password</label>
+              <input type="password" className="dashboard-input" value={passwordState.currentPassword} onChange={(e) => setPasswordState((s) => ({ ...s, currentPassword: e.target.value }))} />
+              <label className="dashboard-label">New Password</label>
+              <input type="password" className="dashboard-input" value={passwordState.newPassword} onChange={(e) => setPasswordState((s) => ({ ...s, newPassword: e.target.value }))} />
+              <button type="button" className="dashboard-btn" onClick={saveProfileSettings} disabled={saveState.loading}>{saveState.loading ? 'Saving…' : 'Save Settings'}</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="support" className="dashboard-section">
+          <h2>Support</h2>
+          <div className="dashboard-grid metrics-grid">
+            <article className="dashboard-card"><h3>FAQ</h3><p className="metric-helper">{data?.support?.faq?.length || 0} articles available</p></article>
+            <article className="dashboard-card"><h3>Contact Support</h3><p className="metric-helper">{data?.support?.contacts?.supportEmail || 'support@fixloapp.com'}</p></article>
+            <article className="dashboard-card"><h3>Report an Issue</h3><p className="metric-helper">Create a support request from your account.</p></article>
+            <article className="dashboard-card"><h3>Feature Request</h3><p className="metric-helper">Send product feedback to support.</p></article>
+            <article className="dashboard-card"><h3>Documentation</h3><a className="metric-helper" href={data?.support?.contacts?.documentationUrl} target="_blank" rel="noreferrer">Open docs</a></article>
+            <article className="dashboard-card"><h3>Live Status</h3><a className="metric-helper" href={data?.support?.contacts?.statusUrl} target="_blank" rel="noreferrer">View status</a></article>
+          </div>
+          {(data?.support?.ticketHistory || []).length === 0 ? (
+            <EmptyBlock title="No support ticket history." message="Your support ticket history will appear here." />
+          ) : (
+            <div className="dashboard-card table-scroll">
+              <table className="dashboard-table">
+                <thead><tr><th>Subject</th><th>Category</th><th>Status</th><th>Created</th><th>Updated</th></tr></thead>
+                <tbody>
+                  {data.support.ticketHistory.map((ticket) => (
+                    <tr key={ticket.id}>
+                      <td>{ticket.subject}</td>
+                      <td>{ticket.category}</td>
+                      <td><span className={`dashboard-status dashboard-status-${ticket.status}`}>{ticket.status}</span></td>
+                      <td>{formatDate(ticket.createdAt)}</td>
+                      <td>{formatDate(ticket.updatedAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <section id="analytics" className="dashboard-section">
+          <h2>Analytics</h2>
+          <div className="dashboard-grid chart-grid">
+            {[
+              ['Monthly Signups', charts.monthlySignups, maxChart.monthlySignups],
+              ['Monthly Earnings', charts.monthlyEarnings, maxChart.monthlyEarnings],
+              ['Referral Conversion', charts.referralConversion, maxChart.referralConversion],
+              ['Retention', charts.retention, maxChart.retention],
+              ['Subscription Renewals', charts.subscriptionRenewals, maxChart.subscriptionRenewals],
+              ['Commission Growth', charts.commissionGrowth, maxChart.commissionGrowth]
+            ].map(([title, rows, max]) => (
+              <article className="dashboard-card" key={title}>
+                <h3>{title}</h3>
+                {(rows || []).length === 0 ? (
+                  <p className="metric-helper">No data yet.</p>
+                ) : (
+                  <div className="spark-list">
+                    {(rows || []).map((row) => (
+                      <div className="spark-item" key={`${title}-${row.month}`}>
+                        <span className="spark-label">{row.month}</span>
+                        <SparkBar value={Math.abs(row.value || 0)} max={max} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </article>
+            ))}
           </div>
 
-        </div>
-      </div>
-    </>
+          <div className="dashboard-grid metrics-grid">
+            <article className="dashboard-card">
+              <p className="metric-label">Recruiter Score</p>
+              <p className="metric-value">{data?.performanceScore?.score || 0} / {data?.performanceScore?.max || 100}</p>
+              <p className="metric-helper">{data?.performanceScore?.label || '—'}</p>
+            </article>
+            <article className="dashboard-card">
+              <p className="metric-label">Referral Link</p>
+              <p className="copy-link-value">{data?.referralLink?.url || '—'}</p>
+              <div className="referral-actions">
+                <button type="button" className="dashboard-btn ghost" onClick={copyReferralLink}>Copy Link</button>
+                <button type="button" className="dashboard-btn ghost" onClick={shareReferralLink}>Share</button>
+              </div>
+              {data?.referralLink?.url ? (
+                <img
+                  alt="Referral QR code"
+                  className="qr-preview"
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(data.referralLink.url)}`}
+                />
+              ) : null}
+            </article>
+          </div>
+        </section>
+
+        <nav className="dashboard-mobile-nav">
+          {SECTION_IDS.map((section) => (
+            <button key={section} type="button" onClick={() => goToSection(section)} className={activeSection === section ? 'active' : ''}>
+              {section.charAt(0).toUpperCase()}
+            </button>
+          ))}
+        </nav>
+      </main>
+    </div>
   );
 }

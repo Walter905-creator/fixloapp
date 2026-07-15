@@ -23,6 +23,21 @@ const recruiterProfileSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  profilePhotoUrl: {
+    type: String,
+    default: '',
+    trim: true
+  },
+  city: {
+    type: String,
+    default: '',
+    trim: true
+  },
+  state: {
+    type: String,
+    default: '',
+    trim: true
+  },
   smsOptIn: {
     type: Boolean,
     default: false
@@ -34,6 +49,23 @@ const recruiterProfileSchema = new mongoose.Schema({
   notificationPreference: {
     type: String,
     default: 'sms'
+  },
+  notificationSettings: {
+    emailNotifications: { type: Boolean, default: true },
+    smsNotifications: { type: Boolean, default: true },
+    commissionAlerts: { type: Boolean, default: true },
+    weeklySummaryEmails: { type: Boolean, default: true },
+    referralAlerts: { type: Boolean, default: true }
+  },
+  language: {
+    type: String,
+    default: 'en-US',
+    trim: true
+  },
+  timeZone: {
+    type: String,
+    default: 'UTC',
+    trim: true
   },
   password: { type: String, required: true, minlength: 6 },
 
