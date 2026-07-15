@@ -8,9 +8,36 @@ const JobRequest = require('../models/JobRequest');
 const LeadAssignment = require('../models/LeadAssignment');
 const AdminSettings = require('../models/AdminSettings');
 const SocialSettings = require('../models/SocialSettings');
+const SmsNotification = require('../models/SmsNotification');
 const { getHealth: getLeadHunterHealth, huntLeads } = require('../services/aiLeadHunter');
 const { getStats: getSeoStats } = require('../services/seoAIStats');
 const { getOwnerLeadAnalytics } = require('../services/leadTrackingService');
+
+/**
+ * Compute a human-readable health status for a background service.
+ * @param {boolean} configured - Whether required API keys / config are present.
+ * @param {boolean} running    - Whether the service is currently executing a job.
+ * @param {Date|null} lastRun  - Timestamp of the last completed execution, or null if never run.
+ * @returns {'online'|'offline'|'running'|'initializing'}
+ */
+function serviceStatus(configured, running, lastRun) {
+  if (!configured) return 'offline';
+  if (running) return 'running';
+  if (!lastRun) return 'initializing';
+  return 'online';
+}
+
+// Validate Stripe secret key format (only accept full secret keys, not restricted keys)
+function isStripeKeyValid(key) {
+  if (!key) return false;
+  return /^sk_(live|test)_/.test(key);
+}
+
+// Validate Twilio Account SID format (starts with AC + 32 case-insensitive hex chars)
+function isTwilioSidValid(sid) {
+  if (!sid) return false;
+  return /^AC[a-fA-F0-9]{32}$/.test(sid);
+}
 
 // ── Auth guard ────────────────────────────────────────────────────────────────
 router.use(requireAuth);
@@ -33,15 +60,38 @@ router.get('/overview', async (req, res) => {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    const [totalPros, activePros, lifetimePros, monthRevenue, leadsToday, proPlans, assignmentStats, recentAssignments, leadAnalytics] = await Promise.all([
+    const [totalPros, activePros, lifetimePros, monthRevenue, leadsToday, smsSentToday, proPlans, assignmentStats, recentAssignments, leadAnalytics] = await Promise.all([
       Pro.countDocuments(),
-      Pro.countDocuments({ isActive: true }),
+      // "Active and approved": only pros who have completed Stripe payment are counted here.
+      // isActive:true is set by the invoice.payment_succeeded webhook; paymentStatus:'active'
+      // is set at the same time. invite-code pros may have isActive:true via manual activation
+      // without a Stripe charge (paymentStatus stays 'pending'), so requiring paymentStatus:'active'
+      // scopes this metric to paying, verified subscribers only. Manually-activated pros without
+      // a Stripe subscription are intentionally excluded from this "approved" count.
+      Pro.countDocuments({ isActive: true, paymentStatus: 'active' }),
       Pro.countDocuments({ subscriptionType: 'lifetime' }),
-      JobRequest.aggregate([
-        { $match: { createdAt: { $gte: startOfMonth }, status: 'completed' } },
-        { $group: { _id: null, total: { $sum: '$totalCost' } } }
+      // Revenue from successful Stripe subscription payments this month.
+      // The invoice.payment_succeeded webhook sets subscriptionStartDate = current_period_start
+      // on every billing renewal (see stripe.js). Pros whose billing period started this month
+      // are those who paid this month — both new sign-ups AND renewals — which correctly reflects
+      // subscription revenue received in the current calendar month.
+      // subscriptionStatus:'active' further excludes cancelled or past-due subscriptions.
+      Pro.aggregate([
+        {
+          $match: {
+            paymentStatus: 'active',
+            subscriptionStatus: 'active',
+            subscriptionStartDate: { $gte: startOfMonth }
+          }
+        },
+        { $group: { _id: null, total: { $sum: '$subscriptionPrice' } } }
       ]),
       JobRequest.countDocuments({ createdAt: { $gte: startOfDay } }),
+      // Real SMS count for today from the SmsNotification tracking model
+      SmsNotification.countDocuments({
+        createdAt: { $gte: startOfDay },
+        status: { $in: ['sent', 'delivered'] }
+      }),
       Pro.aggregate([
         { $group: { _id: '$subscriptionPlan', count: { $sum: 1 } } }
       ]),
@@ -103,9 +153,13 @@ router.get('/overview', async (req, res) => {
     const lhHealth = getLeadHunterHealth();
     const seoStats = getSeoStats();
 
-    // Check Stripe & Twilio by env key presence
-    const stripeOk = !!(process.env.STRIPE_SECRET_KEY);
-    const twilioOk = !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN);
+    // Stripe: validate key format (only accept full secret keys sk_live_ or sk_test_)
+    const stripeConfigured = isStripeKeyValid(process.env.STRIPE_SECRET_KEY);
+    // Twilio: validate Account SID format (starts with AC + 32 hex chars) and auth token presence
+    const twilioConfigured = isTwilioSidValid(process.env.TWILIO_ACCOUNT_SID) &&
+      !!(process.env.TWILIO_AUTH_TOKEN);
+    // SEO Engine requires OpenAI for content generation
+    const seoConfigured = !!(process.env.OPENAI_API_KEY);
 
     const assignmentSummary = assignmentStats[0] || {};
     const proPlanCounts = proPlans.reduce((acc, item) => {
@@ -119,6 +173,7 @@ router.get('/overview', async (req, res) => {
       lifetimePros,
       totalRevenueMonth: monthRevenue[0]?.total || 0,
       leadsToday,
+      smsSentToday,
       proPlanCounts,
       leadAssignments: {
         acceptedAssignments: assignmentSummary.acceptedAssignments || 0,
@@ -131,12 +186,13 @@ router.get('/overview', async (req, res) => {
         recent: recentAssignments,
         analytics: leadAnalytics
       },
-      smsSentToday: 0, // placeholder – extend with SmsNotification model if needed
       systemHealth: {
-        stripe: stripeOk,
-        twilio: twilioOk,
-        aiLeadHunter: !lhHealth.running, // true = service is ready (not stuck)
-        seoEngine: !seoStats.running
+        // Boolean: true = key is present and format is valid
+        stripe: stripeConfigured,
+        twilio: twilioConfigured,
+        // Status strings for services: 'online' | 'offline' | 'running' | 'initializing'
+        aiLeadHunter: serviceStatus(lhHealth.openaiConfigured, lhHealth.running, lhHealth.lastRun),
+        seoEngine: serviceStatus(seoConfigured, seoStats.running, seoStats.lastRun)
       }
     });
   } catch (err) {
@@ -486,8 +542,9 @@ router.get('/settings', async (req, res) => {
       settings = await AdminSettings.create({ _singleton: 'admin' });
     }
 
-    const stripeOk = !!(process.env.STRIPE_SECRET_KEY);
-    const twilioOk = !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN);
+    const stripeOk = isStripeKeyValid(process.env.STRIPE_SECRET_KEY);
+    const twilioOk = isTwilioSidValid(process.env.TWILIO_ACCOUNT_SID) &&
+      !!(process.env.TWILIO_AUTH_TOKEN);
 
     res.json({
       defaultLeadRadius: settings.defaultLeadRadius,
@@ -549,8 +606,9 @@ router.post('/settings', async (req, res) => {
       { new: true, upsert: true }
     );
 
-    const stripeOk = !!(process.env.STRIPE_SECRET_KEY);
-    const twilioOk = !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN);
+    const stripeOk = isStripeKeyValid(process.env.STRIPE_SECRET_KEY);
+    const twilioOk = isTwilioSidValid(process.env.TWILIO_ACCOUNT_SID) &&
+      !!(process.env.TWILIO_AUTH_TOKEN);
 
     res.json({
       success: true,
