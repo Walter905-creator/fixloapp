@@ -17,6 +17,7 @@
  */
 
 const router = require('express').Router();
+const bcrypt = require('bcryptjs');
 const requireAuth = require('../middleware/requireAuth');
 const RecruiterProfile = require('../models/RecruiterProfile');
 const RecruiterReferralCode = require('../models/RecruiterReferralCode');
@@ -80,6 +81,9 @@ router.get('/me', requireRecruiter, async (req, res) => {
         name: recruiter.name,
         email: recruiter.email,
         phoneNumber: recruiter.phoneNumber,
+        profilePhotoUrl: recruiter.profilePhotoUrl || '',
+        city: recruiter.city || '',
+        state: recruiter.state || '',
         recruiterCode: recruiter.recruiterCode,
         recruiterLink: recruiter.recruiterLink,
         recruiterRecruiterLink: recruiter.recruiterRecruiterLink,
@@ -89,6 +93,9 @@ router.get('/me', requireRecruiter, async (req, res) => {
         stripeConnectOnboarded: recruiter.stripeConnectOnboarded,
         payoutStatus: recruiter.payoutStatus,
         smsNotifications: recruiter.smsNotifications,
+        notificationSettings: recruiter.notificationSettings || {},
+        language: recruiter.language || 'en-US',
+        timeZone: recruiter.timeZone || 'UTC',
         smsOptIn: recruiter.smsOptIn,
         smsOptInDate: recruiter.smsOptInDate,
         status: recruiter.status,
@@ -409,10 +416,62 @@ router.post('/stripe-connect/verify', requireRecruiter, async (req, res) => {
 // ── SMS Preferences ─────────────────────────────────────────────────────────────
 router.patch('/settings', requireRecruiter, async (req, res) => {
   try {
-    const { smsNotifications, phone, phoneNumber, smsOptIn } = req.body || {};
+    const {
+      smsNotifications,
+      phone,
+      phoneNumber,
+      smsOptIn,
+      profilePhotoUrl,
+      city,
+      state,
+      notificationSettings,
+      language,
+      timeZone,
+      currentPassword,
+      newPassword
+    } = req.body || {};
 
     const update = {};
-    if (smsNotifications) update.smsNotifications = smsNotifications;
+    if (smsNotifications !== undefined) update.smsNotifications = smsNotifications;
+    if (notificationSettings !== undefined) {
+      const keys = ['emailNotifications', 'smsNotifications', 'commissionAlerts', 'weeklySummaryEmails', 'referralAlerts'];
+      const unknownKeys = Object.keys(notificationSettings).filter((key) => !keys.includes(key));
+      if (unknownKeys.length) {
+        return res.status(400).json({ error: `Unknown notification setting: ${unknownKeys[0]}` });
+      }
+      const normalizedSettings = {};
+      for (const key of keys) {
+        if (notificationSettings[key] !== undefined) {
+          if (typeof notificationSettings[key] !== 'boolean') {
+            return res.status(400).json({ error: `Invalid value for ${key}` });
+          }
+          normalizedSettings[key] = notificationSettings[key];
+        }
+      }
+      if (Object.keys(normalizedSettings).length) {
+        update.notificationSettings = normalizedSettings;
+      }
+    }
+    if (profilePhotoUrl !== undefined) update.profilePhotoUrl = String(profilePhotoUrl || '').trim().slice(0, 500);
+    if (city !== undefined) update.city = String(city || '').trim().slice(0, 120);
+    if (state !== undefined) update.state = String(state || '').trim().slice(0, 120);
+    if (language !== undefined) update.language = String(language || 'en-US').trim().slice(0, 40);
+    if (timeZone !== undefined) update.timeZone = String(timeZone || 'UTC').trim().slice(0, 80);
+
+    if ((currentPassword && !newPassword) || (!currentPassword && newPassword)) {
+      return res.status(400).json({ error: 'Both current and new password are required' });
+    }
+    if (newPassword) {
+      if (String(newPassword).length < 6) {
+        return res.status(400).json({ error: 'New password must be at least 6 characters' });
+      }
+      const recruiterForPassword = await RecruiterProfile.findById(req.user.id).select('password').lean();
+      if (!recruiterForPassword) return res.status(404).json({ error: 'Recruiter not found' });
+      const ok = await bcrypt.compare(String(currentPassword), recruiterForPassword.password);
+      if (!ok) return res.status(400).json({ error: 'Current password is incorrect' });
+      update.password = await bcrypt.hash(String(newPassword), 12);
+    }
+
     if (smsOptIn !== undefined) {
       update.smsOptIn = !!smsOptIn;
       if (smsOptIn) {

@@ -9,12 +9,29 @@ const Pro = require('../models/Pro');
 const LeadAssignment = require('../models/LeadAssignment');
 const JobRequest = require('../models/JobRequest');
 const SmsNotification = require('../models/SmsNotification');
+let RecruiterSupportTicket = null;
+try {
+  RecruiterSupportTicket = require('../models/RecruiterSupportTicket');
+} catch {
+  RecruiterSupportTicket = null;
+}
 const { requireDatabase } = require('../config/database');
 const { getOwnerLeadAnalytics, getProLeadMetrics } = require('../services/leadTrackingService');
 
 const TOTAL_COMMISSION_STATUSES = ['pending', 'held', 'approved', 'paid'];
 const PENDING_COMMISSION_STATUSES = ['pending', 'held'];
 const ACCEPTED_JOB_STATUSES = ['accepted', 'completed', 'in-progress'];
+// Performance score model:
+// - activePros ratio = active referrals / total referrals, clamped 0..1, then scaled to max 30 points.
+// - percentage metrics are already 0..100 and multiplied by fractional weights that sum to 0.7 (max 70 points).
+// - total maximum is 100 points (30 + 70), then capped at 100.
+const PERFORMANCE_WEIGHTS = {
+  activePros: 30,
+  retention: 0.25,
+  renewal: 0.2,
+  recruitmentQuality: 0.15,
+  completion: 0.1
+};
 
 router.use(requireDatabase);
 
@@ -31,7 +48,9 @@ function getAuthedUser(req) {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     return {
       id: normalizeId(decoded.id || decoded.proId),
-      role: decoded.role || null
+      role: decoded.role || null,
+      email: decoded.email || '',
+      isAdmin: decoded.isAdmin === true
     };
   } catch {
     return null;
@@ -40,7 +59,7 @@ function getAuthedUser(req) {
 
 function getRequestedUserId(req) {
   const user = getAuthedUser(req);
-  if (user?.id) return { id: user.id, role: user.role, fallback: false };
+  if (user?.id) return { id: user.id, role: user.role, fallback: false, email: user.email || '', isAdmin: user.isAdmin === true };
 
   const devOnly = process.env.NODE_ENV !== 'production';
   const userId = normalizeId(req.query.userId);
@@ -48,7 +67,7 @@ function getRequestedUserId(req) {
     return null;
   }
 
-  return { id: userId, role: null, fallback: true };
+  return { id: userId, role: null, fallback: true, email: '', isAdmin: false };
 }
 
 function mapRecruiterStatus(status) {
@@ -75,44 +94,152 @@ function buildLast7Days() {
   return days;
 }
 
+function startOfMonth(date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function startOfYear(date) {
+  return new Date(date.getFullYear(), 0, 1);
+}
+
+function monthKey(date) {
+  const d = new Date(date);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function buildLast12Months(now = new Date()) {
+  const months = [];
+  for (let i = 11; i >= 0; i -= 1) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({
+      key: monthKey(d),
+      label: d.toLocaleDateString('en-US', { month: 'short' }),
+      year: d.getFullYear()
+    });
+  }
+  return months;
+}
+
+function toPct(numerator, denominator) {
+  if (!denominator) return 0;
+  return Number(((numerator / denominator) * 100).toFixed(2));
+}
+
+function normalizeCommissionStatus(status) {
+  if (['cancelled', 'refunded', 'fraud_review'].includes(status)) return 'rejected';
+  return status || 'pending';
+}
+
+function resolveRecruiterRequest(req) {
+  const user = getAuthedUser(req);
+  const requestedUserId = normalizeId(req.query.userId);
+  const isObjectId = requestedUserId && mongoose.Types.ObjectId.isValid(requestedUserId);
+  const ownerEmail = String(process.env.OWNER_EMAIL || '').trim().toLowerCase();
+  const userEmail = String(user?.email || '').trim().toLowerCase();
+  const isOwner = !!ownerEmail && userEmail === ownerEmail;
+  const isPrivileged = !!user && (user.role === 'admin' || user.isAdmin === true || isOwner);
+
+  if (user?.role === 'recruiter' && user.id) {
+    return {
+      recruiterId: user.id,
+      role: user.role,
+      isImpersonating: false
+    };
+  }
+
+  if (isPrivileged && isObjectId) {
+    return {
+      recruiterId: requestedUserId,
+      role: user.role || 'admin',
+      isImpersonating: true
+    };
+  }
+
+  const devOnly = process.env.NODE_ENV !== 'production';
+  if (!user && devOnly && isObjectId) {
+    return {
+      recruiterId: requestedUserId,
+      role: null,
+      isImpersonating: false
+    };
+  }
+
+  return null;
+}
+
 router.get('/recruiter', async (req, res) => {
   try {
-    const requester = getRequestedUserId(req);
-    if (!requester?.id) return res.status(401).json({ error: 'Unauthorized' });
-    if (requester.role && requester.role !== 'recruiter') {
+    const access = resolveRecruiterRequest(req);
+    if (!access?.recruiterId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!access.isImpersonating && access.role && access.role !== 'recruiter') {
       return res.status(403).json({ error: 'Recruiter access required' });
     }
 
-    const recruiter = await RecruiterProfile.findById(requester.id).lean();
+    const recruiter = await RecruiterProfile.findById(access.recruiterId).select('-password -resetToken -resetTokenExpires').lean();
     if (!recruiter) return res.status(404).json({ error: 'Recruiter not found' });
 
-    const [referrals, commissions] = await Promise.all([
-      RecruiterReferral.find({ recruiterId: recruiter._id }).sort({ createdAt: -1 }).limit(200).lean(),
-      RecruiterCommission.find({ recruiterId: recruiter._id }).select('referralId amount status createdAt').lean()
-    ]);
-
+    const now = new Date();
+    const monthStart = startOfMonth(now);
+    const yearStart = startOfYear(now);
     const sevenDays = buildLast7Days();
     const weekStart = sevenDays[0];
+    const analyticsMonths = buildLast12Months(now);
 
-    const referralMap = new Map();
+    const [referrals, commissions, payouts, supportTickets] = await Promise.all([
+      RecruiterReferral.find({ recruiterId: recruiter._id }).sort({ createdAt: -1 }).lean(),
+      RecruiterCommission.find({ recruiterId: recruiter._id }).lean(),
+      RecruiterPayout.find({ recruiterId: recruiter._id }).sort({ payoutDate: -1 }).lean(),
+      RecruiterSupportTicket
+        ? RecruiterSupportTicket.find({ recruiterId: recruiter._id }).sort({ createdAt: -1 }).limit(25).lean()
+        : Promise.resolve([])
+    ]);
+
+    const proIds = referrals
+      .map((r) => r.proId)
+      .filter((id) => id && mongoose.Types.ObjectId.isValid(id))
+      .map((id) => new mongoose.Types.ObjectId(id));
+    const pros = proIds.length
+      ? await Pro.find({ _id: { $in: proIds } })
+        .select('city state subscriptionStatus subscriptionType subscriptionActive verificationStatus backgroundCheckStatus')
+        .lean()
+      : [];
+    const proById = new Map(pros.map((p) => [String(p._id), p]));
+
+    const referralCommissionMap = new Map();
     commissions.forEach((commission) => {
       if (!commission.referralId) return;
-      referralMap.set(String(commission.referralId), commission);
+      const key = String(commission.referralId);
+      const existing = referralCommissionMap.get(key);
+      if (!existing || (commission.level || 0) > (existing.level || 0)) {
+        referralCommissionMap.set(key, commission);
+      }
     });
 
     const recentReferrals = referrals.filter((r) => new Date(r.createdAt) >= weekStart);
-    const convertedRecent = recentReferrals.filter((r) => {
-      const status = mapRecruiterStatus(r.status);
-      return status === 'converted' || status === 'paid';
-    }).length;
+    const convertedRecent = recentReferrals.filter((r) => ['active', 'paid'].includes(r.status)).length;
 
-    const totalCommission = commissions
+    const totalCommissions = commissions
       .filter((c) => TOTAL_COMMISSION_STATUSES.includes(c.status))
       .reduce((sum, c) => sum + (c.amount || 0), 0);
-
-    const pendingCommission = commissions
-      .filter((c) => PENDING_COMMISSION_STATUSES.includes(c.status))
+    const pendingCommissions = commissions
+      .filter((c) => ['pending', 'held', 'approved'].includes(c.status))
       .reduce((sum, c) => sum + (c.amount || 0), 0);
+    const paidCommissions = commissions
+      .filter((c) => c.status === 'paid')
+      .reduce((sum, c) => sum + (c.amount || 0), 0);
+    const monthEarnings = commissions
+      .filter((c) => TOTAL_COMMISSION_STATUSES.includes(c.status) && new Date(c.createdAt) >= monthStart)
+      .reduce((sum, c) => sum + (c.amount || 0), 0);
+    const yearEarnings = commissions
+      .filter((c) => TOTAL_COMMISSION_STATUSES.includes(c.status) && new Date(c.createdAt) >= yearStart)
+      .reduce((sum, c) => sum + (c.amount || 0), 0);
+
+    const proCounts = referrals.reduce((acc, referral) => {
+      if (referral.status === 'pending') acc.pending += 1;
+      if (['active', 'paid'].includes(referral.status)) acc.active += 1;
+      if (['active', 'paid', 'pending'].includes(referral.status)) acc.notCancelled += 1;
+      return acc;
+    }, { pending: 0, active: 0, notCancelled: 0 });
 
     const weekly = sevenDays.map((day) => {
       const next = new Date(day);
@@ -122,11 +249,7 @@ router.get('/recruiter', async (req, res) => {
         const date = new Date(r.createdAt);
         return date >= day && date < next;
       });
-
-      const dayConverted = dayReferrals.filter((r) => {
-        const status = mapRecruiterStatus(r.status);
-        return status === 'converted' || status === 'paid';
-      }).length;
+      const dayConverted = dayReferrals.filter((r) => ['active', 'paid'].includes(r.status)).length;
 
       return {
         date: day.toISOString(),
@@ -151,35 +274,328 @@ router.get('/recruiter', async (req, res) => {
       }))
       .sort((a, b) => b.count - a.count);
 
+    const activity = [];
+    referrals.forEach((referral) => {
+      activity.push({
+        id: `referral-created-${referral._id}`,
+        type: 'New Pro Registered',
+        date: referral.createdAt,
+        professional: referral.proName || referral.proEmail || 'Professional',
+        details: referral.proTrade || 'Trade not provided'
+      });
+      if (['active', 'paid'].includes(referral.status) && referral.updatedAt) {
+        activity.push({
+          id: `referral-verified-${referral._id}`,
+          type: 'Pro Verified',
+          date: referral.updatedAt,
+          professional: referral.proName || referral.proEmail || 'Professional',
+          details: 'Professional profile verified'
+        });
+      }
+      if (referral.firstPaymentDate) {
+        activity.push({
+          id: `subscription-purchased-${referral._id}`,
+          type: 'Subscription Purchased',
+          date: referral.firstPaymentDate,
+          professional: referral.proName || referral.proEmail || 'Professional',
+          details: 'First subscription payment received'
+        });
+      }
+      if (['cancelled', 'fraud_review'].includes(referral.status) && referral.updatedAt) {
+        activity.push({
+          id: `referral-cancelled-${referral._id}`,
+          type: 'Referral Cancelled',
+          date: referral.updatedAt,
+          professional: referral.proName || referral.proEmail || 'Professional',
+          details: referral.status === 'fraud_review' ? 'Marked for fraud review' : 'Subscription cancelled'
+        });
+      }
+    });
+    commissions.forEach((commission) => {
+      activity.push({
+        id: `commission-earned-${commission._id}`,
+        type: 'Commission Earned',
+        date: commission.createdAt,
+        details: `Level ${commission.level || 1} commission`,
+        amount: commission.amount || 0
+      });
+      if (commission.status === 'paid') {
+        activity.push({
+          id: `commission-paid-${commission._id}`,
+          type: 'Commission Paid',
+          date: commission.paidDate || commission.updatedAt || commission.createdAt,
+          details: 'Commission was paid out',
+          amount: commission.amount || 0
+        });
+      }
+    });
+    const recentActivity = activity
+      .filter((item) => item.date)
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 50);
+
+    const allStatuses = Array.from(new Set(referrals.map((r) => r.status).filter(Boolean)));
+    const allTrades = Array.from(new Set(referrals.map((r) => r.proTrade).filter(Boolean))).sort();
+    const allStates = Array.from(new Set(referrals.map((r) => {
+      const pro = r.proId ? proById.get(String(r.proId)) : null;
+      return pro?.state || '';
+    }).filter(Boolean))).sort();
+    const allYears = Array.from(new Set(referrals.map((r) => new Date(r.createdAt).getFullYear()))).sort((a, b) => b - a);
+
+    const commissionByStatus = commissions.reduce((acc, commission) => {
+      const status = normalizeCommissionStatus(commission.status);
+      acc[status] = (acc[status] || 0) + (commission.amount || 0);
+      return acc;
+    }, {});
+    const pendingCommissionTotal = (commissionByStatus.pending || 0) + (commissionByStatus.held || 0);
+    const approvedCommissionTotal = commissionByStatus.approved || 0;
+    const paidCommissionTotal = commissionByStatus.paid || 0;
+    const rejectedCommissionTotal = commissionByStatus.rejected || 0;
+
+    const monthBuckets = analyticsMonths.reduce((acc, month) => {
+      acc[month.key] = {
+        label: month.label,
+        year: month.year,
+        signups: 0,
+        converted: 0,
+        retained: 0,
+        earnings: 0,
+        renewals: 0
+      };
+      return acc;
+    }, {});
+    referrals.forEach((referral) => {
+      const key = monthKey(referral.createdAt);
+      if (!monthBuckets[key]) return;
+      monthBuckets[key].signups += 1;
+      if (['active', 'paid'].includes(referral.status)) monthBuckets[key].converted += 1;
+      if (!['cancelled', 'fraud_review'].includes(referral.status)) monthBuckets[key].retained += 1;
+      if (referral.status === 'paid') monthBuckets[key].renewals += 1;
+    });
+    commissions.forEach((commission) => {
+      const key = monthKey(commission.createdAt);
+      if (!monthBuckets[key]) return;
+      if (TOTAL_COMMISSION_STATUSES.includes(commission.status)) {
+        monthBuckets[key].earnings += (commission.amount || 0);
+      }
+    });
+
+    const analytics = analyticsMonths.map((month) => {
+      const bucket = monthBuckets[month.key] || { signups: 0, converted: 0, retained: 0, earnings: 0, renewals: 0 };
+      return {
+        month: month.key,
+        label: `${month.label} ${String(month.year).slice(-2)}`,
+        signups: bucket.signups,
+        earnings: bucket.earnings,
+        conversionRate: toPct(bucket.converted, bucket.signups),
+        retentionRate: toPct(bucket.retained, bucket.signups),
+        renewals: bucket.renewals
+      };
+    });
+
+    const conversionRate = toPct(proCounts.active, referrals.length);
+    const retentionRate = toPct(proCounts.notCancelled, referrals.length);
+    const renewalRate = toPct(referrals.filter((r) => r.status === 'paid').length, referrals.length);
+    const qualityRate = toPct(referrals.filter((r) => ['active', 'paid', 'pending'].includes(r.status)).length, referrals.length);
+    const completionRate = toPct(commissions.filter((c) => c.status === 'paid').length, commissions.length);
+    const performanceScore = Math.min(100, Math.round(
+      (Math.min(1, proCounts.active / Math.max(1, referrals.length)) * PERFORMANCE_WEIGHTS.activePros) +
+      (retentionRate * PERFORMANCE_WEIGHTS.retention) +
+      (renewalRate * PERFORMANCE_WEIGHTS.renewal) +
+      (qualityRate * PERFORMANCE_WEIGHTS.recruitmentQuality) +
+      (completionRate * PERFORMANCE_WEIGHTS.completion)
+    ));
+
+    const referralLink = recruiter.proReferralLink
+      || recruiter.recruiterLink
+      || `${String(process.env.FRONTEND_URL || 'https://fixloapp.com').replace(/\/$/, '')}/join?ref=${encodeURIComponent(recruiter.recruiterCode || '')}`;
+
+    const referralsList = referrals.map((referral) => {
+      const pro = referral.proId ? proById.get(String(referral.proId)) : null;
+      const commission = referralCommissionMap.get(String(referral._id));
+      const signupDate = referral.signupDate || referral.createdAt;
+      const daysFromSignup = Math.max(0, Math.floor((now - new Date(signupDate)) / (1000 * 60 * 60 * 24)));
+      const qualificationProgress = Math.min(100, Math.round((daysFromSignup / 30) * 100));
+
+      return {
+        id: String(referral._id),
+        professionalName: referral.proName || referral.proEmail || 'Professional',
+        trade: referral.proTrade || '',
+        city: referral.proCity || pro?.city || '',
+        state: pro?.state || '',
+        signupDate,
+        status: referral.status || 'pending',
+        subscriptionStatus: pro?.subscriptionStatus || (pro?.subscriptionActive ? 'active' : 'inactive'),
+        referralCode: referral.referralCode || recruiter.recruiterCode || '',
+        qualificationProgress,
+        commissionLevel: commission?.level || 1,
+        referralLink,
+        proId: referral.proId ? String(referral.proId) : null
+      };
+    });
+
+    const commissionsList = commissions
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .map((commission) => {
+        const referral = commission.referralId
+          ? referrals.find((item) => String(item._id) === String(commission.referralId))
+          : null;
+        return {
+          id: String(commission._id),
+          professional: referral?.proName || referral?.proEmail || 'Professional',
+          subscription: commission.sourceAmount || referral?.subscriptionAmount || 0,
+          amount: commission.amount || 0,
+          dateEarned: commission.createdAt,
+          paymentStatus: normalizeCommissionStatus(commission.status),
+          expectedPayoutDate: commission.paidDate || commission.holdUntil || null,
+          level: commission.level || 1
+        };
+      });
+
+    const payoutHistory = payouts.map((payout) => ({
+      id: String(payout._id),
+      paymentDate: payout.payoutDate,
+      amount: payout.amount || 0,
+      method: payout.stripeTransferId ? 'Stripe Connect' : 'Manual',
+      status: payout.status || 'pending',
+      transactionId: payout.stripeTransferId || ''
+    }));
+
     const response = {
       user: {
         id: String(recruiter._id),
         name: recruiter.name || '',
         role: 'recruiter',
         referralCode: recruiter.recruiterCode || '',
-        referralLink: recruiter.proReferralLink || recruiter.recruiterLink || ''
+        referralLink
       },
       summary: {
         totalReferrals: recentReferrals.length,
         convertedPros: convertedRecent,
         conversionRate: recentReferrals.length ? Number(((convertedRecent / recentReferrals.length) * 100).toFixed(2)) : 0,
-        totalCommission,
-        pendingCommission
+        totalCommission: totalCommissions,
+        pendingCommission: pendingCommissions
       },
       weekly,
       sources,
-      referrals: referrals.slice(0, 50).map((referral) => {
-        const commission = referralMap.get(String(referral._id));
-        return {
-          id: String(referral._id),
-          name: referral.proName || referral.proEmail || 'Unknown',
-          trade: referral.proTrade || '—',
-          location: referral.proCity || '—',
-          dateReferred: referral.signupDate || referral.createdAt,
-          status: mapRecruiterStatus(referral.status),
-          commission: commission?.amount || 0
-        };
-      })
+      welcome: {
+        firstName: String(recruiter.name || '').split(' ')[0] || 'Recruiter',
+        today: now.toISOString()
+      },
+      overview: {
+        prosRecruited: referrals.length,
+        pendingPros: proCounts.pending,
+        activePros: proCounts.active,
+        monthlyEarnings: monthEarnings,
+        lifetimeEarnings: totalCommissions,
+        pendingCommissions,
+        paidCommissions,
+        averageProRetention: retentionRate,
+        referralConversionRate: conversionRate
+      },
+      recentActivity,
+      referrals: referralsList,
+      commissions: {
+        summary: {
+          pending: pendingCommissionTotal,
+          approved: approvedCommissionTotal,
+          paid: paidCommissionTotal,
+          rejected: rejectedCommissionTotal,
+          totalEarned: totalCommissions,
+          thisMonth: monthEarnings,
+          thisYear: yearEarnings,
+          lifetime: totalCommissions
+        },
+        rows: commissionsList
+      },
+      payouts: {
+        summary: {
+          totalPaidOut: payoutHistory.reduce((sum, p) => sum + (p.amount || 0), 0),
+          count: payoutHistory.length
+        },
+        rows: payoutHistory
+      },
+      profile: {
+        id: String(recruiter._id),
+        photo: recruiter.profilePhotoUrl || '',
+        name: recruiter.name || '',
+        email: recruiter.email || '',
+        phone: recruiter.phoneNumber || '',
+        city: recruiter.city || '',
+        state: recruiter.state || '',
+        referralCode: recruiter.recruiterCode || '',
+        recruiterSince: recruiter.createdAt,
+        stripeConnectStatus: recruiter.stripeConnectOnboarded ? 'connected' : recruiter.payoutStatus || 'not_connected',
+        twilioVerifiedStatus: recruiter.smsOptIn ? 'verified' : 'not_verified'
+      },
+      settings: {
+        emailNotifications: recruiter.notificationSettings?.emailNotifications ?? true,
+        smsNotifications: recruiter.notificationSettings?.smsNotifications ?? !!recruiter.smsOptIn,
+        commissionAlerts: recruiter.notificationSettings?.commissionAlerts ?? true,
+        weeklySummaryEmails: recruiter.notificationSettings?.weeklySummaryEmails ?? true,
+        referralAlerts: recruiter.notificationSettings?.referralAlerts ?? true,
+        language: recruiter.language || 'en-US',
+        timeZone: recruiter.timeZone || 'UTC'
+      },
+      support: {
+        faq: [
+          { id: 'faq-1', question: 'How do commissions get approved?', answer: 'Commissions move from pending to approved after hold requirements are met.' },
+          { id: 'faq-2', question: 'When are payouts sent?', answer: 'Approved balances are included in payout runs based on payout status.' },
+          { id: 'faq-3', question: 'How do I update my payout setup?', answer: 'Go to your profile/settings and complete Stripe Connect onboarding.' }
+        ],
+        contacts: {
+          supportEmail: process.env.SUPPORT_EMAIL || 'support@fixloapp.com',
+          documentationUrl: `${String(process.env.FRONTEND_URL || 'https://fixloapp.com').replace(/\/$/, '')}/how-it-works`,
+          statusUrl: `${String(process.env.FRONTEND_URL || 'https://fixloapp.com').replace(/\/$/, '')}/status`
+        },
+        ticketHistory: supportTickets.map((ticket) => ({
+          id: String(ticket._id),
+          subject: ticket.subject,
+          category: ticket.category,
+          status: ticket.status,
+          createdAt: ticket.createdAt,
+          updatedAt: ticket.updatedAt
+        }))
+      },
+      analytics: {
+        monthlySignups: analytics.map((row) => ({ month: row.label, value: row.signups })),
+        monthlyEarnings: analytics.map((row) => ({ month: row.label, value: row.earnings })),
+        referralConversion: analytics.map((row) => ({ month: row.label, value: row.conversionRate })),
+        retention: analytics.map((row) => ({ month: row.label, value: row.retentionRate })),
+        subscriptionRenewals: analytics.map((row) => ({ month: row.label, value: row.renewals })),
+        commissionGrowth: analytics.map((row, index) => {
+          const previous = analytics[index - 1]?.earnings || 0;
+          const growth = previous > 0 ? Number((((row.earnings - previous) / previous) * 100).toFixed(2)) : 0;
+          return { month: row.label, value: growth };
+        })
+      },
+      performanceScore: {
+        score: performanceScore,
+        max: 100,
+        label: performanceScore >= 90 ? 'Excellent' : performanceScore >= 75 ? 'Strong' : performanceScore >= 60 ? 'Good' : 'Needs Attention',
+        factors: {
+          activePros: proCounts.active,
+          retention: retentionRate,
+          renewalRate,
+          recruitmentQuality: qualityRate,
+          completionRate
+        }
+      },
+      referralLink: {
+        url: referralLink,
+        code: recruiter.recruiterCode || '',
+        shareEnabled: true
+      },
+      filters: {
+        statuses: allStatuses,
+        trades: allTrades,
+        states: allStates,
+        years: allYears,
+        months: analyticsMonths.map((month) => month.label)
+      },
+      meta: {
+        isImpersonating: access.isImpersonating
+      }
     };
 
     return res.json(response);
