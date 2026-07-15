@@ -433,7 +433,25 @@ router.patch('/settings', requireRecruiter, async (req, res) => {
 
     const update = {};
     if (smsNotifications !== undefined) update.smsNotifications = smsNotifications;
-    if (notificationSettings !== undefined) update.notificationSettings = notificationSettings;
+    if (notificationSettings !== undefined) {
+      const keys = ['emailNotifications', 'smsNotifications', 'commissionAlerts', 'weeklySummaryEmails', 'referralAlerts'];
+      const unknownKeys = Object.keys(notificationSettings).filter((key) => !keys.includes(key));
+      if (unknownKeys.length) {
+        return res.status(400).json({ error: `Unknown notification setting: ${unknownKeys[0]}` });
+      }
+      const normalizedSettings = {};
+      for (const key of keys) {
+        if (notificationSettings[key] !== undefined) {
+          if (typeof notificationSettings[key] !== 'boolean') {
+            return res.status(400).json({ error: `Invalid value for ${key}` });
+          }
+          normalizedSettings[key] = notificationSettings[key];
+        }
+      }
+      if (Object.keys(normalizedSettings).length) {
+        update.notificationSettings = normalizedSettings;
+      }
+    }
     if (profilePhotoUrl !== undefined) update.profilePhotoUrl = String(profilePhotoUrl || '').trim().slice(0, 500);
     if (city !== undefined) update.city = String(city || '').trim().slice(0, 120);
     if (state !== undefined) update.state = String(state || '').trim().slice(0, 120);

@@ -21,6 +21,17 @@ const { getOwnerLeadAnalytics, getProLeadMetrics } = require('../services/leadTr
 const TOTAL_COMMISSION_STATUSES = ['pending', 'held', 'approved', 'paid'];
 const PENDING_COMMISSION_STATUSES = ['pending', 'held'];
 const ACCEPTED_JOB_STATUSES = ['accepted', 'completed', 'in-progress'];
+// Performance score model:
+// - activePros ratio = active referrals / total referrals, clamped 0..1, then scaled to max 30 points.
+// - percentage metrics are already 0..100 and multiplied by fractional weights that sum to 0.7 (max 70 points).
+// - total maximum is 100 points (30 + 70), then capped at 100.
+const PERFORMANCE_WEIGHTS = {
+  activePros: 30,
+  retention: 0.25,
+  renewal: 0.2,
+  recruitmentQuality: 0.15,
+  completion: 0.1
+};
 
 router.use(requireDatabase);
 
@@ -388,11 +399,11 @@ router.get('/recruiter', async (req, res) => {
     const qualityRate = toPct(referrals.filter((r) => ['active', 'paid', 'pending'].includes(r.status)).length, referrals.length);
     const completionRate = toPct(commissions.filter((c) => c.status === 'paid').length, commissions.length);
     const performanceScore = Math.min(100, Math.round(
-      (Math.min(1, proCounts.active / Math.max(1, referrals.length)) * 30) +
-      (retentionRate * 0.25) +
-      (renewalRate * 0.2) +
-      (qualityRate * 0.15) +
-      (completionRate * 0.1)
+      (Math.min(1, proCounts.active / Math.max(1, referrals.length)) * PERFORMANCE_WEIGHTS.activePros) +
+      (retentionRate * PERFORMANCE_WEIGHTS.retention) +
+      (renewalRate * PERFORMANCE_WEIGHTS.renewal) +
+      (qualityRate * PERFORMANCE_WEIGHTS.recruitmentQuality) +
+      (completionRate * PERFORMANCE_WEIGHTS.completion)
     ));
 
     const referralLink = recruiter.proReferralLink

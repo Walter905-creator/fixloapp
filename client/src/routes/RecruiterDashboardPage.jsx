@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import QRCode from 'qrcode';
 import { useRecruiterAuth } from '../context/RecruiterAuthContext';
 import { fetchRecruiterDashboard } from '../lib/api';
 import { formatUsdCents } from '../lib/format';
@@ -7,6 +8,8 @@ import { API_BASE } from '../utils/config';
 import '../styles/dashboard.css';
 
 const SECTION_IDS = ['overview', 'activity', 'referrals', 'commissions', 'payouts', 'profile', 'settings', 'support', 'analytics'];
+const QR_CODE_SIZE = 128;
+const QR_CODE_MARGIN = 1;
 
 function toMoney(value) {
   return formatUsdCents(value || 0);
@@ -54,6 +57,8 @@ export default function RecruiterDashboardPage() {
   const [state, setState] = useState({ loading: true, error: '', data: null });
   const [activeSection, setActiveSection] = useState('overview');
   const [search, setSearch] = useState('');
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
+  const [qrGenerating, setQrGenerating] = useState(false);
   const [filters, setFilters] = useState({ status: '', month: '', year: '', trade: '', state: '' });
   const [saveState, setSaveState] = useState({ loading: false, message: '', error: '' });
   const [passwordState, setPasswordState] = useState({ currentPassword: '', newPassword: '' });
@@ -157,7 +162,7 @@ export default function RecruiterDashboardPage() {
     } catch (error) {
       setSaveState({ loading: false, error: error.message, message: '' });
     }
-  }, [API_BASE, authFetch, load, passwordState.currentPassword, passwordState.newPassword, profileDraft]);
+  }, [authFetch, load, passwordState.currentPassword, passwordState.newPassword, profileDraft]);
 
   const copyReferralLink = useCallback(async () => {
     if (!data?.referralLink?.url) return;
@@ -174,6 +179,18 @@ export default function RecruiterDashboardPage() {
     }
     await navigator.clipboard.writeText(url);
     setSaveState((prev) => ({ ...prev, message: 'Referral link copied for sharing.' }));
+  }, [data]);
+
+  const generateQrCode = useCallback(async () => {
+    const url = data?.referralLink?.url;
+    if (!url) return;
+    setQrGenerating(true);
+    try {
+      const code = await QRCode.toDataURL(url, { width: QR_CODE_SIZE, margin: QR_CODE_MARGIN });
+      setQrCodeDataUrl(code);
+    } finally {
+      setQrGenerating(false);
+    }
   }, [data]);
 
   const goToSection = useCallback((sectionId) => {
@@ -523,12 +540,15 @@ export default function RecruiterDashboardPage() {
               <div className="referral-actions">
                 <button type="button" className="dashboard-btn ghost" onClick={copyReferralLink}>Copy Link</button>
                 <button type="button" className="dashboard-btn ghost" onClick={shareReferralLink}>Share</button>
+                <button type="button" className="dashboard-btn ghost" onClick={generateQrCode} disabled={qrGenerating}>
+                  {qrGenerating ? 'Generating…' : 'Generate QR Code'}
+                </button>
               </div>
-              {data?.referralLink?.url ? (
+              {qrCodeDataUrl ? (
                 <img
                   alt="Referral QR code"
                   className="qr-preview"
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(data.referralLink.url)}`}
+                  src={qrCodeDataUrl}
                 />
               ) : null}
             </article>
