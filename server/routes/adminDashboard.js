@@ -22,10 +22,10 @@ function serviceStatus(configured, running, lastRun) {
   return 'online';
 }
 
-// Validate Stripe key format (live or test key)
+// Validate Stripe secret key format (only accept full secret keys, not restricted keys)
 function isStripeKeyValid(key) {
   if (!key) return false;
-  return /^(sk_live_|sk_test_|rk_live_|rk_test_)/.test(key);
+  return /^sk_(live|test)_/.test(key);
 }
 
 // Validate Twilio Account SID format (starts with AC)
@@ -57,16 +57,21 @@ router.get('/overview', async (req, res) => {
 
     const [totalPros, activePros, lifetimePros, monthRevenue, leadsToday, smsSentToday, proPlans, assignmentStats, recentAssignments, leadAnalytics] = await Promise.all([
       Pro.countDocuments(),
-      // "Active and approved" = isActive flag set by Stripe webhook upon successful payment
+      // "Active and approved": a pro becomes active only after Stripe webhook confirms payment.
+      // Both isActive and paymentStatus are set together by the invoice.payment_succeeded webhook.
+      // Requiring both prevents counting manually-activated or invite-code-only pros that have
+      // never had a successful Stripe charge.
       Pro.countDocuments({ isActive: true, paymentStatus: 'active' }),
       Pro.countDocuments({ subscriptionType: 'lifetime' }),
       // Revenue from successful Stripe subscription payments this month.
-      // subscriptionStartDate is updated by the invoice.payment_succeeded webhook each billing cycle,
-      // so summing subscriptionPrice for active pros paid this month gives real subscription revenue.
+      // The invoice.payment_succeeded webhook sets subscriptionStartDate = current_period_start
+      // on every billing renewal, so pros whose billing period started this month have paid
+      // this month. subscriptionStatus:'active' further filters out cancelled or past-due subs.
       Pro.aggregate([
         {
           $match: {
             paymentStatus: 'active',
+            subscriptionStatus: 'active',
             subscriptionStartDate: { $gte: startOfMonth }
           }
         },
@@ -139,11 +144,13 @@ router.get('/overview', async (req, res) => {
     const lhHealth = getLeadHunterHealth();
     const seoStats = getSeoStats();
 
-    // Stripe: validate key format (live/test/restricted key prefix)
+    // Stripe: validate key format (only accept full secret keys sk_live_ or sk_test_)
     const stripeConfigured = isStripeKeyValid(process.env.STRIPE_SECRET_KEY);
     // Twilio: validate Account SID format (starts with AC + 32 hex chars) and auth token presence
     const twilioConfigured = isTwilioSidValid(process.env.TWILIO_ACCOUNT_SID) &&
       !!(process.env.TWILIO_AUTH_TOKEN);
+    // SEO Engine requires OpenAI for content generation
+    const seoConfigured = !!(process.env.OPENAI_API_KEY);
 
     const assignmentSummary = assignmentStats[0] || {};
     const proPlanCounts = proPlans.reduce((acc, item) => {
@@ -176,7 +183,7 @@ router.get('/overview', async (req, res) => {
         twilio: twilioConfigured,
         // Status strings for services: 'online' | 'offline' | 'running' | 'initializing'
         aiLeadHunter: serviceStatus(lhHealth.openaiConfigured, lhHealth.running, lhHealth.lastRun),
-        seoEngine: serviceStatus(true, seoStats.running, seoStats.lastRun)
+        seoEngine: serviceStatus(seoConfigured, seoStats.running, seoStats.lastRun)
       }
     });
   } catch (err) {

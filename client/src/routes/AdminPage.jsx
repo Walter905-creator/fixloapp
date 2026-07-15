@@ -170,6 +170,18 @@ export default function AdminPage() {
               <div className="text-xs text-gray-500 mb-1">SMS Sent Today</div>
               <div className="text-2xl font-bold text-slate-900">{overview.smsSentToday ?? 0}</div>
             </div>
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="text-xs text-gray-500 mb-1">Released Assignments</div>
+              <div className="text-2xl font-bold text-slate-500">{overview.leadAssignments?.releasedAssignments ?? 0}</div>
+            </div>
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="text-xs text-gray-500 mb-1">Accepted Assignments</div>
+              <div className="text-2xl font-bold text-blue-700">{overview.leadAssignments?.acceptedAssignments ?? 0}</div>
+            </div>
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="text-xs text-gray-500 mb-1">Lifetime Pros</div>
+              <div className="text-2xl font-bold text-purple-700">{overview.lifetimePros ?? 0}</div>
+            </div>
           </div>
 
           {/* System Health */}
