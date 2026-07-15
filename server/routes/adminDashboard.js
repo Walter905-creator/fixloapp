@@ -8,9 +8,31 @@ const JobRequest = require('../models/JobRequest');
 const LeadAssignment = require('../models/LeadAssignment');
 const AdminSettings = require('../models/AdminSettings');
 const SocialSettings = require('../models/SocialSettings');
+const SmsNotification = require('../models/SmsNotification');
 const { getHealth: getLeadHunterHealth, huntLeads } = require('../services/aiLeadHunter');
 const { getStats: getSeoStats } = require('../services/seoAIStats');
 const { getOwnerLeadAnalytics } = require('../services/leadTrackingService');
+
+// ── Service health status helper ──────────────────────────────────────────────
+// Returns: 'online' | 'offline' | 'running' | 'initializing'
+function serviceStatus(configured, running, lastRun) {
+  if (!configured) return 'offline';
+  if (running) return 'running';
+  if (!lastRun) return 'initializing';
+  return 'online';
+}
+
+// Validate Stripe key format (live or test key)
+function isStripeKeyValid(key) {
+  if (!key) return false;
+  return /^(sk_live_|sk_test_|rk_live_|rk_test_)/.test(key);
+}
+
+// Validate Twilio Account SID format (starts with AC)
+function isTwilioSidValid(sid) {
+  if (!sid) return false;
+  return /^AC[a-f0-9]{32}$/.test(sid);
+}
 
 // ── Auth guard ────────────────────────────────────────────────────────────────
 router.use(requireAuth);
@@ -33,15 +55,29 @@ router.get('/overview', async (req, res) => {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    const [totalPros, activePros, lifetimePros, monthRevenue, leadsToday, proPlans, assignmentStats, recentAssignments, leadAnalytics] = await Promise.all([
+    const [totalPros, activePros, lifetimePros, monthRevenue, leadsToday, smsSentToday, proPlans, assignmentStats, recentAssignments, leadAnalytics] = await Promise.all([
       Pro.countDocuments(),
-      Pro.countDocuments({ isActive: true }),
+      // "Active and approved" = isActive flag set by Stripe webhook upon successful payment
+      Pro.countDocuments({ isActive: true, paymentStatus: 'active' }),
       Pro.countDocuments({ subscriptionType: 'lifetime' }),
-      JobRequest.aggregate([
-        { $match: { createdAt: { $gte: startOfMonth }, status: 'completed' } },
-        { $group: { _id: null, total: { $sum: '$totalCost' } } }
+      // Revenue from successful Stripe subscription payments this month.
+      // subscriptionStartDate is updated by the invoice.payment_succeeded webhook each billing cycle,
+      // so summing subscriptionPrice for active pros paid this month gives real subscription revenue.
+      Pro.aggregate([
+        {
+          $match: {
+            paymentStatus: 'active',
+            subscriptionStartDate: { $gte: startOfMonth }
+          }
+        },
+        { $group: { _id: null, total: { $sum: '$subscriptionPrice' } } }
       ]),
       JobRequest.countDocuments({ createdAt: { $gte: startOfDay } }),
+      // Real SMS count for today from the SmsNotification tracking model
+      SmsNotification.countDocuments({
+        createdAt: { $gte: startOfDay },
+        status: { $in: ['sent', 'delivered'] }
+      }),
       Pro.aggregate([
         { $group: { _id: '$subscriptionPlan', count: { $sum: 1 } } }
       ]),
@@ -103,9 +139,11 @@ router.get('/overview', async (req, res) => {
     const lhHealth = getLeadHunterHealth();
     const seoStats = getSeoStats();
 
-    // Check Stripe & Twilio by env key presence
-    const stripeOk = !!(process.env.STRIPE_SECRET_KEY);
-    const twilioOk = !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN);
+    // Stripe: validate key format (live/test/restricted key prefix)
+    const stripeConfigured = isStripeKeyValid(process.env.STRIPE_SECRET_KEY);
+    // Twilio: validate Account SID format (starts with AC + 32 hex chars) and auth token presence
+    const twilioConfigured = isTwilioSidValid(process.env.TWILIO_ACCOUNT_SID) &&
+      !!(process.env.TWILIO_AUTH_TOKEN);
 
     const assignmentSummary = assignmentStats[0] || {};
     const proPlanCounts = proPlans.reduce((acc, item) => {
@@ -119,6 +157,7 @@ router.get('/overview', async (req, res) => {
       lifetimePros,
       totalRevenueMonth: monthRevenue[0]?.total || 0,
       leadsToday,
+      smsSentToday,
       proPlanCounts,
       leadAssignments: {
         acceptedAssignments: assignmentSummary.acceptedAssignments || 0,
@@ -131,12 +170,13 @@ router.get('/overview', async (req, res) => {
         recent: recentAssignments,
         analytics: leadAnalytics
       },
-      smsSentToday: 0, // placeholder – extend with SmsNotification model if needed
       systemHealth: {
-        stripe: stripeOk,
-        twilio: twilioOk,
-        aiLeadHunter: !lhHealth.running, // true = service is ready (not stuck)
-        seoEngine: !seoStats.running
+        // Boolean: true = key is present and format is valid
+        stripe: stripeConfigured,
+        twilio: twilioConfigured,
+        // Status strings for services: 'online' | 'offline' | 'running' | 'initializing'
+        aiLeadHunter: serviceStatus(lhHealth.openaiConfigured, lhHealth.running, lhHealth.lastRun),
+        seoEngine: serviceStatus(true, seoStats.running, seoStats.lastRun)
       }
     });
   } catch (err) {
@@ -486,8 +526,9 @@ router.get('/settings', async (req, res) => {
       settings = await AdminSettings.create({ _singleton: 'admin' });
     }
 
-    const stripeOk = !!(process.env.STRIPE_SECRET_KEY);
-    const twilioOk = !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN);
+    const stripeOk = isStripeKeyValid(process.env.STRIPE_SECRET_KEY);
+    const twilioOk = isTwilioSidValid(process.env.TWILIO_ACCOUNT_SID) &&
+      !!(process.env.TWILIO_AUTH_TOKEN);
 
     res.json({
       defaultLeadRadius: settings.defaultLeadRadius,
@@ -549,8 +590,9 @@ router.post('/settings', async (req, res) => {
       { new: true, upsert: true }
     );
 
-    const stripeOk = !!(process.env.STRIPE_SECRET_KEY);
-    const twilioOk = !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN);
+    const stripeOk = isStripeKeyValid(process.env.STRIPE_SECRET_KEY);
+    const twilioOk = isTwilioSidValid(process.env.TWILIO_ACCOUNT_SID) &&
+      !!(process.env.TWILIO_AUTH_TOKEN);
 
     res.json({
       success: true,

@@ -53,11 +53,31 @@ export default function AdminPage() {
     }
   };
 
+  // Renders a health badge for boolean integrations (Stripe, Twilio)
   const healthBadge = (ok) => (
     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${ok ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
       {ok ? '✅ Online' : '❌ Offline'}
     </span>
   );
+
+  // Renders a status badge for service engines (AI Lead Hunter, SEO Engine)
+  // status: 'online' | 'offline' | 'running' | 'initializing' | 'warning' | 'error'
+  const serviceBadge = (status) => {
+    const map = {
+      online:       { cls: 'bg-green-100 text-green-800',   label: '✅ Online' },
+      offline:      { cls: 'bg-red-100 text-red-800',       label: '❌ Offline' },
+      running:      { cls: 'bg-blue-100 text-blue-800',     label: '🔄 Running' },
+      initializing: { cls: 'bg-yellow-100 text-yellow-800', label: '⚡ Initializing' },
+      warning:      { cls: 'bg-orange-100 text-orange-800', label: '⚠️ Warning' },
+      error:        { cls: 'bg-red-100 text-red-800',       label: '❌ Error' },
+    };
+    const cfg = map[status] || { cls: 'bg-gray-100 text-gray-600', label: '? Unknown' };
+    return (
+      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${cfg.cls}`}>
+        {cfg.label}
+      </span>
+    );
+  };
 
   return (<>
     <HelmetSEO
@@ -145,14 +165,21 @@ export default function AdminPage() {
             </div>
           </div>
 
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="text-xs text-gray-500 mb-1">SMS Sent Today</div>
+              <div className="text-2xl font-bold text-slate-900">{overview.smsSentToday ?? 0}</div>
+            </div>
+          </div>
+
           {/* System Health */}
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="text-sm font-semibold text-gray-700 mb-3">System Health</div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
               <div className="flex items-center gap-2"><span className="text-gray-500">Stripe</span>{healthBadge(overview.systemHealth?.stripe)}</div>
               <div className="flex items-center gap-2"><span className="text-gray-500">Twilio</span>{healthBadge(overview.systemHealth?.twilio)}</div>
-              <div className="flex items-center gap-2"><span className="text-gray-500">AI Lead Hunter</span>{healthBadge(overview.systemHealth?.aiLeadHunter)}</div>
-              <div className="flex items-center gap-2"><span className="text-gray-500">SEO Engine</span>{healthBadge(overview.systemHealth?.seoEngine)}</div>
+              <div className="flex items-center gap-2"><span className="text-gray-500">AI Lead Hunter</span>{serviceBadge(overview.systemHealth?.aiLeadHunter)}</div>
+              <div className="flex items-center gap-2"><span className="text-gray-500">SEO Engine</span>{serviceBadge(overview.systemHealth?.seoEngine)}</div>
             </div>
           </div>
 
