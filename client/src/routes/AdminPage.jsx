@@ -71,7 +71,7 @@ export default function AdminPage() {
       warning:      { cls: 'bg-orange-100 text-orange-800', label: '⚠️ Warning' },
       error:        { cls: 'bg-red-100 text-red-800',       label: '❌ Error' },
     };
-    const cfg = map[status] || { cls: 'bg-gray-100 text-gray-600', label: '? Unknown' };
+    const cfg = map[status] || { cls: 'bg-gray-100 text-gray-600', label: 'Unknown Status' };
     return (
       <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${cfg.cls}`}>
         {cfg.label}

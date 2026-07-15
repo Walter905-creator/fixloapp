@@ -28,10 +28,10 @@ function isStripeKeyValid(key) {
   return /^sk_(live|test)_/.test(key);
 }
 
-// Validate Twilio Account SID format (starts with AC)
+// Validate Twilio Account SID format (starts with AC + 32 case-insensitive hex chars)
 function isTwilioSidValid(sid) {
   if (!sid) return false;
-  return /^AC[a-f0-9]{32}$/.test(sid);
+  return /^AC[a-fA-F0-9]{32}$/.test(sid);
 }
 
 // ── Auth guard ────────────────────────────────────────────────────────────────
@@ -58,9 +58,10 @@ router.get('/overview', async (req, res) => {
     const [totalPros, activePros, lifetimePros, monthRevenue, leadsToday, smsSentToday, proPlans, assignmentStats, recentAssignments, leadAnalytics] = await Promise.all([
       Pro.countDocuments(),
       // "Active and approved": a pro becomes active only after Stripe webhook confirms payment.
-      // Both isActive and paymentStatus are set together by the invoice.payment_succeeded webhook.
-      // Requiring both prevents counting manually-activated or invite-code-only pros that have
-      // never had a successful Stripe charge.
+      // isActive is set to true by the invoice.payment_succeeded webhook; paymentStatus:'active'
+      // is set at the same time. Both fields are checked because invite-code pros may have
+      // isActive:true via manual activation without a Stripe payment (paymentStatus remains
+      // 'pending'), so requiring paymentStatus:'active' ensures only paid subscribers are counted.
       Pro.countDocuments({ isActive: true, paymentStatus: 'active' }),
       Pro.countDocuments({ subscriptionType: 'lifetime' }),
       // Revenue from successful Stripe subscription payments this month.
