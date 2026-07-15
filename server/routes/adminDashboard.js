@@ -13,8 +13,13 @@ const { getHealth: getLeadHunterHealth, huntLeads } = require('../services/aiLea
 const { getStats: getSeoStats } = require('../services/seoAIStats');
 const { getOwnerLeadAnalytics } = require('../services/leadTrackingService');
 
-// ── Service health status helper ──────────────────────────────────────────────
-// Returns: 'online' | 'offline' | 'running' | 'initializing'
+/**
+ * Compute a human-readable health status for a background service.
+ * @param {boolean} configured - Whether required API keys / config are present.
+ * @param {boolean} running    - Whether the service is currently executing a job.
+ * @param {Date|null} lastRun  - Timestamp of the last completed execution, or null if never run.
+ * @returns {'online'|'offline'|'running'|'initializing'}
+ */
 function serviceStatus(configured, running, lastRun) {
   if (!configured) return 'offline';
   if (running) return 'running';
@@ -57,17 +62,20 @@ router.get('/overview', async (req, res) => {
 
     const [totalPros, activePros, lifetimePros, monthRevenue, leadsToday, smsSentToday, proPlans, assignmentStats, recentAssignments, leadAnalytics] = await Promise.all([
       Pro.countDocuments(),
-      // "Active and approved": a pro becomes active only after Stripe webhook confirms payment.
-      // isActive is set to true by the invoice.payment_succeeded webhook; paymentStatus:'active'
-      // is set at the same time. Both fields are checked because invite-code pros may have
-      // isActive:true via manual activation without a Stripe payment (paymentStatus remains
-      // 'pending'), so requiring paymentStatus:'active' ensures only paid subscribers are counted.
+      // "Active and approved": only pros who have completed Stripe payment are counted here.
+      // isActive:true is set by the invoice.payment_succeeded webhook; paymentStatus:'active'
+      // is set at the same time. invite-code pros may have isActive:true via manual activation
+      // without a Stripe charge (paymentStatus stays 'pending'), so requiring paymentStatus:'active'
+      // scopes this metric to paying, verified subscribers only. Manually-activated pros without
+      // a Stripe subscription are intentionally excluded from this "approved" count.
       Pro.countDocuments({ isActive: true, paymentStatus: 'active' }),
       Pro.countDocuments({ subscriptionType: 'lifetime' }),
       // Revenue from successful Stripe subscription payments this month.
       // The invoice.payment_succeeded webhook sets subscriptionStartDate = current_period_start
-      // on every billing renewal, so pros whose billing period started this month have paid
-      // this month. subscriptionStatus:'active' further filters out cancelled or past-due subs.
+      // on every billing renewal (see stripe.js). Pros whose billing period started this month
+      // are those who paid this month — both new sign-ups AND renewals — which correctly reflects
+      // subscription revenue received in the current calendar month.
+      // subscriptionStatus:'active' further excludes cancelled or past-due subscriptions.
       Pro.aggregate([
         {
           $match: {
