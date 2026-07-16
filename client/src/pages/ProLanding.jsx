@@ -5,6 +5,8 @@ import StickyMobileCTA from '../components/StickyMobileCTA';
 import UrgencyPopup from '../components/UrgencyPopup';
 import SocialProofNotification from '../components/SocialProofNotification';
 import ExitIntentModal from '../components/ExitIntentModal';
+import JulyCountdown from '../components/JulyCountdown';
+import { isJulyPromoActive, JULY_PROMO } from '../config/julyPromo';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE } from '../utils/config';
 
@@ -28,7 +30,7 @@ const BENEFITS = [
   'Flexible work area',
   'Build your reputation',
   'Manage jobs from anywhere',
-  'First 3 months FREE'
+  '50% off membership — July only'
 ];
 
 const TESTIMONIALS = [
@@ -167,7 +169,9 @@ function ProSignupForm() {
           <p className="text-sm font-semibold uppercase tracking-[0.25em] text-emerald-300">Join Fixlo Today</p>
           <h2 className="mt-2 text-2xl font-extrabold text-white">Create your pro account</h2>
         </div>
-        <span className="rounded-full bg-emerald-400/15 px-3 py-1 text-xs font-semibold text-emerald-200">First 3 months FREE</span>
+        {isJulyPromoActive() ? (
+          <span className="rounded-full bg-orange-400/20 px-3 py-1 text-xs font-semibold text-orange-200">🎉 50% Off — July Only</span>
+        ) : null}
       </div>
 
       {error ? <p className="mt-4 rounded-2xl border border-red-400/30 bg-red-500/15 px-4 py-3 text-sm text-red-100">{error}</p> : null}
@@ -226,7 +230,7 @@ export default function ProLanding() {
     <>
       <HelmetSEO
         title="Get More Local Jobs With Fixlo | Fixlo Pro"
-        description="Grow your business with verified local leads. Join Fixlo to access real-time leads, flexible service areas, mobile job management, and a free first 3 months offer."
+        description="Grow your business with verified local leads. Join Fixlo Pro — Limited-Time July Offer: 50% off your first month. Join before July 31 and save."
         canonicalPathname="/pros"
         structuredData={structuredData}
       />
@@ -236,11 +240,16 @@ export default function ProLanding() {
       <ExitIntentModal
         enabled
         title="Keep local jobs coming in"
-        description="Start your Fixlo pro account now and secure your first 3 free months before today’s campaigns end."
+        description={isJulyPromoActive() ? `${JULY_PROMO.subHeadLine || 'Join before July 31 and save 50% on your first month.'} Regular price resumes automatically after July 31.` : 'Start your Fixlo pro account now and secure your access before today\'s campaigns end.'}
         ctaHref="#pro-signup-form"
         ctaLabel="Join Fixlo Today"
       />
-      <StickyMobileCTA enabled href="#pro-signup-form" label="Join Fixlo Today" sublabel="First 3 months FREE" />
+      <StickyMobileCTA
+        enabled
+        href="#pro-signup-form"
+        label="Join Fixlo Today"
+        sublabel={isJulyPromoActive() ? `50% Off — ${JULY_PROMO.promoPriceFormatted}/month` : undefined}
+      />
 
       <section className="bg-slate-950 text-white">
         <div className="container-xl grid gap-12 py-16 md:py-24 lg:grid-cols-[1fr_0.95fr] lg:items-center">
@@ -259,6 +268,16 @@ export default function ProLanding() {
                 </div>
               ))}
             </div>
+            {isJulyPromoActive() && (
+              <div className="mt-6 rounded-2xl border border-orange-400/30 bg-orange-500/15 p-4">
+                <p className="text-sm font-bold text-orange-200">🎉 {JULY_PROMO.label}</p>
+                <p className="mt-1 text-sm text-orange-100">
+                  <span className="line-through opacity-70">{JULY_PROMO.originalPriceFormatted}/mo</span>{' '}
+                  <strong>{JULY_PROMO.promoPriceFormatted}/mo</strong> — Save {JULY_PROMO.savingsFormatted}. Regular price resumes automatically August 1.
+                </p>
+                <JulyCountdown className="mt-3 text-orange-100" />
+              </div>
+            )}
             <div className="mt-10 grid gap-4 md:grid-cols-3">
               <CounterCard label="Active homeowners" target={1840} />
               <CounterCard label="Leads generated" target={12650} suffix="+" />

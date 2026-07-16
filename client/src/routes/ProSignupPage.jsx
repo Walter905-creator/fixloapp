@@ -4,6 +4,8 @@ import HelmetSEO from '../seo/HelmetSEO';
 import { STRIPE_CHECKOUT_URL, API_BASE } from '../utils/config';
 import ProValueBanner from '../components/ProValueBanner';
 import StickyProCTA from '../components/StickyProCTA';
+import JulyCountdown from '../components/JulyCountdown';
+import { isJulyPromoActive, JULY_PROMO } from '../config/julyPromo';
 import { captureReferralCode, getStoredReferralCode, isValidReferralCode } from '../utils/referralCapture';
 
 export default function ProSignupPage(){
@@ -16,7 +18,7 @@ export default function ProSignupPage(){
   const [selectedPlan, setSelectedPlan] = useState('pro');
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
-  // Invitation code state (Fixlo internal invite codes — one-year-free)
+  // Invitation code state (Fixlo internal invite codes)
   const [inviteCode, setInviteCode] = useState('');
   const [inviteCodeStatus, setInviteCodeStatus] = useState(''); // '' | 'valid' | 'invalid' | 'checking'
   const [inviteCodeMsg, setInviteCodeMsg] = useState('');
@@ -111,7 +113,7 @@ export default function ProSignupPage(){
     }
   };
 
-  // Validate a Fixlo invitation code (one-year-free)
+  // Validate a Fixlo invitation code
   const validateInviteCode = async (code) => {
     if (!code) {
       setInviteCodeStatus('');
@@ -130,7 +132,7 @@ export default function ProSignupPage(){
         const data = await response.json();
         if (data.valid) {
           setInviteCodeStatus('valid');
-          setInviteCodeMsg('Invitation code accepted. Your first year of Fixlo Pro is free.');
+          setInviteCodeMsg('Invitation code accepted. Your member benefits have been applied.');
         } else {
           setInviteCodeStatus('invalid');
           setInviteCodeMsg('This invitation code is invalid, expired, revoked, or already used.');
@@ -218,6 +220,22 @@ export default function ProSignupPage(){
     <ProValueBanner dense />
     <div className="container-xl py-8">
       <h1 className="text-2xl font-extrabold">Join Fixlo as a Professional</h1>
+
+      {/* July Promotion Banner */}
+      {isJulyPromoActive() && (
+        <div className="mt-4 rounded-2xl border border-orange-300 bg-orange-50 p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-bold text-orange-700">🎉 {JULY_PROMO.label} — {JULY_PROMO.subHeadLine || 'Join before July 31 and save 50% on your first month.'}</p>
+              <p className="mt-1 text-sm text-orange-600">
+                Fixlo Pro Membership: <span className="line-through">{JULY_PROMO.originalPriceFormatted}</span>{' '}
+                <strong>{JULY_PROMO.promoPriceFormatted}/month</strong> — Save {JULY_PROMO.savingsFormatted}. Regular price resumes automatically August 1.
+              </p>
+            </div>
+            <JulyCountdown className="text-orange-700 shrink-0" />
+          </div>
+        </div>
+      )}
       
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         {[
@@ -360,7 +378,7 @@ export default function ProSignupPage(){
             </p>
           </div>
 
-          {/* Invitation Code Field — for Fixlo internal one-year-free codes */}
+          {/* Invitation Code Field — for Fixlo internal member codes */}
           <div className="pt-2 border-t border-slate-200">
             <label className="block text-sm text-slate-800 mb-1">
               Invitation Code <span className="text-slate-500 font-normal">(optional)</span>
@@ -408,7 +426,7 @@ export default function ProSignupPage(){
               <p className="text-xs text-red-600 mt-1">{inviteCodeMsg}</p>
             )}
             <p className="text-xs text-slate-500 mt-1">
-              Have a personal Fixlo invitation? Enter your code here to claim your free year.
+              Have a personal Fixlo invitation? Enter your code here for member benefits.
             </p>
           </div>
           

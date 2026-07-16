@@ -488,7 +488,7 @@ export default function InternalDashboardPage() {
                       </td>
                       {/* Plan */}
                       <td className="px-3 py-2 text-slate-600 whitespace-nowrap">
-                        {c.planType === 'one-year-free' ? '🎉 1-Year Free' : c.planType}
+                        {c.planType === 'one-year-free' ? '🎉 Legacy Invite' : c.planType}
                       </td>
                       {/* Expires */}
                       <td className="px-3 py-2 text-slate-500 whitespace-nowrap">

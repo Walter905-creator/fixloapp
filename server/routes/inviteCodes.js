@@ -686,7 +686,7 @@ router.post('/redeem', requireAuth, async (req, res) => {
 
     return res.json({
       ok: true,
-      message: 'Invitation code accepted! Your free membership has been activated.',
+      message: 'Invitation code accepted! Your member benefits have been activated.',
       membershipDuration: invite.membershipDuration,
       freeAccessUntil
     });
