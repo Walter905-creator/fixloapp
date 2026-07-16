@@ -260,7 +260,7 @@ export default function ProSignup() {
               </div>
               {inviteStatus === 'valid' && (
                 <p className="mt-1.5 text-green-400 text-xs font-medium">
-                  ✓ Invitation code accepted. Your extended free membership has been applied.
+                  ✓ Invitation code accepted.
                 </p>
               )}
               {inviteStatus === 'invalid' && (
@@ -270,7 +270,7 @@ export default function ProSignup() {
               )}
               {!inviteStatus && (
                 <p className="mt-1.5 text-blue-300/60 text-xs">
-                  Have an invitation code? Enter it here to extend your free trial.
+                  Have an invitation code? Enter it here for special member benefits.
                 </p>
               )}
             </div>

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import HelmetSEO from '../seo/HelmetSEO';
 import { detectUserCountry } from '../utils/countryDetection';
 import { API_BASE } from '../utils/config';
+import JulyCountdown from '../components/JulyCountdown';
+import { isJulyPromoActive, JULY_PROMO } from '../config/julyPromo';
 
 export default function PricingPage(){
   const [countryInfo, setCountryInfo] = useState(null);
@@ -60,6 +62,24 @@ export default function PricingPage(){
           Showing pricing for {getCountryName()} in {countryInfo.currency}
         </div>
       )}
+
+      {/* July Promotion Banner */}
+      {isJulyPromoActive() && (
+        <div className="mt-4 rounded-2xl border border-orange-300 bg-orange-50 p-5">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <p className="text-base font-bold text-orange-700">🎉 {JULY_PROMO.label}</p>
+              <p className="mt-1 text-sm text-orange-600">
+                {JULY_PROMO.subHeadLine || 'Join before July 31 and save 50% on your first month.'}{' '}
+                Fixlo Pro Membership: <span className="line-through">{JULY_PROMO.originalPriceFormatted}</span>{' '}
+                <strong>{JULY_PROMO.promoPriceFormatted}/month</strong> — Save {JULY_PROMO.savingsFormatted}.
+              </p>
+              <p className="mt-1 text-xs text-orange-500">Regular price resumes automatically August 1. No manual action required.</p>
+            </div>
+            <JulyCountdown className="text-orange-700 shrink-0" />
+          </div>
+        </div>
+      )}
       
       {loading ? (
         <div className="mt-8 text-center text-slate-400">
@@ -92,7 +112,15 @@ export default function PricingPage(){
             </div>
             <div className="card p-5 border-2 border-slate-900 bg-slate-900 text-white">
               <h3 className="font-semibold text-lg">Fixlo Verified Plus</h3>
-              <strong className="mt-2 block text-3xl">{getVerifiedPlusPrice()}<span className="text-base font-medium">/month</span></strong>
+              {isJulyPromoActive() ? (
+                <div className="mt-2">
+                  <p className="text-xl font-extrabold text-orange-300 line-through">{JULY_PROMO.originalPriceFormatted}<span className="text-base font-medium">/month</span></p>
+                  <p className="text-3xl font-extrabold text-white">{JULY_PROMO.promoPriceFormatted}<span className="text-base font-medium">/month</span></p>
+                  <span className="mt-1 inline-block rounded-full bg-orange-500/25 px-2 py-0.5 text-xs font-bold text-orange-300">50% OFF — July Only</span>
+                </div>
+              ) : (
+                <strong className="mt-2 block text-3xl">{getVerifiedPlusPrice()}<span className="text-base font-medium">/month</span></strong>
+              )}
               <p className="text-sm text-slate-200 mt-3">
                 Get priority access to new leads before regular pros. One exclusive lead at a time with a 1-hour response window.
               </p>
@@ -101,7 +129,9 @@ export default function PricingPage(){
                 <li>✓ 1-hour exclusive response window</li>
                 <li>✓ Falls back to Fixlo Pro after Verified Plus access expires</li>
               </ul>
-              <a href="/pros/signup" className="mt-5 inline-block rounded-lg bg-white px-4 py-2 font-semibold text-slate-900">Get Priority Leads</a>
+              <a href="/pros/signup" className="mt-5 inline-block rounded-lg bg-white px-4 py-2 font-semibold text-slate-900">
+                {isJulyPromoActive() ? 'Claim 50% Off' : 'Get Priority Leads'}
+              </a>
             </div>
           </div>
         </>
