@@ -459,6 +459,18 @@ try {
   console.warn('⚠️ FGE module failed to load:', e?.message || e);
 }
 
+// ── Fixlo Growth Automation (FGA) ─────────────────────────────────────────────
+// Feature-flagged: set FGA_ENABLED=true to activate all growth automation routes.
+// All /api/fga/* endpoints return 503 when FGA_ENABLED is not set.
+// Routes are admin-protected; see server/modules/fga/middleware/fgaAuth.js
+try {
+  const fga = require('./modules/fga');
+  app.use('/api/fga', adminRateLimit, fga.router);
+  console.log('✅ FGA routes mounted at /api/fga');
+} catch (e) {
+  console.warn('⚠️ FGA module failed to load:', e?.message || e);
+}
+
 // Direct messaging
 app.use("/api", generalRateLimit, require("./routes/messages")); // messaging API
 
@@ -1109,6 +1121,16 @@ async function start() {
       fge.initialize();
     } catch (e) {
       console.warn('⚠️ FGE initialization skipped:', e?.message || e);
+    }
+
+    // Initialize Fixlo Growth Automation (FGA)
+    // Guarded by FGA_ENABLED env var — safe to call even when disabled.
+    try {
+      const fga = require('./modules/fga');
+      fga.initialize();
+      console.log('✅ FGA module initialized');
+    } catch (e) {
+      console.warn('⚠️ FGA initialization skipped:', e?.message || e);
     }
 
     // Initialize SEO Agent Scheduler
