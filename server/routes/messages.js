@@ -1,258 +1,243 @@
-/**
- * Messages Routes
- * API endpoints for direct messaging between users
- */
-
 const express = require('express');
+const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
+const Message = require('../models/Message');
+const { requireDatabase } = require('../config/database');
+
 const router = express.Router();
-const requireAuth = require('../middleware/requireAuth');
 
-// Simple in-memory storage for demo (replace with MongoDB in production)
-const conversations = new Map();
-const messages = new Map();
+function normalizeId(value) {
+  return value ? String(value) : null;
+}
 
-/**
- * Get all conversations for the authenticated user
- */
-router.get('/conversations', requireAuth, async (req, res) => {
+function getAuthedUser(req) {
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  if (!token || !process.env.JWT_SECRET) return null;
+
   try {
-    const userId = req.userId;
-    const userConversations = [];
-
-    // Find conversations involving this user
-    for (const [convId, conv] of conversations.entries()) {
-      if (conv.participants.includes(userId)) {
-        const otherUserId = conv.participants.find(id => id !== userId);
-        const convMessages = messages.get(convId) || [];
-        const lastMessage = convMessages[convMessages.length - 1];
-        const unreadCount = convMessages.filter(
-          m => m.senderId !== userId && !m.read
-        ).length;
-
-        userConversations.push({
-          _id: convId,
-          otherUser: {
-            _id: otherUserId,
-            name: conv.participantNames[otherUserId] || 'Unknown User',
-          },
-          lastMessage,
-          unreadCount,
-          updatedAt: conv.updatedAt,
-        });
-      }
-    }
-
-    // Sort by most recent
-    userConversations.sort((a, b) => 
-      new Date(b.updatedAt) - new Date(a.updatedAt)
-    );
-
-    res.json({ conversations: userConversations });
-  } catch (error) {
-    console.error('Error fetching conversations:', error);
-    res.status(500).json({ error: 'Failed to fetch conversations' });
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return {
+      id: normalizeId(decoded.id || decoded.proId),
+      role: decoded.role || null,
+      email: decoded.email || '',
+      isAdmin: decoded.isAdmin === true
+    };
+  } catch {
+    return null;
   }
-});
+}
 
-/**
- * Start a new conversation
- */
-router.post('/conversations', requireAuth, async (req, res) => {
-  try {
-    const { recipientId, initialMessage } = req.body;
-    const userId = req.userId;
-
-    if (!recipientId) {
-      return res.status(400).json({ error: 'Recipient ID is required' });
-    }
-
-    // Check if conversation already exists
-    let existingConvId = null;
-    for (const [convId, conv] of conversations.entries()) {
-      if (
-        conv.participants.includes(userId) &&
-        conv.participants.includes(recipientId)
-      ) {
-        existingConvId = convId;
-        break;
-      }
-    }
-
-    const conversationId = existingConvId || `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    if (!existingConvId) {
-      conversations.set(conversationId, {
-        _id: conversationId,
-        participants: [userId, recipientId],
-        participantNames: {
-          [userId]: req.userName || 'User',
-          [recipientId]: 'Recipient',
-        },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-      messages.set(conversationId, []);
-    }
-
-    // Send initial message if provided
-    if (initialMessage) {
-      const message = {
-        _id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        conversationId,
-        senderId: userId,
-        text: initialMessage,
-        read: false,
-        createdAt: new Date().toISOString(),
-      };
-
-      const convMessages = messages.get(conversationId);
-      convMessages.push(message);
-      
-      // Update conversation timestamp
-      const conv = conversations.get(conversationId);
-      conv.updatedAt = new Date().toISOString();
-
-      // Emit socket event for real-time delivery
-      if (req.app.get('io')) {
-        req.app.get('io').emit('message:new', message);
-      }
-    }
-
-    res.json({
-      _id: conversationId,
-      participants: [userId, recipientId],
-    });
-  } catch (error) {
-    console.error('Error starting conversation:', error);
-    res.status(500).json({ error: 'Failed to start conversation' });
+function requireUser(req, res, next) {
+  const user = getAuthedUser(req);
+  if (!user?.id || !mongoose.Types.ObjectId.isValid(user.id)) {
+    return res.status(401).json({ error: 'Unauthorized' });
   }
-});
 
-/**
- * Get messages for a conversation
- */
-router.get('/messages/:conversationId', requireAuth, async (req, res) => {
+  req.user = user;
+  return next();
+}
+
+function buildConversationId(userA, userB) {
+  return [String(userA), String(userB)].sort().join('_');
+}
+
+function parseLimit(value, fallback = 50) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return Math.min(parsed, 100);
+}
+
+async function getConversationMessages(req, res) {
   try {
     const { conversationId } = req.params;
-    const userId = req.userId;
-    const { page = 1, limit = 50 } = req.query;
+    const page = Math.max(Number.parseInt(req.query.page, 10) || 1, 1);
+    const limit = parseLimit(req.query.limit);
 
-    // Verify user is part of this conversation
-    const conversation = conversations.get(conversationId);
-    if (!conversation || !conversation.participants.includes(userId)) {
-      return res.status(403).json({ error: 'Access denied' });
+    const membership = await Message.findOne({
+      conversationId,
+      $or: [
+        { senderId: req.user.id },
+        { receiverId: req.user.id }
+      ]
+    }).lean();
+
+    if (!membership) {
+      return res.status(404).json({ error: 'Conversation not found' });
     }
 
-    const convMessages = messages.get(conversationId) || [];
-    
-    // Pagination
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + parseInt(limit);
-    const paginatedMessages = convMessages.slice(startIndex, endIndex);
+    const [messages, total] = await Promise.all([
+      Message.find({ conversationId })
+        .sort({ createdAt: 1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+      Message.countDocuments({ conversationId })
+    ]);
 
-    res.json({
-      messages: paginatedMessages,
-      total: convMessages.length,
-      page: parseInt(page),
-      limit: parseInt(limit),
-    });
+    return res.json({ messages, total, page, limit });
   } catch (error) {
     console.error('Error fetching messages:', error);
-    res.status(500).json({ error: 'Failed to fetch messages' });
+    return res.status(500).json({ error: 'Failed to fetch messages' });
   }
-});
+}
 
-/**
- * Send a message
- */
-router.post('/messages', requireAuth, async (req, res) => {
+router.use(requireDatabase);
+router.use(requireUser);
+
+router.get('/conversations', async (req, res) => {
   try {
-    const { conversationId, recipientId, text, attachments = [] } = req.body;
-    const userId = req.userId;
-
-    if (!conversationId || !text) {
-      return res.status(400).json({ error: 'Conversation ID and text are required' });
-    }
-
-    // Verify conversation exists
-    const conversation = conversations.get(conversationId);
-    if (!conversation || !conversation.participants.includes(userId)) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    // Create message
-    const message = {
-      _id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      conversationId,
-      senderId: userId,
-      text,
-      attachments,
-      read: false,
-      createdAt: new Date().toISOString(),
-    };
-
-    // Add to messages
-    const convMessages = messages.get(conversationId);
-    convMessages.push(message);
-
-    // Update conversation timestamp
-    conversation.updatedAt = new Date().toISOString();
-
-    // Emit socket event for real-time delivery
-    if (req.app.get('io')) {
-      req.app.get('io').emit('message:new', message);
-    }
-
-    res.json(message);
-  } catch (error) {
-    console.error('Error sending message:', error);
-    res.status(500).json({ error: 'Failed to send message' });
-  }
-});
-
-/**
- * Mark message as read
- */
-router.post('/messages/:messageId/read', requireAuth, async (req, res) => {
-  try {
-    const { messageId } = req.params;
-    const userId = req.userId;
-
-    // Find the message
-    let found = false;
-    let conversationId = null;
-
-    for (const [convId, convMessages] of messages.entries()) {
-      const message = convMessages.find(m => m._id === messageId);
-      if (message) {
-        // Verify user is recipient
-        if (message.senderId !== userId) {
-          message.read = true;
-          message.readAt = new Date().toISOString();
-          found = true;
-          conversationId = convId;
-
-          // Emit socket event
-          if (req.app.get('io')) {
-            req.app.get('io').emit('message:read', {
-              conversationId,
-              messageId,
-            });
+    const userObjectId = new mongoose.Types.ObjectId(req.user.id);
+    const conversations = await Message.aggregate([
+      {
+        $match: {
+          $or: [
+            { senderId: userObjectId },
+            { receiverId: userObjectId }
+          ]
+        }
+      },
+      { $sort: { createdAt: -1 } },
+      {
+        $group: {
+          _id: '$conversationId',
+          lastMessage: { $first: '$$ROOT' },
+          updatedAt: { $first: '$createdAt' },
+          unreadCount: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$receiverId', userObjectId] },
+                    { $eq: ['$read', false] }
+                  ]
+                },
+                1,
+                0
+              ]
+            }
           }
         }
-        break;
-      }
-    }
+      },
+      { $sort: { updatedAt: -1 } }
+    ]);
 
-    if (!found) {
-      return res.status(404).json({ error: 'Message not found' });
-    }
+    return res.json({
+      conversations: conversations.map((conversation) => {
+        const lastMessage = conversation.lastMessage;
+        const senderId = String(lastMessage.senderId);
+        const receiverId = String(lastMessage.receiverId);
+        const isSender = senderId === req.user.id;
 
-    res.json({ success: true });
+        return {
+          conversationId: conversation._id,
+          otherUser: {
+            id: isSender ? receiverId : senderId,
+            role: isSender ? lastMessage.receiverRole : lastMessage.senderRole
+          },
+          jobId: lastMessage.jobId || null,
+          lastMessage,
+          unreadCount: conversation.unreadCount,
+          updatedAt: conversation.updatedAt
+        };
+      })
+    });
   } catch (error) {
-    console.error('Error marking message as read:', error);
-    res.status(500).json({ error: 'Failed to mark message as read' });
+    console.error('Error fetching conversations:', error);
+    return res.status(500).json({ error: 'Failed to fetch conversations' });
+  }
+});
+
+router.get('/conversations/:conversationId/messages', getConversationMessages);
+router.get('/messages/:conversationId', getConversationMessages);
+
+router.post('/conversations', async (req, res) => {
+  try {
+    const { receiverId, receiverRole, content, jobId } = req.body || {};
+
+    if (!receiverId || !mongoose.Types.ObjectId.isValid(receiverId)) {
+      return res.status(400).json({ error: 'Valid receiverId is required' });
+    }
+    if (!receiverRole || !content) {
+      return res.status(400).json({ error: 'receiverRole and content are required' });
+    }
+    if (jobId && !mongoose.Types.ObjectId.isValid(jobId)) {
+      return res.status(400).json({ error: 'Invalid jobId' });
+    }
+    if (String(receiverId) === req.user.id) {
+      return res.status(400).json({ error: 'Cannot send a message to yourself' });
+    }
+
+    const conversationId = buildConversationId(req.user.id, receiverId);
+    const message = await Message.create({
+      conversationId,
+      senderId: req.user.id,
+      senderRole: req.user.role,
+      receiverId,
+      receiverRole,
+      jobId: jobId || undefined,
+      content
+    });
+
+    const payload = message.toObject();
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('message:new', payload);
+    }
+
+    return res.status(201).json(payload);
+  } catch (error) {
+    console.error('Error sending message:', error);
+    return res.status(500).json({ error: 'Failed to send message' });
+  }
+});
+
+router.put('/conversations/:conversationId/read', async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+
+    const membership = await Message.findOne({
+      conversationId,
+      $or: [
+        { senderId: req.user.id },
+        { receiverId: req.user.id }
+      ]
+    }).lean();
+
+    if (!membership) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    const now = new Date();
+    const result = await Message.updateMany(
+      {
+        conversationId,
+        receiverId: req.user.id,
+        read: false
+      },
+      {
+        $set: {
+          read: true,
+          readAt: now
+        }
+      }
+    );
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('message:read', {
+        conversationId,
+        userId: req.user.id,
+        modifiedCount: result.modifiedCount || 0
+      });
+    }
+
+    return res.json({ success: true, modifiedCount: result.modifiedCount || 0 });
+  } catch (error) {
+    console.error('Error marking conversation as read:', error);
+    return res.status(500).json({ error: 'Failed to mark conversation as read' });
   }
 });
 
 module.exports = router;
+

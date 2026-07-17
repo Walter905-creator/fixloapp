@@ -4,6 +4,7 @@
 .dashboard-sidebar ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
 .sidebar-link { width: 100%; text-align: left; border: 0; background: transparent; color: #dbeafe; padding: 10px 12px; border-radius: 10px; font-size: 0.92rem; cursor: pointer; }
 .sidebar-link:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+.sidebar-link.active { background: rgba(255, 255, 255, 0.12); color: #fff; }
 .dashboard-main { padding: 24px; }
 .dashboard-header { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 20px; }
 .dashboard-header h1 { font-size: 1.8rem; font-weight: 800; color: #0f172a; margin: 0; }
@@ -32,7 +33,10 @@
 .dashboard-status-pending { background: #ffedd5; color: #c2410c; }
 .dashboard-status-converted, .dashboard-status-accepted, .dashboard-status-active { background: #dcfce7; color: #166534; }
 .dashboard-status-paid { background: #dbeafe; color: #1e40af; }
-.dashboard-status-rejected, .dashboard-status-inactive { background: #fee2e2; color: #991b1b; }
+.dashboard-status-rejected, .dashboard-status-inactive, .dashboard-status-cancelled { background: #fee2e2; color: #991b1b; }
+.dashboard-status-scheduled { background: #dbeafe; color: #1d4ed8; }
+.dashboard-status-confirmed, .dashboard-status-completed { background: #dcfce7; color: #166534; }
+.dashboard-status-in_progress { background: #ffedd5; color: #c2410c; }
 .source-chart { margin-top: 12px; display: grid; gap: 10px; }
 .source-meta { display: flex; justify-content: space-between; font-size: 0.87rem; color: #334155; margin-bottom: 4px; }
 .source-track { background: #e2e8f0; border-radius: 999px; height: 8px; overflow: hidden; }

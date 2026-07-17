@@ -28,6 +28,7 @@ import JoinPage from './routes/JoinPage.jsx';
 import ServicePage from './routes/ServicePage.jsx';
 import JobManagementPage from './routes/JobManagementPage.jsx';
 import CustomerPortalPage from './routes/CustomerPortalPage.jsx';
+import HomeownerDashboard from './routes/HomeownerDashboard.jsx';
 import CountryPage from './routes/CountryPage.jsx';
 import Terms from './pages/Terms.jsx';
 import Privacy from './pages/Privacy.jsx';
@@ -323,7 +324,7 @@ export default function App(){
       <Route path="/forgot-password" element={<ForgotPassword/>}/>
       
       {/* Homeowner dashboard */}
-      <Route path="/dashboard/homeowner" element={<CustomerPortalPage/>}/>
+      <Route path="/dashboard/homeowner" element={<HomeownerDashboard/>}/>
       
       <Route path="*" element={<Navigate to="/" replace/>}/>
     </Routes>
