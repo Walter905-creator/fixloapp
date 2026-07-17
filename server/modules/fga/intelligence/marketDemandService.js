@@ -168,7 +168,7 @@ async function getTopTradesByDemand(months = 3) {
   for (let i = 0; i < months; i++) {
     let m = month - i;
     let y = year;
-    if (m <= 0) { m += 12; y -= 1; }
+    if (m < 1) { m += 12; y -= 1; }
     periods.push({ year: y, month: m });
   }
 

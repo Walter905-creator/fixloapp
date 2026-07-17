@@ -32,8 +32,16 @@ const lbSvc        = require('../intelligence/leaderboardService');
 const trendSvc     = require('../intelligence/trendAnalysisService');
 const reportSvc    = require('../intelligence/reportGeneratorService');
 
-const FGARoutingAttempt = require('../models/FGARoutingAttempt');
-const FGAProScore       = require('../models/FGAProScore');
+const FGARoutingAttempt  = require('../models/FGARoutingAttempt');
+const FGAProScore        = require('../models/FGAProScore');
+const FGARecruiterScore  = require('../models/FGARecruiterScore');
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** Return a Date N days in the past from now. */
+function daysAgo(n) {
+  return new Date(Date.now() - n * 86400000);
+}
 
 // ── Error wrapper ─────────────────────────────────────────────────────────────
 
@@ -91,7 +99,7 @@ router.get('/routing/lead/:leadId', fgaAuth, asyncHandler(async (req, res) => {
 // GET /api/fga/intelligence/routing/stats — routing outcome stats
 router.get('/routing/stats', fgaAuth, asyncHandler(async (req, res) => {
   const days  = Math.min(Number(req.query.days) || 30, 90);
-  const since = new Date(Date.now() - days * 86400000);
+  const since = daysAgo(days);
 
   const [byOutcome, avgScore] = await Promise.all([
     FGARoutingAttempt.aggregate([
@@ -281,7 +289,6 @@ router.get('/recruiters', fgaAuth, asyncHandler(async (req, res) => {
 
 // GET /api/fga/intelligence/recruiters/:recruiterId — single recruiter score
 router.get('/recruiters/:recruiterId', fgaAuth, asyncHandler(async (req, res) => {
-  const FGARecruiterScore = require('../models/FGARecruiterScore');
   const score = await FGARecruiterScore.findOne({ recruiterId: req.params.recruiterId })
     .populate('recruiterId', 'name email city state recruiterCode')
     .lean();

@@ -10,15 +10,21 @@
 const FGAProScore      = require('../models/FGAProScore');
 const FGARecruiterScore = require('../models/FGARecruiterScore');
 
-// ── Simple in-process cache (5 min TTL) ──────────────────────────────────────
+// ── Simple in-process cache (5 min TTL, max 50 entries) ──────────────────────
 
 const _cache = new Map();
-const CACHE_TTL_MS = 5 * 60 * 1000;
+const CACHE_TTL_MS  = 5 * 60 * 1000;
+const CACHE_MAX_SIZE = 50;
 
 function cached(key, fn) {
   const hit = _cache.get(key);
   if (hit && Date.now() - hit.ts < CACHE_TTL_MS) return Promise.resolve(hit.data);
   return fn().then(data => {
+    // Evict oldest entry if at capacity
+    if (_cache.size >= CACHE_MAX_SIZE) {
+      const oldest = _cache.keys().next().value;
+      _cache.delete(oldest);
+    }
     _cache.set(key, { data, ts: Date.now() });
     return data;
   });

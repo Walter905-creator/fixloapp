@@ -134,11 +134,6 @@ function scorePro(pro, lead, proScore) {
   // 11. Recent activity (active in last 30 days)
   breakdown.scoreRecentActivity = (proScore?.recent30dLeadsReceived || 0) > 0 ? 5 : 0;
 
-  const routingScore = Object.values(breakdown)
-    .filter((_, i) => i > 0)  // skip scoreDistanceMiles
-    .reduce((sum, v) => sum + (typeof v === 'number' ? v : 0), 0);
-
-  // Actually sum only the score fields (not distanceMiles)
   const sum =
     breakdown.scoreDistancePoints +
     breakdown.scoreTradeMatch +

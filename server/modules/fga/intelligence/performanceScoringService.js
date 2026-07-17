@@ -186,8 +186,8 @@ async function calculateScore(proId) {
   const rawScore = s_acceptance + s_completion + s_rating + s_responseTime
     + s_consistency + s_activity + s_recent + s_cancelPenalty;
 
-  // Scale to 100 (max theoretical = 80, scale up)
-  const score = clamp(Math.round((rawScore / 80) * 100), 0, 100);
+  // Scale to 100 — max theoretical = 85 (20+0+20+15+5+5+10+5)
+  const score = clamp(Math.round((rawScore / 85) * 100), 0, 100);
 
   const overallReliability = clamp(
     Math.round((acceptanceRate * 0.4 + (avgRating / 5) * 40 + responseConsistency * 0.2)),

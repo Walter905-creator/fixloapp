@@ -27,13 +27,15 @@ function toCSV(rows) {
       const v = row[h];
       if (v === null || v === undefined) return '';
       const s = String(v);
-      return s.includes(',') || s.includes('"') || s.includes('\n')
+      // Quote fields containing commas, double-quotes, newlines, or carriage returns (RFC 4180)
+      return s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')
         ? `"${s.replace(/"/g, '""')}"`
         : s;
     });
     lines.push(values.join(','));
   }
-  return lines.join('\n');
+  // Use CRLF line endings per RFC 4180
+  return lines.join('\r\n');
 }
 
 // ── Report: Pros ──────────────────────────────────────────────────────────────
