@@ -22,15 +22,17 @@
 const cron = require('node-cron');
 
 // ── Interval → cron expression map ────────────────────────────────────────────
+// Default run times can be overridden by building a custom cronExpr when
+// registering a job with schedule: 'cron'.
 const SCHEDULE_MAP = {
   immediate: null,           // run once immediately on registration
   '5m':   '*/5 * * * *',
   '30m':  '*/30 * * * *',
   '1h':   '0 * * * *',
-  '24h':  '0 2 * * *',      // 2 AM daily
-  '3d':   '0 3 */3 * *',    // 3 AM every 3 days
-  '7d':   '0 4 * * 0',      // 4 AM every Sunday
-  '30d':  '0 5 1 * *',      // 5 AM first of each month
+  '24h':  '0 2 * * *',      // 02:00 daily (America/New_York by default)
+  '3d':   '0 3 */3 * *',    // 03:00 every 3rd day
+  '7d':   '0 4 * * 0',      // 04:00 every Sunday
+  '30d':  '0 5 1 * *',      // 05:00 first of each month
 };
 
 // ── Registry ─────────────────────────────────────────────────────────────────

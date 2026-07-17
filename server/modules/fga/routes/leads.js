@@ -16,6 +16,18 @@ const timeline   = require('../timeline/timelineService');
 const actLogger  = require('../services/activityLogger');
 const comm       = require('../communication/communicationCenter');
 
+// Pagination constants
+const DEFAULT_LIMIT = 50;
+const MAX_LIMIT = 200;
+
+// Escape user-supplied strings before using them in MongoDB $regex queries
+// to prevent NoSQL injection via malformed patterns.
+function escapeRegex(str) {
+  return typeof str === 'string'
+    ? str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    : '';
+}
+
 // ── Helper ───────────────────────────────────────────────────────────────────
 
 function isValidId(id) {
@@ -27,30 +39,31 @@ router.get('/', fgaAuth, async (req, res) => {
   try {
     const {
       status, leadType, source, email, phone, name,
-      city, state, tag, q,
-      limit = 50, skip = 0,
+      city, state, tag, searchQuery,
+      limit = DEFAULT_LIMIT, skip = 0,
     } = req.query;
 
     const filters = {};
-    if (status)   filters.status   = status;
-    if (leadType) filters.leadType = leadType;
-    if (source)   filters.source   = source;
-    if (email)    filters.email    = { $regex: email, $options: 'i' };
-    if (phone)    filters.phone    = { $regex: phone, $options: 'i' };
-    if (name)     filters.name     = { $regex: name,  $options: 'i' };
-    if (city)     filters.city     = { $regex: city,  $options: 'i' };
-    if (state)    filters.state    = state;
-    if (tag)      filters.tags     = tag;
-    if (q) {
+    if (status   && typeof status   === 'string') filters.status   = status;
+    if (leadType && typeof leadType === 'string') filters.leadType = leadType;
+    if (source   && typeof source   === 'string') filters.source   = source;
+    if (state    && typeof state    === 'string') filters.state    = state;
+    if (tag      && typeof tag      === 'string') filters.tags     = tag;
+    if (email)   filters.email    = { $regex: escapeRegex(email), $options: 'i' };
+    if (phone)   filters.phone    = { $regex: escapeRegex(phone), $options: 'i' };
+    if (name)    filters.name     = { $regex: escapeRegex(name),  $options: 'i' };
+    if (city)    filters.city     = { $regex: escapeRegex(city),  $options: 'i' };
+    if (searchQuery && typeof searchQuery === 'string') {
+      const escaped = escapeRegex(searchQuery);
       filters.$or = [
-        { name:  { $regex: q, $options: 'i' } },
-        { email: { $regex: q, $options: 'i' } },
-        { phone: { $regex: q, $options: 'i' } },
+        { name:  { $regex: escaped, $options: 'i' } },
+        { email: { $regex: escaped, $options: 'i' } },
+        { phone: { $regex: escaped, $options: 'i' } },
       ];
     }
 
     const result = await leadSvc.search(filters, {
-      limit: Math.min(Number(limit) || 50, 200),
+      limit: Math.min(Number(limit) || DEFAULT_LIMIT, MAX_LIMIT),
       skip:  Number(skip) || 0,
     });
 

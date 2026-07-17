@@ -41,7 +41,8 @@ async function append(opts = {}) {
     });
     return entry;
   } catch (err) {
-    console.error(`[FGA:Timeline] ❌ Failed to append "${eventType}" for lead ${leadId}:`, err.message);
+    // Avoid user-controlled data in format-string position
+    console.error('[FGA:Timeline] ❌ Failed to append timeline entry:', err.message);
     return null;
   }
 }

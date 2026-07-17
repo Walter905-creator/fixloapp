@@ -3,7 +3,7 @@
 /**
  * FGA Admin Auth Middleware
  *
- * Requires a valid JWT (via Authorization: ****** AND
+ * Requires a valid JWT (via "Authorization: ******" header) AND
  * admin privileges (role === 'admin' || isAdmin === true).
  *
  * Reuses the existing JWT utility and requireAdmin pattern.

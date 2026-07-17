@@ -16,12 +16,13 @@ const FGAActivity = require('../models/FGAActivity');
 /**
  * Parse minimal device info from a User-Agent string.
  * Returns { browser, os, device }.
+ * Edge is checked before Chrome because Edge UA strings contain "Chrome/".
  */
 function _parseUA(ua = '') {
-  const browser = /Chrome\//.test(ua)   ? 'Chrome'
-    : /Firefox\//.test(ua)  ? 'Firefox'
-    : /Safari\//.test(ua)   ? 'Safari'
-    : /Edge\//.test(ua)     ? 'Edge'
+  const browser = /Edg\//.test(ua)       ? 'Edge'
+    : /Chrome\//.test(ua)  ? 'Chrome'
+    : /Firefox\//.test(ua) ? 'Firefox'
+    : /Safari\//.test(ua)  ? 'Safari'
     : /MSIE|Trident/.test(ua) ? 'IE'
     : 'Other';
 

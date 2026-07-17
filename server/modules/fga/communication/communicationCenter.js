@@ -44,9 +44,11 @@ function _getTwilioClient() {
   return _twilioClient;
 }
 
+// Max retry attempts for send operations
+const MAX_SEND_ATTEMPTS = 2;
 const FROM_PHONE = process.env.TWILIO_FROM_NUMBER;
 
-// ── Internal helpers ──────────────────────────────────────────────────────────
+
 
 /**
  * Persist a message record and publish the appropriate FGA event.
@@ -118,7 +120,7 @@ async function sendEmail(opts = {}) {
   };
   if (text) msg.text = text;
 
-  for (let attempt = 1; attempt <= 2; attempt++) {
+  for (let attempt = 1; attempt <= MAX_SEND_ATTEMPTS; attempt++) {
     try {
       const [response] = await sg.send(msg);
       logEntry.status = 'sent';
@@ -127,7 +129,7 @@ async function sendEmail(opts = {}) {
       console.log(`[FGA:CommCenter] ✅ Email sent to ${to} (attempt ${attempt})`);
       break;
     } catch (err) {
-      if (attempt < 2) {
+      if (attempt < MAX_SEND_ATTEMPTS) {
         console.warn(`[FGA:CommCenter] ⚠️ Email failed (attempt ${attempt}), retrying:`, err.message);
       } else {
         logEntry.status = 'failed';
@@ -195,7 +197,7 @@ async function sendSms(opts = {}) {
     return _log(logEntry);
   }
 
-  for (let attempt = 1; attempt <= 2; attempt++) {
+  for (let attempt = 1; attempt <= MAX_SEND_ATTEMPTS; attempt++) {
     try {
       const message = await twilio.messages.create({ to, from: FROM_PHONE, body });
       logEntry.status = 'sent';
@@ -204,7 +206,7 @@ async function sendSms(opts = {}) {
       console.log(`[FGA:CommCenter] ✅ SMS sent to ${to} (sid: ${message.sid}, attempt ${attempt})`);
       break;
     } catch (err) {
-      if (attempt < 2) {
+      if (attempt < MAX_SEND_ATTEMPTS) {
         console.warn(`[FGA:CommCenter] ⚠️ SMS failed (attempt ${attempt}), retrying:`, err.message);
       } else {
         logEntry.status = 'failed';

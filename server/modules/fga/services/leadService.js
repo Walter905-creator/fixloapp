@@ -208,21 +208,35 @@ async function findByUUID(uuid) {
 }
 
 /**
- * Search leads with filters.
+ * Search leads with explicit allowlist filters.
+ * Accepts only pre-validated filter objects from callers (admin routes).
  *
- * @param {object} filters   - Mongoose query conditions
+ * @param {object} filters   - Mongoose query conditions (caller must sanitize)
  * @param {object} [options] - { limit, skip, sort }
  * @returns {Promise<{ leads: FGALead[], total: number }>}
  */
 async function search(filters = {}, options = {}) {
-  const query = { isActive: true, ...filters };
+  // Build a clean query with only permitted top-level keys to prevent
+  // arbitrary operator injection from reaching MongoDB.
+  const ALLOWED_FIELDS = new Set([
+    'status', 'leadType', 'source', 'email', 'phone', 'name',
+    'city', 'state', 'zip', 'tags', 'isActive', 'assignedRecruiter',
+    '$or',
+  ]);
+  const safeQuery = { isActive: true };
+  for (const [key, value] of Object.entries(filters)) {
+    if (ALLOWED_FIELDS.has(key)) {
+      safeQuery[key] = value;
+    }
+  }
+
   const limit = Math.min(options.limit || 50, 200);
   const skip  = options.skip  || 0;
   const sort  = options.sort  || { createdAt: -1 };
 
   const [leads, total] = await Promise.all([
-    FGALead.find(query).sort(sort).skip(skip).limit(limit).lean(),
-    FGALead.countDocuments(query),
+    FGALead.find(safeQuery).sort(sort).skip(skip).limit(limit).lean(),
+    FGALead.countDocuments(safeQuery),
   ]);
 
   return { leads, total };

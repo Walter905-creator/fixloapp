@@ -17,8 +17,8 @@ const FGAMessage  = require('../models/FGAMessage');
 const scheduler   = require('../scheduler/schedulerService');
 
 // Lazy references to existing platform models (avoid circular dependency on boot)
-function getPro()      { return require('../../../models/Pro'); }
-function getJobReq()   { return require('../../../models/JobRequest'); }
+function getPro() { return require('../../../models/Pro'); }
+function getJobReq() { return require('../../../models/JobRequest'); }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

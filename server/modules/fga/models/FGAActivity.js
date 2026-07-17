@@ -75,7 +75,8 @@ const FGAActivitySchema = new mongoose.Schema(
 FGAActivitySchema.index({ userId: 1, timestamp: -1 });
 FGAActivitySchema.index({ action: 1, timestamp: -1 });
 FGAActivitySchema.index({ userType: 1, timestamp: -1 });
-// TTL: auto-expire activity logs after 365 days
-FGAActivitySchema.index({ timestamp: 1 }, { expireAfterSeconds: 365 * 24 * 60 * 60 });
+// TTL index: auto-expire activity logs after 1 year (365 days × 24 h × 3600 s)
+const ACTIVITY_RETENTION_SECONDS = 365 * 24 * 60 * 60;
+FGAActivitySchema.index({ timestamp: 1 }, { expireAfterSeconds: ACTIVITY_RETENTION_SECONDS });
 
 module.exports = mongoose.model('FGAActivity', FGAActivitySchema);

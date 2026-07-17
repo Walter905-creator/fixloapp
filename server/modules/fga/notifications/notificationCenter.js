@@ -137,7 +137,7 @@ function initialize() {
   eventBus.subscribe(FGA_EVENTS.AUTOMATION_FAILED,          _onAutomationFailed);
   eventBus.subscribe(FGA_EVENTS.SYSTEM_ERROR,               _onSystemError);
 
-  console.log('[FGA:NotifCenter] ✅ Notification Center initialized (6 listeners)');
+  console.log('[FGA:NotifCenter] ✅ Notification Center initialized');
 }
 
 module.exports = { initialize };
