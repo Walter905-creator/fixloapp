@@ -5,6 +5,7 @@ const { huntLeads } = require('./aiLeadHunter');
 const { processExpiredPremiumAssignments } = require('./leadAssignmentService');
 const { releaseApprovedCommissions, processWeeklyPayouts } = require('./recruiterCommissionEngine');
 const { sendWeeklySmsToAllRecruiters } = require('./recruiterSmsService');
+const { processFollowUpCycle, reconcileLeadRegistrations } = require('./metaLeadAutomationService');
 
 /**
  * Scheduled tasks service
@@ -132,6 +133,48 @@ function startScheduledTasks() {
     task: premiumLeadExpiryTask,
     schedule: '*/5 * * * *',
     description: 'Expire premium-exclusive leads and advance routing'
+  });
+
+  const metaLeadFollowupTask = cron.schedule('*/5 * * * *', async () => {
+    try {
+      const result = await processFollowUpCycle();
+      if ((result.processed || 0) > 0 || (result.skipped || 0) > 0) {
+        console.log(`[META_LEAD_AUTOMATION] Follow-up cycle processed=${result.processed || 0}, skipped=${result.skipped || 0}`);
+      }
+    } catch (error) {
+      console.error(`[META_LEAD_AUTOMATION] Follow-up cycle failed: ${error.message}`);
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York'
+  });
+
+  scheduledTasks.push({
+    name: 'meta-lead-followup-cycle',
+    task: metaLeadFollowupTask,
+    schedule: '*/5 * * * *',
+    description: 'Meta lead automation follow-up cycle (every 5 minutes)'
+  });
+
+  const metaLeadReconcileTask = cron.schedule('*/15 * * * *', async () => {
+    try {
+      const result = await reconcileLeadRegistrations();
+      if ((result.updated || 0) > 0) {
+        console.log(`[META_LEAD_AUTOMATION] Reconciled ${result.updated}/${result.scanned} lead registrations`);
+      }
+    } catch (error) {
+      console.error(`[META_LEAD_AUTOMATION] Reconcile failed: ${error.message}`);
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York'
+  });
+
+  scheduledTasks.push({
+    name: 'meta-lead-registration-reconcile',
+    task: metaLeadReconcileTask,
+    schedule: '*/15 * * * *',
+    description: 'Meta lead automation registration reconciliation'
   });
 
   // Task 4: SEO AI Engine
@@ -288,6 +331,10 @@ async function triggerTask(taskName) {
     case 'seo-ai-engine':
       const { runSEOAgent } = require('./seo/seoAgent');
       return await runSEOAgent({ maxPages: 20 });
+    case 'meta-lead-followup-cycle':
+      return await processFollowUpCycle();
+    case 'meta-lead-registration-reconcile':
+      return await reconcileLeadRegistrations();
     case 'recruiter-release-commissions':
       return await releaseApprovedCommissions();
     case 'recruiter-weekly-payouts':

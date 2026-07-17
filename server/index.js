@@ -184,6 +184,7 @@ app.use(
 // ----------------------- Body Parsers -----------------------
 // Raw body for Stripe webhooks must be before express.json
 app.use("/webhook/stripe", express.raw({ type: "application/json" }));
+app.use("/webhook/meta-leads", express.raw({ type: "application/json" }));
 app.use(express.json());
 
 // Cookie parser for country detection caching.
@@ -491,6 +492,7 @@ app.use("/api", require("./routes/search")); // boosted search
 
 // SEO Domination Agent (admin only)
 app.use("/api/seo-agent", adminRateLimit, require("./routes/seoAgent")); // autonomous SEO agent
+app.use(require("./routes/metaLeadAutomation"));
 
 // ----------------------- Stripe: Simple Subscribe endpoint (kept for PricingPage.jsx) -----------------------
 app.post("/api/subscribe", async (req, res) => {
