@@ -47,6 +47,10 @@ function parseDate(value) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function isNumericMetaId(value) {
+  return typeof value === 'string' && /^\d{5,40}$/.test(value);
+}
+
 function buildDefaults() {
   return {
     enabled: true,
@@ -505,6 +509,10 @@ function pickField(fields, keys = []) {
 }
 
 async function fetchMetaLeadData(metaLeadId, pageId) {
+  if (!isNumericMetaId(metaLeadId) || !isNumericMetaId(pageId)) {
+    throw new Error('Invalid Meta identifiers');
+  }
+
   const token = getPageToken(pageId);
   if (!token) throw new Error('Missing Meta page access token');
 
@@ -538,7 +546,7 @@ async function createOrUpdateLeadFromMeta(change) {
   const settings = await getSettings();
   const metaLeadId = change?.value?.leadgen_id;
   const pageId = change?.value?.page_id;
-  if (!metaLeadId || !pageId) {
+  if (!metaLeadId || !pageId || !isNumericMetaId(String(metaLeadId)) || !isNumericMetaId(String(pageId))) {
     return { skipped: true, reason: 'Missing leadgen_id or page_id' };
   }
 
@@ -702,6 +710,7 @@ async function handleTwilioStatusWebhook(payload = {}) {
   const sid = payload.MessageSid || payload.SmsSid;
   const twilioStatus = (payload.MessageStatus || '').toLowerCase();
   if (!sid) return { updated: false, reason: 'missing_sid' };
+  if (!/^SM[a-fA-F0-9]{32}$/.test(String(sid))) return { updated: false, reason: 'invalid_sid' };
 
   const lead = await MetaLead.findOne({ 'smsHistory.messageSid': sid });
   if (!lead) return { updated: false, reason: 'not_found' };
@@ -820,12 +829,12 @@ async function handleSendGridEvents(events = []) {
   let updated = 0;
 
   for (const event of entries) {
-    const messageId = event.sg_message_id || event.smtp-id || event.message_id || '';
+    const messageId = event.sg_message_id || event['smtp-id'] || event.message_id || '';
     const eventType = String(event.event || '').toLowerCase();
     const metaLeadId = event?.metaLeadId || event?.custom_args?.metaLeadId;
 
     let lead = null;
-    if (metaLeadId) {
+    if (metaLeadId && /^[a-fA-F0-9]{24}$/.test(String(metaLeadId))) {
       lead = await MetaLead.findById(metaLeadId).catch(() => null);
     }
     if (!lead && messageId) {
@@ -882,10 +891,15 @@ async function listLeads(filters = {}) {
   const limit = Math.min(100, Math.max(1, Number(filters.limit || 25)));
   const query = {};
 
-  if (filters.status) query.leadStatus = filters.status;
-  if (filters.registrationStatus) query.registrationStatus = filters.registrationStatus;
-  if (filters.followUpStatus) query['followUp.status'] = filters.followUpStatus;
-  if (filters.source) query.source = filters.source;
+  const allowedLeadStatuses = new Set(['new', 'in_progress', 'registered', 'subscribed', 'closed']);
+  const allowedRegistrationStatuses = new Set(['not_registered', 'registered', 'subscribed']);
+  const allowedFollowUpStatuses = new Set(['active', 'paused', 'stopped', 'completed']);
+  const allowedSources = new Set(['instagram', 'facebook', 'meta_unknown']);
+
+  if (allowedLeadStatuses.has(String(filters.status))) query.leadStatus = String(filters.status);
+  if (allowedRegistrationStatuses.has(String(filters.registrationStatus))) query.registrationStatus = String(filters.registrationStatus);
+  if (allowedFollowUpStatuses.has(String(filters.followUpStatus))) query['followUp.status'] = String(filters.followUpStatus);
+  if (allowedSources.has(String(filters.source))) query.source = String(filters.source);
   if (filters.search) {
     const search = String(filters.search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     query.$or = [

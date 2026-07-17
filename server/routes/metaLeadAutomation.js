@@ -42,7 +42,8 @@ router.get('/webhook/meta-leads', webhookRateLimit, (req, res) => {
   const challenge = req.query['hub.challenge'];
 
   if (mode === 'subscribe' && token && token === process.env.META_WEBHOOK_VERIFY_TOKEN) {
-    return res.status(200).send(challenge);
+    const safeChallenge = String(challenge || '').replace(/[<>]/g, '');
+    return res.status(200).type('text/plain').send(safeChallenge);
   }
 
   return res.status(403).json({ ok: false, error: 'Webhook verification failed' });
@@ -71,7 +72,7 @@ router.post('/webhook/twilio/meta-leads/status', webhookRateLimit, express.urlen
     await handleTwilioStatusWebhook(req.body || {});
     return res.status(200).send('ok');
   } catch (error) {
-    return res.status(500).send(error.message);
+    return res.status(500).type('text/plain').send('status_webhook_error');
   }
 });
 
@@ -80,7 +81,7 @@ router.post('/webhook/twilio/meta-leads/inbound', webhookRateLimit, express.urle
     await handleTwilioInboundWebhook(req.body || {});
     return res.status(200).send('<Response></Response>');
   } catch (error) {
-    return res.status(500).send(error.message);
+    return res.status(500).type('text/plain').send('inbound_webhook_error');
   }
 });
 

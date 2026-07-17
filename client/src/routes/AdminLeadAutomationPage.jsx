@@ -6,7 +6,7 @@ function authHeaders() {
   const token = localStorage.getItem('fixlo_token') || localStorage.getItem('fixlo_admin_token');
   return {
     'Content-Type': 'application/json',
-    Authorization: token ? `****** : ''
+    Authorization: token ? 'Bearer ' + token : ''
   };
 }
 
