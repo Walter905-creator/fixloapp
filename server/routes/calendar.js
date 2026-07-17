@@ -71,8 +71,13 @@ router.get('/calendar/appointments', async (req, res) => {
       ? { homeownerId: req.user.id }
       : { proId: req.user.id };
 
+    const VALID_STATUSES = ['scheduled', 'confirmed', 'in_progress', 'completed', 'cancelled', 'no_show'];
     if (req.query.status) {
-      query.status = req.query.status;
+      const s = String(req.query.status);
+      if (!VALID_STATUSES.includes(s)) {
+        return res.status(400).json({ error: 'Invalid status value' });
+      }
+      query.status = s;
     }
 
     if (req.query.start || req.query.end) {

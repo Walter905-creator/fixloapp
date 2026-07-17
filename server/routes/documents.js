@@ -73,15 +73,20 @@ router.get('/documents', async (req, res) => {
     const limit = parseLimit(req.query.limit);
     const query = accessQuery(req.user.id);
 
+    const VALID_TYPES = ['invoice','receipt','contract','photo','permit','insurance','project_file','before_photo','after_photo','other'];
     if (req.query.type) {
-      query.type = req.query.type;
+      const t = String(req.query.type);
+      if (!VALID_TYPES.includes(t)) {
+        return res.status(400).json({ error: 'Invalid type value' });
+      }
+      query.type = t;
     }
 
     if (req.query.jobId) {
       if (!mongoose.Types.ObjectId.isValid(req.query.jobId)) {
         return res.status(400).json({ error: 'Invalid jobId' });
       }
-      query.jobId = req.query.jobId;
+      query.jobId = new mongoose.Types.ObjectId(req.query.jobId);
     }
 
     const [documents, total] = await Promise.all([
