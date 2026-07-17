@@ -4,8 +4,8 @@
     { "source": "/privacy-policy", "destination": "/privacy", "permanent": true },
     { "source": "/privacy-policy.html", "destination": "/privacy", "permanent": true },
     { "source": "/for-professionals", "destination": "/for-pros", "permanent": true },
-    { "source": "/pro/register", "destination": "/pro/signup", "permanent": true },
-    { "source": "/pro/login", "destination": "/pro/sign-in", "permanent": true },
+    { "source": "/pro/register", "destination": "/pros/signup", "permanent": true },
+    { "source": "/pro/login", "destination": "/pros/login", "permanent": true },
     { "source": "/charlotte", "destination": "/request?city=charlotte-nc", "permanent": true }
   ],
   "rewrites": [
