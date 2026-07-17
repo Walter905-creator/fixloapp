@@ -390,6 +390,7 @@ app.use("/api/pros", generalRateLimit, require("./routes/proRoutes")); // auth &
 app.use("/api/pro", generalRateLimit, require("./routes/proJobs")); // professional jobs
 app.use("/api/pro", authRateLimit, require("./routes/pro")); // SaaS Pro register/login/dashboard
 app.use("/api/dashboard", generalRateLimit, require("./routes/dashboard")); // recruiter/pro dashboard summaries
+app.use("/api/dashboard", generalRateLimit, require("./routes/homeownerDashboard")); // homeowner dashboard summary
 app.use("/api/pro", generalRateLimit, require("./routes/proSetup")); // Pro subscription onboarding setup
 app.use("/pro", generalRateLimit, require("./routes/proSetup")); // GET /pro/setup-account/:token
 
@@ -473,6 +474,9 @@ try {
 
 // Direct messaging
 app.use("/api", generalRateLimit, require("./routes/messages")); // messaging API
+app.use("/api", generalRateLimit, require("./routes/notifications")); // notifications API
+app.use("/api", generalRateLimit, require("./routes/calendar")); // appointment calendar API
+app.use("/api", generalRateLimit, require("./routes/documents")); // document records API
 
 // Background check integration (Checkr)
 app.use("/api/checkr", require("./routes/checkrRoutes")); // Checkr candidate creation & webhooks

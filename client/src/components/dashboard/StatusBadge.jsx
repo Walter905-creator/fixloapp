@@ -7,7 +7,12 @@ const LABELS = {
   rejected: 'Rejected',
   accepted: 'Accepted',
   active: 'Active',
-  inactive: 'Inactive'
+  inactive: 'Inactive',
+  scheduled: 'Scheduled',
+  confirmed: 'Confirmed',
+  in_progress: 'In Progress',
+  completed: 'Completed',
+  cancelled: 'Cancelled'
 };
 
 export default function StatusBadge({ status = 'pending' }) {
