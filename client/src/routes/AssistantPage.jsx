@@ -37,8 +37,9 @@ What are you working on today?`
       });
 
       const data = await response.json().catch(() => ({}));
+      const failureMessage = data?.error || data?.fallback || data?.message || 'Unable to load AI guidance right now.';
       if (!response.ok || !data?.response) {
-        throw new Error(data?.error || data?.fallback || 'Unable to load AI guidance right now.');
+        throw new Error(failureMessage);
       }
 
       setMessages((m) => [...m, {
