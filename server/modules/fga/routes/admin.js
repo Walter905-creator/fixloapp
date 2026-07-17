@@ -12,14 +12,7 @@ const FGACRMProfile = require('../models/FGACRMProfile');
 const FGAMessage    = require('../models/FGAMessage');
 const FGAActivity   = require('../models/FGAActivity');
 const crmSvc        = require('../crm/crmService');
-
-// Escape user-supplied strings before using them in MongoDB $regex queries
-// to prevent NoSQL injection via malformed patterns.
-function escapeRegex(str) {
-  return typeof str === 'string'
-    ? str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    : '';
-}
+const { escapeRegex } = require('../utils/sanitization');
 
 // Max results per page
 const MAX_LIMIT = 200;

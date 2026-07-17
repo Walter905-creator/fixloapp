@@ -15,18 +15,11 @@ const FGALead    = require('../models/FGALead');
 const timeline   = require('../timeline/timelineService');
 const actLogger  = require('../services/activityLogger');
 const comm       = require('../communication/communicationCenter');
+const { escapeRegex } = require('../utils/sanitization');
 
 // Pagination constants
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
-
-// Escape user-supplied strings before using them in MongoDB $regex queries
-// to prevent NoSQL injection via malformed patterns.
-function escapeRegex(str) {
-  return typeof str === 'string'
-    ? str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    : '';
-}
 
 // ── Helper ───────────────────────────────────────────────────────────────────
 
@@ -53,19 +46,15 @@ router.get('/', fgaAuth, async (req, res) => {
     if (phone)   filters.phone    = { $regex: escapeRegex(phone), $options: 'i' };
     if (name)    filters.name     = { $regex: escapeRegex(name),  $options: 'i' };
     if (city)    filters.city     = { $regex: escapeRegex(city),  $options: 'i' };
-    if (searchQuery && typeof searchQuery === 'string') {
-      const escaped = escapeRegex(searchQuery);
-      filters.$or = [
-        { name:  { $regex: escaped, $options: 'i' } },
-        { email: { $regex: escaped, $options: 'i' } },
-        { phone: { $regex: escaped, $options: 'i' } },
-      ];
-    }
 
-    const result = await leadSvc.search(filters, {
-      limit: Math.min(Number(limit) || DEFAULT_LIMIT, MAX_LIMIT),
-      skip:  Number(skip) || 0,
-    });
+    const result = await leadSvc.search(
+      filters,
+      searchQuery && typeof searchQuery === 'string' ? searchQuery : undefined,
+      {
+        limit: Math.min(Number(limit) || DEFAULT_LIMIT, MAX_LIMIT),
+        skip:  Number(skip) || 0,
+      }
+    );
 
     return res.json({ ok: true, ...result });
   } catch (err) {

@@ -211,23 +211,34 @@ async function findByUUID(uuid) {
  * Search leads with explicit allowlist filters.
  * Accepts only pre-validated filter objects from callers (admin routes).
  *
- * @param {object} filters   - Mongoose query conditions (caller must sanitize)
- * @param {object} [options] - { limit, skip, sort }
+ * @param {object} filters      - Named filter conditions (string values only)
+ * @param {string} [searchQuery] - Optional full-text search across name/email/phone
+ * @param {object} [options]    - { limit, skip, sort }
  * @returns {Promise<{ leads: FGALead[], total: number }>}
  */
-async function search(filters = {}, options = {}) {
+async function search(filters = {}, searchQuery, options = {}) {
   // Build a clean query with only permitted top-level keys to prevent
   // arbitrary operator injection from reaching MongoDB.
   const ALLOWED_FIELDS = new Set([
     'status', 'leadType', 'source', 'email', 'phone', 'name',
     'city', 'state', 'zip', 'tags', 'isActive', 'assignedRecruiter',
-    '$or',
   ]);
   const safeQuery = { isActive: true };
   for (const [key, value] of Object.entries(filters)) {
     if (ALLOWED_FIELDS.has(key)) {
       safeQuery[key] = value;
     }
+  }
+
+  // Full-text search across name/email/phone — built internally, not from caller
+  if (searchQuery && typeof searchQuery === 'string' && searchQuery.length > 0) {
+    const escaped = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pattern = { $regex: escaped, $options: 'i' };
+    safeQuery.$or = [
+      { name:  pattern },
+      { email: pattern },
+      { phone: pattern },
+    ];
   }
 
   const limit = Math.min(options.limit || 50, 200);

@@ -59,7 +59,7 @@ function _parseUA(ua = '') {
 async function log(req, opts = {}) {
   try {
     const ua  = (req && req.headers && req.headers['user-agent']) || '';
-    const ip  = (req && (req.ip || (req.connection && req.connection.remoteAddress))) || '';
+    const ip  = (req && (req.ip || (req.socket && req.socket.remoteAddress))) || '';
     const { browser, os, device } = _parseUA(ua);
 
     const entry = await FGAActivity.create({
