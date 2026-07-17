@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import HelmetSEO from '../seo/HelmetSEO';
+import { API_BASE } from '../utils/config';
 
 export default function AssistantPage() {
   const [q, setQ] = useState('');
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
   const [messages, setMessages] = useState([{
     role: 'assistant', 
     content: `I'm Fixlo AI Home Expert.
@@ -14,21 +17,44 @@ What are you working on today?`
   
   const send = async (e) => {
     e.preventDefault();
-    if (!q.trim()) return;
+    const prompt = q.trim();
+    if (!prompt || sending) return;
     
     // Add user message to chat
-    const userMessage = { role: 'user', content: q };
+    const userMessage = { role: 'user', content: prompt };
     setMessages(m => [...m, userMessage]);
     setQ('');
-    
-    // TODO: Replace with actual API call to /api/ai/ask
-    // For now, provide a professional placeholder response
-    const assistantMessage = {
-      role: 'assistant',
-      content: 'I understand you need help with this project. To provide accurate guidance, I need to gather more information first.\n\nCould you tell me more about:\n1. What specific issue or project you\'re working on?\n2. Have you noticed any visual damage or symptoms?\n3. Do you have the necessary tools and materials?\n4. What is your level of experience with this type of work?\n\nThis information will help me determine if this is safe for DIY or if I should recommend a professional.'
-    };
-    
-    setMessages(m => [...m, assistantMessage]);
+    setSending(true);
+    setError('');
+
+    try {
+      const response = await fetch(`${API_BASE}/api/ai/ask`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ message: prompt })
+      });
+
+      const data = await response.json().catch(() => ({}));
+      const failureMessage = data?.error || data?.fallback || data?.message || 'Unable to load AI guidance right now.';
+      if (!response.ok || !data?.response) {
+        throw new Error(failureMessage);
+      }
+
+      setMessages((m) => [...m, {
+        role: 'assistant',
+        content: data.response
+      }]);
+    } catch (err) {
+      setError(err.message || 'Unable to load AI guidance right now.');
+      setMessages((m) => [...m, {
+        role: 'assistant',
+        content: 'I’m unable to respond right now. Please try again in a moment or request help from a Fixlo professional.'
+      }]);
+    } finally {
+      setSending(false);
+    }
   };
   
   return (
@@ -44,15 +70,20 @@ What are you working on today?`
                 <div className="text-sm text-slate-700 whitespace-pre-line">{m.content}</div>
               </div>
             ))}
+            {sending ? <div className="text-sm text-slate-500">Fixlo AI Home Expert is reviewing your project…</div> : null}
           </div>
+          {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
           <form onSubmit={send} className="mt-4 flex gap-2">
             <input 
               className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2" 
               value={q} 
               onChange={e => setQ(e.target.value)} 
               placeholder="Describe your home repair project..." 
+              disabled={sending}
             />
-            <button className="btn btn-primary" type="submit">Send</button>
+            <button className="btn btn-primary" type="submit" disabled={sending}>
+              {sending ? 'Sending…' : 'Send'}
+            </button>
           </form>
         </div>
       </div>

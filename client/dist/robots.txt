@@ -6,5 +6,14 @@ Disallow: /admin
 Disallow: /admin/
 Disallow: /dashboard/admin
 Disallow: /dashboard/admin/
+Disallow: /dashboard/pro
+Disallow: /dashboard/homeowner
+Disallow: /dashboard/recruiter
+Disallow: /pros/login
+Disallow: /pros/signup
+Disallow: /recruiter/login
+Disallow: /recruiter/signup
+Disallow: /login/
+Disallow: /signup/
 
 Sitemap: https://www.fixloapp.com/sitemap.xml
