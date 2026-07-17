@@ -18,6 +18,7 @@ const eventBus    = require('../events/eventBus');
 const FGA_EVENTS  = require('../events/eventTypes');
 const timeline    = require('../timeline/timelineService');
 const analytics   = require('../analytics/analyticsService');
+const { escapeRegex } = require('../utils/sanitization');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -209,31 +210,37 @@ async function findByUUID(uuid) {
 
 /**
  * Search leads with explicit allowlist filters.
- * Accepts only pre-validated filter objects from callers (admin routes).
+ * String values for partial-match fields (email, phone, name, city) are
+ * converted to $regex queries here, keeping MongoDB operator construction
+ * inside the service layer.
  *
- * @param {object} filters      - Named filter conditions (string values only)
+ * @param {object} filters       - Named filter conditions (plain string or exact-match values)
  * @param {string} [searchQuery] - Optional full-text search across name/email/phone
- * @param {object} [options]    - { limit, skip, sort }
+ * @param {object} [options]     - { limit, skip, sort }
  * @returns {Promise<{ leads: FGALead[], total: number }>}
  */
 async function search(filters = {}, searchQuery, options = {}) {
-  // Build a clean query with only permitted top-level keys to prevent
-  // arbitrary operator injection from reaching MongoDB.
-  const ALLOWED_FIELDS = new Set([
-    'status', 'leadType', 'source', 'email', 'phone', 'name',
-    'city', 'state', 'zip', 'tags', 'isActive', 'assignedRecruiter',
+  // Fields that support partial (case-insensitive) matching
+  const PARTIAL_MATCH_FIELDS = new Set(['email', 'phone', 'name', 'city']);
+  // Fields that require exact matching
+  const EXACT_MATCH_FIELDS = new Set([
+    'status', 'leadType', 'source', 'state', 'zip', 'tags',
+    'isActive', 'assignedRecruiter',
   ]);
+
   const safeQuery = { isActive: true };
   for (const [key, value] of Object.entries(filters)) {
-    if (ALLOWED_FIELDS.has(key)) {
+    if (typeof value !== 'string' && !Array.isArray(value)) continue;
+    if (PARTIAL_MATCH_FIELDS.has(key) && typeof value === 'string') {
+      safeQuery[key] = { $regex: escapeRegex(value), $options: 'i' };
+    } else if (EXACT_MATCH_FIELDS.has(key)) {
       safeQuery[key] = value;
     }
   }
 
   // Full-text search across name/email/phone — built internally, not from caller
   if (searchQuery && typeof searchQuery === 'string' && searchQuery.length > 0) {
-    const escaped = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const pattern = { $regex: escaped, $options: 'i' };
+    const pattern = { $regex: escapeRegex(searchQuery), $options: 'i' };
     safeQuery.$or = [
       { name:  pattern },
       { email: pattern },

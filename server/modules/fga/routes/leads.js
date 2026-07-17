@@ -15,7 +15,6 @@ const FGALead    = require('../models/FGALead');
 const timeline   = require('../timeline/timelineService');
 const actLogger  = require('../services/activityLogger');
 const comm       = require('../communication/communicationCenter');
-const { escapeRegex } = require('../utils/sanitization');
 
 // Pagination constants
 const DEFAULT_LIMIT = 50;
@@ -42,10 +41,13 @@ router.get('/', fgaAuth, async (req, res) => {
     if (source   && typeof source   === 'string') filters.source   = source;
     if (state    && typeof state    === 'string') filters.state    = state;
     if (tag      && typeof tag      === 'string') filters.tags     = tag;
-    if (email)   filters.email    = { $regex: escapeRegex(email), $options: 'i' };
-    if (phone)   filters.phone    = { $regex: escapeRegex(phone), $options: 'i' };
-    if (name)    filters.name     = { $regex: escapeRegex(name),  $options: 'i' };
-    if (city)    filters.city     = { $regex: escapeRegex(city),  $options: 'i' };
+
+    // Partial-match fields are passed as plain strings; leadService builds the
+    // $regex queries internally so the service controls operator construction.
+    if (email && typeof email === 'string') filters.email = email;
+    if (phone && typeof phone === 'string') filters.phone = phone;
+    if (name  && typeof name  === 'string') filters.name  = name;
+    if (city  && typeof city  === 'string') filters.city  = city;
 
     const result = await leadSvc.search(
       filters,
