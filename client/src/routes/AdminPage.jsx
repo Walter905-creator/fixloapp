@@ -271,6 +271,10 @@ export default function AdminPage() {
           <h2 className="text-xl font-bold mb-1">🔍 SEO AI Engine</h2>
           <p className="text-sm text-gray-600">Automated SEO content generation and optimization</p>
         </a>
+        <a href="/dashboard/admin/lead-automation" className="card p-6 hover:shadow-lg transition-shadow border border-gray-200 bg-gradient-to-br from-sky-50 to-cyan-100">
+          <h2 className="text-xl font-bold mb-1">📥 Lead Automation</h2>
+          <p className="text-sm text-gray-600">Meta lead ads capture, follow-ups, tracking, and conversion analytics</p>
+        </a>
         <a href="/dashboard/admin/settings" className="card p-6 hover:shadow-lg transition-shadow border border-gray-200 bg-gradient-to-br from-purple-50 to-pink-50">
           <h2 className="text-xl font-bold mb-1">⚙️ Admin Settings</h2>
           <p className="text-sm text-gray-600">Configure lead radius, auto-assign, and integrations</p>

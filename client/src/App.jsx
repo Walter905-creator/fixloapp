@@ -22,6 +22,8 @@ import AdminSocialMediaPage from './routes/AdminSocialMediaPage.jsx';
 import AdminSettingsPage from './routes/AdminSettingsPage.jsx';
 import AdminLeadHunterPage from './routes/AdminLeadHunterPage.jsx';
 import AdminSEOAIPage from './routes/AdminSEOAIPage.jsx';
+import AdminLeadAutomationPage from './routes/AdminLeadAutomationPage.jsx';
+import AdminLeadAutomationDetailPage from './routes/AdminLeadAutomationDetailPage.jsx';
 import ProDashboardPage from './routes/ProDashboardPage.jsx';
 import ContractorDashboardPage from './routes/ContractorDashboardPage.jsx';
 import JoinPage from './routes/JoinPage.jsx';
@@ -210,6 +212,16 @@ export default function App(){
       <Route path="/dashboard/admin/seo-ai" element={
         <RequireAdmin>
           <AdminSEOAIPage/>
+        </RequireAdmin>
+      }/>
+      <Route path="/dashboard/admin/lead-automation" element={
+        <RequireAdmin>
+          <AdminLeadAutomationPage/>
+        </RequireAdmin>
+      }/>
+      <Route path="/dashboard/admin/lead-automation/:leadId" element={
+        <RequireAdmin>
+          <AdminLeadAutomationDetailPage/>
         </RequireAdmin>
       }/>
       <Route path="/dashboard/admin/invite-codes" element={

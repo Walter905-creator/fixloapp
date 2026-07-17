@@ -16,6 +16,12 @@ const AdminSettingsSchema = new mongoose.Schema({
   aiLeadHunterEnabled: { type: Boolean, default: true },
   seoEngineEnabled: { type: Boolean, default: true },
 
+  // Meta lead automation
+  metaLeadAutomation: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
+  },
+
   updatedAt: { type: Date, default: Date.now }
 });
 
