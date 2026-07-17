@@ -265,6 +265,15 @@ function generateSitemap() {
   // Write the sitemap to file
   const sitemapPath = path.join(__dirname, 'sitemap.xml');
   fs.writeFileSync(sitemapPath, sitemap);
+  const sitemapIndexPath = path.join(__dirname, 'sitemap-index.xml');
+  const sitemapIndex = `<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <sitemap>
+        <loc>${baseUrl}/sitemap.xml</loc>
+        <lastmod>${currentDate}</lastmod>
+    </sitemap>
+</sitemapindex>`;
+  fs.writeFileSync(sitemapIndexPath, sitemapIndex);
   
   const totalUrls = 1 + 7 + 1 + services.length + countryUrlCount; // homepage + 7 main pages + services page + service categories + country URLs
   
@@ -274,6 +283,7 @@ function generateSitemap() {
   console.log(`   🌍 Country-specific URLs: ${countryUrlCount}`);
   console.log(`   📍 Total canonical URLs in sitemap: ${totalUrls}`);
   console.log(`   💾 Sitemap saved to: ${sitemapPath}`);
+  console.log(`   💾 Sitemap index saved to: ${sitemapIndexPath}`);
   console.log(`\n⚠️  IMPORTANT NOTES:`);
   console.log(`   ✓ Only canonical URLs included (no redirects)`);
   console.log(`   ✓ No cross-country canonical references`);
