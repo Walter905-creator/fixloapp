@@ -44,6 +44,9 @@ const LEADS_TO_IMPORT = [
     firstName: 'Joshua',
     lastName: 'Noriega',
     phone: null,
+    // Email is used exactly as submitted by the lead — the username 'jcnoniega77'
+    // differs from the last name spelling ('Noriega') and may be intentional.
+    // Do NOT alter this address.
     email: 'jcnoniega77@yahoo.com',
     metaLeadId: 'manual-joshua-noriega-20260718',
     leadUniqueId: 'MANUAL-joshua-noriega-20260718'
