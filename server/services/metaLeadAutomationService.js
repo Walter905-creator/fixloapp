@@ -894,7 +894,7 @@ async function listLeads(filters = {}) {
   const allowedLeadStatuses = new Set(['new', 'in_progress', 'registered', 'subscribed', 'closed']);
   const allowedRegistrationStatuses = new Set(['not_registered', 'registered', 'subscribed']);
   const allowedFollowUpStatuses = new Set(['active', 'paused', 'stopped', 'completed']);
-  const allowedSources = new Set(['instagram', 'facebook', 'meta_unknown']);
+  const allowedSources = new Set(['instagram', 'facebook', 'meta_unknown', 'manual_meta_import']);
 
   if (allowedLeadStatuses.has(String(filters.status))) query.leadStatus = String(filters.status);
   if (allowedRegistrationStatuses.has(String(filters.registrationStatus))) query.registrationStatus = String(filters.registrationStatus);
@@ -1094,6 +1094,174 @@ async function performManualAction(leadId, action, payload = {}) {
   return lead;
 }
 
+/**
+ * importManualLead — One-time manual import of a historical Meta lead.
+ *
+ * Performs full duplicate prevention (by email, phone, existing MetaLead, existing Pro),
+ * creates the MetaLead record, generates an invitation code, sends the immediate SMS
+ * (only when a phone is present), sends the immediate welcome email, enrolls in the
+ * existing follow-up sequence, logs timeline events, and notifies admins.
+ *
+ * @param {object} leadData
+ * @param {string} leadData.firstName
+ * @param {string} leadData.lastName
+ * @param {string} [leadData.phone]  — leave empty/null when unavailable
+ * @param {string} leadData.email
+ * @param {string} leadData.leadUniqueId  — e.g. "MANUAL-dave-burnett-20260718"
+ * @param {string} leadData.metaLeadId   — e.g. "manual-dave-burnett-20260718"
+ * @returns {object} result with skipped/skippedReason or imported lead details
+ */
+async function importManualLead(leadData = {}) {
+  const settings = await getSettings();
+
+  const firstName = String(leadData.firstName || '').trim();
+  const lastName = String(leadData.lastName || '').trim();
+  const normalizedEmail = String(leadData.email || '').toLowerCase().trim();
+  const normalizedPhone = leadData.phone ? normalizePhone(leadData.phone) : '';
+  const metaLeadIdVal = String(leadData.metaLeadId || '').trim();
+  const leadUniqueIdVal = String(leadData.leadUniqueId || '').trim();
+
+  if (!metaLeadIdVal || !leadUniqueIdVal) {
+    return { skipped: true, skippedReason: 'Missing metaLeadId or leadUniqueId' };
+  }
+
+  // ── Duplicate: existing MetaLead by ID ───────────────────────────────────
+  const existingById = await MetaLead.findOne({
+    $or: [{ metaLeadId: metaLeadIdVal }, { leadUniqueId: leadUniqueIdVal }]
+  }).lean();
+  if (existingById) {
+    return {
+      skipped: true,
+      skippedReason: `MetaLead already exists with this ID (${existingById._id})`,
+      existingId: existingById._id
+    };
+  }
+
+  // ── Duplicate: existing MetaLead by email ────────────────────────────────
+  if (normalizedEmail) {
+    const existingByEmail = await MetaLead.findOne({ email: normalizedEmail }).lean();
+    if (existingByEmail) {
+      return {
+        skipped: true,
+        skippedReason: `MetaLead already exists with email ${normalizedEmail} (${existingByEmail._id})`,
+        existingId: existingByEmail._id
+      };
+    }
+  }
+
+  // ── Duplicate: existing MetaLead by phone ────────────────────────────────
+  if (normalizedPhone) {
+    const existingByPhone = await MetaLead.findOne({ phone: normalizedPhone }).lean();
+    if (existingByPhone) {
+      return {
+        skipped: true,
+        skippedReason: `MetaLead already exists with phone ${normalizedPhone} (${existingByPhone._id})`,
+        existingId: existingByPhone._id
+      };
+    }
+  }
+
+  // ── Duplicate: existing Pro account ─────────────────────────────────────
+  const proQuery = { $or: [] };
+  if (normalizedEmail) proQuery.$or.push({ email: normalizedEmail });
+  if (normalizedPhone) proQuery.$or.push({ phone: normalizedPhone });
+  if (proQuery.$or.length) {
+    const existingPro = await Pro.findOne(proQuery).select('_id email phone').lean();
+    if (existingPro) {
+      return {
+        skipped: true,
+        skippedReason: `Pro account already exists with matching email/phone (Pro ${existingPro._id})`,
+        existingProId: existingPro._id
+      };
+    }
+  }
+
+  // ── Create MetaLead ──────────────────────────────────────────────────────
+  const now = new Date();
+  const lead = await MetaLead.create({
+    leadUniqueId: leadUniqueIdVal,
+    metaLeadId: metaLeadIdVal,
+    source: 'manual_meta_import',
+    manualImport: true,
+    firstName,
+    lastName,
+    phone: normalizedPhone,
+    email: normalizedEmail,
+    notes: 'Manually imported historical Meta lead (collected before webhook was connected)',
+    submissionTimestamp: now,
+    leadStatus: 'in_progress',
+    followUp: {
+      step: 0,
+      status: 'active',
+      lastFollowUpAt: null,
+      nextFollowUpAt: getNextFollowUpAt(now, settings.followUpTimingsHours, 0)
+    }
+  });
+
+  // ── Timeline: manual_lead_imported ──────────────────────────────────────
+  await logEvent(
+    lead._id,
+    'lead_submitted',
+    'admin',
+    'Lead manually imported',
+    'Historical Meta lead imported before webhook was connected',
+    { metaLeadId: metaLeadIdVal, originalSource: 'Instagram/Facebook Lead Ad', importedBy: 'import-meta-leads script' }
+  );
+
+  // ── Invitation code ──────────────────────────────────────────────────────
+  await createInviteForLead(lead, settings);
+
+  // ── Timeline: invitation_created already logged by createInviteForLead ──
+
+  // ── SMS ─────────────────────────────────────────────────────────────────
+  let smsResult;
+  if (normalizedPhone) {
+    smsResult = await sendLeadSms(lead, 'immediate', settings);
+  } else {
+    smsResult = { success: false, reason: 'missing_phone' };
+    await logEvent(
+      lead._id,
+      'sms_skipped',
+      'sms',
+      'SMS skipped — no phone number',
+      'Lead has no phone number; SMS step skipped',
+      { reason: 'skipped_missing_phone' }
+    );
+  }
+
+  // ── Email ────────────────────────────────────────────────────────────────
+  const emailResult = await sendLeadEmail(lead, 'immediate', settings);
+
+  // ── Enrol in follow-up sequence ──────────────────────────────────────────
+  lead.followUp.lastFollowUpAt = now;
+  await lead.save();
+
+  await logEvent(
+    lead._id,
+    'followup_started',
+    'system',
+    'Follow-up sequence started',
+    'Immediate welcome email/SMS sent; automated reminders scheduled',
+    { nextFollowUpAt: lead.followUp.nextFollowUpAt }
+  );
+
+  // ── Admin notification ───────────────────────────────────────────────────
+  await notifyAdmins(
+    'new_lead',
+    'Manual Meta Lead Imported',
+    `${firstName} ${lastName} was manually imported from a historical Meta lead ad.`,
+    lead._id
+  );
+
+  return {
+    skipped: false,
+    lead,
+    invitationCode: lead.invitationCode,
+    smsResult,
+    emailResult
+  };
+}
+
 function verifyMetaSignature(rawBody, headerSignature = '') {
   const appSecret = process.env.META_APP_SECRET;
   if (!appSecret) return false;
@@ -1124,5 +1292,6 @@ module.exports = {
   listLeads,
   getLeadDetails,
   computeDashboardMetrics,
-  performManualAction
+  performManualAction,
+  importManualLead
 };
