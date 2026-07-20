@@ -187,6 +187,7 @@ const metaLeadSchema = new mongoose.Schema({
 metaLeadSchema.index({ createdAt: -1 });
 metaLeadSchema.index({ 'followUp.nextFollowUpAt': 1, 'followUp.status': 1 });
 metaLeadSchema.index({ leadStatus: 1, registrationStatus: 1, createdAt: -1 });
+metaLeadSchema.index({ email: 1, leadStatus: 1, createdAt: -1 });
 metaLeadSchema.index({ 'campaign.campaignId': 1, source: 1, createdAt: -1 });
 metaLeadSchema.index({ 'followUpConversation.status': 1, updatedAt: -1 });
 metaLeadSchema.index({ 'followUpConversation.humanTakeover': 1, updatedAt: -1 });

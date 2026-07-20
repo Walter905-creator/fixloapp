@@ -72,14 +72,25 @@ function isNumericMetaId(value) {
 }
 
 function sanitizeEmailHtml(input = '') {
-  return String(input || '')
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<[^>]+>/g, ' ')
+  const source = String(input || '');
+  let out = '';
+  let inTag = false;
+  for (let i = 0; i < source.length; i += 1) {
+    const char = source[i];
+    if (char === '<') {
+      inTag = true;
+      out += ' ';
+      continue;
+    }
+    if (char === '>') {
+      inTag = false;
+      out += ' ';
+      continue;
+    }
+    if (!inTag) out += char;
+  }
+  return out
     .replace(/&nbsp;|&#160;/gi, ' ')
-    .replace(/&amp;/gi, '&')
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -95,7 +106,7 @@ function parseSendGridToken(req = {}) {
 
 function verifySendGridInboundRequest(req = {}) {
   const configured = process.env.SENDGRID_INBOUND_PARSE_TOKEN || '';
-  if (!configured) return true;
+  if (!configured) return process.env.ALLOW_UNVERIFIED_SENDGRID_INBOUND === 'true';
   const received = String(parseSendGridToken(req));
   if (!received) return false;
   const a = Buffer.from(received);
@@ -114,8 +125,9 @@ function getCandidateWebhookUrls(req) {
   if (configuredBase) urls.add(`${configuredBase.replace(/\/$/, '')}${originalUrl}`);
   if (host) {
     urls.add(`${protocol}://${host}${originalUrl}`);
-    urls.add(`https://${host}${originalUrl}`);
-    urls.add(`http://${host}${originalUrl}`);
+    if (protocol !== 'https') {
+      urls.add(`https://${host}${originalUrl}`);
+    }
   }
   return Array.from(urls);
 }
@@ -126,6 +138,15 @@ function verifyTwilioWebhookRequest(req = {}) {
   if (!authToken || !signature) return false;
   const body = req.body || {};
   return getCandidateWebhookUrls(req).some((url) => twilioSdk.validateRequest(authToken, signature, url, body));
+}
+
+function escapeHtml(value = '') {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function buildDefaults() {
@@ -373,9 +394,9 @@ async function sendLeadEmail(lead, templateKey, settings, options = {}) {
   }
 
   try {
-    const mailingAddress = process.env.FIXLO_MAILING_ADDRESS || '';
-    const unsubscribeLink = process.env.FIXLO_UNSUBSCRIBE_URL || '';
-    const preferenceLink = process.env.FIXLO_PREFERENCES_URL || '';
+    const mailingAddress = escapeHtml(process.env.FIXLO_MAILING_ADDRESS || '');
+    const unsubscribeLink = escapeHtml(process.env.FIXLO_UNSUBSCRIBE_URL || '');
+    const preferenceLink = escapeHtml(process.env.FIXLO_PREFERENCES_URL || '');
     const legalFooter = options.marketing
       ? `<hr /><p style="font-size:12px;color:#666">The Fixlo Team${mailingAddress ? `<br/>${mailingAddress}` : ''}${unsubscribeLink ? `<br/><a href="${unsubscribeLink}">Unsubscribe</a>` : ''}${preferenceLink ? ` · <a href="${preferenceLink}">Manage preferences</a>` : ''}</p>`
       : '';
@@ -1224,17 +1245,31 @@ async function handleSendGridInboundWebhook(payload = {}, requestContext = null)
   const references = referencesRaw ? referencesRaw.split(/\s+/).filter(Boolean) : [];
   const body = text || sanitizeEmailHtml(html);
 
-  const leads = await MetaLead.find({
-    email: { $exists: true, $ne: '' },
-    leadStatus: { $nin: ['closed'] }
-  }).sort({ createdAt: -1 }).limit(300);
-
-  let lead = matchLeadByEmail(from, leads);
+  let lead = null;
+  if (from) {
+    lead = await MetaLead.findOne({
+      email: from,
+      leadStatus: { $nin: ['closed'] }
+    }).sort({ createdAt: -1 });
+  }
   if (!lead && inReplyTo) {
-    lead = leads.find((item) => (item.emailHistory || []).some((h) => h.messageId && h.messageId.includes(inReplyTo.replace(/[<>]/g, ''))));
+    const token = inReplyTo.replace(/[<>]/g, '');
+    lead = await MetaLead.findOne({
+      leadStatus: { $nin: ['closed'] },
+      'emailHistory.messageId': { $regex: token.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&') }
+    }).sort({ createdAt: -1 });
   }
   if (!lead && references.length) {
-    lead = leads.find((item) => (item.emailHistory || []).some((h) => h.messageId && references.some((ref) => h.messageId.includes(ref.replace(/[<>]/g, '')))));
+    const safeRefs = references
+      .map((ref) => ref.replace(/[<>]/g, ''))
+      .filter(Boolean)
+      .slice(0, 10);
+    if (safeRefs.length) {
+      lead = await MetaLead.findOne({
+        leadStatus: { $nin: ['closed'] },
+        $or: safeRefs.map((ref) => ({ 'emailHistory.messageId': { $regex: ref.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&') } }))
+      }).sort({ createdAt: -1 });
+    }
   }
   if (!lead) return { handled: false, reason: 'lead_not_found' };
 

@@ -7,11 +7,24 @@ const ESCALATION_INTENTS = new Set([
 ]);
 
 function normalizeText(input = '') {
-  return String(input || '')
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&nbsp;|&#160;/gi, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  const source = String(input || '');
+  let inTag = false;
+  let out = '';
+  for (let i = 0; i < source.length; i += 1) {
+    const char = source[i];
+    if (char === '<') {
+      inTag = true;
+      out += ' ';
+      continue;
+    }
+    if (char === '>') {
+      inTag = false;
+      out += ' ';
+      continue;
+    }
+    if (!inTag) out += char;
+  }
+  return out.replace(/\s+/g, ' ').trim();
 }
 
 function scoreMatch(text, phrases = []) {
@@ -48,6 +61,8 @@ function classifyIntent(rawText = '') {
   for (const [intent, phrases] of intentRules) {
     const score = scoreMatch(normalized, phrases);
     if (score > 0) {
+      // Confidence baseline 0.5 for first match, +0.15 per additional phrase hit.
+      // Cap at 0.98 to avoid claiming absolute certainty from keyword matching.
       const confidence = Math.min(0.98, 0.5 + (score * 0.15));
       if (confidence > best.confidence) best = { intent, confidence };
     }

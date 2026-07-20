@@ -132,13 +132,16 @@ export default function AdminLeadAutomationDetailPage() {
                 <div className="grid md:grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <p className="text-sm font-semibold">Manual SMS Reply</p>
-                    <textarea value={manualSms} onChange={(e) => setManualSms(e.target.value)} rows={3} className="w-full border rounded px-2 py-1 text-sm" placeholder="Type SMS reply" />
+                    <label htmlFor="manual-sms-reply" className="sr-only">Manual SMS reply</label>
+                    <textarea id="manual-sms-reply" value={manualSms} onChange={(e) => setManualSms(e.target.value)} rows={3} className="w-full border rounded px-2 py-1 text-sm" placeholder="Type SMS reply" />
                     <button onClick={() => runAction('send-manual-sms', { message: manualSms })} className="px-3 py-1.5 rounded bg-slate-900 text-white text-sm">Send SMS</button>
                   </div>
                   <div className="space-y-2">
                     <p className="text-sm font-semibold">Manual Email Reply</p>
-                    <input value={manualEmailSubject} onChange={(e) => setManualEmailSubject(e.target.value)} className="w-full border rounded px-2 py-1 text-sm" placeholder="Subject" />
-                    <textarea value={manualEmailBody} onChange={(e) => setManualEmailBody(e.target.value)} rows={3} className="w-full border rounded px-2 py-1 text-sm" placeholder="Email response" />
+                    <label htmlFor="manual-email-subject" className="sr-only">Manual email subject</label>
+                    <input id="manual-email-subject" value={manualEmailSubject} onChange={(e) => setManualEmailSubject(e.target.value)} className="w-full border rounded px-2 py-1 text-sm" placeholder="Subject" />
+                    <label htmlFor="manual-email-body" className="sr-only">Manual email response</label>
+                    <textarea id="manual-email-body" value={manualEmailBody} onChange={(e) => setManualEmailBody(e.target.value)} rows={3} className="w-full border rounded px-2 py-1 text-sm" placeholder="Email response" />
                     <button onClick={() => runAction('send-manual-email', { subject: manualEmailSubject, message: manualEmailBody })} className="px-3 py-1.5 rounded bg-slate-900 text-white text-sm">Send Email</button>
                   </div>
                 </div>
