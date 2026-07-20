@@ -128,7 +128,7 @@ test('isNumericMetaId — rejects non-numeric IDs', () => {
 
 // ── Test: normalizePhone ──────────────────────────────────────────────────────
 
-test('normalizePhone — normalises 10-digit US numbers', () => {
+test('normalizePhone — normalizes 10-digit US numbers', () => {
   assert.equal(normalizePhone('2294493677'), '+12294493677');
   assert.equal(normalizePhone('9493754801'), '+19493754801');
   assert.equal(normalizePhone('2832243704'), '+12832243704');

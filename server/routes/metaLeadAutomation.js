@@ -377,12 +377,11 @@ router.post('/api/admin/meta-leads/recover', requireAuth, requireAdmin, adminMut
       const pageId = String(body.pageId || process.env.META_PAGE_ID || '').trim();
       if (!pageId) return res.status(400).json({ ok: false, error: 'pageId is required to fetch from Meta API' });
 
-      const { fetchMetaLeadData: _unused, ...svc } = require('../services/metaLeadAutomationService');
-      // Re-import the private helper via the shared service context
-      const svcModule = require('../services/metaLeadAutomationService');
+      const formIdForBackfill = String(body.formId || '').trim();
+      if (!formIdForBackfill) return res.status(400).json({ ok: false, error: 'formId is required when recovering a numeric Meta lead ID' });
 
       // Use internal backfill flow to fetch single lead
-      const report = await backfillFormLeads(body.formId || '', pageId, { limit: 1 });
+      const report = await backfillFormLeads(formIdForBackfill, pageId, { limit: 1 });
       const found = report.results.find((r) => r.metaLeadId === metaLeadIdRaw);
       if (found) {
         result = {
