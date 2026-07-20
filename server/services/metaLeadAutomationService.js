@@ -15,6 +15,26 @@ const STOP_KEYWORDS = new Set(['STOP', 'STOPALL', 'UNSUBSCRIBE', 'CANCEL', 'END'
 const START_KEYWORDS = new Set(['START', 'YES', 'UNSTOP']);
 const FOLLOW_UP_SCHEDULE_HOURS = [24, 72, 168, 336];
 
+// ── Structured log helpers ───────────────────────────────────────────────────
+// Prefixes: META_WEBHOOK, META_FETCH, META_DATABASE, META_FOLLOWUP
+// PII rules: sanitize email to domain, phone to last 4 digits only.
+function slog(prefix, message, meta = {}) {
+  const ts = new Date().toISOString();
+  const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : '';
+  console.log(`[${prefix}] ${ts} ${message}${metaStr}`);
+}
+
+function sanitizeEmail(email) {
+  if (!email) return '';
+  const at = email.indexOf('@');
+  return at > 0 ? `*@${email.slice(at + 1)}` : '***';
+}
+
+function sanitizePhone(phone) {
+  const digits = String(phone || '').replace(/\D/g, '');
+  return digits.length >= 4 ? `****${digits.slice(-4)}` : '****';
+}
+
 let sendgridReady = false;
 function ensureSendGrid() {
   if (sendgridReady) return true;
@@ -509,20 +529,46 @@ function pickField(fields, keys = []) {
 }
 
 async function fetchMetaLeadData(metaLeadId, pageId) {
+  slog('META_FETCH', 'Started', { metaLeadId, pageId });
+
   if (!isNumericMetaId(metaLeadId) || !isNumericMetaId(pageId)) {
+    slog('META_FETCH', 'Invalid Meta identifiers', { metaLeadId, pageId });
     throw new Error('Invalid Meta identifiers');
   }
 
   const token = getPageToken(pageId);
-  if (!token) throw new Error('Missing Meta page access token');
+  if (!token) {
+    slog('META_FETCH', 'Invalid token — META_PAGE_ACCESS_TOKEN not set', { pageId });
+    throw new Error('Missing Meta page access token');
+  }
 
-  const { data } = await axios.get(`https://graph.facebook.com/v20.0/${metaLeadId}`, {
-    params: {
-      access_token: token,
-      fields: 'id,created_time,field_data,form_id,ad_id,campaign_id,adgroup_id,is_organic,platform'
-    },
-    timeout: 15000
-  });
+  let data;
+  try {
+    const res = await axios.get(`https://graph.facebook.com/v20.0/${metaLeadId}`, {
+      params: {
+        access_token: token,
+        fields: 'id,created_time,field_data,form_id,ad_id,campaign_id,adgroup_id,is_organic,platform'
+      },
+      timeout: 15000
+    });
+    data = res.data;
+  } catch (err) {
+    const fbError = err?.response?.data?.error || {};
+    if (fbError.type === 'OAuthException') {
+      slog('META_FETCH', `OAuth error — ${fbError.message || 'token rejected'}`, { code: fbError.code });
+      throw new Error(`Meta OAuth error: ${fbError.message || 'invalid token'}`);
+    }
+    if (fbError.code === 200 || fbError.code === 10 || fbError.code === 190) {
+      slog('META_FETCH', 'Permission denied', { code: fbError.code, message: fbError.message });
+      throw new Error(`Meta permission denied: ${fbError.message || 'check app permissions'}`);
+    }
+    if (err?.response?.status === 404 || fbError.code === 100) {
+      slog('META_FETCH', 'Lead not found on Meta', { metaLeadId });
+      throw new Error(`Meta lead not found: ${metaLeadId}`);
+    }
+    slog('META_FETCH', `Unexpected response — ${err.message}`, { status: err?.response?.status });
+    throw err;
+  }
 
   const [form, campaign, adSet, ad] = await Promise.all([
     data.form_id ? axios.get(`https://graph.facebook.com/v20.0/${data.form_id}`, {
@@ -539,6 +585,7 @@ async function fetchMetaLeadData(metaLeadId, pageId) {
     }).then((r) => r.data).catch(() => null) : null
   ]);
 
+  slog('META_FETCH', 'Success', { metaLeadId, formId: data.form_id || null });
   return { data, form, campaign, adSet, ad };
 }
 
@@ -553,6 +600,7 @@ async function createOrUpdateLeadFromMeta(change) {
   const existing = await MetaLead.findOne({ metaLeadId });
   if (existing) {
     await logEvent(existing._id, 'duplicate_webhook', 'meta', 'Duplicate webhook ignored', metaLeadId);
+    slog('META_DATABASE', 'Duplicate detected', { metaLeadId, existingId: String(existing._id) });
     return { skipped: true, reason: 'Duplicate lead', lead: existing };
   }
 
@@ -568,43 +616,69 @@ async function createOrUpdateLeadFromMeta(change) {
   const state = pickField(fields, ['state', 'region']);
   const zipCode = pickField(fields, ['zip', 'zipcode', 'postal_code']);
 
-  const lead = await MetaLead.create({
-    leadUniqueId: `META-${metaLeadId}`,
+  slog('META_DATABASE', 'Insert started', {
     metaLeadId,
-    source: sourceFromPayload(enriched.data, fields),
-    firstName,
-    lastName,
-    phone,
-    email,
-    trade,
-    city,
-    state,
-    zipCode,
-    submissionTimestamp: parseDate(enriched.data?.created_time) || new Date(),
-    campaign: {
-      campaignId: enriched.data?.campaign_id || '',
-      campaignName: enriched.campaign?.name || '',
-      adSetId: enriched.data?.adgroup_id || '',
-      adSetName: enriched.adSet?.name || '',
-      adId: enriched.data?.ad_id || '',
-      adName: enriched.ad?.name || '',
-      formId: enriched.data?.form_id || '',
-      formName: enriched.form?.name || ''
-    },
-    utm: {
-      source: pickField(fields, ['utm_source']),
-      medium: pickField(fields, ['utm_medium']),
-      campaign: pickField(fields, ['utm_campaign']),
-      term: pickField(fields, ['utm_term']),
-      content: pickField(fields, ['utm_content'])
-    },
-    leadStatus: 'in_progress',
-    followUp: {
-      step: 0,
-      status: 'active',
-      lastFollowUpAt: null,
-      nextFollowUpAt: getNextFollowUpAt(new Date(), settings.followUpTimingsHours, 0)
+    email: sanitizeEmail(email),
+    phone: sanitizePhone(phone),
+    collection: 'metaleads'
+  });
+
+  let lead;
+  try {
+    lead = await MetaLead.create({
+      leadUniqueId: `META-${metaLeadId}`,
+      metaLeadId,
+      source: sourceFromPayload(enriched.data, fields),
+      firstName,
+      lastName,
+      phone,
+      email,
+      trade,
+      city,
+      state,
+      zipCode,
+      submissionTimestamp: parseDate(enriched.data?.created_time) || new Date(),
+      campaign: {
+        campaignId: enriched.data?.campaign_id || '',
+        campaignName: enriched.campaign?.name || '',
+        adSetId: enriched.data?.adgroup_id || '',
+        adSetName: enriched.adSet?.name || '',
+        adId: enriched.data?.ad_id || '',
+        adName: enriched.ad?.name || '',
+        formId: enriched.data?.form_id || '',
+        formName: enriched.form?.name || ''
+      },
+      utm: {
+        source: pickField(fields, ['utm_source']),
+        medium: pickField(fields, ['utm_medium']),
+        campaign: pickField(fields, ['utm_campaign']),
+        term: pickField(fields, ['utm_term']),
+        content: pickField(fields, ['utm_content'])
+      },
+      leadStatus: 'in_progress',
+      followUp: {
+        step: 0,
+        status: 'active',
+        lastFollowUpAt: null,
+        nextFollowUpAt: getNextFollowUpAt(new Date(), settings.followUpTimingsHours, 0)
+      }
+    });
+  } catch (err) {
+    if (err.code === 11000) {
+      slog('META_DATABASE', 'Duplicate detected — unique index violation', { metaLeadId });
+    } else {
+      slog('META_DATABASE', `Insert failed — ${err.message}`, { metaLeadId });
     }
+    throw err;
+  }
+
+  slog('META_DATABASE', 'Insert succeeded', {
+    mongoId: String(lead._id),
+    collection: 'metaleads',
+    metaLeadId,
+    email: sanitizeEmail(email),
+    phone: sanitizePhone(phone),
+    createdAt: lead.createdAt
   });
 
   await logEvent(lead._id, 'lead_submitted', 'meta', 'Lead submitted from Meta', `Meta lead ${metaLeadId}`, {
@@ -659,7 +733,10 @@ async function processMetaWebhookPayload(payload) {
 
 async function processFollowUpCycle() {
   const settings = await getSettings();
-  if (!settings.enabled) return { processed: 0, skipped: 0, reason: 'disabled' };
+  if (!settings.enabled) {
+    slog('META_FOLLOWUP', 'Cycle skipped — automation disabled');
+    return { processed: 0, skipped: 0, reason: 'disabled' };
+  }
 
   const now = new Date();
   const candidates = await MetaLead.find({
@@ -669,6 +746,8 @@ async function processFollowUpCycle() {
     registrationStatus: 'not_registered'
   }).limit(100);
 
+  slog('META_FOLLOWUP', `Cycle started`, { eligibleCount: candidates.length });
+
   let processed = 0;
   let skipped = 0;
 
@@ -677,14 +756,18 @@ async function processFollowUpCycle() {
     await syncInvitationRedemption(lead, settings);
 
     if (lead.registrationStatus !== 'not_registered' || lead.followUp.status !== 'active') {
+      slog('META_FOLLOWUP', 'Lead skipped', { leadId: String(lead._id), reason: lead.registrationStatus !== 'not_registered' ? 'already_registered' : 'sequence_stopped' });
       skipped += 1;
       continue;
     }
 
+    slog('META_FOLLOWUP', 'Message queued', { leadId: String(lead._id), step: lead.followUp.step });
     await processLeadFollowUp(lead, settings);
+    slog('META_FOLLOWUP', 'Message sent', { leadId: String(lead._id), step: lead.followUp.step });
     processed += 1;
   }
 
+  slog('META_FOLLOWUP', 'Cycle completed', { processed, skipped });
   return { processed, skipped };
 }
 
@@ -1120,6 +1203,12 @@ async function importManualLead(leadData = {}) {
   const normalizedPhone = leadData.phone ? normalizePhone(leadData.phone) : '';
   const metaLeadIdVal = String(leadData.metaLeadId || '').trim();
   const leadUniqueIdVal = String(leadData.leadUniqueId || '').trim();
+  const trade = String(leadData.trade || '').trim();
+  const city = String(leadData.city || '').trim();
+  const state = String(leadData.state || '').trim();
+  const zipCode = String(leadData.zipCode || '').trim();
+  const formId = String(leadData.formId || '').trim();
+  const submittedAt = parseDate(leadData.submittedAt) || null;
 
   if (!metaLeadIdVal || !leadUniqueIdVal) {
     return { skipped: true, skippedReason: 'Missing metaLeadId or leadUniqueId' };
@@ -1178,24 +1267,56 @@ async function importManualLead(leadData = {}) {
 
   // ── Create MetaLead ──────────────────────────────────────────────────────
   const now = new Date();
-  const lead = await MetaLead.create({
-    leadUniqueId: leadUniqueIdVal,
+  slog('META_DATABASE', 'Insert started', {
     metaLeadId: metaLeadIdVal,
-    source: 'manual_meta_import',
-    manualImport: true,
-    firstName,
-    lastName,
-    phone: normalizedPhone,
-    email: normalizedEmail,
-    notes: 'Manually imported historical Meta lead (collected before webhook was connected)',
-    submissionTimestamp: now,
-    leadStatus: 'in_progress',
-    followUp: {
-      step: 0,
-      status: 'active',
-      lastFollowUpAt: null,
-      nextFollowUpAt: getNextFollowUpAt(now, settings.followUpTimingsHours, 0)
+    email: sanitizeEmail(normalizedEmail),
+    phone: sanitizePhone(normalizedPhone),
+    collection: 'metaleads',
+    source: 'manual_meta_import'
+  });
+
+  let lead;
+  try {
+    lead = await MetaLead.create({
+      leadUniqueId: leadUniqueIdVal,
+      metaLeadId: metaLeadIdVal,
+      source: 'manual_meta_import',
+      manualImport: true,
+      firstName,
+      lastName,
+      phone: normalizedPhone,
+      email: normalizedEmail,
+      trade,
+      city,
+      state,
+      zipCode,
+      campaign: formId ? { formId } : undefined,
+      notes: 'Manually imported historical Meta lead (collected before webhook was connected)',
+      submissionTimestamp: submittedAt || now,
+      leadStatus: 'in_progress',
+      followUp: {
+        step: 0,
+        status: 'active',
+        lastFollowUpAt: null,
+        nextFollowUpAt: getNextFollowUpAt(now, settings.followUpTimingsHours, 0)
+      }
+    });
+  } catch (err) {
+    if (err.code === 11000) {
+      slog('META_DATABASE', 'Duplicate detected — unique index violation', { metaLeadId: metaLeadIdVal });
+    } else {
+      slog('META_DATABASE', `Insert failed — ${err.message}`, { metaLeadId: metaLeadIdVal });
     }
+    throw err;
+  }
+
+  slog('META_DATABASE', 'Insert succeeded', {
+    mongoId: String(lead._id),
+    collection: 'metaleads',
+    metaLeadId: metaLeadIdVal,
+    email: sanitizeEmail(normalizedEmail),
+    phone: sanitizePhone(normalizedPhone),
+    createdAt: lead.createdAt
   });
 
   // ── Timeline: manual_lead_imported ──────────────────────────────────────
@@ -1262,6 +1383,373 @@ async function importManualLead(leadData = {}) {
   };
 }
 
+/**
+ * processMetaLead — shared core function used by BOTH the webhook path and the
+ * manual import path.
+ *
+ * @param {object} data
+ * @param {string}  data.source           — 'instagram'|'facebook'|'meta_unknown'|'manual_meta_import'
+ * @param {string}  data.metaLeadId       — Meta leadgen_id (numeric) or manual slug
+ * @param {string}  [data.formId]         — Meta form_id
+ * @param {string}  [data.fullName]       — used when firstName/lastName are absent
+ * @param {string}  [data.firstName]
+ * @param {string}  [data.lastName]
+ * @param {string}  [data.email]
+ * @param {string}  [data.phone]
+ * @param {string}  [data.trade]
+ * @param {string}  [data.city]
+ * @param {string}  [data.state]
+ * @param {string}  [data.zipCode]
+ * @param {Date|string} [data.submittedAt]
+ * @param {boolean} [data.manualImport]   — true when not coming from Meta webhook
+ * @param {object}  [data.campaign]       — campaign metadata object
+ * @param {string}  [data.notes]
+ * @returns {object} { skipped, skippedReason?, lead?, invitationCode?, smsResult?, emailResult? }
+ */
+async function processMetaLead(data = {}) {
+  const settings = await getSettings();
+
+  // ── Normalise fields ────────────────────────────────────────────────────
+  let firstName = String(data.firstName || '').trim();
+  let lastName = String(data.lastName || '').trim();
+  if (!firstName && data.fullName) {
+    const parts = String(data.fullName).trim().split(/\s+/);
+    firstName = parts[0] || '';
+    lastName = parts.slice(1).join(' ') || '';
+  }
+
+  const normalizedEmail = String(data.email || '').toLowerCase().trim();
+  const normalizedPhone = data.phone ? normalizePhone(data.phone) : '';
+  const metaLeadIdVal = String(data.metaLeadId || '').trim();
+  const trade = String(data.trade || '').trim();
+  const city = String(data.city || '').trim();
+  const state = String(data.state || '').trim();
+  const zipCode = String(data.zipCode || '').trim();
+  const formId = String(data.formId || '').trim();
+  const submittedAt = parseDate(data.submittedAt) || null;
+  const manualImport = !!data.manualImport;
+  const source = data.source || (manualImport ? 'manual_meta_import' : 'meta_unknown');
+
+  const leadUniqueId = manualImport ? `MANUAL-${metaLeadIdVal}` : `META-${metaLeadIdVal}`;
+
+  if (!metaLeadIdVal) {
+    return { skipped: true, skippedReason: 'Missing metaLeadId' };
+  }
+
+  // ── Duplicate checks ────────────────────────────────────────────────────
+  const existingById = await MetaLead.findOne({
+    $or: [{ metaLeadId: metaLeadIdVal }, { leadUniqueId }]
+  }).lean();
+  if (existingById) {
+    return {
+      skipped: true,
+      skippedReason: `MetaLead already exists with this ID (${existingById._id})`,
+      existingId: existingById._id
+    };
+  }
+
+  if (normalizedEmail) {
+    const existingByEmail = await MetaLead.findOne({ email: normalizedEmail }).lean();
+    if (existingByEmail) {
+      return {
+        skipped: true,
+        skippedReason: `MetaLead already exists with email (${existingByEmail._id})`,
+        existingId: existingByEmail._id
+      };
+    }
+  }
+
+  if (normalizedPhone) {
+    const existingByPhone = await MetaLead.findOne({ phone: normalizedPhone }).lean();
+    if (existingByPhone) {
+      return {
+        skipped: true,
+        skippedReason: `MetaLead already exists with phone (${existingByPhone._id})`,
+        existingId: existingByPhone._id
+      };
+    }
+  }
+
+  const proQueryOr = [];
+  if (normalizedEmail) proQueryOr.push({ email: normalizedEmail });
+  if (normalizedPhone) proQueryOr.push({ phone: normalizedPhone });
+  if (proQueryOr.length) {
+    const existingPro = await Pro.findOne({ $or: proQueryOr }).select('_id').lean();
+    if (existingPro) {
+      return {
+        skipped: true,
+        skippedReason: `Pro account already exists with matching email/phone (Pro ${existingPro._id})`,
+        existingProId: existingPro._id
+      };
+    }
+  }
+
+  // ── Create MetaLead ──────────────────────────────────────────────────────
+  const now = new Date();
+  slog('META_DATABASE', 'Insert started', {
+    metaLeadId: metaLeadIdVal,
+    email: sanitizeEmail(normalizedEmail),
+    phone: sanitizePhone(normalizedPhone),
+    collection: 'metaleads',
+    source
+  });
+
+  let lead;
+  try {
+    lead = await MetaLead.create({
+      leadUniqueId,
+      metaLeadId: metaLeadIdVal,
+      source,
+      manualImport,
+      firstName,
+      lastName,
+      phone: normalizedPhone,
+      email: normalizedEmail,
+      trade,
+      city,
+      state,
+      zipCode,
+      campaign: data.campaign || (formId ? { formId } : undefined),
+      notes: data.notes || (manualImport ? 'Manually imported historical Meta lead' : ''),
+      submissionTimestamp: submittedAt || now,
+      leadStatus: 'in_progress',
+      followUp: {
+        step: 0,
+        status: 'active',
+        lastFollowUpAt: null,
+        nextFollowUpAt: getNextFollowUpAt(now, settings.followUpTimingsHours, 0)
+      }
+    });
+  } catch (err) {
+    if (err.code === 11000) {
+      slog('META_DATABASE', 'Duplicate detected — unique index violation', { metaLeadId: metaLeadIdVal });
+    } else {
+      slog('META_DATABASE', `Insert failed — ${err.message}`, { metaLeadId: metaLeadIdVal });
+    }
+    throw err;
+  }
+
+  slog('META_DATABASE', 'Insert succeeded', {
+    mongoId: String(lead._id),
+    collection: 'metaleads',
+    metaLeadId: metaLeadIdVal,
+    email: sanitizeEmail(normalizedEmail),
+    phone: sanitizePhone(normalizedPhone),
+    createdAt: lead.createdAt
+  });
+
+  // ── Timeline event ───────────────────────────────────────────────────────
+  await logEvent(
+    lead._id,
+    'lead_submitted',
+    manualImport ? 'admin' : 'meta',
+    manualImport ? 'Lead manually imported' : 'Lead submitted from Meta',
+    manualImport ? 'Manually imported lead' : `Meta lead ${metaLeadIdVal}`,
+    { metaLeadId: metaLeadIdVal, formId, source }
+  );
+
+  // ── Invitation code ──────────────────────────────────────────────────────
+  await createInviteForLead(lead, settings);
+
+  // ── SMS ──────────────────────────────────────────────────────────────────
+  let smsResult;
+  if (normalizedPhone) {
+    smsResult = await sendLeadSms(lead, 'immediate', settings);
+  } else {
+    smsResult = { success: false, reason: 'missing_phone' };
+    await logEvent(lead._id, 'sms_skipped', 'sms', 'SMS skipped — no phone number', '', { reason: 'skipped_missing_phone' });
+  }
+
+  // ── Email ────────────────────────────────────────────────────────────────
+  const emailResult = await sendLeadEmail(lead, 'immediate', settings);
+
+  // ── Follow-up sequence ───────────────────────────────────────────────────
+  lead.followUp.lastFollowUpAt = now;
+  await lead.save();
+
+  await logEvent(lead._id, 'followup_started', 'system', 'Follow-up sequence started', 'Immediate SMS/email sent; automated reminders scheduled', {
+    nextFollowUpAt: lead.followUp.nextFollowUpAt
+  });
+
+  // ── Notifications ────────────────────────────────────────────────────────
+  await notifyOwnerIfEnabled(lead, settings, 'new_lead');
+  await notifyAdmins(
+    'new_lead',
+    manualImport ? 'Manual Meta Lead Imported' : 'New Meta Lead',
+    `${firstName || 'New'} ${lastName || 'lead'} captured from Meta lead ads.`,
+    lead._id
+  );
+
+  return {
+    skipped: false,
+    lead,
+    invitationCode: lead.invitationCode,
+    smsResult,
+    emailResult
+  };
+}
+
+/**
+ * backfillFormLeads — fetch recent leads from Meta for a given form_id and
+ * import any that are not already in MongoDB.
+ *
+ * @param {string} formId  — Meta form_id (numeric string)
+ * @param {string} pageId  — Meta page_id (required to get the page token)
+ * @param {object} [opts]
+ * @param {number} [opts.limit=50]  — max leads to fetch from Meta
+ * @returns {object} detailed recovery report
+ */
+async function backfillFormLeads(formId, pageId, opts = {}) {
+  const limit = Math.min(100, Math.max(1, Number(opts.limit || 50)));
+  const token = getPageToken(pageId);
+  if (!token) throw new Error('Missing Meta page access token for backfill');
+  if (!isNumericMetaId(formId)) throw new Error('Invalid form_id for backfill');
+
+  slog('META_FETCH', 'Backfill started', { formId, pageId, limit });
+
+  const { data: formLeadsData } = await axios.get(`https://graph.facebook.com/v20.0/${formId}/leads`, {
+    params: {
+      access_token: token,
+      fields: 'id,created_time,field_data,ad_id,campaign_id,adgroup_id',
+      limit
+    },
+    timeout: 30000
+  });
+
+  const metaLeads = Array.isArray(formLeadsData?.data) ? formLeadsData.data : [];
+  slog('META_FETCH', `Backfill fetched ${metaLeads.length} leads from Meta`, { formId });
+
+  const results = [];
+
+  for (const rawLead of metaLeads) {
+    const metaLeadId = String(rawLead.id || '');
+    if (!metaLeadId) { results.push({ metaLeadId: '', skipped: true, reason: 'missing_id' }); continue; }
+
+    const existing = await MetaLead.findOne({
+      $or: [{ metaLeadId }, { leadUniqueId: `META-${metaLeadId}` }]
+    }).lean();
+    if (existing) {
+      results.push({ metaLeadId, skipped: true, reason: 'already_exists', mongoId: String(existing._id) });
+      continue;
+    }
+
+    const fields = mapFieldData(rawLead.field_data || []);
+    const firstName = pickField(fields, ['first_name', 'firstname', 'full_name']);
+    const lastName = pickField(fields, ['last_name', 'lastname']);
+    const phone = pickField(fields, ['phone_number', 'phone', 'mobile_phone']);
+    const email = pickField(fields, ['email', 'email_address']);
+    const trade = pickField(fields, ['trade', 'service', 'service_type']);
+    const city = pickField(fields, ['city']);
+    const state = pickField(fields, ['state', 'region']);
+    const zipCode = pickField(fields, ['zip', 'zipcode', 'postal_code']);
+
+    try {
+      const result = await processMetaLead({
+        source: sourceFromPayload(rawLead, fields),
+        metaLeadId,
+        formId,
+        firstName,
+        lastName,
+        email,
+        phone,
+        trade,
+        city,
+        state,
+        zipCode,
+        submittedAt: rawLead.created_time || null,
+        manualImport: false,
+        campaign: {
+          formId,
+          campaignId: rawLead.campaign_id || '',
+          adSetId: rawLead.adgroup_id || '',
+          adId: rawLead.ad_id || ''
+        }
+      });
+
+      results.push({
+        metaLeadId,
+        skipped: result.skipped,
+        reason: result.skippedReason || null,
+        mongoId: result.lead ? String(result.lead._id) : null,
+        invitationCode: result.invitationCode || null,
+        sms: result.smsResult || null,
+        email: result.emailResult || null
+      });
+    } catch (err) {
+      slog('META_DATABASE', `Backfill insert failed for ${metaLeadId} — ${err.message}`);
+      results.push({ metaLeadId, skipped: false, failed: true, reason: err.message });
+    }
+  }
+
+  slog('META_FETCH', 'Backfill completed', {
+    formId,
+    total: metaLeads.length,
+    imported: results.filter((r) => !r.skipped && !r.failed).length,
+    skipped: results.filter((r) => r.skipped).length,
+    failed: results.filter((r) => r.failed).length
+  });
+
+  return {
+    formId,
+    pageId,
+    totalFetched: metaLeads.length,
+    imported: results.filter((r) => !r.skipped && !r.failed).length,
+    alreadyExisted: results.filter((r) => r.skipped).length,
+    failed: results.filter((r) => r.failed).length,
+    results
+  };
+}
+
+/**
+ * getWebhookDiagnostics — returns a snapshot of the Meta webhook system health.
+ * Does NOT expose secrets.
+ */
+async function getWebhookDiagnostics() {
+  const settings = await getSettings();
+  const now = new Date();
+
+  const [
+    totalLeads,
+    pendingFollowUps,
+    smsSent,
+    emailSent,
+    lastLead,
+    lastEvent
+  ] = await Promise.all([
+    MetaLead.countDocuments(),
+    MetaLead.countDocuments({ 'followUp.status': 'active', registrationStatus: 'not_registered' }),
+    MetaLead.countDocuments({ smsStatus: { $in: ['sent', 'delivered'] } }),
+    MetaLead.countDocuments({ emailStatus: { $in: ['processed', 'delivered', 'opened', 'clicked'] } }),
+    MetaLead.findOne().sort({ createdAt: -1 }).select('createdAt source manualImport').lean(),
+    MetaLeadEvent.findOne({ channel: 'webhook' }).sort({ occurredAt: -1 }).select('occurredAt').lean()
+  ]);
+
+  const webhookRoute = '/webhook/meta-leads';
+  const webhookUrl = `${process.env.SERVER_BASE_URL || 'https://fixloapp.onrender.com'}${webhookRoute}`;
+
+  return {
+    webhookRoute,
+    webhookUrl,
+    credentials: {
+      pageTokenPresent: !!(process.env.META_PAGE_ACCESS_TOKEN || process.env.META_PAGE_ACCESS_TOKENS),
+      appSecretPresent: !!process.env.META_APP_SECRET,
+      verifyTokenPresent: !!process.env.META_WEBHOOK_VERIFY_TOKEN,
+      sendgridConfigured: !!process.env.SENDGRID_API_KEY,
+      twilioConfigured: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM_NUMBER)
+    },
+    lastWebhookEventAt: lastEvent?.occurredAt || null,
+    lastLeadCreatedAt: lastLead?.createdAt || null,
+    lastLeadSource: lastLead?.source || null,
+    totalMetaLeads: totalLeads,
+    pendingFollowUps,
+    smsSent,
+    emailSent,
+    automationEnabled: settings.enabled,
+    followUpTimingsHours: settings.followUpTimingsHours,
+    checkedAt: now
+  };
+}
+
 function verifyMetaSignature(rawBody, headerSignature = '') {
   const appSecret = process.env.META_APP_SECRET;
   if (!appSecret) return false;
@@ -1284,8 +1772,11 @@ module.exports = {
   saveSettings,
   verifyMetaSignature,
   processMetaWebhookPayload,
+  processMetaLead,
   processFollowUpCycle,
   reconcileLeadRegistrations,
+  backfillFormLeads,
+  getWebhookDiagnostics,
   handleTwilioStatusWebhook,
   handleTwilioInboundWebhook,
   handleSendGridEvents,
