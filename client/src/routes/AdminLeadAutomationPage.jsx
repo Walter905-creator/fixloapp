@@ -38,7 +38,7 @@ export default function AdminLeadAutomationPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [query, setQuery] = useState({ search: '', status: '', followUpStatus: '' });
+  const [query, setQuery] = useState({ search: '', status: '', followUpStatus: '', conversationStatus: '', channel: '', humanTakeover: '' });
 
   const stats = useMemo(() => [
     ['Total Meta Leads', metrics?.totalMetaLeads || 0],
@@ -74,7 +74,10 @@ export default function AdminLeadAutomationPage() {
         limit: '20',
         ...(query.search ? { search: query.search } : {}),
         ...(query.status ? { status: query.status } : {}),
-        ...(query.followUpStatus ? { followUpStatus: query.followUpStatus } : {})
+        ...(query.followUpStatus ? { followUpStatus: query.followUpStatus } : {}),
+        ...(query.conversationStatus ? { conversationStatus: query.conversationStatus } : {}),
+        ...(query.channel ? { channel: query.channel } : {}),
+        ...(query.humanTakeover ? { humanTakeover: query.humanTakeover } : {})
       });
 
       const [dashboardRes, leadsRes] = await Promise.all([
@@ -149,8 +152,8 @@ export default function AdminLeadAutomationPage() {
       <div className="container-xl py-8 space-y-6">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-extrabold">📥 Meta Lead Automation</h1>
-            <p className="text-sm text-gray-600">Instagram & Facebook lead ads follow-up control center</p>
+            <h1 className="text-2xl font-extrabold">📥 Follow-Up Conversations</h1>
+            <p className="text-sm text-gray-600">SMS and email follow-up conversation control center for professional leads</p>
           </div>
           <div className="flex gap-2">
             <button onClick={() => runJob('followups')} className="px-3 py-2 rounded border border-slate-300 text-sm">Run Follow-Ups</button>
@@ -235,7 +238,7 @@ export default function AdminLeadAutomationPage() {
               <input
                 value={query.search}
                 onChange={(e) => setQuery((p) => ({ ...p, search: e.target.value }))}
-                placeholder="Search lead, campaign, code"
+                placeholder="Search name, phone, email, trade, lead ID"
                 className="border rounded px-3 py-2 text-sm flex-1 min-w-[220px]"
               />
               <select value={query.status} onChange={(e) => setQuery((p) => ({ ...p, status: e.target.value }))} className="border rounded px-2 py-2 text-sm">
@@ -253,6 +256,26 @@ export default function AdminLeadAutomationPage() {
                 <option value="stopped">Stopped</option>
                 <option value="completed">Completed</option>
               </select>
+              <select value={query.conversationStatus} onChange={(e) => setQuery((p) => ({ ...p, conversationStatus: e.target.value }))} className="border rounded px-2 py-2 text-sm">
+                <option value="">All Conversations</option>
+                <option value="follow_up_active">Follow-up Active</option>
+                <option value="replied">Replied</option>
+                <option value="waiting_for_pro">Waiting for Pro</option>
+                <option value="human_review">Human Review</option>
+                <option value="human_takeover">Human Takeover</option>
+                <option value="not_interested">Not Interested</option>
+                <option value="unsubscribed">Unsubscribed</option>
+                <option value="closed">Closed</option>
+              </select>
+              <select value={query.channel} onChange={(e) => setQuery((p) => ({ ...p, channel: e.target.value }))} className="border rounded px-2 py-2 text-sm">
+                <option value="">All Channels</option>
+                <option value="sms">SMS</option>
+                <option value="email">Email</option>
+              </select>
+              <select value={query.humanTakeover} onChange={(e) => setQuery((p) => ({ ...p, humanTakeover: e.target.value }))} className="border rounded px-2 py-2 text-sm">
+                <option value="">All Ownership</option>
+                <option value="true">Human Takeover</option>
+              </select>
               <button onClick={() => loadDashboard(1)} className="px-3 py-2 bg-slate-900 text-white rounded text-sm">Filter</button>
             </div>
 
@@ -267,6 +290,7 @@ export default function AdminLeadAutomationPage() {
                         <th className="py-2">Campaign</th>
                         <th className="py-2">Status</th>
                         <th className="py-2">Follow-Up</th>
+                        <th className="py-2">Conversation</th>
                         <th className="py-2">Code</th>
                       </tr>
                     </thead>
@@ -283,6 +307,7 @@ export default function AdminLeadAutomationPage() {
                           <td className="py-2">{lead.campaign?.campaignName || '—'}</td>
                           <td className="py-2 capitalize">{lead.leadStatus}</td>
                           <td className="py-2 capitalize">{lead.followUp?.status || '—'}</td>
+                          <td className="py-2 capitalize">{lead.followUpConversation?.status?.replaceAll('_', ' ') || '—'}</td>
                           <td className="py-2 font-mono text-xs">{lead.invitationCode || '—'}</td>
                         </tr>
                       ))}

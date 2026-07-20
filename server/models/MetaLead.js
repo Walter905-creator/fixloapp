@@ -46,6 +46,64 @@ const emailHistorySchema = new mongoose.Schema({
   clickUrl: { type: String, default: null }
 }, { _id: false });
 
+const conversationMessageSchema = new mongoose.Schema({
+  channel: { type: String, enum: ['sms', 'email'], required: true, index: true },
+  direction: { type: String, enum: ['inbound', 'outbound', 'admin', 'system'], required: true },
+  sender: { type: String, default: 'The Fixlo Team' },
+  bodyOriginal: { type: String, default: '' },
+  bodyNormalized: { type: String, default: '' },
+  subject: { type: String, default: '' },
+  messageId: { type: String, default: '', index: true },
+  providerMessageId: { type: String, default: '', index: true },
+  inReplyTo: { type: String, default: '' },
+  references: { type: [String], default: [] },
+  intent: { type: String, default: '' },
+  confidence: { type: Number, default: 0 },
+  escalationStatus: {
+    type: String,
+    enum: ['none', 'pending_review', 'human_takeover'],
+    default: 'none'
+  },
+  deliveryStatus: { type: String, default: '' },
+  idempotencyKey: { type: String, default: '', index: true },
+  createdAt: { type: Date, default: Date.now, index: true },
+  metadata: { type: mongoose.Schema.Types.Mixed, default: {} }
+}, { _id: false });
+
+const followUpConversationSchema = new mongoose.Schema({
+  conversationId: { type: String, default: '', index: true },
+  status: {
+    type: String,
+    enum: [
+      'follow_up_active',
+      'replied',
+      'ai_responding',
+      'waiting_for_pro',
+      'human_review',
+      'human_takeover',
+      'signup_started',
+      'converted',
+      'not_interested',
+      'unsubscribed',
+      'closed'
+    ],
+    default: 'follow_up_active',
+    index: true
+  },
+  pausedAt: { type: Date, default: null },
+  pausedReason: { type: String, default: '' },
+  humanTakeover: { type: Boolean, default: false, index: true },
+  humanTakeoverBy: { type: String, default: '' },
+  humanTakeoverAt: { type: Date, default: null },
+  escalationReason: { type: String, default: '' },
+  lastInboundAt: { type: Date, default: null },
+  lastOutboundAt: { type: Date, default: null },
+  lastIntent: { type: String, default: '' },
+  lastConfidence: { type: Number, default: 0 },
+  lastChannel: { type: String, enum: ['sms', 'email', ''], default: '' },
+  sequencePaused: { type: Boolean, default: false, index: true }
+}, { _id: false });
+
 const campaignSchema = new mongoose.Schema({
   campaignId: { type: String, default: '' },
   campaignName: { type: String, default: '' },
@@ -118,15 +176,20 @@ const metaLeadSchema = new mongoose.Schema({
   smsOptOutAt: { type: Date, default: null },
   smsOptInAt: { type: Date, default: null },
   followUp: { type: followUpSchema, default: () => ({}) },
+  followUpConversation: { type: followUpConversationSchema, default: () => ({}) },
   assignedRecruiter: { type: String, default: '' },
   notes: { type: String, default: '' },
   smsHistory: { type: [smsHistorySchema], default: [] },
-  emailHistory: { type: [emailHistorySchema], default: [] }
+  emailHistory: { type: [emailHistorySchema], default: [] },
+  conversationMessages: { type: [conversationMessageSchema], default: [] }
 }, { timestamps: true });
 
 metaLeadSchema.index({ createdAt: -1 });
 metaLeadSchema.index({ 'followUp.nextFollowUpAt': 1, 'followUp.status': 1 });
 metaLeadSchema.index({ leadStatus: 1, registrationStatus: 1, createdAt: -1 });
 metaLeadSchema.index({ 'campaign.campaignId': 1, source: 1, createdAt: -1 });
+metaLeadSchema.index({ 'followUpConversation.status': 1, updatedAt: -1 });
+metaLeadSchema.index({ 'followUpConversation.humanTakeover': 1, updatedAt: -1 });
+metaLeadSchema.index({ 'conversationMessages.channel': 1, 'conversationMessages.createdAt': -1 });
 
 module.exports = mongoose.model('MetaLead', metaLeadSchema);

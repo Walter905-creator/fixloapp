@@ -2,6 +2,8 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const requireAuth = require('../middleware/requireAuth');
 const requireAdmin = require('../middleware/requireAdmin');
+const { inboundSmsController } = require('../controllers/inboundSmsController');
+const { inboundEmailController } = require('../controllers/inboundEmailController');
 const {
   getSettings,
   saveSettings,
@@ -10,7 +12,6 @@ const {
   processFollowUpCycle,
   reconcileLeadRegistrations,
   handleTwilioStatusWebhook,
-  handleTwilioInboundWebhook,
   handleSendGridEvents,
   listLeads,
   getLeadDetails,
@@ -77,12 +78,7 @@ router.post('/webhook/twilio/meta-leads/status', webhookRateLimit, express.urlen
 });
 
 router.post('/webhook/twilio/meta-leads/inbound', webhookRateLimit, express.urlencoded({ extended: false }), async (req, res) => {
-  try {
-    await handleTwilioInboundWebhook(req.body || {});
-    return res.status(200).send('<Response></Response>');
-  } catch (error) {
-    return res.status(500).type('text/plain').send('inbound_webhook_error');
-  }
+  return inboundSmsController(req, res);
 });
 
 router.post('/webhook/sendgrid/meta-leads/events', webhookRateLimit, express.json({ type: 'application/json' }), async (req, res) => {
@@ -93,6 +89,8 @@ router.post('/webhook/sendgrid/meta-leads/events', webhookRateLimit, express.jso
     return res.status(500).json({ ok: false, error: error.message });
   }
 });
+
+router.post('/webhook/sendgrid/meta-leads/inbound', webhookRateLimit, express.urlencoded({ extended: true }), async (req, res) => inboundEmailController(req, res));
 
 router.get('/api/admin/meta-leads/settings', requireAuth, requireAdmin, async (_req, res) => {
   try {
@@ -148,6 +146,12 @@ router.post('/api/admin/meta-leads/:id/actions/:action', requireAuth, requireAdm
       'pause': 'pause',
       'resume': 'resume',
       'mark-closed': 'mark_closed',
+      'take-over': 'take_over',
+      'release-takeover': 'release_takeover',
+      'send-manual-sms': 'send_manual_sms',
+      'send-manual-email': 'send_manual_email',
+      'mark-not-interested': 'mark_not_interested',
+      'mark-resolved': 'mark_resolved',
       'assign-recruiter': 'assign_recruiter',
       'add-note': 'add_note'
     };

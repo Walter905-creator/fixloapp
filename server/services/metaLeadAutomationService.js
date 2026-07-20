@@ -8,11 +8,31 @@ const MetaLead = require('../models/MetaLead');
 const MetaLeadEvent = require('../models/MetaLeadEvent');
 const Notification = require('../models/Notification');
 const Pro = require('../models/Pro');
+const twilioSdk = require('twilio');
 const { sendSms, normalizeE164 } = require('../utils/twilio');
 const { sendOwnerNotification } = require('../utils/smsSender');
+const { classifyIntent, normalizeText, requiresEscalation } = require('./replyIntentService');
+const {
+  ensureConversationState,
+  transitionState,
+  pauseSequence,
+  resumeSequence,
+  activateHumanTakeover,
+  clearHumanTakeover
+} = require('./conversationStateService');
+const { evaluateFollowUpEligibility } = require('./followUpEligibilityService');
+const { createHumanEscalation } = require('./humanEscalationService');
+const {
+  createIdempotencyKey,
+  hasIdempotencyKey,
+  appendConversationMessage,
+  getBusinessContext,
+  generateIntentResponse
+} = require('./followUpConversationService');
 
 const STOP_KEYWORDS = new Set(['STOP', 'STOPALL', 'UNSUBSCRIBE', 'CANCEL', 'END']);
 const START_KEYWORDS = new Set(['START', 'YES', 'UNSTOP']);
+const HELP_KEYWORDS = new Set(['HELP', 'INFO']);
 const FOLLOW_UP_SCHEDULE_HOURS = [24, 72, 168, 336];
 
 let sendgridReady = false;
@@ -49,6 +69,63 @@ function parseDate(value) {
 
 function isNumericMetaId(value) {
   return typeof value === 'string' && /^\d{5,40}$/.test(value);
+}
+
+function sanitizeEmailHtml(input = '') {
+  return String(input || '')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;|&#160;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function parseSendGridToken(req = {}) {
+  return (
+    req.headers?.['x-sendgrid-inbound-token'] ||
+    req.body?.token ||
+    req.query?.token ||
+    ''
+  );
+}
+
+function verifySendGridInboundRequest(req = {}) {
+  const configured = process.env.SENDGRID_INBOUND_PARSE_TOKEN || '';
+  if (!configured) return true;
+  const received = String(parseSendGridToken(req));
+  if (!received) return false;
+  const a = Buffer.from(received);
+  const b = Buffer.from(configured);
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
+
+function getCandidateWebhookUrls(req) {
+  const host = req.get('host') || '';
+  const protocol = req.protocol || 'https';
+  const originalUrl = req.originalUrl || req.url || '';
+  const configuredBase = process.env.TWILIO_WEBHOOK_BASE_URL || process.env.SERVER_BASE_URL || '';
+
+  const urls = new Set();
+  if (configuredBase) urls.add(`${configuredBase.replace(/\/$/, '')}${originalUrl}`);
+  if (host) {
+    urls.add(`${protocol}://${host}${originalUrl}`);
+    urls.add(`https://${host}${originalUrl}`);
+    urls.add(`http://${host}${originalUrl}`);
+  }
+  return Array.from(urls);
+}
+
+function verifyTwilioWebhookRequest(req = {}) {
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const signature = req.headers?.['x-twilio-signature'];
+  if (!authToken || !signature) return false;
+  const body = req.body || {};
+  return getCandidateWebhookUrls(req).some((url) => twilioSdk.validateRequest(authToken, signature, url, body));
 }
 
 function buildDefaults() {
@@ -201,13 +278,18 @@ function getStatusCallbackUrl() {
   return process.env.META_LEAD_SMS_STATUS_CALLBACK_URL || `${process.env.SERVER_BASE_URL || ''}/webhook/twilio/meta-leads/status`;
 }
 
-async function sendLeadSms(lead, templateKey, settings, force = false) {
+async function sendLeadSms(lead, templateKey, settings, force = false, options = {}) {
   if (!lead.phone) return { success: false, reason: 'missing_phone' };
   if (lead.smsOptOut && !force) return { success: false, reason: 'opted_out' };
 
   const vars = buildMessageVars(lead, settings);
-  const body = template(settings.smsTemplates?.[templateKey] || '', vars);
+  const body = options.customBody || template(settings.smsTemplates?.[templateKey] || '', vars);
   if (!body.trim()) return { success: false, reason: 'missing_template' };
+
+  const idempotencyKey = options.idempotencyKey || createIdempotencyKey(lead._id, 'sms', templateKey, options.reference || '');
+  if (hasIdempotencyKey(lead, idempotencyKey)) {
+    return { success: false, reason: 'duplicate', idempotencyKey };
+  }
 
   try {
     const twilioRes = await sendSms(lead.phone, body, { statusCallback: getStatusCallbackUrl() });
@@ -221,6 +303,23 @@ async function sendLeadSms(lead, templateKey, settings, force = false) {
       sentAt: new Date(),
       updatedAt: new Date()
     });
+    appendConversationMessage(lead, {
+      channel: 'sms',
+      direction: 'outbound',
+      sender: 'The Fixlo Team',
+      bodyOriginal: body,
+      bodyNormalized: normalizeText(body),
+      providerMessageId: twilioRes.sid,
+      messageId: twilioRes.sid,
+      deliveryStatus: twilioRes.status || 'sent',
+      idempotencyKey,
+      intent: options.intent || '',
+      confidence: options.confidence || 0,
+      metadata: {
+        templateKey,
+        automatedFollowUp: options.automatedFollowUp === true
+      }
+    });
     await lead.save();
 
     await logEvent(lead._id, 'sms_sent', 'sms', 'SMS sent', `Template ${templateKey}`, {
@@ -229,7 +328,7 @@ async function sendLeadSms(lead, templateKey, settings, force = false) {
       templateKey
     });
 
-    return { success: true, sid: twilioRes.sid };
+    return { success: true, sid: twilioRes.sid, idempotencyKey };
   } catch (error) {
     lead.smsStatus = 'failed';
     lead.smsHistory.push({
@@ -249,35 +348,54 @@ async function sendLeadSms(lead, templateKey, settings, force = false) {
       errorCode: error.code || null
     });
 
-    return { success: false, error: error.message };
+    return { success: false, error: error.message, idempotencyKey };
   }
 }
 
-async function sendLeadEmail(lead, templateKey, settings) {
+async function sendLeadEmail(lead, templateKey, settings, options = {}) {
   if (!lead.email) return { success: false, reason: 'missing_email' };
   if (!ensureSendGrid()) return { success: false, reason: 'sendgrid_not_configured' };
 
   const vars = buildMessageVars(lead, settings);
-  const subjectTemplate = templateKey === 'immediate' ? settings.emailTemplates?.immediateSubject : settings.emailTemplates?.reminderSubject;
-  const bodyTemplate = templateKey === 'immediate' ? settings.emailTemplates?.immediateBody : settings.emailTemplates?.reminderBody;
+  const subjectTemplate = options.subject ||
+    (templateKey === 'immediate' ? settings.emailTemplates?.immediateSubject : settings.emailTemplates?.reminderSubject);
+  const bodyTemplate = options.customHtml ||
+    (templateKey === 'immediate' ? settings.emailTemplates?.immediateBody : settings.emailTemplates?.reminderBody);
 
   const subject = template(subjectTemplate || '', vars);
   const html = template(bodyTemplate || '', vars);
 
   if (!subject || !html) return { success: false, reason: 'missing_template' };
 
+  const idempotencyKey = options.idempotencyKey || createIdempotencyKey(lead._id, 'email', templateKey, options.reference || '');
+  if (hasIdempotencyKey(lead, idempotencyKey)) {
+    return { success: false, reason: 'duplicate', idempotencyKey };
+  }
+
   try {
+    const mailingAddress = process.env.FIXLO_MAILING_ADDRESS || '';
+    const unsubscribeLink = process.env.FIXLO_UNSUBSCRIBE_URL || '';
+    const preferenceLink = process.env.FIXLO_PREFERENCES_URL || '';
+    const legalFooter = options.marketing
+      ? `<hr /><p style="font-size:12px;color:#666">The Fixlo Team${mailingAddress ? `<br/>${mailingAddress}` : ''}${unsubscribeLink ? `<br/><a href="${unsubscribeLink}">Unsubscribe</a>` : ''}${preferenceLink ? ` · <a href="${preferenceLink}">Manage preferences</a>` : ''}</p>`
+      : '';
+
     const msg = {
       to: lead.email,
       from: process.env.SENDGRID_FROM_EMAIL || 'notifications@fixloapp.com',
       replyTo: settings.supportEmail,
       subject,
-      html,
+      html: `${html}${legalFooter}`,
       customArgs: {
         metaLeadId: String(lead._id),
-        templateKey
+        templateKey,
+        idempotencyKey
       }
     };
+    if (options.inReplyTo) msg.inReplyTo = options.inReplyTo;
+    if (Array.isArray(options.references) && options.references.length) {
+      msg.headers = { References: options.references.join(' ') };
+    }
 
     const [response] = await sgMail.send(msg);
     const messageId = response?.headers?.['x-message-id'] || null;
@@ -291,6 +409,27 @@ async function sendLeadEmail(lead, templateKey, settings) {
       sentAt: new Date(),
       updatedAt: new Date()
     });
+    appendConversationMessage(lead, {
+      channel: 'email',
+      direction: 'outbound',
+      sender: 'The Fixlo Team',
+      bodyOriginal: html,
+      bodyNormalized: sanitizeEmailHtml(html),
+      subject,
+      providerMessageId: messageId,
+      messageId,
+      deliveryStatus: 'processed',
+      idempotencyKey,
+      intent: options.intent || '',
+      confidence: options.confidence || 0,
+      inReplyTo: options.inReplyTo || '',
+      references: options.references || [],
+      metadata: {
+        templateKey,
+        automatedFollowUp: options.automatedFollowUp === true,
+        marketing: options.marketing === true
+      }
+    });
     await lead.save();
 
     await logEvent(lead._id, 'email_sent', 'email', 'Email sent', `Template ${templateKey}`, {
@@ -298,7 +437,7 @@ async function sendLeadEmail(lead, templateKey, settings) {
       templateKey
     });
 
-    return { success: true, messageId };
+    return { success: true, messageId, idempotencyKey };
   } catch (error) {
     lead.emailStatus = 'pending';
     lead.emailHistory.push({
@@ -314,7 +453,7 @@ async function sendLeadEmail(lead, templateKey, settings) {
 
     await logEvent(lead._id, 'email_failed', 'email', 'Email failed', error.message, { templateKey });
 
-    return { success: false, error: error.message };
+    return { success: false, error: error.message, idempotencyKey };
   }
 }
 
@@ -335,6 +474,14 @@ async function markSequenceStopped(lead, reason) {
   lead.followUp.status = 'stopped';
   lead.followUp.stoppedReason = reason;
   lead.followUp.nextFollowUpAt = null;
+  pauseSequence(lead, reason);
+  if (reason === 'stop_reply') {
+    transitionState(lead, 'unsubscribed', { pausedReason: reason });
+  } else if (reason === 'not_interested') {
+    transitionState(lead, 'not_interested', { pausedReason: reason });
+  } else {
+    transitionState(lead, 'closed', { pausedReason: reason });
+  }
   await lead.save();
 
   await logEvent(lead._id, 'followup_stopped', 'system', 'Follow-up stopped', reason);
@@ -399,15 +546,22 @@ async function syncInvitationRedemption(lead, settings) {
 
 async function processLeadFollowUp(lead, settings) {
   if (!settings.automaticReminders) return;
-  if (lead.followUp.status !== 'active') return;
-  if (lead.registrationStatus !== 'not_registered') return;
-  if (lead.smsOptOut) return;
+  const eligibility = evaluateFollowUpEligibility(lead);
+  if (!eligibility.eligible) return;
 
   const nextStep = Number(lead.followUp.step || 0);
   const templateKey = reminderTemplateByStep(nextStep);
+  const reference = `${lead.followUp.step}-${new Date(lead.followUp.nextFollowUpAt || Date.now()).toISOString().slice(0, 13)}`;
 
-  await sendLeadSms(lead, templateKey, settings);
-  await sendLeadEmail(lead, 'reminder', settings);
+  await sendLeadSms(lead, templateKey, settings, false, {
+    automatedFollowUp: true,
+    reference
+  });
+  await sendLeadEmail(lead, 'reminder', settings, {
+    automatedFollowUp: true,
+    reference,
+    marketing: true
+  });
 
   lead.followUp.lastFollowUpAt = new Date();
   lead.followUp.step = nextStep + 1;
@@ -604,6 +758,12 @@ async function createOrUpdateLeadFromMeta(change) {
       status: 'active',
       lastFollowUpAt: null,
       nextFollowUpAt: getNextFollowUpAt(new Date(), settings.followUpTimingsHours, 0)
+    },
+    followUpConversation: {
+      conversationId: `ml-${metaLeadId}`,
+      status: 'follow_up_active',
+      sequencePaused: false,
+      humanTakeover: false
     }
   });
 
@@ -676,7 +836,8 @@ async function processFollowUpCycle() {
     await maybeSyncRegistration(lead, settings);
     await syncInvitationRedemption(lead, settings);
 
-    if (lead.registrationStatus !== 'not_registered' || lead.followUp.status !== 'active') {
+    const eligibility = evaluateFollowUpEligibility(lead);
+    if (!eligibility.eligible) {
       skipped += 1;
       continue;
     }
@@ -751,7 +912,134 @@ function matchLeadByPhone(phone, leads = []) {
   return leads.find((lead) => normalizePhone(lead.phone).replace(/\D/g, '') === normalized);
 }
 
-async function handleTwilioInboundWebhook(payload = {}) {
+function matchLeadByEmail(email, leads = []) {
+  const normalized = String(email || '').trim().toLowerCase();
+  return leads.find((lead) => String(lead.email || '').trim().toLowerCase() === normalized);
+}
+
+async function processInboundReply({
+  lead,
+  channel,
+  body,
+  subject = '',
+  providerMessageId = '',
+  messageId = '',
+  inReplyTo = '',
+  references = []
+}) {
+  const settings = await getSettings();
+  ensureConversationState(lead);
+
+  const intentResult = classifyIntent(body);
+  const escalationRequired = requiresEscalation(intentResult.intent, intentResult.confidence);
+
+  appendConversationMessage(lead, {
+    channel,
+    direction: 'inbound',
+    sender: channel === 'sms' ? 'Professional Lead' : (lead.email || 'Professional Lead'),
+    bodyOriginal: body,
+    bodyNormalized: intentResult.normalizedText,
+    subject,
+    providerMessageId,
+    messageId,
+    inReplyTo,
+    references,
+    intent: intentResult.intent,
+    confidence: intentResult.confidence,
+    escalationStatus: escalationRequired ? 'pending_review' : 'none',
+    deliveryStatus: 'received',
+    idempotencyKey: createIdempotencyKey(lead._id, channel, 'inbound', providerMessageId || messageId || body.slice(0, 80))
+  });
+
+  transitionState(lead, 'replied', {
+    channel,
+    inbound: true,
+    intent: intentResult.intent,
+    confidence: intentResult.confidence
+  });
+  pauseSequence(lead, 'lead_replied');
+  lead.followUp.status = 'paused';
+  lead.followUp.pausedAt = new Date();
+  lead.followUp.pausedReason = 'lead_replied';
+  lead.followUp.nextFollowUpAt = null;
+
+  if (intentResult.intent === 'unsubscribe' || intentResult.intent === 'not_interested') {
+    await markSequenceStopped(lead, intentResult.intent === 'unsubscribe' ? 'unsubscribe_reply' : 'not_interested');
+  }
+
+  const businessContext = await getBusinessContext(settings);
+  const responseBody = generateIntentResponse(intentResult.intent, businessContext, lead);
+
+  let outboundResult = { success: false, reason: 'human_review_required' };
+  if (!lead.followUpConversation.humanTakeover && !escalationRequired) {
+    transitionState(lead, 'ai_responding', { channel, intent: intentResult.intent, confidence: intentResult.confidence });
+    if (channel === 'sms') {
+      outboundResult = await sendLeadSms(lead, 'ai_reply', settings, true, {
+        customBody: responseBody,
+        intent: intentResult.intent,
+        confidence: intentResult.confidence,
+        reference: providerMessageId || messageId || body.slice(0, 80)
+      });
+    } else {
+      const responseSubject = subject || 'Thanks for your message to Fixlo';
+      outboundResult = await sendLeadEmail(lead, 'ai_reply', settings, {
+        subject: responseSubject,
+        customHtml: `<p>${responseBody.replace(/\n/g, '<br/>')}</p>`,
+        intent: intentResult.intent,
+        confidence: intentResult.confidence,
+        inReplyTo: messageId || inReplyTo || '',
+        references: references.length ? references : [messageId].filter(Boolean),
+        reference: providerMessageId || messageId || body.slice(0, 80),
+        marketing: false
+      });
+    }
+    transitionState(lead, 'waiting_for_pro', {
+      channel,
+      outbound: true,
+      intent: intentResult.intent,
+      confidence: intentResult.confidence
+    });
+  } else {
+    transitionState(lead, 'human_review', {
+      channel,
+      intent: intentResult.intent,
+      confidence: intentResult.confidence,
+      escalationReason: `intent_${intentResult.intent}`
+    });
+    activateHumanTakeover(lead, 'system', `intent_${intentResult.intent}`);
+    await createHumanEscalation({
+      lead,
+      channel,
+      reason: `Intent ${intentResult.intent} (confidence ${intentResult.confidence})`,
+      originalMessage: body,
+      intent: intentResult.intent,
+      confidence: intentResult.confidence
+    });
+  }
+
+  await lead.save();
+  await logEvent(lead._id, 'reply_received', channel, `${channel.toUpperCase()} reply received`, body, {
+    intent: intentResult.intent,
+    confidence: intentResult.confidence,
+    escalated: escalationRequired,
+    conversationStatus: lead.followUpConversation.status
+  });
+
+  return {
+    handled: true,
+    leadId: lead._id,
+    intent: intentResult.intent,
+    confidence: intentResult.confidence,
+    escalated: escalationRequired,
+    responseSent: outboundResult.success === true
+  };
+}
+
+async function handleTwilioInboundWebhook(payload = {}, requestContext = null) {
+  if (requestContext && !verifyTwilioWebhookRequest(requestContext)) {
+    return { handled: false, reason: 'invalid_twilio_signature' };
+  }
+
   const from = payload.From || '';
   const body = String(payload.Body || '').trim();
   const normalizedBody = body.toUpperCase();
@@ -765,6 +1053,7 @@ async function handleTwilioInboundWebhook(payload = {}) {
   if (!lead) return { handled: false, reason: 'lead_not_found' };
 
   const settings = await getSettings();
+  ensureConversationState(lead);
 
   if (STOP_KEYWORDS.has(normalizedBody)) {
     lead.smsOptOut = true;
@@ -776,6 +1065,18 @@ async function handleTwilioInboundWebhook(payload = {}) {
       body,
       sentAt: new Date(),
       updatedAt: new Date()
+    });
+    appendConversationMessage(lead, {
+      channel: 'sms',
+      direction: 'inbound',
+      sender: 'Professional Lead',
+      bodyOriginal: body,
+      bodyNormalized: normalizeText(body),
+      intent: 'unsubscribe',
+      confidence: 1,
+      escalationStatus: 'none',
+      deliveryStatus: 'received',
+      idempotencyKey: createIdempotencyKey(lead._id, 'sms', 'stop', body)
     });
     await lead.save();
 
@@ -796,6 +1097,18 @@ async function handleTwilioInboundWebhook(payload = {}) {
       sentAt: new Date(),
       updatedAt: new Date()
     });
+    appendConversationMessage(lead, {
+      channel: 'sms',
+      direction: 'inbound',
+      sender: 'Professional Lead',
+      bodyOriginal: body,
+      bodyNormalized: normalizeText(body),
+      intent: 'subscribe',
+      confidence: 1,
+      escalationStatus: 'none',
+      deliveryStatus: 'received',
+      idempotencyKey: createIdempotencyKey(lead._id, 'sms', 'start', body)
+    });
 
     if (lead.registrationStatus === 'not_registered' && lead.followUp.status !== 'completed') {
       lead.followUp.status = 'active';
@@ -803,6 +1116,8 @@ async function handleTwilioInboundWebhook(payload = {}) {
         lead.followUp.nextFollowUpAt = new Date(Date.now() + (60 * 60 * 1000));
       }
     }
+    resumeSequence(lead, 'start_reply');
+    transitionState(lead, 'follow_up_active', { channel: 'sms' });
 
     await lead.save();
     await logEvent(lead._id, 'start_received', 'sms', 'START received', body);
@@ -811,17 +1126,21 @@ async function handleTwilioInboundWebhook(payload = {}) {
     return { handled: true, action: 'opt_in', leadId: lead._id };
   }
 
-  lead.smsHistory.push({
-    direction: 'inbound',
-    status: 'received',
-    body,
-    sentAt: new Date(),
-    updatedAt: new Date()
-  });
-  await lead.save();
+  if (HELP_KEYWORDS.has(normalizedBody)) {
+    await sendLeadSms(lead, 'help', settings, true, {
+      customBody: 'This is the Fixlo Team. Reply STOP to opt out, START to opt back in, or share your question and we can help.',
+      reference: `help-${Date.now()}`
+    });
+    return { handled: true, action: 'help_replied', leadId: lead._id };
+  }
 
-  await logEvent(lead._id, 'reply_received', 'sms', 'SMS reply received', body);
-  return { handled: true, action: 'reply_logged', leadId: lead._id };
+  return processInboundReply({
+    lead,
+    channel: 'sms',
+    body,
+    providerMessageId: payload.MessageSid || payload.SmsSid || '',
+    messageId: payload.MessageSid || payload.SmsSid || ''
+  });
 }
 
 async function handleSendGridEvents(events = []) {
@@ -869,7 +1188,11 @@ async function handleSendGridEvents(events = []) {
     if (mappedStatus === 'open') lead.emailStatus = 'opened';
     if (mappedStatus === 'click') lead.emailStatus = 'clicked';
     if (mappedStatus === 'bounce') lead.emailStatus = 'bounced';
-    if (mappedStatus === 'unsubscribe') lead.emailStatus = 'unsubscribed';
+    if (mappedStatus === 'unsubscribe') {
+      lead.emailStatus = 'unsubscribed';
+      await markSequenceStopped(lead, 'email_unsubscribe');
+      transitionState(lead, 'unsubscribed', { channel: 'email' });
+    }
 
     await lead.save();
 
@@ -886,6 +1209,49 @@ async function handleSendGridEvents(events = []) {
   return { updated };
 }
 
+async function handleSendGridInboundWebhook(payload = {}, requestContext = null) {
+  if (requestContext && !verifySendGridInboundRequest(requestContext)) {
+    return { handled: false, reason: 'invalid_sendgrid_auth' };
+  }
+
+  const from = String(payload.from || payload.From || '').trim().toLowerCase();
+  const subject = String(payload.subject || payload.Subject || '').trim();
+  const text = String(payload.text || payload.Text || '').trim();
+  const html = String(payload.html || payload.Html || '');
+  const messageId = String(payload.headers?.['Message-ID'] || payload['message-id'] || payload.messageId || '').trim();
+  const inReplyTo = String(payload.headers?.['In-Reply-To'] || payload.inReplyTo || '').trim();
+  const referencesRaw = String(payload.headers?.References || payload.references || '').trim();
+  const references = referencesRaw ? referencesRaw.split(/\s+/).filter(Boolean) : [];
+  const body = text || sanitizeEmailHtml(html);
+
+  const leads = await MetaLead.find({
+    email: { $exists: true, $ne: '' },
+    leadStatus: { $nin: ['closed'] }
+  }).sort({ createdAt: -1 }).limit(300);
+
+  let lead = matchLeadByEmail(from, leads);
+  if (!lead && inReplyTo) {
+    lead = leads.find((item) => (item.emailHistory || []).some((h) => h.messageId && h.messageId.includes(inReplyTo.replace(/[<>]/g, ''))));
+  }
+  if (!lead && references.length) {
+    lead = leads.find((item) => (item.emailHistory || []).some((h) => h.messageId && references.some((ref) => h.messageId.includes(ref.replace(/[<>]/g, '')))));
+  }
+  if (!lead) return { handled: false, reason: 'lead_not_found' };
+
+  if (!body) return { handled: false, reason: 'missing_message_body', leadId: lead._id };
+
+  return processInboundReply({
+    lead,
+    channel: 'email',
+    body,
+    subject,
+    providerMessageId: messageId,
+    messageId,
+    inReplyTo,
+    references
+  });
+}
+
 async function listLeads(filters = {}) {
   const page = Math.max(1, Number(filters.page || 1));
   const limit = Math.min(100, Math.max(1, Number(filters.limit || 25)));
@@ -894,11 +1260,28 @@ async function listLeads(filters = {}) {
   const allowedLeadStatuses = new Set(['new', 'in_progress', 'registered', 'subscribed', 'closed']);
   const allowedRegistrationStatuses = new Set(['not_registered', 'registered', 'subscribed']);
   const allowedFollowUpStatuses = new Set(['active', 'paused', 'stopped', 'completed']);
+  const allowedConversationStatuses = new Set([
+    'follow_up_active',
+    'replied',
+    'ai_responding',
+    'waiting_for_pro',
+    'human_review',
+    'human_takeover',
+    'signup_started',
+    'converted',
+    'not_interested',
+    'unsubscribed',
+    'closed'
+  ]);
   const allowedSources = new Set(['instagram', 'facebook', 'meta_unknown', 'manual_meta_import']);
 
   if (allowedLeadStatuses.has(String(filters.status))) query.leadStatus = String(filters.status);
   if (allowedRegistrationStatuses.has(String(filters.registrationStatus))) query.registrationStatus = String(filters.registrationStatus);
   if (allowedFollowUpStatuses.has(String(filters.followUpStatus))) query['followUp.status'] = String(filters.followUpStatus);
+  if (allowedConversationStatuses.has(String(filters.conversationStatus))) query['followUpConversation.status'] = String(filters.conversationStatus);
+  if (String(filters.channel) === 'sms') query.phone = { $exists: true, $ne: '' };
+  if (String(filters.channel) === 'email') query.email = { $exists: true, $ne: '' };
+  if (String(filters.humanTakeover) === 'true') query['followUpConversation.humanTakeover'] = true;
   if (allowedSources.has(String(filters.source))) query.source = String(filters.source);
   if (filters.search) {
     const search = String(filters.search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -907,7 +1290,9 @@ async function listLeads(filters = {}) {
       { lastName: { $regex: search, $options: 'i' } },
       { email: { $regex: search, $options: 'i' } },
       { phone: { $regex: search, $options: 'i' } },
+      { trade: { $regex: search, $options: 'i' } },
       { invitationCode: { $regex: search, $options: 'i' } },
+      { leadUniqueId: { $regex: search, $options: 'i' } },
       { 'campaign.campaignName': { $regex: search, $options: 'i' } },
       { 'campaign.adName': { $regex: search, $options: 'i' } }
     ];
@@ -1058,6 +1443,7 @@ async function performManualAction(leadId, action, payload = {}) {
   if (!lead) throw new Error('Lead not found');
 
   const settings = await getSettings();
+  ensureConversationState(lead);
 
   if (action === 'resend_sms') {
     await sendLeadSms(lead, 'immediate', settings, true);
@@ -1067,17 +1453,64 @@ async function performManualAction(leadId, action, payload = {}) {
     lead.followUp.status = 'paused';
     lead.followUp.pausedAt = new Date();
     lead.followUp.pausedReason = payload.reason || 'paused_by_admin';
+    pauseSequence(lead, payload.reason || 'paused_by_admin');
+    transitionState(lead, 'closed', { pausedReason: payload.reason || 'paused_by_admin' });
     await lead.save();
   } else if (action === 'resume') {
     lead.followUp.status = 'active';
     if (!lead.followUp.nextFollowUpAt) {
       lead.followUp.nextFollowUpAt = new Date(Date.now() + (60 * 60 * 1000));
     }
+    clearHumanTakeover(lead);
+    resumeSequence(lead, payload.reason || 'resumed_by_admin');
+    transitionState(lead, 'follow_up_active', {});
     await lead.save();
   } else if (action === 'mark_closed') {
     lead.leadStatus = 'closed';
     lead.followUp.status = 'stopped';
     lead.followUp.stoppedReason = payload.reason || 'closed_by_admin';
+    lead.followUp.nextFollowUpAt = null;
+    pauseSequence(lead, payload.reason || 'closed_by_admin');
+    transitionState(lead, 'closed', { pausedReason: payload.reason || 'closed_by_admin' });
+    await lead.save();
+  } else if (action === 'take_over') {
+    activateHumanTakeover(lead, payload.by || 'admin', payload.reason || 'manual_takeover');
+    await lead.save();
+  } else if (action === 'release_takeover') {
+    clearHumanTakeover(lead);
+    resumeSequence(lead, 'released_by_admin');
+    transitionState(lead, 'waiting_for_pro', {});
+    await lead.save();
+  } else if (action === 'send_manual_sms') {
+    const body = String(payload.message || '').trim();
+    if (!body) throw new Error('message is required');
+    await sendLeadSms(lead, 'manual_reply', settings, true, {
+      customBody: body,
+      reference: `manual-${Date.now()}`
+    });
+    transitionState(lead, 'waiting_for_pro', { channel: 'sms', outbound: true });
+    await lead.save();
+  } else if (action === 'send_manual_email') {
+    const body = String(payload.message || '').trim();
+    if (!body) throw new Error('message is required');
+    await sendLeadEmail(lead, 'manual_reply', settings, {
+      subject: String(payload.subject || 'Reply from the Fixlo Team'),
+      customHtml: `<p>${body.replace(/\n/g, '<br/>')}</p>`,
+      reference: `manual-${Date.now()}`,
+      marketing: false
+    });
+    transitionState(lead, 'waiting_for_pro', { channel: 'email', outbound: true });
+    await lead.save();
+  } else if (action === 'mark_not_interested') {
+    lead.leadStatus = 'closed';
+    await markSequenceStopped(lead, 'not_interested');
+    transitionState(lead, 'not_interested', {});
+    await lead.save();
+  } else if (action === 'mark_resolved') {
+    transitionState(lead, 'closed', {});
+    clearHumanTakeover(lead);
+    lead.followUp.status = 'stopped';
+    lead.followUp.stoppedReason = payload.reason || 'resolved_by_admin';
     lead.followUp.nextFollowUpAt = null;
     await lead.save();
   } else if (action === 'assign_recruiter') {
@@ -1195,6 +1628,12 @@ async function importManualLead(leadData = {}) {
       status: 'active',
       lastFollowUpAt: null,
       nextFollowUpAt: getNextFollowUpAt(now, settings.followUpTimingsHours, 0)
+    },
+    followUpConversation: {
+      conversationId: `ml-${metaLeadIdVal}`,
+      status: 'follow_up_active',
+      sequencePaused: false,
+      humanTakeover: false
     }
   });
 
@@ -1289,6 +1728,7 @@ module.exports = {
   handleTwilioStatusWebhook,
   handleTwilioInboundWebhook,
   handleSendGridEvents,
+  handleSendGridInboundWebhook,
   listLeads,
   getLeadDetails,
   computeDashboardMetrics,

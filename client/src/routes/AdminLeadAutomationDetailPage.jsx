@@ -19,6 +19,9 @@ export default function AdminLeadAutomationDetailPage() {
   const [error, setError] = useState('');
   const [notes, setNotes] = useState('');
   const [recruiter, setRecruiter] = useState('');
+  const [manualSms, setManualSms] = useState('');
+  const [manualEmailSubject, setManualEmailSubject] = useState('Reply from the Fixlo Team');
+  const [manualEmailBody, setManualEmailBody] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -99,6 +102,8 @@ export default function AdminLeadAutomationDetailPage() {
               <div><span className="text-gray-500">Email Status:</span> {lead.emailStatus}</div>
               <div><span className="text-gray-500">Invitation Code:</span> <span className="font-mono">{lead.invitationCode || '—'}</span></div>
               <div><span className="text-gray-500">Follow-Up:</span> {lead.followUp?.status} (step {lead.followUp?.step || 0})</div>
+              <div><span className="text-gray-500">Conversation:</span> {lead.followUpConversation?.status || '—'}</div>
+              <div><span className="text-gray-500">Last Intent:</span> {lead.followUpConversation?.lastIntent || '—'} ({Number(lead.followUpConversation?.lastConfidence || 0).toFixed(2)})</div>
             </div>
 
             <div className="space-y-2">
@@ -108,6 +113,10 @@ export default function AdminLeadAutomationDetailPage() {
                 <button onClick={() => runAction('resend-email')} className="px-3 py-1.5 rounded border">Resend Email</button>
                 <button onClick={() => runAction('pause', { reason: 'paused_by_admin' })} className="px-3 py-1.5 rounded border">Pause Follow-Up</button>
                 <button onClick={() => runAction('resume')} className="px-3 py-1.5 rounded border">Resume Follow-Up</button>
+                <button onClick={() => runAction('take-over', { reason: 'manual_takeover', by: 'admin' })} className="px-3 py-1.5 rounded border border-orange-300 text-orange-700">Take Over</button>
+                <button onClick={() => runAction('release-takeover')} className="px-3 py-1.5 rounded border">Release Takeover</button>
+                <button onClick={() => runAction('mark-not-interested', { reason: 'marked_by_admin' })} className="px-3 py-1.5 rounded border">Mark Not Interested</button>
+                <button onClick={() => runAction('mark-resolved', { reason: 'resolved_by_admin' })} className="px-3 py-1.5 rounded border">Mark Resolved</button>
                 <button onClick={() => runAction('mark-closed', { reason: 'closed_by_admin' })} className="px-3 py-1.5 rounded border border-red-300 text-red-700">Mark Closed</button>
               </div>
             </div>
@@ -118,6 +127,20 @@ export default function AdminLeadAutomationDetailPage() {
                 <div className="flex gap-2">
                   <input value={recruiter} onChange={(e) => setRecruiter(e.target.value)} className="border rounded px-2 py-1 text-sm flex-1" placeholder="Recruiter name/email" />
                   <button onClick={() => runAction('assign-recruiter', { assignedRecruiter: recruiter })} className="px-3 py-1.5 rounded bg-slate-900 text-white text-sm">Assign</button>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold">Manual SMS Reply</p>
+                    <textarea value={manualSms} onChange={(e) => setManualSms(e.target.value)} rows={3} className="w-full border rounded px-2 py-1 text-sm" placeholder="Type SMS reply" />
+                    <button onClick={() => runAction('send-manual-sms', { message: manualSms })} className="px-3 py-1.5 rounded bg-slate-900 text-white text-sm">Send SMS</button>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold">Manual Email Reply</p>
+                    <input value={manualEmailSubject} onChange={(e) => setManualEmailSubject(e.target.value)} className="w-full border rounded px-2 py-1 text-sm" placeholder="Subject" />
+                    <textarea value={manualEmailBody} onChange={(e) => setManualEmailBody(e.target.value)} rows={3} className="w-full border rounded px-2 py-1 text-sm" placeholder="Email response" />
+                    <button onClick={() => runAction('send-manual-email', { subject: manualEmailSubject, message: manualEmailBody })} className="px-3 py-1.5 rounded bg-slate-900 text-white text-sm">Send Email</button>
+                  </div>
                 </div>
               </div>
               <div className="space-y-2">
