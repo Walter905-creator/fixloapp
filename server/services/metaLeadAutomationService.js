@@ -79,9 +79,9 @@ function buildDefaults() {
     },
     emailTemplates: {
       immediateSubject: 'Welcome to Fixlo — Your Invitation Code Inside',
-      immediateBody: '<p>Hi {{firstName}},</p><p>Thanks for your interest in joining Fixlo.</p><p><strong>Your invitation code:</strong> {{invitationCode}}</p><p>Use this code during signup: <a href="{{signupLink}}">Join Fixlo</a></p><p>Benefits of Fixlo:</p><ul><li>Trusted homeowner leads</li><li>Flexible growth tools</li><li>Priority support</li></ul><p>Need help? Contact {{supportEmail}}</p>',
+      immediateBody: '<p>Hi {{firstName}},</p><p>Thanks for your interest in joining Fixlo.</p><p><strong>Your invitation code:</strong> {{invitationCode}}</p><p>Use this code during signup: <a href="{{signupLink}}">Join Fixlo</a></p><p>Benefits of Fixlo:</p><ul><li>Trusted homeowner leads</li><li>Flexible growth tools</li><li>Priority support</li></ul><p>Need help? Contact {{supportEmail}}</p><p>— The Fixlo Team</p>',
       reminderSubject: 'Reminder: Your Fixlo invitation is waiting',
-      reminderBody: '<p>Hi {{firstName}},</p><p>Your Fixlo invitation code is still active: <strong>{{invitationCode}}</strong></p><p>Complete signup here: <a href="{{signupLink}}">Join Fixlo</a></p><p>Trade: {{trade}}</p>'
+      reminderBody: '<p>Hi {{firstName}},</p><p>Your Fixlo invitation code is still active: <strong>{{invitationCode}}</strong></p><p>Complete signup here: <a href="{{signupLink}}">Join Fixlo</a></p><p>Trade: {{trade}}</p><p>— The Fixlo Team</p>'
     }
   };
 }
