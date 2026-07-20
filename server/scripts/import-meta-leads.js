@@ -28,10 +28,16 @@ require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const mongoose = require('mongoose');
 
 // ── Leads to import ──────────────────────────────────────────────────────────
-// Date suffix reflects the approximate date of this import batch (2026-07-18).
-// These IDs are intentionally non-numeric so they are never mistaken for real
-// Meta leadgen_id values and will never match isNumericMetaId() in the webhook.
+// The first three entries (Dave Burnett, Joshua Noriega, Marnique Reed) were
+// collected in July 2026 before the webhook was connected.
+// The second batch (Booker Jones, Josh Larsen, John Adams) are the leads from
+// Form ID 1913273286015217 that were submitted July 19, 2026 and are missing
+// from MongoDB.
+//
+// IDs for manual imports are intentionally non-numeric so they cannot be
+// confused with real Meta leadgen_id values.
 const LEADS_TO_IMPORT = [
+  // ── Batch 1: July 2026 pre-webhook leads ─────────────────────────────────
   {
     firstName: 'Dave',
     lastName: 'Burnett',
@@ -44,9 +50,6 @@ const LEADS_TO_IMPORT = [
     firstName: 'Joshua',
     lastName: 'Noriega',
     phone: null,
-    // Email is used exactly as submitted by the lead — the username 'jcnoniega77'
-    // differs from the last name spelling ('Noriega') and may be intentional.
-    // Do NOT alter this address.
     email: 'jcnoniega77@yahoo.com',
     metaLeadId: 'manual-joshua-noriega-20260718',
     leadUniqueId: 'MANUAL-joshua-noriega-20260718'
@@ -58,6 +61,40 @@ const LEADS_TO_IMPORT = [
     email: 'mreed2876@gmail.com',
     metaLeadId: 'manual-marnique-reed-20260718',
     leadUniqueId: 'MANUAL-marnique-reed-20260718'
+  },
+  // ── Batch 2: Form 1913273286015217 — July 19, 2026 missing leads ──────────
+  {
+    firstName: 'Booker',
+    lastName: 'Jones',
+    phone: '+12294493677',
+    email: 'devettajones@yahoo.com',
+    trade: 'Painting',
+    formId: '1913273286015217',
+    submittedAt: '2026-07-19T23:51:00Z',
+    metaLeadId: 'manual-booker-jones-20260719',
+    leadUniqueId: 'MANUAL-booker-jones-20260719'
+  },
+  {
+    firstName: 'Josh',
+    lastName: 'Larsen',
+    phone: '+19493754801',
+    email: 'jlarsen2@ymail.com',
+    trade: 'General construction all trades',
+    formId: '1913273286015217',
+    submittedAt: '2026-07-19T22:41:00Z',
+    metaLeadId: 'manual-josh-larsen-20260719',
+    leadUniqueId: 'MANUAL-josh-larsen-20260719'
+  },
+  {
+    firstName: 'John',
+    lastName: 'Adams',
+    phone: '+12832243704',
+    email: 'j47989121@gmail.com',
+    trade: 'Contractor',
+    formId: '1913273286015217',
+    submittedAt: '2026-07-19T00:00:00Z',
+    metaLeadId: 'manual-john-adams-20260719',
+    leadUniqueId: 'MANUAL-john-adams-20260719'
   }
 ];
 
