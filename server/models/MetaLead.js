@@ -62,7 +62,7 @@ const metaLeadSchema = new mongoose.Schema({
   metaLeadId: { type: String, unique: true, required: true, index: true },
   source: {
     type: String,
-    enum: ['instagram', 'facebook', 'meta_unknown', 'manual_meta_import'],
+    enum: ['instagram', 'facebook', 'meta_unknown', 'manual_meta_import', 'manual_recovery', 'recovered_meta_lead'],
     default: 'meta_unknown',
     index: true
   },
