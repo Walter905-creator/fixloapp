@@ -74,7 +74,8 @@ router.post('/webhook/meta-leads', webhookRateLimit, async (req, res) => {
 
 router.post('/webhook/twilio/meta-leads/status', webhookRateLimit, express.urlencoded({ extended: false }), async (req, res) => {
   // Validate Twilio signature to reject spoofed requests.
-  if (!validateTwilioSignature({ signature: req.headers['x-twilio-signature'] || '', params: req.body || {} })) {
+  const requestUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+  if (!validateTwilioSignature({ signature: req.headers['x-twilio-signature'] || '', url: requestUrl, params: req.body || {} })) {
     return res.status(403).type('text/plain').send('forbidden');
   }
   try {

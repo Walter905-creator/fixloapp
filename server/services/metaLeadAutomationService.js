@@ -293,14 +293,14 @@ function shouldPromoteLeadSmsStatus(currentStatus, nextStatus) {
  * omit the callback rather than pass a relative path that Twilio rejects.
  */
 function getStatusCallbackUrl() {
-  const backendBaseUrl = stripTrailingSlashes(process.env.BACKEND_PUBLIC_URL);
-  if (isAbsoluteUrl(backendBaseUrl)) {
-    return `${backendBaseUrl}${META_LEAD_STATUS_CALLBACK_PATH}`;
-  }
-
   const explicit = stripTrailingSlashes(process.env.META_LEAD_SMS_STATUS_CALLBACK_URL);
   if (isAbsoluteUrl(explicit)) {
     return explicit;
+  }
+
+  const backendBaseUrl = stripTrailingSlashes(process.env.BACKEND_PUBLIC_URL);
+  if (isAbsoluteUrl(backendBaseUrl)) {
+    return `${backendBaseUrl}${META_LEAD_STATUS_CALLBACK_PATH}`;
   }
 
   const fallbackBaseUrl = stripTrailingSlashes(process.env.SERVER_BASE_URL);
@@ -318,7 +318,7 @@ function getStatusCallbackUrl() {
   return null;
 }
 
-function validateTwilioSignature({ authToken = process.env.TWILIO_AUTH_TOKEN, signature = '', url = getStatusCallbackUrl(), params = {} } = {}) {
+function validateTwilioSignature({ authToken = process.env.TWILIO_AUTH_TOKEN, signature = '', url = '', params = {} } = {}) {
   if (!authToken) return true;
   if (!signature || !url) return false;
 
