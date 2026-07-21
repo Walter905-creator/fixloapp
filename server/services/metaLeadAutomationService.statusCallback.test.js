@@ -255,8 +255,28 @@ describe('Twilio signature validation helper', () => {
 });
 
 describe('Retry idempotency logic', () => {
+  // Use the shared constant from the service module (loaded via jest.resetModules above).
+  // For these unit tests we reproduce the regex locally since the service module
+  // is heavily mocked in the describe blocks above; we import it fresh here.
+  let TWILIO_SID_REGEX;
+
+  beforeAll(() => {
+    jest.resetModules();
+    jest.mock('../models/AdminSettings', () => ({ findOne: jest.fn() }));
+    jest.mock('../models/InviteCode', () => ({}));
+    jest.mock('../models/MetaLead', () => ({}));
+    jest.mock('../models/MetaLeadEvent', () => ({ create: jest.fn() }));
+    jest.mock('../models/Notification', () => ({ insertMany: jest.fn() }));
+    jest.mock('../models/Pro', () => ({ find: jest.fn() }));
+    jest.mock('../utils/twilio', () => ({ sendSms: jest.fn(), normalizeE164: jest.fn((p) => p) }));
+    jest.mock('../utils/smsSender', () => ({ sendOwnerNotification: jest.fn() }));
+    jest.mock('@sendgrid/mail', () => ({ setApiKey: jest.fn(), send: jest.fn() }));
+    jest.mock('axios');
+    // eslint-disable-next-line global-require
+    ({ TWILIO_SID_REGEX } = require('./metaLeadAutomationService'));
+  });
+
   test('ALREADY_SENT is reported when a valid SID exists in smsHistory', () => {
-    const SID_REGEX = /^SM[a-fA-F0-9]{32}$/;
     const existingSid = 'SM' + 'a'.repeat(32);
     const smsHistory = [
       { direction: 'outbound', templateKey: 'immediate', messageSid: existingSid }
@@ -265,13 +285,12 @@ describe('Retry idempotency logic', () => {
     const found = smsHistory
       .filter((h) => h.direction === 'outbound' && h.templateKey === 'immediate')
       .map((h) => h.messageSid)
-      .find((sid) => sid && SID_REGEX.test(sid));
+      .find((sid) => sid && TWILIO_SID_REGEX.test(sid));
 
     expect(found).toBe(existingSid);
   });
 
   test('retry proceeds (SENT) when no valid SID exists', () => {
-    const SID_REGEX = /^SM[a-fA-F0-9]{32}$/;
     const smsHistory = [
       { direction: 'outbound', templateKey: 'immediate', messageSid: null },
       { direction: 'outbound', templateKey: 'immediate', status: 'failed' }
@@ -280,14 +299,13 @@ describe('Retry idempotency logic', () => {
     const found = smsHistory
       .filter((h) => h.direction === 'outbound' && h.templateKey === 'immediate')
       .map((h) => h.messageSid)
-      .find((sid) => sid && SID_REGEX.test(sid));
+      .find((sid) => sid && TWILIO_SID_REGEX.test(sid));
 
     expect(found).toBeUndefined();
   });
 
   test('retry is skipped when existing entry has valid SID (no duplicate)', () => {
     // Verifies we never send more than once per lead.
-    const SID_REGEX = /^SM[a-fA-F0-9]{32}$/;
     const smsHistory = [
       { direction: 'outbound', templateKey: 'immediate', messageSid: 'SM' + 'b'.repeat(32), status: 'queued' }
     ];
@@ -295,7 +313,7 @@ describe('Retry idempotency logic', () => {
     const found = smsHistory
       .filter((h) => h.direction === 'outbound' && h.templateKey === 'immediate')
       .map((h) => h.messageSid)
-      .find((sid) => sid && SID_REGEX.test(sid));
+      .find((sid) => sid && TWILIO_SID_REGEX.test(sid));
 
     // Already sent → should return ALREADY_SENT, not call sendSms again.
     expect(found).toBeDefined();

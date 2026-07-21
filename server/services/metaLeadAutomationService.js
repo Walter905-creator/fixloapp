@@ -13,6 +13,9 @@ const { sendOwnerNotification } = require('../utils/smsSender');
 
 const STOP_KEYWORDS = new Set(['STOP', 'STOPALL', 'UNSUBSCRIBE', 'CANCEL', 'END']);
 const START_KEYWORDS = new Set(['START', 'YES', 'UNSTOP']);
+
+/** Regex for a valid Twilio Message SID. Exported so route/retry code can reuse it. */
+const TWILIO_SID_REGEX = /^SM[a-fA-F0-9]{32}$/;
 const FOLLOW_UP_SCHEDULE_HOURS = [24, 72, 168, 336];
 
 let sendgridReady = false;
@@ -771,7 +774,7 @@ async function handleTwilioStatusWebhook(payload = {}) {
   const sid = payload.MessageSid || payload.SmsSid;
   const twilioStatus = (payload.MessageStatus || '').toLowerCase();
   if (!sid) return { updated: false, reason: 'missing_sid' };
-  if (!/^SM[a-fA-F0-9]{32}$/.test(String(sid))) return { updated: false, reason: 'invalid_sid' };
+  if (!TWILIO_SID_REGEX.test(String(sid))) return { updated: false, reason: 'invalid_sid' };
 
   const lead = await MetaLead.findOne({ 'smsHistory.messageSid': sid });
   if (!lead) return { updated: false, reason: 'not_found' };
@@ -1484,6 +1487,8 @@ function verifyMetaSignature(rawBody, headerSignature = '') {
 module.exports = {
   STOP_KEYWORDS,
   START_KEYWORDS,
+  TWILIO_SID_REGEX,
+  template,
   getStatusCallbackUrl,
   getSettings,
   saveSettings,

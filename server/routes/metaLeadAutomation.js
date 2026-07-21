@@ -5,6 +5,8 @@ const requireAuth = require('../middleware/requireAuth');
 const requireAdmin = require('../middleware/requireAdmin');
 const MetaLead = require('../models/MetaLead');
 const {
+  TWILIO_SID_REGEX,
+  template,
   getSettings,
   getStatusCallbackUrl,
   saveSettings,
@@ -231,7 +233,7 @@ router.post(
       const existingSid = (lead.smsHistory || [])
         .filter((h) => h.direction === 'outbound' && h.templateKey === 'immediate')
         .map((h) => h.messageSid)
-        .find((sid) => sid && /^SM[a-fA-F0-9]{32}$/.test(sid));
+        .find((sid) => sid && TWILIO_SID_REGEX.test(sid));
 
       if (existingSid) {
         results.push({
@@ -244,7 +246,7 @@ router.post(
         continue;
       }
 
-      // Build message body from stored settings template.
+      // Build message body using the shared template substitution helper.
       const vars = {
         firstName: lead.firstName || 'there',
         lastName: lead.lastName || '',
@@ -255,10 +257,7 @@ router.post(
         supportEmail: settings.supportEmail,
         supportPhone: settings.supportPhone || ''
       };
-      const templateStr = settings.smsTemplates?.immediate || '';
-      const body = templateStr.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_, k) =>
-        vars[k] !== undefined && vars[k] !== null ? String(vars[k]) : ''
-      );
+      const body = template(settings.smsTemplates?.immediate || '', vars);
 
       if (!lead.phone) {
         results.push({ leadId, status: 'SKIPPED', reason: 'missing_phone' });
