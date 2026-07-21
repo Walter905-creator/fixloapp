@@ -27,6 +27,15 @@ const INVALID_STATUS_CALLBACK_PATTERNS = [
   /must be a valid url/i,
   /must be absolute/i
 ];
+const SMS_STATUS_PRECEDENCE = {
+  pending: 0,
+  queued: 1,
+  sent: 2,
+  failed: 3,
+  undelivered: 3,
+  delivered: 4,
+  opted_out: 5
+};
 const FOLLOW_UP_SCHEDULE_HOURS = [24, 72, 168, 336];
 
 let sendgridReady = false;
@@ -219,8 +228,13 @@ function stripTrailingSlashes(value = '') {
   return String(value || '').trim().replace(/\/+$/, '');
 }
 
+function normalizeTwilioSid(value) {
+  const sid = String(value || '').trim();
+  return TWILIO_SID_REGEX.test(sid) ? sid : null;
+}
+
 function hasValidTwilioSid(value) {
-  return Boolean(value && TWILIO_SID_REGEX.test(String(value)));
+  return Boolean(normalizeTwilioSid(value));
 }
 
 function getLeadDisplayName(lead = {}) {
@@ -258,6 +272,13 @@ function getRetryBlockReason(lead = {}) {
   return failedEntries.some((item) => wasInvalidStatusCallbackFailure(item))
     ? null
     : 'failure_not_invalid_status_callback_url';
+}
+
+function shouldPromoteLeadSmsStatus(currentStatus, nextStatus) {
+  if (!nextStatus) return false;
+  const currentRank = SMS_STATUS_PRECEDENCE[String(currentStatus || '').toLowerCase()] ?? 0;
+  const nextRank = SMS_STATUS_PRECEDENCE[String(nextStatus || '').toLowerCase()] ?? 0;
+  return nextRank >= currentRank;
 }
 
 /**
@@ -847,12 +868,13 @@ async function reconcileLeadRegistrations(limit = 200) {
 async function handleTwilioStatusWebhook(payload = {}, deps = {}) {
   const metaLeadModel = deps.metaLeadModel || MetaLead;
   const logEventFn = deps.logEventFn || logEvent;
-  const sid = payload.MessageSid || payload.SmsSid;
+  const receivedSid = payload.MessageSid || payload.SmsSid;
   const twilioStatus = (payload.MessageStatus || '').toLowerCase();
-  if (!sid) return { updated: false, reason: 'missing_sid' };
-  if (!TWILIO_SID_REGEX.test(String(sid))) return { updated: false, reason: 'invalid_sid' };
+  if (!receivedSid) return { updated: false, reason: 'missing_sid' };
+  const sid = normalizeTwilioSid(receivedSid);
+  if (!sid) return { updated: false, reason: 'invalid_sid' };
 
-  const lead = await metaLeadModel.findOne({ 'smsHistory.messageSid': sid });
+  const lead = await metaLeadModel.findOne({ smsHistory: { $elemMatch: { messageSid: sid } } });
   if (!lead) return { updated: false, reason: 'not_found' };
 
   const historyItem = lead.smsHistory.find((h) => h.messageSid === sid);
@@ -867,13 +889,14 @@ async function handleTwilioStatusWebhook(payload = {}, deps = {}) {
   };
 
   const normalizedStatus = map[twilioStatus] || historyItem.status;
-  historyItem.messageSid = sid;
   historyItem.status = normalizedStatus;
   historyItem.updatedAt = new Date();
   historyItem.errorCode = payload.ErrorCode || null;
   historyItem.errorMessage = payload.ErrorMessage || null;
 
-  lead.smsStatus = normalizedStatus;
+  if (shouldPromoteLeadSmsStatus(lead.smsStatus, normalizedStatus)) {
+    lead.smsStatus = normalizedStatus;
+  }
 
   await lead.save();
 
