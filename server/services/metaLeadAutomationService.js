@@ -16,6 +16,26 @@ const START_KEYWORDS = new Set(['START', 'YES', 'UNSTOP']);
 
 /** Regex for a valid Twilio Message SID. Exported so route/retry code can reuse it. */
 const TWILIO_SID_REGEX = /^SM[a-fA-F0-9]{32}$/;
+const META_LEAD_STATUS_CALLBACK_PATH = '/webhook/twilio/meta-leads/status';
+const INVALID_STATUS_CALLBACK_PATTERNS = [
+  /statuscallback/i,
+  /status callback/i,
+  /callback url/i,
+  /invalid callback/i,
+  /relative url/i,
+  /absolute url/i,
+  /must be a valid url/i,
+  /must be absolute/i
+];
+const SMS_STATUS_PRECEDENCE = {
+  pending: 0,
+  queued: 1,
+  sent: 2,
+  failed: 3,
+  undelivered: 3,
+  delivered: 4,
+  opted_out: 5
+};
 const FOLLOW_UP_SCHEDULE_HOURS = [24, 72, 168, 336];
 
 let sendgridReady = false;
@@ -200,6 +220,67 @@ function buildMessageVars(lead, settings) {
   };
 }
 
+function isAbsoluteUrl(value = '') {
+  return /^https?:\/\//i.test(String(value).trim());
+}
+
+function stripTrailingSlashes(value = '') {
+  return String(value || '').trim().replace(/\/+$/, '');
+}
+
+function normalizeTwilioSid(value) {
+  const sid = String(value || '').trim();
+  return TWILIO_SID_REGEX.test(sid) ? sid : null;
+}
+
+function hasValidTwilioSid(value) {
+  return normalizeTwilioSid(value) !== null;
+}
+
+function getLeadDisplayName(lead = {}) {
+  return `${lead.firstName || ''} ${lead.lastName || ''}`.trim() || lead.email || String(lead._id || '');
+}
+
+function getInitialOutboundSmsHistory(lead = {}) {
+  return (lead.smsHistory || []).filter((item) => item.direction === 'outbound' && item.templateKey === 'immediate');
+}
+
+function findInitialOutboundSmsWithSid(lead = {}) {
+  return getInitialOutboundSmsHistory(lead).find((item) => hasValidTwilioSid(item.messageSid)) || null;
+}
+
+function wasInvalidStatusCallbackFailure(historyItem = {}) {
+  if (!historyItem || hasValidTwilioSid(historyItem.messageSid)) return false;
+  const status = String(historyItem.status || '').toLowerCase();
+  if (status !== 'failed') return false;
+  const haystack = `${historyItem.errorMessage || ''} ${historyItem.errorCode || ''}`;
+  return INVALID_STATUS_CALLBACK_PATTERNS.some((pattern) => pattern.test(haystack));
+}
+
+function getRetryBlockReason(lead = {}) {
+  const initialHistory = getInitialOutboundSmsHistory(lead);
+  if (!initialHistory.length) return 'initial_sms_not_found';
+  if (findInitialOutboundSmsWithSid(lead)) return 'existing_valid_sid';
+
+  const failedEntries = initialHistory.filter((item) => String(item.status || '').toLowerCase() === 'failed');
+  if (!failedEntries.length) return 'initial_sms_not_failed';
+
+  const hasAmbiguousNonFailedAttempt = initialHistory.some((item) => !hasValidTwilioSid(item.messageSid)
+    && String(item.status || '').toLowerCase() !== 'failed');
+  if (hasAmbiguousNonFailedAttempt) return 'ambiguous_existing_attempt';
+
+  return failedEntries.some((item) => wasInvalidStatusCallbackFailure(item))
+    ? null
+    : 'failure_not_invalid_status_callback_url';
+}
+
+function shouldPromoteLeadSmsStatus(currentStatus, nextStatus) {
+  if (!nextStatus) return false;
+  const currentRank = SMS_STATUS_PRECEDENCE[String(currentStatus || '').toLowerCase()] ?? 0;
+  const nextRank = SMS_STATUS_PRECEDENCE[String(nextStatus || '').toLowerCase()] ?? 0;
+  return nextRank >= currentRank;
+}
+
 /**
  * Build the absolute HTTPS StatusCallback URL for Twilio.
  *
@@ -212,23 +293,19 @@ function buildMessageVars(lead, settings) {
  * omit the callback rather than pass a relative path that Twilio rejects.
  */
 function getStatusCallbackUrl() {
-  const WEBHOOK_PATH = '/webhook/twilio/meta-leads/status';
-
-  // Explicit full-URL override wins first.
-  const explicit = process.env.META_LEAD_SMS_STATUS_CALLBACK_URL;
-  if (explicit) {
-    const trimmed = explicit.trim().replace(/\/+$/, '');
-    if (trimmed.startsWith('https://') || trimmed.startsWith('http://')) {
-      return trimmed;
-    }
+  const explicit = stripTrailingSlashes(process.env.META_LEAD_SMS_STATUS_CALLBACK_URL);
+  if (isAbsoluteUrl(explicit)) {
+    return explicit;
   }
 
-  // Build from base URL env vars.
-  const base =
-    (process.env.BACKEND_PUBLIC_URL || process.env.SERVER_BASE_URL || '').trim().replace(/\/+$/, '');
+  const backendBaseUrl = stripTrailingSlashes(process.env.BACKEND_PUBLIC_URL);
+  if (isAbsoluteUrl(backendBaseUrl)) {
+    return `${backendBaseUrl}${META_LEAD_STATUS_CALLBACK_PATH}`;
+  }
 
-  if (base.startsWith('https://') || base.startsWith('http://')) {
-    return `${base}${WEBHOOK_PATH}`;
+  const fallbackBaseUrl = stripTrailingSlashes(process.env.SERVER_BASE_URL);
+  if (isAbsoluteUrl(fallbackBaseUrl)) {
+    return `${fallbackBaseUrl}${META_LEAD_STATUS_CALLBACK_PATH}`;
   }
 
   // No absolute base available — log and return null.
@@ -241,13 +318,31 @@ function getStatusCallbackUrl() {
   return null;
 }
 
+function validateTwilioSignature({ authToken = process.env.TWILIO_AUTH_TOKEN, signature = '', url = '', params = {} } = {}) {
+  if (!authToken) return true;
+  if (!signature || !url) return false;
+
+  const sortedKeys = Object.keys(params || {}).sort();
+  const stringToSign = `${url}${sortedKeys.map((key) => `${key}${params[key]}`).join('')}`;
+  const expected = crypto
+    .createHmac('sha1', authToken)
+    .update(Buffer.from(stringToSign, 'utf8'))
+    .digest('base64');
+
+  try {
+    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+  } catch {
+    return false;
+  }
+}
+
 // ── Startup diagnostics ──────────────────────────────────────────────────────
 (function logTwilioConfig() {
   const callbackUrl = getStatusCallbackUrl();
   const hasUrl = Boolean(callbackUrl);
   console.log(`[TWILIO_CONFIG] Public backend URL configured: ${hasUrl ? 'yes' : 'no'}`);
   if (hasUrl) {
-    console.log(`[TWILIO_CONFIG] Meta lead status callback: ${callbackUrl}`);
+    console.log(`[TWILIO_CONFIG] Meta lead callback URL: ${callbackUrl}`);
   }
   // Route mount confirmation is logged by the route file on startup.
 })();
@@ -770,13 +865,16 @@ async function reconcileLeadRegistrations(limit = 200) {
   return { scanned: leads.length, updated };
 }
 
-async function handleTwilioStatusWebhook(payload = {}) {
-  const sid = payload.MessageSid || payload.SmsSid;
+async function handleTwilioStatusWebhook(payload = {}, deps = {}) {
+  const metaLeadModel = deps.metaLeadModel || MetaLead;
+  const logEventFn = deps.logEventFn || logEvent;
+  const receivedSid = payload.MessageSid || payload.SmsSid;
   const twilioStatus = (payload.MessageStatus || '').toLowerCase();
-  if (!sid) return { updated: false, reason: 'missing_sid' };
-  if (!TWILIO_SID_REGEX.test(String(sid))) return { updated: false, reason: 'invalid_sid' };
+  if (!receivedSid) return { updated: false, reason: 'missing_sid' };
+  const sid = normalizeTwilioSid(receivedSid);
+  if (!sid) return { updated: false, reason: 'invalid_sid' };
 
-  const lead = await MetaLead.findOne({ 'smsHistory.messageSid': sid });
+  const lead = await metaLeadModel.findOne({ smsHistory: { $elemMatch: { messageSid: sid } } });
   if (!lead) return { updated: false, reason: 'not_found' };
 
   const historyItem = lead.smsHistory.find((h) => h.messageSid === sid);
@@ -796,18 +894,186 @@ async function handleTwilioStatusWebhook(payload = {}) {
   historyItem.errorCode = payload.ErrorCode || null;
   historyItem.errorMessage = payload.ErrorMessage || null;
 
-  if (normalizedStatus === 'delivered') lead.smsStatus = 'delivered';
-  if (normalizedStatus === 'undelivered' || normalizedStatus === 'failed') lead.smsStatus = normalizedStatus;
+  if (shouldPromoteLeadSmsStatus(lead.smsStatus, normalizedStatus)) {
+    lead.smsStatus = normalizedStatus;
+  }
 
   await lead.save();
 
-  await logEvent(lead._id, `sms_${normalizedStatus}`, 'sms', `SMS ${normalizedStatus}`, sid, {
+  await logEventFn(lead._id, `sms_${normalizedStatus}`, 'sms', `SMS ${normalizedStatus}`, sid, {
     sid,
     twilioStatus,
     errorCode: payload.ErrorCode || null
   });
 
   return { updated: true, leadId: lead._id, status: normalizedStatus };
+}
+
+async function retryFailedInitialMetaLeadSmsBatch({
+  targetIds = [],
+  metaLeadModel = MetaLead,
+  sendSmsImpl = sendSms,
+  settingsProvider = getSettings,
+  now = () => new Date()
+} = {}) {
+  const callbackUrl = getStatusCallbackUrl();
+  if (!callbackUrl) {
+    throw new Error('BACKEND_PUBLIC_URL is not configured — cannot build absolute StatusCallback URL. Set BACKEND_PUBLIC_URL=https://fixloapp.onrender.com in Render.');
+  }
+
+  console.log('[META_SMS] Retry batch started');
+  console.log(`[META_SMS] Status callback URL valid: ${callbackUrl}`);
+
+  const settings = await settingsProvider();
+  const results = [];
+
+  for (const leadId of targetIds) {
+    let lead;
+    try {
+      lead = await metaLeadModel.findById(leadId);
+    } catch (error) {
+      console.error(`[META_SMS] Retry failed lead=${leadId} error=${error.message}`);
+      results.push({
+        name: '',
+        leadId,
+        status: 'FAILED',
+        twilioMessageSid: null,
+        twilioStatus: null,
+        statusCallback: callbackUrl,
+        errorReason: `db_lookup_failed:${error.message}`
+      });
+      continue;
+    }
+
+    if (!lead) {
+      results.push({
+        name: '',
+        leadId,
+        status: 'FAILED',
+        twilioMessageSid: null,
+        twilioStatus: null,
+        statusCallback: callbackUrl,
+        errorReason: 'lead_not_found'
+      });
+      continue;
+    }
+
+    const name = getLeadDisplayName(lead);
+    const existingEntry = findInitialOutboundSmsWithSid(lead);
+    if (existingEntry) {
+      console.log(`[META_SMS] Existing SID found lead=${leadId} sid=${existingEntry.messageSid}`);
+      results.push({
+        name,
+        leadId,
+        status: 'ALREADY_SENT',
+        twilioMessageSid: existingEntry.messageSid,
+        twilioStatus: existingEntry.status || lead.smsStatus || 'queued',
+        statusCallback: callbackUrl,
+        errorReason: null
+      });
+      continue;
+    }
+
+    const retryBlockReason = getRetryBlockReason(lead);
+    if (retryBlockReason) {
+      console.error(`[META_SMS] Retry failed lead=${leadId} error=${retryBlockReason}`);
+      results.push({
+        name,
+        leadId,
+        status: 'FAILED',
+        twilioMessageSid: null,
+        twilioStatus: 'failed',
+        statusCallback: callbackUrl,
+        errorReason: retryBlockReason
+      });
+      continue;
+    }
+
+    const body = template(settings.smsTemplates?.immediate || '', buildMessageVars(lead, settings));
+    if (!lead.phone) {
+      console.error(`[META_SMS] Retry failed lead=${leadId} error=missing_phone`);
+      results.push({
+        name,
+        leadId,
+        status: 'FAILED',
+        twilioMessageSid: null,
+        twilioStatus: 'failed',
+        statusCallback: callbackUrl,
+        errorReason: 'missing_phone'
+      });
+      continue;
+    }
+    if (!lead.invitationCode) {
+      console.error(`[META_SMS] Retry failed lead=${leadId} error=missing_invitation_code`);
+      results.push({
+        name,
+        leadId,
+        status: 'FAILED',
+        twilioMessageSid: null,
+        twilioStatus: 'failed',
+        statusCallback: callbackUrl,
+        errorReason: 'missing_invitation_code'
+      });
+      continue;
+    }
+    if (!body.trim()) {
+      console.error(`[META_SMS] Retry failed lead=${leadId} error=missing_template`);
+      results.push({
+        name,
+        leadId,
+        status: 'FAILED',
+        twilioMessageSid: null,
+        twilioStatus: 'failed',
+        statusCallback: callbackUrl,
+        errorReason: 'missing_template'
+      });
+      continue;
+    }
+
+    try {
+      console.log(`[META_SMS] Retrying initial SMS lead=${leadId}`);
+      const twilioRes = await sendSmsImpl(lead.phone, body, { statusCallback: callbackUrl });
+      console.log(`[META_SMS] Twilio accepted SID=${twilioRes.sid}`);
+
+      lead.smsStatus = twilioRes.status || 'queued';
+      lead.smsHistory.push({
+        messageSid: twilioRes.sid,
+        direction: 'outbound',
+        status: twilioRes.status || 'queued',
+        body,
+        templateKey: 'immediate',
+        sentAt: now(),
+        updatedAt: now(),
+        errorCode: null,
+        errorMessage: null
+      });
+      await lead.save();
+
+      results.push({
+        name,
+        leadId,
+        status: 'SENT',
+        twilioMessageSid: twilioRes.sid,
+        twilioStatus: twilioRes.status || 'queued',
+        statusCallback: callbackUrl,
+        errorReason: null
+      });
+    } catch (error) {
+      console.error(`[META_SMS] Retry failed lead=${leadId} error=${error.message}`);
+      results.push({
+        name,
+        leadId,
+        status: 'FAILED',
+        twilioMessageSid: null,
+        twilioStatus: 'failed',
+        statusCallback: callbackUrl,
+        errorReason: error.message
+      });
+    }
+  }
+
+  console.log('[META_SMS] Retry batch completed');
+  return results;
 }
 
 function matchLeadByPhone(phone, leads = []) {
@@ -1488,8 +1754,13 @@ module.exports = {
   STOP_KEYWORDS,
   START_KEYWORDS,
   TWILIO_SID_REGEX,
+  META_LEAD_STATUS_CALLBACK_PATH,
   template,
   getStatusCallbackUrl,
+  validateTwilioSignature,
+  hasValidTwilioSid,
+  wasInvalidStatusCallbackFailure,
+  getRetryBlockReason,
   getSettings,
   saveSettings,
   verifyMetaSignature,
@@ -1497,6 +1768,7 @@ module.exports = {
   processFollowUpCycle,
   reconcileLeadRegistrations,
   handleTwilioStatusWebhook,
+  retryFailedInitialMetaLeadSmsBatch,
   handleTwilioInboundWebhook,
   handleSendGridEvents,
   listLeads,
