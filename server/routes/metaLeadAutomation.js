@@ -1,28 +1,24 @@
 const express = require('express');
-const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const requireAuth = require('../middleware/requireAuth');
 const requireAdmin = require('../middleware/requireAdmin');
-const MetaLead = require('../models/MetaLead');
 const {
-  TWILIO_SID_REGEX,
-  template,
   getSettings,
-  getStatusCallbackUrl,
   saveSettings,
   verifyMetaSignature,
   processMetaWebhookPayload,
   processFollowUpCycle,
   reconcileLeadRegistrations,
+  validateTwilioSignature,
   handleTwilioStatusWebhook,
   handleTwilioInboundWebhook,
   handleSendGridEvents,
   listLeads,
   getLeadDetails,
   computeDashboardMetrics,
-  performManualAction
+  performManualAction,
+  retryFailedInitialMetaLeadSmsBatch
 } = require('../services/metaLeadAutomationService');
-const { sendSms } = require('../utils/twilio');
 
 const router = express.Router();
 
@@ -44,43 +40,6 @@ const adminMutationRateLimit = rateLimit({
   legacyHeaders: false,
   message: { ok: false, error: 'Too many requests' }
 });
-
-/**
- * Verify that a Twilio webhook request is genuinely from Twilio by validating
- * the X-Twilio-Signature header using the Auth Token.
- *
- * Returns true when:
- *  - TWILIO_AUTH_TOKEN is not set (allows local dev without credentials)
- *  - The computed HMAC-SHA1 matches the header value
- */
-function verifyTwilioSignature(req) {
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  if (!authToken) return true; // skip validation when credentials are absent (dev/test)
-
-  const signature = req.headers['x-twilio-signature'] || '';
-  if (!signature) return false;
-
-  // Build the URL that Twilio used when it sent the request.
-  const callbackUrl = getStatusCallbackUrl();
-  if (!callbackUrl) return false;
-
-  // Sort POST params and append to URL exactly as Twilio does.
-  const params = req.body || {};
-  const sortedKeys = Object.keys(params).sort();
-  const paramStr = sortedKeys.map((k) => `${k}${params[k]}`).join('');
-  const stringToSign = `${callbackUrl}${paramStr}`;
-
-  const expected = crypto
-    .createHmac('sha1', authToken)
-    .update(Buffer.from(stringToSign, 'utf8'))
-    .digest('base64');
-
-  try {
-    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
-  } catch {
-    return false;
-  }
-}
 
 router.get('/webhook/meta-leads', webhookRateLimit, (req, res) => {
   const mode = req.query['hub.mode'];
@@ -115,15 +74,15 @@ router.post('/webhook/meta-leads', webhookRateLimit, async (req, res) => {
 
 router.post('/webhook/twilio/meta-leads/status', webhookRateLimit, express.urlencoded({ extended: false }), async (req, res) => {
   // Validate Twilio signature to reject spoofed requests.
-  if (!verifyTwilioSignature(req)) {
+  if (!validateTwilioSignature({ signature: req.headers['x-twilio-signature'] || '', params: req.body || {} })) {
     return res.status(403).type('text/plain').send('forbidden');
   }
   try {
     await handleTwilioStatusWebhook(req.body || {});
-    return res.status(200).send('ok');
   } catch (error) {
-    return res.status(500).type('text/plain').send('status_webhook_error');
+    console.error(`[META_SMS] Status webhook processing failed: ${error.message}`);
   }
+  return res.status(200).type('text/plain').send('ok');
 });
 
 router.post('/webhook/twilio/meta-leads/inbound', webhookRateLimit, express.urlencoded({ extended: false }), async (req, res) => {
@@ -204,107 +163,12 @@ router.post(
       '6a5f4c2c8a89f5ec882f35c8'
     ];
 
-    const callbackUrl = getStatusCallbackUrl();
-    if (!callbackUrl) {
-      return res.status(500).json({
-        ok: false,
-        error: 'BACKEND_PUBLIC_URL is not configured — cannot build absolute StatusCallback URL. Set BACKEND_PUBLIC_URL=https://fixloapp.onrender.com in Render.'
-      });
+    try {
+      const results = await retryFailedInitialMetaLeadSmsBatch({ targetIds: TARGET_IDS });
+      return res.json({ ok: true, results });
+    } catch (error) {
+      return res.status(500).json({ ok: false, error: error.message });
     }
-
-    const settings = await getSettings();
-    const results = [];
-
-    for (const leadId of TARGET_IDS) {
-      let lead;
-      try {
-        lead = await MetaLead.findById(leadId);
-      } catch (err) {
-        results.push({ leadId, status: 'ERROR', error: `DB lookup failed: ${err.message}` });
-        continue;
-      }
-
-      if (!lead) {
-        results.push({ leadId, status: 'NOT_FOUND' });
-        continue;
-      }
-
-      // Check if we already have a valid Twilio SID for an outbound initial SMS.
-      const existingSid = (lead.smsHistory || [])
-        .filter((h) => h.direction === 'outbound' && h.templateKey === 'immediate')
-        .map((h) => h.messageSid)
-        .find((sid) => sid && TWILIO_SID_REGEX.test(sid));
-
-      if (existingSid) {
-        results.push({
-          name: `${lead.firstName || ''} ${lead.lastName || ''}`.trim() || lead.email,
-          leadId,
-          status: 'ALREADY_SENT',
-          twilioMessageSid: existingSid,
-          statusCallback: callbackUrl
-        });
-        continue;
-      }
-
-      // Build message body using the shared template substitution helper.
-      const vars = {
-        firstName: lead.firstName || 'there',
-        lastName: lead.lastName || '',
-        trade: lead.trade || 'your trade',
-        tradeSuffix: lead.trade ? ` for ${lead.trade}` : '',
-        invitationCode: lead.invitationCode || '',
-        signupLink: settings.signupLink,
-        supportEmail: settings.supportEmail,
-        supportPhone: settings.supportPhone || ''
-      };
-      const body = template(settings.smsTemplates?.immediate || '', vars);
-
-      if (!lead.phone) {
-        results.push({ leadId, status: 'SKIPPED', reason: 'missing_phone' });
-        continue;
-      }
-      if (!body.trim()) {
-        results.push({ leadId, status: 'SKIPPED', reason: 'missing_template' });
-        continue;
-      }
-
-      try {
-        console.log(`[META_SMS] Retry initial SMS for lead ${leadId}`);
-        const twilioRes = await sendSms(lead.phone, body, { statusCallback: callbackUrl });
-        console.log(`[META_SMS] Retry accepted SID=${twilioRes.sid} for lead ${leadId}`);
-
-        lead.smsStatus = 'sent';
-        lead.smsHistory.push({
-          messageSid: twilioRes.sid,
-          direction: 'outbound',
-          status: twilioRes.status || 'queued',
-          body,
-          templateKey: 'immediate',
-          sentAt: new Date(),
-          updatedAt: new Date()
-        });
-        await lead.save();
-
-        results.push({
-          name: `${lead.firstName || ''} ${lead.lastName || ''}`.trim() || lead.email,
-          leadId,
-          status: 'SENT',
-          twilioMessageSid: twilioRes.sid,
-          twilioStatus: twilioRes.status || 'queued',
-          statusCallback: callbackUrl
-        });
-      } catch (err) {
-        console.error(`[META_SMS] Retry failed for lead ${leadId}: ${err.message}`);
-        results.push({
-          name: `${lead.firstName || ''} ${lead.lastName || ''}`.trim() || lead.email,
-          leadId,
-          status: 'FAILED',
-          error: err.message
-        });
-      }
-    }
-
-    return res.json({ ok: true, results });
   }
 );
 
@@ -359,4 +223,3 @@ router.post('/api/admin/meta-leads/jobs/reconcile/run', requireAuth, requireAdmi
 });
 
 module.exports = router;
-

@@ -1,321 +1,313 @@
-/**
- * Tests for the Twilio StatusCallback URL fix in metaLeadAutomationService.
- *
- * These tests are pure-unit and do not require a database or Twilio credentials.
- */
-
 'use strict';
 
-// We must stub modules BEFORE requiring the service so that the startup
-// IIFE inside the service runs with the stubs in place.
-jest.mock('../models/AdminSettings', () => ({ findOne: jest.fn() }));
-jest.mock('../models/InviteCode', () => ({}));
-jest.mock('../models/MetaLead', () => ({}));
-jest.mock('../models/MetaLeadEvent', () => ({ create: jest.fn() }));
-jest.mock('../models/Notification', () => ({ insertMany: jest.fn() }));
-jest.mock('../models/Pro', () => ({ find: jest.fn() }));
-jest.mock('../utils/twilio', () => ({
-  sendSms: jest.fn(),
-  normalizeE164: jest.fn((p) => p)
-}));
-jest.mock('../utils/smsSender', () => ({ sendOwnerNotification: jest.fn() }));
-jest.mock('@sendgrid/mail', () => ({ setApiKey: jest.fn(), send: jest.fn() }));
-jest.mock('axios');
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { mock } = require('node:test');
 
-describe('getStatusCallbackUrl', () => {
-  let getStatusCallbackUrl;
+const {
+  getStatusCallbackUrl,
+  validateTwilioSignature,
+  handleTwilioStatusWebhook,
+  retryFailedInitialMetaLeadSmsBatch
+} = require('./metaLeadAutomationService');
 
-  function loadFresh() {
-    jest.resetModules();
-
-    // Re-apply mocks after resetModules.
-    jest.mock('../models/AdminSettings', () => ({ findOne: jest.fn() }));
-    jest.mock('../models/InviteCode', () => ({}));
-    jest.mock('../models/MetaLead', () => ({}));
-    jest.mock('../models/MetaLeadEvent', () => ({ create: jest.fn() }));
-    jest.mock('../models/Notification', () => ({ insertMany: jest.fn() }));
-    jest.mock('../models/Pro', () => ({ find: jest.fn() }));
-    jest.mock('../utils/twilio', () => ({
-      sendSms: jest.fn(),
-      normalizeE164: jest.fn((p) => p)
-    }));
-    jest.mock('../utils/smsSender', () => ({ sendOwnerNotification: jest.fn() }));
-    jest.mock('@sendgrid/mail', () => ({ setApiKey: jest.fn(), send: jest.fn() }));
-    jest.mock('axios');
-
-    // eslint-disable-next-line global-require
-    return require('./metaLeadAutomationService').getStatusCallbackUrl;
-  }
-
-  afterEach(() => {
-    delete process.env.BACKEND_PUBLIC_URL;
-    delete process.env.META_LEAD_SMS_STATUS_CALLBACK_URL;
-    delete process.env.SERVER_BASE_URL;
-    delete process.env.NODE_ENV;
-  });
-
-  test('returns absolute URL from BACKEND_PUBLIC_URL without trailing slash', () => {
-    process.env.BACKEND_PUBLIC_URL = 'https://fixloapp.onrender.com';
-    getStatusCallbackUrl = loadFresh();
-    const url = getStatusCallbackUrl();
-    expect(url).toBe('https://fixloapp.onrender.com/webhook/twilio/meta-leads/status');
-  });
-
-  test('normalizes trailing slash in BACKEND_PUBLIC_URL', () => {
-    process.env.BACKEND_PUBLIC_URL = 'https://fixloapp.onrender.com/';
-    getStatusCallbackUrl = loadFresh();
-    const url = getStatusCallbackUrl();
-    expect(url).toBe('https://fixloapp.onrender.com/webhook/twilio/meta-leads/status');
-    // Must not produce double slash
-    expect(url).not.toContain('//webhook');
-  });
-
-  test('normalizes multiple trailing slashes', () => {
-    process.env.BACKEND_PUBLIC_URL = 'https://fixloapp.onrender.com///';
-    getStatusCallbackUrl = loadFresh();
-    const url = getStatusCallbackUrl();
-    expect(url).toBe('https://fixloapp.onrender.com/webhook/twilio/meta-leads/status');
-  });
-
-  test('META_LEAD_SMS_STATUS_CALLBACK_URL explicit override takes priority', () => {
-    process.env.BACKEND_PUBLIC_URL = 'https://fixloapp.onrender.com';
-    process.env.META_LEAD_SMS_STATUS_CALLBACK_URL = 'https://custom.example.com/my/callback';
-    getStatusCallbackUrl = loadFresh();
-    const url = getStatusCallbackUrl();
-    expect(url).toBe('https://custom.example.com/my/callback');
-  });
-
-  test('falls back to SERVER_BASE_URL when BACKEND_PUBLIC_URL is absent', () => {
-    process.env.SERVER_BASE_URL = 'https://fixloapp.onrender.com';
-    getStatusCallbackUrl = loadFresh();
-    const url = getStatusCallbackUrl();
-    expect(url).toBe('https://fixloapp.onrender.com/webhook/twilio/meta-leads/status');
-  });
-
-  test('returns null when no absolute base URL is configured', () => {
-    // No env vars set.
-    getStatusCallbackUrl = loadFresh();
-    const url = getStatusCallbackUrl();
-    expect(url).toBeNull();
-  });
-
-  test('never returns a relative path', () => {
-    // Simulate the pre-fix broken state: SERVER_BASE_URL empty, no other var.
-    process.env.SERVER_BASE_URL = '';
-    getStatusCallbackUrl = loadFresh();
-    const url = getStatusCallbackUrl();
-    // Must be null — never a bare path like "/webhook/..."
-    expect(url).toBeNull();
-  });
-
-  test('logs a configuration error in production when URL is missing', () => {
-    process.env.NODE_ENV = 'production';
-    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    getStatusCallbackUrl = loadFresh();
-    getStatusCallbackUrl();
-    expect(spy).toHaveBeenCalledWith(expect.stringContaining('BACKEND_PUBLIC_URL'));
-    spy.mockRestore();
-  });
-
-  test('result always starts with https:// when configured', () => {
-    process.env.BACKEND_PUBLIC_URL = 'https://fixloapp.onrender.com';
-    getStatusCallbackUrl = loadFresh();
-    const url = getStatusCallbackUrl();
-    expect(url).toMatch(/^https:\/\//);
-  });
-});
-
-describe('sendLeadSms — callback URL integration', () => {
-  let sendLeadSms;
-  let mockSendSms;
-
-  function loadFreshWithEnv() {
-    jest.resetModules();
-
-    mockSendSms = jest.fn().mockResolvedValue({ sid: 'SM' + 'a'.repeat(32), status: 'queued' });
-
-    jest.mock('../models/AdminSettings', () => ({ findOne: jest.fn() }));
-    jest.mock('../models/InviteCode', () => ({}));
-    jest.mock('../models/MetaLead', () => ({}));
-    jest.mock('../models/MetaLeadEvent', () => ({ create: jest.fn() }));
-    jest.mock('../models/Notification', () => ({ insertMany: jest.fn() }));
-    jest.mock('../models/Pro', () => ({ find: jest.fn() }));
-    jest.mock('../utils/twilio', () => ({
-      sendSms: mockSendSms,
-      normalizeE164: jest.fn((p) => p)
-    }));
-    jest.mock('../utils/smsSender', () => ({ sendOwnerNotification: jest.fn() }));
-    jest.mock('@sendgrid/mail', () => ({ setApiKey: jest.fn(), send: jest.fn() }));
-    jest.mock('axios');
-
-    // eslint-disable-next-line global-require
-    const svc = require('./metaLeadAutomationService');
-    sendLeadSms = svc.sendLeadSms || null;
-    return svc;
-  }
-
-  afterEach(() => {
-    delete process.env.BACKEND_PUBLIC_URL;
-    delete process.env.META_LEAD_SMS_STATUS_CALLBACK_URL;
-    delete process.env.SERVER_BASE_URL;
-    delete process.env.NODE_ENV;
-  });
-
-  test('passes absolute statusCallback to sendSms when BACKEND_PUBLIC_URL is set', async () => {
-    process.env.BACKEND_PUBLIC_URL = 'https://fixloapp.onrender.com';
-    loadFreshWithEnv();
-
-    const lead = {
-      _id: 'lead1',
-      phone: '+12025551234',
-      smsOptOut: false,
-      smsStatus: null,
-      smsHistory: [],
-      invitationCode: 'ABC123',
-      firstName: 'Test',
-      lastName: 'User',
-      trade: 'Plumber',
-      save: jest.fn().mockResolvedValue(true)
-    };
-
-    const settings = {
-      smsTemplates: { immediate: 'Hi {{firstName}}! Code: {{invitationCode}}' },
-      signupLink: 'https://fixloapp.com/signup',
-      supportEmail: 'support@fixloapp.com',
-      supportPhone: ''
-    };
-
-    // sendLeadSms is not exported directly; access via module.
-    const svc = require('./metaLeadAutomationService');
-    // Test through exported sendLeadSms if available, otherwise verify via sendSms call.
-    await svc.recoverManualMetaLead?.({ phone: null }).catch(() => null);
-
-    // Direct verification: the mock for sendSms should have been called with absolute callback.
-    // We can also verify getStatusCallbackUrl() directly.
-    const url = svc.getStatusCallbackUrl();
-    expect(url).toBe('https://fixloapp.onrender.com/webhook/twilio/meta-leads/status');
-    expect(url).toMatch(/^https:\/\//);
-  });
-
-  test('sendSms is not called with a relative path as statusCallback', async () => {
-    // No env vars — should omit callback, not pass a relative path.
-    const svc = loadFreshWithEnv();
-    const url = svc.getStatusCallbackUrl();
-    expect(url).toBeNull();
-    // If null, callers should omit statusCallback entirely — verify that sendSms
-    // would not receive a relative path option (tested in unit above).
-  });
-});
-
-describe('Twilio signature validation helper', () => {
-  const crypto = require('crypto');
-
-  function buildSignature(authToken, url, params) {
-    const sortedKeys = Object.keys(params).sort();
-    const paramStr = sortedKeys.map((k) => `${k}${params[k]}`).join('');
-    return crypto
-      .createHmac('sha1', authToken)
-      .update(Buffer.from(`${url}${paramStr}`, 'utf8'))
-      .digest('base64');
-  }
-
-  test('valid Twilio signature is accepted', () => {
-    const authToken = 'test_auth_token_abc123';
-    const callbackUrl = 'https://fixloapp.onrender.com/webhook/twilio/meta-leads/status';
-    const params = { MessageSid: 'SMabc123', MessageStatus: 'delivered', From: '+12025551234' };
-    const sig = buildSignature(authToken, callbackUrl, params);
-
-    // Reproduce the validation logic from the route:
-    const sortedKeys = Object.keys(params).sort();
-    const paramStr = sortedKeys.map((k) => `${k}${params[k]}`).join('');
-    const stringToSign = `${callbackUrl}${paramStr}`;
-    const expected = crypto.createHmac('sha1', authToken).update(Buffer.from(stringToSign, 'utf8')).digest('base64');
-    expect(crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sig))).toBe(true);
-  });
-
-  test('tampered payload signature is rejected', () => {
-    const authToken = 'test_auth_token_abc123';
-    const callbackUrl = 'https://fixloapp.onrender.com/webhook/twilio/meta-leads/status';
-    const params = { MessageSid: 'SMabc123', MessageStatus: 'delivered' };
-    const tamperedSig = 'INVALIDSIGNATUREVALUE==';
-
-    const sortedKeys = Object.keys(params).sort();
-    const paramStr = sortedKeys.map((k) => `${k}${params[k]}`).join('');
-    const stringToSign = `${callbackUrl}${paramStr}`;
-    const expected = crypto.createHmac('sha1', authToken).update(Buffer.from(stringToSign, 'utf8')).digest('base64');
-
-    let result = true;
-    try {
-      result = crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(tamperedSig));
-    } catch {
-      result = false;
+function createLead(overrides = {}) {
+  return {
+    _id: overrides._id || 'lead-1',
+    firstName: overrides.firstName || 'Test',
+    lastName: overrides.lastName || 'Lead',
+    email: overrides.email || 'test@example.com',
+    phone: overrides.phone || '+12025550100',
+    invitationCode: overrides.invitationCode === undefined ? 'FIXLO1234' : overrides.invitationCode,
+    smsStatus: overrides.smsStatus || 'failed',
+    smsHistory: overrides.smsHistory ? [...overrides.smsHistory] : [],
+    saveCalls: 0,
+    async save() {
+      this.saveCalls += 1;
+      return this;
     }
-    expect(result).toBe(false);
-  });
+  };
+}
+
+test.afterEach(() => {
+  delete process.env.BACKEND_PUBLIC_URL;
+  delete process.env.META_LEAD_SMS_STATUS_CALLBACK_URL;
+  delete process.env.SERVER_BASE_URL;
+  delete process.env.TWILIO_AUTH_TOKEN;
+  delete process.env.NODE_ENV;
+  mock.restoreAll();
 });
 
-describe('Retry idempotency logic', () => {
-  // Use the shared constant from the service module (loaded via jest.resetModules above).
-  // For these unit tests we reproduce the regex locally since the service module
-  // is heavily mocked in the describe blocks above; we import it fresh here.
-  let TWILIO_SID_REGEX;
+test('builds the absolute callback URL from BACKEND_PUBLIC_URL', () => {
+  process.env.BACKEND_PUBLIC_URL = 'https://fixloapp.onrender.com';
+  assert.equal(
+    getStatusCallbackUrl(),
+    'https://fixloapp.onrender.com/webhook/twilio/meta-leads/status'
+  );
+});
 
-  beforeAll(() => {
-    jest.resetModules();
-    jest.mock('../models/AdminSettings', () => ({ findOne: jest.fn() }));
-    jest.mock('../models/InviteCode', () => ({}));
-    jest.mock('../models/MetaLead', () => ({}));
-    jest.mock('../models/MetaLeadEvent', () => ({ create: jest.fn() }));
-    jest.mock('../models/Notification', () => ({ insertMany: jest.fn() }));
-    jest.mock('../models/Pro', () => ({ find: jest.fn() }));
-    jest.mock('../utils/twilio', () => ({ sendSms: jest.fn(), normalizeE164: jest.fn((p) => p) }));
-    jest.mock('../utils/smsSender', () => ({ sendOwnerNotification: jest.fn() }));
-    jest.mock('@sendgrid/mail', () => ({ setApiKey: jest.fn(), send: jest.fn() }));
-    jest.mock('axios');
-    // eslint-disable-next-line global-require
-    ({ TWILIO_SID_REGEX } = require('./metaLeadAutomationService'));
+test('normalizes trailing slashes in BACKEND_PUBLIC_URL', () => {
+  process.env.BACKEND_PUBLIC_URL = 'https://fixloapp.onrender.com///';
+  assert.equal(
+    getStatusCallbackUrl(),
+    'https://fixloapp.onrender.com/webhook/twilio/meta-leads/status'
+  );
+});
+
+test('returns null and logs when BACKEND_PUBLIC_URL is missing', () => {
+  process.env.NODE_ENV = 'production';
+  const consoleError = mock.method(console, 'error', () => {});
+
+  assert.equal(getStatusCallbackUrl(), null);
+  assert.equal(consoleError.mock.calls.length, 2);
+  assert.match(String(consoleError.mock.calls[0].arguments[0]), /BACKEND_PUBLIC_URL/);
+});
+
+test('accepts a valid Twilio callback signature', () => {
+  process.env.TWILIO_AUTH_TOKEN = 'test_auth_token';
+  const url = 'https://fixloapp.onrender.com/webhook/twilio/meta-leads/status';
+  const params = { MessageSid: 'SMabc123', MessageStatus: 'delivered', From: '+12025550100' };
+  const crypto = require('crypto');
+  const signature = crypto
+    .createHmac('sha1', process.env.TWILIO_AUTH_TOKEN)
+    .update(Buffer.from(`${url}From+12025550100MessageSidSMabc123MessageStatusdelivered`, 'utf8'))
+    .digest('base64');
+
+  assert.equal(validateTwilioSignature({ signature, url, params }), true);
+});
+
+test('rejects an invalid Twilio callback signature', () => {
+  process.env.TWILIO_AUTH_TOKEN = 'test_auth_token';
+  const params = { MessageSid: 'SMabc123', MessageStatus: 'delivered' };
+
+  assert.equal(
+    validateTwilioSignature({
+      signature: 'invalid-signature',
+      url: 'https://fixloapp.onrender.com/webhook/twilio/meta-leads/status',
+      params
+    }),
+    false
+  );
+});
+
+test('stores Twilio status callback fields on the matching lead record', async () => {
+  const lead = createLead({
+    _id: 'lead-status',
+    smsHistory: [{
+      messageSid: 'SM' + 'a'.repeat(32),
+      direction: 'outbound',
+      templateKey: 'immediate',
+      status: 'queued',
+      errorCode: null,
+      errorMessage: null
+    }]
+  });
+  const events = [];
+
+  const result = await handleTwilioStatusWebhook(
+    {
+      MessageSid: 'SM' + 'a'.repeat(32),
+      MessageStatus: 'undelivered',
+      ErrorCode: '21610',
+      ErrorMessage: 'STOP recipient'
+    },
+    {
+      metaLeadModel: {
+        async findOne() {
+          return lead;
+        }
+      },
+      logEventFn: async (...args) => events.push(args)
+    }
+  );
+
+  assert.equal(result.updated, true);
+  assert.equal(lead.smsStatus, 'undelivered');
+  assert.equal(lead.smsHistory[0].messageSid, 'SM' + 'a'.repeat(32));
+  assert.equal(lead.smsHistory[0].status, 'undelivered');
+  assert.equal(lead.smsHistory[0].errorCode, '21610');
+  assert.equal(lead.smsHistory[0].errorMessage, 'STOP recipient');
+  assert.equal(lead.saveCalls, 1);
+  assert.equal(events.length, 1);
+});
+
+test('retries a failed initial SMS and returns the accepted SID', async () => {
+  process.env.BACKEND_PUBLIC_URL = 'https://fixloapp.onrender.com';
+  const lead = createLead({
+    _id: '6a5f4c298a89f5ec882f359c',
+    firstName: 'Booker',
+    lastName: 'Jones',
+    smsHistory: [{
+      direction: 'outbound',
+      templateKey: 'immediate',
+      status: 'failed',
+      errorMessage: 'StatusCallback must be a valid URL'
+    }]
   });
 
-  test('ALREADY_SENT is reported when a valid SID exists in smsHistory', () => {
-    const existingSid = 'SM' + 'a'.repeat(32);
-    const smsHistory = [
-      { direction: 'outbound', templateKey: 'immediate', messageSid: existingSid }
-    ];
-
-    const found = smsHistory
-      .filter((h) => h.direction === 'outbound' && h.templateKey === 'immediate')
-      .map((h) => h.messageSid)
-      .find((sid) => sid && TWILIO_SID_REGEX.test(sid));
-
-    expect(found).toBe(existingSid);
+  const results = await retryFailedInitialMetaLeadSmsBatch({
+    targetIds: [lead._id],
+    metaLeadModel: {
+      async findById(id) {
+        return id === lead._id ? lead : null;
+      }
+    },
+    settingsProvider: async () => ({
+      signupLink: 'https://fixloapp.com/pros/signup',
+      supportEmail: 'support@fixloapp.com',
+      supportPhone: '',
+      smsTemplates: { immediate: 'Hi {{firstName}}! Use {{invitationCode}} at {{signupLink}}' }
+    }),
+    sendSmsImpl: async (_phone, _body, options) => {
+      assert.equal(
+        options.statusCallback,
+        'https://fixloapp.onrender.com/webhook/twilio/meta-leads/status'
+      );
+      return { sid: 'SM' + 'b'.repeat(32), status: 'queued' };
+    }
   });
 
-  test('retry proceeds (SENT) when no valid SID exists', () => {
-    const smsHistory = [
-      { direction: 'outbound', templateKey: 'immediate', messageSid: null },
-      { direction: 'outbound', templateKey: 'immediate', status: 'failed' }
-    ];
+  assert.deepEqual(results, [{
+    name: 'Booker Jones',
+    leadId: '6a5f4c298a89f5ec882f359c',
+    status: 'SENT',
+    twilioMessageSid: 'SM' + 'b'.repeat(32),
+    twilioStatus: 'queued',
+    statusCallback: 'https://fixloapp.onrender.com/webhook/twilio/meta-leads/status',
+    errorReason: null
+  }]);
+  assert.equal(lead.saveCalls, 1);
+  assert.equal(lead.smsHistory.at(-1).messageSid, 'SM' + 'b'.repeat(32));
+});
 
-    const found = smsHistory
-      .filter((h) => h.direction === 'outbound' && h.templateKey === 'immediate')
-      .map((h) => h.messageSid)
-      .find((sid) => sid && TWILIO_SID_REGEX.test(sid));
+test('skips retry when an existing valid SID is already stored', async () => {
+  process.env.BACKEND_PUBLIC_URL = 'https://fixloapp.onrender.com';
+  const lead = createLead({
+    _id: '6a5f4c2b8a89f5ec882f35b2',
+    firstName: 'Josh',
+    lastName: 'Larsen',
+    smsHistory: [{
+      messageSid: 'SM' + 'c'.repeat(32),
+      direction: 'outbound',
+      templateKey: 'immediate',
+      status: 'queued'
+    }]
+  });
+  let sendCount = 0;
 
-    expect(found).toBeUndefined();
+  const [result] = await retryFailedInitialMetaLeadSmsBatch({
+    targetIds: [lead._id],
+    metaLeadModel: {
+      async findById() {
+        return lead;
+      }
+    },
+    settingsProvider: async () => ({ smsTemplates: { immediate: 'hello' }, signupLink: '', supportEmail: '', supportPhone: '' }),
+    sendSmsImpl: async () => {
+      sendCount += 1;
+      return { sid: 'SM' + 'd'.repeat(32), status: 'queued' };
+    }
   });
 
-  test('retry is skipped when existing entry has valid SID (no duplicate)', () => {
-    // Verifies we never send more than once per lead.
-    const smsHistory = [
-      { direction: 'outbound', templateKey: 'immediate', messageSid: 'SM' + 'b'.repeat(32), status: 'queued' }
-    ];
+  assert.equal(sendCount, 0);
+  assert.equal(result.status, 'ALREADY_SENT');
+  assert.equal(result.twilioMessageSid, 'SM' + 'c'.repeat(32));
+});
 
-    const found = smsHistory
-      .filter((h) => h.direction === 'outbound' && h.templateKey === 'immediate')
-      .map((h) => h.messageSid)
-      .find((sid) => sid && TWILIO_SID_REGEX.test(sid));
-
-    // Already sent → should return ALREADY_SENT, not call sendSms again.
-    expect(found).toBeDefined();
+test('prevents duplicate sends when the prior state is ambiguous', async () => {
+  process.env.BACKEND_PUBLIC_URL = 'https://fixloapp.onrender.com';
+  const lead = createLead({
+    _id: '6a5f4c2c8a89f5ec882f35c8',
+    firstName: 'John',
+    lastName: 'Adams',
+    smsHistory: [
+      {
+        direction: 'outbound',
+        templateKey: 'immediate',
+        status: 'failed',
+        errorMessage: 'StatusCallback must be a valid URL'
+      },
+      {
+        direction: 'outbound',
+        templateKey: 'immediate',
+        status: 'queued',
+        errorMessage: null
+      }
+    ]
   });
+  let sendCount = 0;
+
+  const [result] = await retryFailedInitialMetaLeadSmsBatch({
+    targetIds: [lead._id],
+    metaLeadModel: {
+      async findById() {
+        return lead;
+      }
+    },
+    settingsProvider: async () => ({ smsTemplates: { immediate: 'hello' }, signupLink: '', supportEmail: '', supportPhone: '' }),
+    sendSmsImpl: async () => {
+      sendCount += 1;
+      return { sid: 'SM' + 'e'.repeat(32), status: 'queued' };
+    }
+  });
+
+  assert.equal(sendCount, 0);
+  assert.equal(result.status, 'FAILED');
+  assert.equal(result.errorReason, 'ambiguous_existing_attempt');
+});
+
+test('continues the batch when only one provider call fails', async () => {
+  process.env.BACKEND_PUBLIC_URL = 'https://fixloapp.onrender.com';
+  const firstLead = createLead({
+    _id: 'lead-one',
+    firstName: 'Booker',
+    lastName: 'Jones',
+    smsHistory: [{
+      direction: 'outbound',
+      templateKey: 'immediate',
+      status: 'failed',
+      errorMessage: 'Invalid StatusCallback URL'
+    }]
+  });
+  const secondLead = createLead({
+    _id: 'lead-two',
+    firstName: 'Josh',
+    lastName: 'Larsen',
+    phone: '+12025550101',
+    smsHistory: [{
+      direction: 'outbound',
+      templateKey: 'immediate',
+      status: 'failed',
+      errorMessage: 'Invalid StatusCallback URL'
+    }]
+  });
+
+  const leadMap = new Map([
+    [firstLead._id, firstLead],
+    [secondLead._id, secondLead]
+  ]);
+
+  const results = await retryFailedInitialMetaLeadSmsBatch({
+    targetIds: [firstLead._id, secondLead._id],
+    metaLeadModel: {
+      async findById(id) {
+        return leadMap.get(id) || null;
+      }
+    },
+    settingsProvider: async () => ({
+      signupLink: 'https://fixloapp.com/pros/signup',
+      supportEmail: 'support@fixloapp.com',
+      supportPhone: '',
+      smsTemplates: { immediate: 'Hi {{firstName}}! Use {{invitationCode}}' }
+    }),
+    sendSmsImpl: async (phone) => {
+      if (phone === firstLead.phone) return { sid: 'SM' + 'f'.repeat(32), status: 'queued' };
+      throw new Error('provider_down');
+    }
+  });
+
+  assert.equal(results[0].status, 'SENT');
+  assert.equal(results[0].twilioMessageSid, 'SM' + 'f'.repeat(32));
+  assert.equal(results[1].status, 'FAILED');
+  assert.equal(results[1].errorReason, 'provider_down');
 });

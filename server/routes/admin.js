@@ -664,38 +664,11 @@ async function _recovery20260719ProcessLead(leadInput) {
   };
 }
 
-router.post('/meta-leads/run-20260719-recovery', async (req, res) => {
-  console.log('[MANUAL_META_LEAD] Recovery batch started');
-  const report = [];
-
-  for (const lead of _RECOVERY_20260719_LEADS) {
-    const name = String(lead.fullName || '').trim() || 'Unknown lead';
-    try {
-      const result = await _recovery20260719ProcessLead(lead);
-      report.push(result);
-    } catch (err) {
-      console.error(`[MANUAL_META_LEAD] Error processing ${name}:`, err.message);
-      report.push({
-        name,
-        mongoDocumentId: null,
-        collection: MetaLead.collection.name,
-        source: _RECOVERY_20260719_SOURCE,
-        inviteCode: null,
-        smsAttempted: false,
-        twilioMessageSid: null,
-        emailAttempted: false,
-        sendGridMessageId: null,
-        followUpScheduled: false,
-        nextFollowUpDate: null,
-        success: false,
-        status: 'FAILED',
-        errorReason: err.message
-      });
-    }
-  }
-
-  console.log('[MANUAL_META_LEAD] Recovery batch completed');
-  return res.json({ ok: true, recovered: report.length, report });
+router.post('/meta-leads/run-20260719-recovery', async (_req, res) => {
+  return res.status(410).json({
+    ok: false,
+    error: 'Endpoint permanently disabled after the 2026-07-19 Meta lead recovery.'
+  });
 });
 // ── END TEMPORARY recovery endpoint ───────────────────────────────────────────
 
