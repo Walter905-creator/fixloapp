@@ -197,9 +197,57 @@ function buildMessageVars(lead, settings) {
   };
 }
 
+/**
+ * Build the absolute HTTPS StatusCallback URL for Twilio.
+ *
+ * Priority order:
+ *   1. BACKEND_PUBLIC_URL  (preferred — set this in Render)
+ *   2. META_LEAD_SMS_STATUS_CALLBACK_URL  (legacy explicit override)
+ *   3. SERVER_BASE_URL  (legacy fallback)
+ *
+ * Returns null when no absolute URL can be constructed so callers can
+ * omit the callback rather than pass a relative path that Twilio rejects.
+ */
 function getStatusCallbackUrl() {
-  return process.env.META_LEAD_SMS_STATUS_CALLBACK_URL || `${process.env.SERVER_BASE_URL || ''}/webhook/twilio/meta-leads/status`;
+  const WEBHOOK_PATH = '/webhook/twilio/meta-leads/status';
+
+  // Explicit full-URL override wins first.
+  const explicit = process.env.META_LEAD_SMS_STATUS_CALLBACK_URL;
+  if (explicit) {
+    const trimmed = explicit.trim().replace(/\/+$/, '');
+    if (trimmed.startsWith('https://') || trimmed.startsWith('http://')) {
+      return trimmed;
+    }
+  }
+
+  // Build from base URL env vars.
+  const base =
+    (process.env.BACKEND_PUBLIC_URL || process.env.SERVER_BASE_URL || '').trim().replace(/\/+$/, '');
+
+  if (base.startsWith('https://') || base.startsWith('http://')) {
+    return `${base}${WEBHOOK_PATH}`;
+  }
+
+  // No absolute base available — log and return null.
+  if (process.env.NODE_ENV === 'production') {
+    console.error('[TWILIO_CONFIG] ERROR: BACKEND_PUBLIC_URL is not set. Cannot build an absolute StatusCallback URL.');
+    console.error('[TWILIO_CONFIG] Set BACKEND_PUBLIC_URL=https://fixloapp.onrender.com in your Render environment.');
+  } else {
+    console.warn('[TWILIO_CONFIG] BACKEND_PUBLIC_URL not set; StatusCallback will be omitted for this send.');
+  }
+  return null;
 }
+
+// ── Startup diagnostics ──────────────────────────────────────────────────────
+(function logTwilioConfig() {
+  const callbackUrl = getStatusCallbackUrl();
+  const hasUrl = Boolean(callbackUrl);
+  console.log(`[TWILIO_CONFIG] Public backend URL configured: ${hasUrl ? 'yes' : 'no'}`);
+  if (hasUrl) {
+    console.log(`[TWILIO_CONFIG] Meta lead status callback: ${callbackUrl}`);
+  }
+  // Route mount confirmation is logged by the route file on startup.
+})();
 
 async function sendLeadSms(lead, templateKey, settings, force = false) {
   if (!lead.phone) return { success: false, reason: 'missing_phone' };
@@ -209,8 +257,20 @@ async function sendLeadSms(lead, templateKey, settings, force = false) {
   const body = template(settings.smsTemplates?.[templateKey] || '', vars);
   if (!body.trim()) return { success: false, reason: 'missing_template' };
 
+  const callbackUrl = getStatusCallbackUrl();
+  const smsOptions = {};
+  if (callbackUrl) {
+    smsOptions.statusCallback = callbackUrl;
+    console.log(`[META_SMS] Status callback URL valid: ${callbackUrl}`);
+  } else {
+    console.warn(`[META_SMS] Sending SMS without StatusCallback (BACKEND_PUBLIC_URL not configured)`);
+  }
+
+  console.log(`[META_SMS] Sending initial SMS to lead ${lead._id} template=${templateKey}`);
+
   try {
-    const twilioRes = await sendSms(lead.phone, body, { statusCallback: getStatusCallbackUrl() });
+    const twilioRes = await sendSms(lead.phone, body, smsOptions);
+    console.log(`[META_SMS] Twilio accepted SID=${twilioRes.sid}`);
     lead.smsStatus = 'sent';
     lead.smsHistory.push({
       messageSid: twilioRes.sid,
@@ -231,6 +291,7 @@ async function sendLeadSms(lead, templateKey, settings, force = false) {
 
     return { success: true, sid: twilioRes.sid };
   } catch (error) {
+    console.error(`[META_SMS] Twilio rejected error=${error.message} code=${error.code || 'N/A'}`);
     lead.smsStatus = 'failed';
     lead.smsHistory.push({
       direction: 'outbound',
@@ -1423,6 +1484,7 @@ function verifyMetaSignature(rawBody, headerSignature = '') {
 module.exports = {
   STOP_KEYWORDS,
   START_KEYWORDS,
+  getStatusCallbackUrl,
   getSettings,
   saveSettings,
   verifyMetaSignature,
