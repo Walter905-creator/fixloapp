@@ -354,6 +354,10 @@ app.use("/api/cloudinary", require("./routes/cloudinary")); // POST /api/cloudin
 app.use("/api/admin", adminRateLimit, require("./routes/admin"));
 app.use("/api/admin", adminRateLimit, require("./routes/adminJobs")); // Admin job management
 app.use("/api/admin", adminRateLimit, require("./routes/adminDashboard")); // Admin dashboard control center
+// Meta Leads automation: mounted here (before messages/notifications/calendar/documents)
+// so that the admin JWT — which has no `id` field and therefore fails the requireUser
+// check in those routers — never reaches those middleware handlers.
+app.use(require("./routes/metaLeadAutomation"));
 
 // Admin: Grant lifetime membership (protected by x-admin-key header)
 app.post("/api/admin/grant-lifetime", adminRateLimit, async (req, res) => {
@@ -492,7 +496,6 @@ app.use("/api", require("./routes/search")); // boosted search
 
 // SEO Domination Agent (admin only)
 app.use("/api/seo-agent", adminRateLimit, require("./routes/seoAgent")); // autonomous SEO agent
-app.use(require("./routes/metaLeadAutomation"));
 
 // ----------------------- Stripe: Simple Subscribe endpoint (kept for PricingPage.jsx) -----------------------
 app.post("/api/subscribe", async (req, res) => {
