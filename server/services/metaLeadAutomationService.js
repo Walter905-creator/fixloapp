@@ -234,7 +234,7 @@ function normalizeTwilioSid(value) {
 }
 
 function hasValidTwilioSid(value) {
-  return Boolean(normalizeTwilioSid(value));
+  return normalizeTwilioSid(value) !== null;
 }
 
 function getLeadDisplayName(lead = {}) {

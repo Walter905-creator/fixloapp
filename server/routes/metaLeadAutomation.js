@@ -3,6 +3,7 @@ const rateLimit = require('express-rate-limit');
 const requireAuth = require('../middleware/requireAuth');
 const requireAdmin = require('../middleware/requireAdmin');
 const {
+  getStatusCallbackUrl,
   getSettings,
   saveSettings,
   verifyMetaSignature,
@@ -74,7 +75,11 @@ router.post('/webhook/meta-leads', webhookRateLimit, async (req, res) => {
 
 router.post('/webhook/twilio/meta-leads/status', webhookRateLimit, express.urlencoded({ extended: false }), async (req, res) => {
   // Validate Twilio signature to reject spoofed requests.
+  const configuredCallbackUrl = getStatusCallbackUrl();
   const requestUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+  if (configuredCallbackUrl && configuredCallbackUrl !== requestUrl) {
+    return res.status(403).type('text/plain').send('forbidden');
+  }
   if (!validateTwilioSignature({ signature: req.headers['x-twilio-signature'] || '', url: requestUrl, params: req.body || {} })) {
     return res.status(403).type('text/plain').send('forbidden');
   }
