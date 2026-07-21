@@ -1262,6 +1262,149 @@ async function importManualLead(leadData = {}) {
   };
 }
 
+/**
+ * recoverManualMetaLead — Recover a missing Meta lead using provided lead details.
+ *
+ * Idempotency is enforced with exact duplicate checks on normalized phone and
+ * lowercase email. This intentionally does not require an external Meta lead ID.
+ *
+ * @param {object} leadData
+ * @param {string} leadData.fullName
+ * @param {string} leadData.email
+ * @param {string} leadData.phone
+ * @param {string} leadData.trade
+ * @param {string} leadData.formId
+ * @param {string|Date} [leadData.submittedAt]
+ * @param {string} [leadData.source]
+ * @param {string} [leadData.note]
+ * @returns {object}
+ */
+async function recoverManualMetaLead(leadData = {}) {
+  const settings = await getSettings();
+  const now = new Date();
+
+  const fullName = String(leadData.fullName || '').trim();
+  const normalizedEmail = String(leadData.email || '').trim().toLowerCase();
+  const normalizedPhone = normalizePhone(leadData.phone);
+  const trade = String(leadData.trade || '').trim();
+  const formId = String(leadData.formId || '').trim();
+  const parsedSubmittedAt = parseDate(leadData.submittedAt);
+  const submittedAt = parsedSubmittedAt || now;
+  const source = String(leadData.source || 'recovered_meta_lead').trim() || 'recovered_meta_lead';
+  const note = String(leadData.note || '').trim();
+
+  if (!fullName || !normalizedEmail || !normalizedPhone || !trade || !formId) {
+    return { skipped: true, skippedReason: 'Missing required lead fields (name/email/phone/trade/formId)' };
+  }
+
+  const nameParts = fullName.split(/\s+/).filter(Boolean);
+  const firstName = nameParts.shift() || '';
+  const lastName = nameParts.join(' ');
+
+  const duplicateConditions = [];
+  if (normalizedPhone) duplicateConditions.push({ phone: normalizedPhone });
+  if (normalizedEmail) duplicateConditions.push({ email: normalizedEmail });
+
+  if (duplicateConditions.length) {
+    const existing = await MetaLead.findOne({ $or: duplicateConditions }).select('_id email phone').lean();
+    if (existing) {
+      return {
+        skipped: true,
+        skippedReason: `MetaLead already exists for normalized email/phone (${existing._id})`,
+        existingId: existing._id
+      };
+    }
+  }
+
+  const identityHash = crypto
+    .createHash('sha1')
+    .update(`${normalizedEmail}|${normalizedPhone}|${formId}`)
+    .digest('hex')
+    .slice(0, 24);
+
+  const metaLeadIdVal = `recovered-${identityHash}`;
+  const leadUniqueIdVal = `RECOVERED-${identityHash}`;
+  const notes = [
+    'Recovered Meta lead imported through manual recovery pipeline.',
+    note,
+    parsedSubmittedAt ? '' : 'Original submittedAt unavailable; import time used as submissionTimestamp.'
+  ].filter(Boolean).join(' ');
+
+  const lead = await MetaLead.create({
+    leadUniqueId: leadUniqueIdVal,
+    metaLeadId: metaLeadIdVal,
+    source,
+    manualImport: true,
+    firstName,
+    lastName,
+    phone: normalizedPhone,
+    email: normalizedEmail,
+    trade,
+    campaign: {
+      formId
+    },
+    notes,
+    submissionTimestamp: submittedAt,
+    leadStatus: 'in_progress',
+    followUp: {
+      step: 0,
+      status: 'active',
+      lastFollowUpAt: null,
+      nextFollowUpAt: getNextFollowUpAt(now, settings.followUpTimingsHours, 0)
+    }
+  });
+
+  await logEvent(
+    lead._id,
+    'lead_submitted',
+    'admin',
+    'Lead manually recovered',
+    'Recovered Meta lead imported from provided recovery payload',
+    {
+      formId,
+      source,
+      submissionTimestamp: submittedAt,
+      importedBy: 'manual-meta-recovery-script'
+    }
+  );
+
+  await createInviteForLead(lead, settings);
+
+  const smsResult = await sendLeadSms(lead, 'immediate', settings);
+  const emailResult = await sendLeadEmail(lead, 'immediate', settings);
+
+  lead.followUp.lastFollowUpAt = now;
+  await lead.save();
+
+  await logEvent(
+    lead._id,
+    'followup_started',
+    'system',
+    'Follow-up sequence started',
+    'Immediate welcome email/SMS sent; automated reminders scheduled',
+    { nextFollowUpAt: lead.followUp.nextFollowUpAt }
+  );
+
+  await notifyAdmins(
+    'new_lead',
+    'Recovered Meta Lead Imported',
+    `${firstName} ${lastName}`.trim() || 'Recovered lead imported from manual recovery payload.',
+    lead._id
+  );
+
+  return {
+    skipped: false,
+    lead,
+    invitationCode: lead.invitationCode,
+    smsResult,
+    emailResult,
+    duplicateKey: {
+      email: normalizedEmail,
+      phone: normalizedPhone
+    }
+  };
+}
+
 function verifyMetaSignature(rawBody, headerSignature = '') {
   const appSecret = process.env.META_APP_SECRET;
   if (!appSecret) return false;
@@ -1293,5 +1436,6 @@ module.exports = {
   getLeadDetails,
   computeDashboardMetrics,
   performManualAction,
-  importManualLead
+  importManualLead,
+  recoverManualMetaLead
 };
