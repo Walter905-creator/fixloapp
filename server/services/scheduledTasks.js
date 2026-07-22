@@ -5,7 +5,14 @@ const { huntLeads } = require('./aiLeadHunter');
 const { processExpiredPremiumAssignments } = require('./leadAssignmentService');
 const { releaseApprovedCommissions, processWeeklyPayouts } = require('./recruiterCommissionEngine');
 const { sendWeeklySmsToAllRecruiters } = require('./recruiterSmsService');
-const { processFollowUpCycle, reconcileLeadRegistrations } = require('./metaLeadAutomationService');
+const {
+  processFollowUpCycle,
+  reconcileLeadRegistrations,
+  performFullMetaReconciliation,
+  retryUnprocessedWebhookEvents,
+  alertStaleLeads,
+  FULL_RECONCILIATION_FORM_ID
+} = require('./metaLeadAutomationService');
 
 /**
  * Scheduled tasks service
@@ -175,6 +182,74 @@ function startScheduledTasks() {
     task: metaLeadReconcileTask,
     schedule: '*/15 * * * *',
     description: 'Meta lead automation registration reconciliation'
+  });
+
+  // Task: Full Meta → Fixlo lead reconciliation (every 15 minutes).
+  // Fetches all leads from the Meta Graph API for the configured form and
+  // imports any that are missing or incomplete in production MongoDB.
+  const metaFullReconcileTask = cron.schedule('*/15 * * * *', async () => {
+    try {
+      const formId = FULL_RECONCILIATION_FORM_ID;
+      if (!formId) return; // safety guard — do nothing if no form configured
+      const result = await performFullMetaReconciliation({ formId, triggeredBy: 'scheduled' });
+      if (result.skipped) return;
+      if ((result.newlyRecovered || 0) > 0 || (result.existingIncomplete || 0) > 0) {
+        console.log(`[META_FULL_RECONCILE] form=${formId} new=${result.newlyRecovered} completed=${result.existingIncomplete} ok=${result.alreadyComplete} total=${result.totalFromMeta}`);
+      }
+    } catch (error) {
+      console.error(`[META_FULL_RECONCILE] Job failed: ${error.message}`);
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York'
+  });
+
+  scheduledTasks.push({
+    name: 'meta-full-reconcile',
+    task: metaFullReconcileTask,
+    schedule: '*/15 * * * *',
+    description: 'Full Meta Graph → Fixlo lead reconciliation (every 15 minutes)'
+  });
+
+  // Task: Retry failed/pending webhook events (every 5 minutes).
+  const metaWebhookRetryTask = cron.schedule('*/5 * * * *', async () => {
+    try {
+      const result = await retryUnprocessedWebhookEvents();
+      if ((result.retried || 0) > 0) {
+        console.log(`[META_WEBHOOK_RETRY] Retried ${result.retried} unprocessed webhook events`);
+      }
+    } catch (error) {
+      console.error(`[META_WEBHOOK_RETRY] Job failed: ${error.message}`);
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York'
+  });
+
+  scheduledTasks.push({
+    name: 'meta-webhook-retry',
+    task: metaWebhookRetryTask,
+    schedule: '*/5 * * * *',
+    description: 'Retry failed/pending Meta webhook events'
+  });
+
+  // Task: Alert admins about stale leads (every 5 minutes).
+  const metaStaleLeadAlertTask = cron.schedule('*/5 * * * *', async () => {
+    try {
+      await alertStaleLeads();
+    } catch (error) {
+      console.error(`[META_STALE_ALERT] Job failed: ${error.message}`);
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York'
+  });
+
+  scheduledTasks.push({
+    name: 'meta-stale-lead-alert',
+    task: metaStaleLeadAlertTask,
+    schedule: '*/5 * * * *',
+    description: 'Alert admins about stale Meta leads with no outreach'
   });
 
   // Task 4: SEO AI Engine

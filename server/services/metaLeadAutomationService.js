@@ -6,6 +6,8 @@ const AdminSettings = require('../models/AdminSettings');
 const InviteCode = require('../models/InviteCode');
 const MetaLead = require('../models/MetaLead');
 const MetaLeadEvent = require('../models/MetaLeadEvent');
+const MetaWebhookEvent = require('../models/MetaWebhookEvent');
+const MetaReconciliationRun = require('../models/MetaReconciliationRun');
 const Notification = require('../models/Notification');
 const Pro = require('../models/Pro');
 const { sendSms, normalizeE164 } = require('../utils/twilio');
@@ -2788,12 +2790,527 @@ function verifyMetaSignature(rawBody, headerSignature = '') {
   }
 }
 
+// ── Durable webhook event helpers ────────────────────────────────────────────
+
+/**
+ * Persist a raw Meta webhook payload to MongoDB BEFORE processing so a server
+ * restart cannot lose the event.
+ */
+async function saveWebhookEvent(rawPayload, signature = '') {
+  try {
+    const event = await MetaWebhookEvent.create({
+      status: 'pending',
+      rawPayload,
+      signature: String(signature || '').slice(0, 512)
+    });
+    return event;
+  } catch (err) {
+    // Non-fatal — log and continue so the webhook still processes.
+    console.error(`[META_WEBHOOK_EVENT] Failed to persist raw event: ${err.message}`);
+    return null;
+  }
+}
+
+async function markWebhookEventProcessing(eventId) {
+  if (!eventId) return;
+  await MetaWebhookEvent.findByIdAndUpdate(eventId, { status: 'processing' });
+}
+
+async function markWebhookEventProcessed(eventId, result = null) {
+  if (!eventId) return;
+  await MetaWebhookEvent.findByIdAndUpdate(eventId, {
+    status: 'processed',
+    processedAt: new Date(),
+    processingResult: result
+  });
+}
+
+async function markWebhookEventFailed(eventId, errorMessage = '') {
+  if (!eventId) return;
+  const event = await MetaWebhookEvent.findById(eventId);
+  if (!event) return;
+  const retryCount = (event.retryCount || 0) + 1;
+  const nextRetryAt = new Date(Date.now() + Math.min(retryCount * 60000, 10 * 60000));
+  await MetaWebhookEvent.findByIdAndUpdate(eventId, {
+    status: 'failed',
+    lastError: String(errorMessage || '').slice(0, 2000),
+    retryCount,
+    nextRetryAt
+  });
+}
+
+/**
+ * Re-process webhook events that failed or were left in 'pending'/'processing'
+ * state (e.g. after a server restart).  Called by the scheduled job.
+ */
+async function retryUnprocessedWebhookEvents() {
+  const cutoff = new Date(Date.now() - 5 * 60000); // older than 5 minutes
+  const events = await MetaWebhookEvent.find({
+    status: { $in: ['pending', 'processing', 'failed'] },
+    $or: [
+      { nextRetryAt: null },
+      { nextRetryAt: { $lte: new Date() } }
+    ],
+    createdAt: { $lte: cutoff }
+  }).limit(20);
+
+  let retried = 0;
+  for (const event of events) {
+    if (!event.rawPayload) continue;
+    try {
+      await markWebhookEventProcessing(event._id);
+      const result = await processMetaWebhookPayload(event.rawPayload);
+      await markWebhookEventProcessed(event._id, result);
+      retried += 1;
+    } catch (err) {
+      await markWebhookEventFailed(event._id, err.message);
+    }
+  }
+  return { retried };
+}
+
+// ── Lead completeness classification ────────────────────────────────────────
+
+/**
+ * Determine whether an existing MetaLead has completed all applicable workflow
+ * steps.  Returns 'ALREADY_COMPLETE', 'EXISTING_INCOMPLETE', or 'UNREACHABLE'.
+ */
+function classifyLeadCompleteness(lead) {
+  const hasPhone = !!lead.phone;
+  const hasEmail = !!lead.email;
+
+  if (!hasPhone && !hasEmail) return 'UNREACHABLE';
+
+  const hasInvite = !!lead.invitationCode;
+  const hasInitialSms = hasPhone ? hasSmsAttemptForStage(lead, 'immediate') : true;
+  const hasInitialEmail = hasEmail ? hasEmailAttemptForStage(lead, 'immediate') : true;
+
+  // A lead with at least one reachable channel and active follow-up is considered
+  // complete when: invite issued, immediate outreach sent, follow-up scheduled.
+  const followUpOk = lead.followUp?.status === 'active' ||
+    lead.followUp?.status === 'completed' ||
+    lead.followUp?.status === 'stopped'; // stopped = opted out — also "complete"
+
+  if (hasInvite && hasInitialSms && hasInitialEmail && followUpOk) return 'ALREADY_COMPLETE';
+  return 'EXISTING_INCOMPLETE';
+}
+
+/**
+ * Idempotently complete all missing workflow steps for an existing MetaLead.
+ * - Issues an invite code if missing.
+ * - Sends initial SMS if phone available and not yet sent.
+ * - Sends initial email if email available and not yet sent.
+ * - Activates follow-up sequence if not yet active.
+ * Never re-sends a message that was already attempted for the 'immediate' stage.
+ */
+async function completeExistingLead(lead, settings) {
+  const hasPhone = !!lead.phone;
+  const hasEmail = !!lead.email;
+
+  // Invite code
+  if (!lead.invitationCode) {
+    await createInviteForLead(lead, settings);
+    console.log(`[META_RECONCILE] Invite code created for lead=${lead._id}`);
+  }
+
+  setChannelAvailabilityFlags(lead);
+
+  let smsResult = { success: false, reason: 'not_available' };
+  let emailResult = { success: false, reason: 'not_available' };
+
+  // Initial SMS
+  if (hasPhone && !hasSmsAttemptForStage(lead, 'immediate') && !lead.smsOptOut) {
+    smsResult = await sendLeadSms(lead, 'immediate', settings, { stage: 'immediate', persist: false });
+    if (smsResult.success) console.log(`[META_RECONCILE] Initial SMS sent SID=${smsResult.sid} lead=${lead._id}`);
+    else console.warn(`[META_RECONCILE] Initial SMS failed reason=${smsResult.reason} lead=${lead._id}`);
+  } else if (hasPhone) {
+    const entry = findSmsEntryForStage(lead, 'immediate');
+    smsResult = { success: true, sid: entry?.messageSid || null, skipped: true };
+  }
+
+  // Initial email
+  if (hasEmail && !hasEmailAttemptForStage(lead, 'immediate')) {
+    emailResult = await sendLeadEmail(lead, 'immediate', settings, { stage: 'immediate', persist: false });
+    if (emailResult.success) console.log(`[META_RECONCILE] Initial email sent messageId=${emailResult.messageId} lead=${lead._id}`);
+    else console.warn(`[META_RECONCILE] Initial email failed reason=${emailResult.reason} lead=${lead._id}`);
+  } else if (hasEmail) {
+    const entry = findEmailEntryForStage(lead, 'immediate');
+    emailResult = { success: true, messageId: entry?.messageId || null, skipped: true };
+  }
+
+  // Follow-up sequence
+  if (lead.followUp?.status !== 'active' && lead.followUp?.status !== 'stopped') {
+    initializeFollowUpForAvailableChannels(lead, settings, lead.createdAt || new Date());
+    console.log(`[META_RECONCILE] Follow-up sequence activated lead=${lead._id}`);
+  } else {
+    syncLegacyFollowUpPointers(lead);
+  }
+
+  await lead.save();
+
+  await logEvent(lead._id, 'lead_completed', 'system', 'Missing workflow steps completed by reconciliation', '', {
+    smsResult: { success: smsResult.success, skipped: !!smsResult.skipped },
+    emailResult: { success: emailResult.success, skipped: !!emailResult.skipped }
+  });
+
+  return { smsResult, emailResult };
+}
+
+// ── Full Meta ↔ Fixlo production reconciliation ──────────────────────────────
+
+/** In-memory lock prevents concurrent runs on the same server instance. */
+let _fullReconciliationRunning = false;
+
+const FULL_RECONCILIATION_FORM_ID =
+  process.env.META_LEAD_FORM_ID || '1913273286015217';
+
+/**
+ * Fetch every available lead from Meta for the given form, compare against
+ * production MongoDB, import any that are missing, and complete any that are
+ * incomplete.  The operation is fully idempotent and paginated.
+ *
+ * @param {object} options
+ * @param {string} [options.formId]      Override the default form ID.
+ * @param {string} [options.accessToken] Override the default page access token.
+ * @param {string} [options.pageId]      Override the default page ID.
+ * @param {string} [options.triggeredBy] 'scheduled' | 'admin' | 'api'
+ * @returns {Promise<object>} Reconciliation summary.
+ */
+async function performFullMetaReconciliation({
+  formId = FULL_RECONCILIATION_FORM_ID,
+  accessToken = '',
+  pageId = '',
+  triggeredBy = 'scheduled'
+} = {}) {
+  const normalizedFormId = String(formId || '').trim();
+  if (!normalizedFormId) throw new Error('formId is required');
+
+  if (_fullReconciliationRunning) {
+    console.log('[META_RECONCILE] Another reconciliation is already running — skipping');
+    return { skipped: true, reason: 'already_running' };
+  }
+  _fullReconciliationRunning = true;
+
+  let run;
+  try {
+    run = await MetaReconciliationRun.create({
+      formId: normalizedFormId,
+      triggeredBy,
+      status: 'running',
+      startedAt: new Date()
+    });
+  } catch (err) {
+    console.error(`[META_RECONCILE] Failed to create run record: ${err.message}`);
+  }
+
+  const summary = {
+    runId: run ? String(run._id) : null,
+    formId: normalizedFormId,
+    startedAt: run?.startedAt || new Date(),
+    completedAt: null,
+    graphError: null,
+    totalFromMeta: 0,
+    alreadyComplete: 0,
+    existingIncomplete: 0,
+    newlyRecovered: 0,
+    duplicatesSkipped: 0,
+    unreachable: 0,
+    failed: 0,
+    results: []
+  };
+
+  try {
+    const settings = await getSettings();
+
+    // 1. Fetch all leads from Meta Graph API.
+    let metaLeads = [];
+    let resolvedPageId = pageId || getDefaultPageId();
+    try {
+      const formData = await fetchMetaFormLeads(normalizedFormId, { accessToken, pageId });
+      metaLeads = formData.leads || [];
+      resolvedPageId = formData.pageId || resolvedPageId;
+      console.log(`[META_RECONCILE] Fetched ${metaLeads.length} leads from Meta form ${normalizedFormId}`);
+    } catch (err) {
+      summary.graphError = String(err?.response?.data?.error?.message || err?.message || 'Meta Graph API error');
+      console.error(`[META_RECONCILE] Graph API error: ${summary.graphError}`);
+      await notifyAdmins(
+        'webhook_failure',
+        'Meta Graph API Error — Reconciliation',
+        `Reconciliation for form ${normalizedFormId} failed to fetch leads from Meta: ${summary.graphError}`,
+        null
+      );
+    }
+
+    summary.totalFromMeta = metaLeads.length;
+
+    // 2. Process each lead.
+    for (const metaLead of metaLeads) {
+      const metaLeadId = String(metaLead.id || '');
+      if (!metaLeadId) continue;
+
+      const fields = mapFieldData(metaLead.field_data || []);
+      const email = pickField(fields, ['email', 'email_address']).trim().toLowerCase();
+      const rawPhone = pickField(fields, ['phone_number', 'phone', 'mobile_phone']);
+      const phone = normalizePhone(rawPhone);
+      const firstName = pickField(fields, ['first_name', 'firstname', 'full_name']);
+      const lastName = pickField(fields, ['last_name', 'lastname']);
+      const name = `${firstName} ${lastName}`.trim() || email || phone || metaLeadId;
+
+      const leadResult = {
+        metaLeadId,
+        leadId: null,
+        name,
+        classification: 'FAILED',
+        recoveryMethod: null,
+        inviteCode: null,
+        phoneAvailable: !!phone,
+        emailAvailable: !!email,
+        twilioSid: null,
+        twilioStatus: null,
+        sendGridMessageId: null,
+        sendGridStatus: null,
+        smsFollowUpsEnabled: false,
+        emailFollowUpsEnabled: false,
+        nextFollowUpAt: null,
+        nextSmsFollowUpAt: null,
+        nextEmailFollowUpAt: null,
+        signupUrl: CANONICAL_PRO_SIGNUP_URL,
+        reason: null
+      };
+
+      try {
+        // 2a. Check by exact Meta lead ID first.
+        let existingLead = await MetaLead.findOne({ metaLeadId });
+
+        // 2b. If not found by ID, try by contact info (normalized dedup).
+        if (!existingLead && (email || phone)) {
+          const conditions = buildDuplicateConditions({ email, phone });
+          if (conditions.length) existingLead = await MetaLead.findOne({ $or: conditions });
+        }
+
+        if (existingLead) {
+          leadResult.leadId = String(existingLead._id);
+          leadResult.inviteCode = existingLead.invitationCode || null;
+
+          const completeness = classifyLeadCompleteness(existingLead);
+
+          if (completeness === 'UNREACHABLE') {
+            leadResult.classification = 'UNREACHABLE';
+            leadResult.reason = 'No phone or email available';
+            summary.unreachable += 1;
+          } else if (completeness === 'ALREADY_COMPLETE') {
+            leadResult.classification = 'ALREADY_COMPLETE';
+            leadResult.smsFollowUpsEnabled = !!existingLead.followUp?.smsEnabled;
+            leadResult.emailFollowUpsEnabled = !!existingLead.followUp?.emailEnabled;
+            leadResult.nextFollowUpAt = existingLead.followUp?.nextFollowUpAt || null;
+            leadResult.nextSmsFollowUpAt = existingLead.followUp?.nextSmsFollowUpAt || null;
+            leadResult.nextEmailFollowUpAt = existingLead.followUp?.nextEmailFollowUpAt || null;
+            summary.alreadyComplete += 1;
+          } else {
+            // EXISTING_INCOMPLETE — complete missing steps.
+            const { smsResult, emailResult } = await completeExistingLead(existingLead, settings);
+
+            leadResult.classification = 'EXISTING_INCOMPLETE';
+            leadResult.recoveryMethod = 'complete_existing';
+            leadResult.inviteCode = existingLead.invitationCode || null;
+            leadResult.twilioSid = smsResult?.sid || null;
+            leadResult.twilioStatus = smsResult?.success ? (smsResult.skipped ? 'already_sent' : 'sent') : (smsResult?.reason || 'failed');
+            leadResult.sendGridMessageId = emailResult?.messageId || null;
+            leadResult.sendGridStatus = emailResult?.success ? (emailResult.skipped ? 'already_sent' : 'sent') : (emailResult?.reason || 'failed');
+            leadResult.smsFollowUpsEnabled = !!existingLead.followUp?.smsEnabled;
+            leadResult.emailFollowUpsEnabled = !!existingLead.followUp?.emailEnabled;
+            leadResult.nextFollowUpAt = existingLead.followUp?.nextFollowUpAt || null;
+            leadResult.nextSmsFollowUpAt = existingLead.followUp?.nextSmsFollowUpAt || null;
+            leadResult.nextEmailFollowUpAt = existingLead.followUp?.nextEmailFollowUpAt || null;
+            summary.existingIncomplete += 1;
+          }
+
+          // Fill common status fields.
+          const lastSms = Array.isArray(existingLead.smsHistory) && existingLead.smsHistory.length
+            ? existingLead.smsHistory.filter((h) => h.direction === 'outbound').slice(-1)[0]
+            : null;
+          const lastEmail = Array.isArray(existingLead.emailHistory) && existingLead.emailHistory.length
+            ? existingLead.emailHistory.slice(-1)[0]
+            : null;
+          if (!leadResult.twilioSid && lastSms?.messageSid) leadResult.twilioSid = lastSms.messageSid;
+          if (!leadResult.twilioStatus && lastSms?.status) leadResult.twilioStatus = lastSms.status;
+          if (!leadResult.sendGridMessageId && lastEmail?.messageId) leadResult.sendGridMessageId = lastEmail.messageId;
+          if (!leadResult.sendGridStatus && lastEmail?.status) leadResult.sendGridStatus = lastEmail.status;
+
+        } else {
+          // 2c. Truly missing — import via the standard ingestion pipeline.
+          if (!resolvedPageId || !isNumericMetaId(String(resolvedPageId))) {
+            leadResult.classification = 'FAILED';
+            leadResult.reason = 'Cannot resolve Meta page ID — lead cannot be auto-imported';
+            summary.failed += 1;
+          } else {
+            const imported = await createOrUpdateLeadFromMeta({
+              field: 'leadgen',
+              value: {
+                leadgen_id: metaLeadId,
+                page_id: String(resolvedPageId)
+              }
+            });
+
+            if (imported?.skipped) {
+              const isDup = isDuplicateSkipReason(imported.reason);
+              leadResult.classification = isDup ? 'SKIPPED_DUPLICATE' : 'FAILED';
+              leadResult.reason = imported.reason;
+              leadResult.leadId = imported.lead ? String(imported.lead._id) : null;
+              if (isDup) summary.duplicatesSkipped += 1;
+              else summary.failed += 1;
+            } else {
+              const newLead = imported.lead;
+              leadResult.classification = 'MISSING_FROM_FIXLO';
+              leadResult.recoveryMethod = 'META_GRAPH';
+              leadResult.leadId = String(newLead._id);
+              leadResult.inviteCode = newLead.invitationCode || null;
+
+              const lastSms = Array.isArray(newLead.smsHistory) && newLead.smsHistory.length
+                ? newLead.smsHistory.filter((h) => h.direction === 'outbound').slice(-1)[0]
+                : null;
+              const lastEmail = Array.isArray(newLead.emailHistory) && newLead.emailHistory.length
+                ? newLead.emailHistory.slice(-1)[0]
+                : null;
+              leadResult.twilioSid = lastSms?.messageSid || null;
+              leadResult.twilioStatus = lastSms?.status || null;
+              leadResult.sendGridMessageId = lastEmail?.messageId || null;
+              leadResult.sendGridStatus = lastEmail?.status || null;
+              leadResult.smsFollowUpsEnabled = !!newLead.followUp?.smsEnabled;
+              leadResult.emailFollowUpsEnabled = !!newLead.followUp?.emailEnabled;
+              leadResult.nextFollowUpAt = newLead.followUp?.nextFollowUpAt || null;
+              leadResult.nextSmsFollowUpAt = newLead.followUp?.nextSmsFollowUpAt || null;
+              leadResult.nextEmailFollowUpAt = newLead.followUp?.nextEmailFollowUpAt || null;
+              summary.newlyRecovered += 1;
+            }
+          }
+        }
+      } catch (leadErr) {
+        leadResult.classification = 'FAILED';
+        leadResult.reason = String(leadErr.message || 'Unknown error');
+        summary.failed += 1;
+        console.error(`[META_RECONCILE] Error processing lead ${metaLeadId}: ${leadErr.message}`);
+      }
+
+      summary.results.push(leadResult);
+    }
+
+    summary.completedAt = new Date();
+
+    // 3. Persist the run record.
+    if (run) {
+      const updateFields = {
+        status: 'completed',
+        completedAt: summary.completedAt,
+        graphError: summary.graphError || null,
+        totalFromMeta: summary.totalFromMeta,
+        alreadyComplete: summary.alreadyComplete,
+        existingIncomplete: summary.existingIncomplete,
+        newlyRecovered: summary.newlyRecovered,
+        duplicatesSkipped: summary.duplicatesSkipped,
+        unreachable: summary.unreachable,
+        failed: summary.failed,
+        results: summary.results.slice(0, 200)
+      };
+      await MetaReconciliationRun.findByIdAndUpdate(run._id, updateFields);
+    }
+
+    // 4. Notify admins if any leads were recovered.
+    if (summary.newlyRecovered > 0 || summary.existingIncomplete > 0) {
+      await notifyAdmins(
+        'reconciliation_recovered',
+        'Meta Lead Reconciliation — Leads Recovered',
+        `Reconciliation for form ${normalizedFormId}: recovered ${summary.newlyRecovered} new, completed ${summary.existingIncomplete} existing. Total from Meta: ${summary.totalFromMeta}.`,
+        null
+      );
+    }
+
+    if (summary.newlyRecovered > 0 || summary.existingIncomplete > 0) {
+      console.log(`[META_RECONCILE] form=${normalizedFormId} total=${summary.totalFromMeta} new=${summary.newlyRecovered} completed=${summary.existingIncomplete} already_ok=${summary.alreadyComplete} unreachable=${summary.unreachable} failed=${summary.failed}`);
+    }
+
+    return summary;
+  } catch (err) {
+    summary.lastError = err.message;
+    summary.completedAt = new Date();
+    if (run) {
+      await MetaReconciliationRun.findByIdAndUpdate(run._id, {
+        status: 'failed',
+        completedAt: summary.completedAt,
+        lastError: err.message
+      });
+    }
+    throw err;
+  } finally {
+    _fullReconciliationRunning = false;
+  }
+}
+
+/**
+ * Return the most recent MetaReconciliationRun for the given form, plus the
+ * next scheduled run time (15-minute boundary).
+ */
+async function getLastReconciliationRun(formId = FULL_RECONCILIATION_FORM_ID) {
+  const normalizedFormId = String(formId || FULL_RECONCILIATION_FORM_ID).trim();
+  const last = await MetaReconciliationRun.findOne({ formId: normalizedFormId })
+    .sort({ startedAt: -1 })
+    .lean();
+
+  const now = new Date();
+  const nextBoundary = new Date(Math.ceil(now.getTime() / (15 * 60000)) * (15 * 60000));
+
+  return {
+    formId: normalizedFormId,
+    lastRun: last || null,
+    nextScheduledAt: nextBoundary
+  };
+}
+
+// ── Stale-lead alerting ───────────────────────────────────────────────────────
+
+/**
+ * Alert admins if any leads have been sitting in 'new' or 'in_progress' status
+ * for more than 2 minutes without having had any outreach attempted.
+ */
+async function alertStaleLeads() {
+  const twoMinutesAgo = new Date(Date.now() - 2 * 60000);
+  const staleLeads = await MetaLead.find({
+    leadStatus: { $in: ['new', 'in_progress'] },
+    createdAt: { $lte: twoMinutesAgo },
+    $and: [
+      { $or: [{ 'contactability.smsAvailable': false }, { 'sms.attempted': false }] },
+      { $or: [{ 'contactability.emailAvailable': false }, { 'emailChannel.attempted': false }] }
+    ],
+    smsStatus: 'pending',
+    emailStatus: 'pending'
+  }).limit(20).lean();
+
+  if (!staleLeads.length) return { alerted: 0 };
+
+  for (const lead of staleLeads) {
+    const hasPhone = !!lead.phone;
+    const hasEmail = !!lead.email;
+    if (!hasPhone && !hasEmail) continue; // truly unreachable — skip alerting
+
+    const name = `${lead.firstName || ''} ${lead.lastName || ''}`.trim() || lead.email || lead.phone || String(lead._id);
+    await notifyAdmins(
+      'stale_lead',
+      'Meta Lead — Outreach Not Sent',
+      `Lead "${name}" (id=${lead._id}) has been in the system for >2 min with no outreach attempted.`,
+      lead._id
+    );
+  }
+
+  return { alerted: staleLeads.length };
+}
+
 module.exports = {
   CANONICAL_PRO_SIGNUP_URL,
   STOP_KEYWORDS,
   START_KEYWORDS,
   TWILIO_SID_REGEX,
   META_LEAD_STATUS_CALLBACK_PATH,
+  FULL_RECONCILIATION_FORM_ID,
   template,
   getStatusCallbackUrl,
   validateTwilioSignature,
@@ -2822,5 +3339,17 @@ module.exports = {
   importManualLead,
   recoverManualMetaLead,
   recoverPartialMetaLead,
-  recoverHistoricalMetaLeadsByForm
+  recoverHistoricalMetaLeadsByForm,
+  // Durable webhook event helpers
+  saveWebhookEvent,
+  markWebhookEventProcessed,
+  markWebhookEventFailed,
+  retryUnprocessedWebhookEvents,
+  // Full Meta reconciliation
+  classifyLeadCompleteness,
+  completeExistingLead,
+  performFullMetaReconciliation,
+  getLastReconciliationRun,
+  // Alerting
+  alertStaleLeads
 };
