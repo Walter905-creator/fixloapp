@@ -637,7 +637,9 @@ function isEmailChannelAvailable(lead = {}, { force = false } = {}) {
 }
 
 function getFollowUpStage(step) {
-  return FOLLOW_UP_STAGE_KEYS[Number(step)] || null;
+  const index = Number(step);
+  if (!Number.isInteger(index) || index < 0 || index >= FOLLOW_UP_STAGE_KEYS.length) return null;
+  return FOLLOW_UP_STAGE_KEYS[index];
 }
 
 function buildMessageIdempotencyKey(lead, channel, stage) {
@@ -1658,6 +1660,8 @@ async function recoverHistoricalMetaLeadsByForm({
       continue;
     }
 
+    // Manual recovery now allows partial leads: a trade can be missing, but at
+    // least one contact channel must exist so outreach can still proceed.
     if (!target.fullName || (!target.email && !target.phone)) {
       const reasonParts = [];
       if (graphLookupError) reasonParts.push(`Meta lookup unavailable: ${graphLookupError}`);
