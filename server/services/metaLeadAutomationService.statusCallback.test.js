@@ -10,8 +10,13 @@ const {
   normalizeProSignupLink,
   validateTwilioSignature,
   handleTwilioStatusWebhook,
+  handleSendGridEvents,
   retryFailedInitialMetaLeadSmsBatch,
-  recoverHistoricalMetaLeadsByForm
+  recoverHistoricalMetaLeadsByForm,
+  sendLeadSms,
+  sendLeadEmail,
+  initializeFollowUpForAvailableChannels,
+  auditMetaLeadChannelCoverage
 } = require('./metaLeadAutomationService');
 
 function createLead(overrides = {}) {
@@ -19,11 +24,30 @@ function createLead(overrides = {}) {
     _id: overrides._id || 'lead-1',
     firstName: overrides.firstName || 'Test',
     lastName: overrides.lastName || 'Lead',
-    email: overrides.email || 'test@example.com',
-    phone: overrides.phone || '+12025550100',
+    email: overrides.email ?? 'test@example.com',
+    phone: overrides.phone ?? '+12025550100',
     invitationCode: overrides.invitationCode === undefined ? 'FIXLO1234' : overrides.invitationCode,
     smsStatus: overrides.smsStatus || 'failed',
+    emailStatus: overrides.emailStatus || 'pending',
+    smsOptOut: overrides.smsOptOut || false,
+    contactability: overrides.contactability || { smsAvailable: false, emailAvailable: false },
+    sms: overrides.sms || { attempted: false, messageSid: null, status: 'pending', errorCode: null, errorMessage: null, sentAt: null, deliveredAt: null },
+    emailChannel: overrides.emailChannel || { attempted: false, messageId: null, status: 'pending', error: null, sentAt: null, deliveredAt: null },
+    followUp: overrides.followUp || {
+      step: 0,
+      smsStep: 0,
+      emailStep: 0,
+      status: 'active',
+      smsEnabled: true,
+      emailEnabled: true,
+      lastFollowUpAt: null,
+      nextFollowUpAt: null,
+      nextSmsFollowUpAt: null,
+      nextEmailFollowUpAt: null
+    },
+    createdAt: overrides.createdAt || new Date('2026-07-22T00:00:00.000Z'),
     smsHistory: overrides.smsHistory ? [...overrides.smsHistory] : [],
+    emailHistory: overrides.emailHistory ? [...overrides.emailHistory] : [],
     saveCalls: 0,
     async save() {
       this.saveCalls += 1;
@@ -209,8 +233,8 @@ test('recovers historical leads from Meta first and falls back to manual recover
   assert.equal(results.canonicalSignupLink, CANONICAL_PRO_SIGNUP_URL);
   assert.equal(results.results[0].status, 'RECOVERED_FROM_META');
   assert.equal(results.results[0].matchedMetaLeadId, '777777');
-  assert.equal(results.results[1].status, 'FAILED');
-  assert.match(results.results[1].reason, /manual recovery requires/i);
+  assert.equal(results.results[1].status, 'RECOVERED_MANUAL');
+  assert.equal(results.results[1].source, 'manual');
   assert.equal(results.results[2].status, 'SKIPPED_DUPLICATE');
 });
 
@@ -393,4 +417,295 @@ test('continues the batch when only one provider call fails', async () => {
   assert.equal(results[0].twilioMessageSid, 'SM' + 'f'.repeat(32));
   assert.equal(results[1].status, 'FAILED');
   assert.equal(results[1].errorReason, 'provider_down');
+});
+
+test('sends immediate SMS and email and schedules both follow-up channels when both are available', async () => {
+  const lead = createLead({
+    _id: 'dual-1',
+    phone: '+12025550123',
+    email: 'dual@example.com',
+    followUp: { step: 0, smsStep: 0, emailStep: 0, status: 'active', smsEnabled: true, emailEnabled: true, nextFollowUpAt: null, nextSmsFollowUpAt: null, nextEmailFollowUpAt: null }
+  });
+  const settings = {
+    followUpTimingsHours: [24, 72, 168, 336],
+    smsTemplates: { immediate: 'Use {{signupLink}}' },
+    emailTemplates: { immediateSubject: 'Hi', immediateBody: 'Go {{signupLink}}', reminderSubject: 'R', reminderBody: 'R {{signupLink}}' },
+    supportEmail: 'support@fixloapp.com'
+  };
+
+  const smsResult = await sendLeadSms(lead, 'immediate', settings, {
+    stage: 'immediate',
+    persist: false,
+    logEventFn: async () => {},
+    sendSmsImpl: async () => ({ sid: 'SM' + '1'.repeat(32), status: 'queued' })
+  });
+  const emailResult = await sendLeadEmail(lead, 'immediate', settings, {
+    stage: 'immediate',
+    persist: false,
+    logEventFn: async () => {},
+    ensureSendGridImpl: () => true,
+    sendEmailImpl: async () => ([{ headers: { 'x-message-id': 'email-1' } }])
+  });
+  const init = initializeFollowUpForAvailableChannels(lead, settings, new Date('2026-07-22T00:00:00.000Z'));
+
+  assert.equal(smsResult.success, true);
+  assert.equal(emailResult.success, true);
+  assert.equal(init.sequence, 'dual');
+  assert.ok(lead.followUp.nextSmsFollowUpAt);
+  assert.ok(lead.followUp.nextEmailFollowUpAt);
+});
+
+test('phone-only lead sends SMS, skips email, and schedules SMS-only follow-ups', async () => {
+  const lead = {
+    ...createLead({ _id: 'sms-only', phone: '+12025550124' }),
+    email: '',
+    emailHistory: []
+  };
+  const settings = {
+    followUpTimingsHours: [24, 72, 168, 336],
+    smsTemplates: { immediate: 'Use {{signupLink}}' },
+    emailTemplates: { immediateSubject: 'Hi', immediateBody: 'Go {{signupLink}}', reminderSubject: 'R', reminderBody: 'R {{signupLink}}' },
+    supportEmail: 'support@fixloapp.com'
+  };
+  const smsResult = await sendLeadSms(lead, 'immediate', settings, {
+    stage: 'immediate',
+    persist: false,
+    logEventFn: async () => {},
+    sendSmsImpl: async () => ({ sid: 'SM' + '2'.repeat(32), status: 'queued' })
+  });
+  const emailResult = await sendLeadEmail(lead, 'immediate', settings, { stage: 'immediate', persist: false, logEventFn: async () => {}, ensureSendGridImpl: () => true });
+  const init = initializeFollowUpForAvailableChannels(lead, settings, new Date('2026-07-22T00:00:00.000Z'));
+
+  assert.equal(smsResult.success, true);
+  assert.equal(emailResult.success, false);
+  assert.equal(emailResult.reason, 'missing_email');
+  assert.equal(init.sequence, 'sms_only');
+  assert.ok(lead.followUp.nextSmsFollowUpAt);
+  assert.equal(lead.followUp.nextEmailFollowUpAt, null);
+});
+
+test('email-only lead sends email, skips SMS, and schedules email-only follow-ups', async () => {
+  const lead = createLead({ _id: 'email-only', phone: '', email: 'emailonly@example.com' });
+  const settings = {
+    followUpTimingsHours: [24, 72, 168, 336],
+    smsTemplates: { immediate: 'Use {{signupLink}}' },
+    emailTemplates: { immediateSubject: 'Hi', immediateBody: 'Go {{signupLink}}', reminderSubject: 'R', reminderBody: 'R {{signupLink}}' },
+    supportEmail: 'support@fixloapp.com'
+  };
+  const smsResult = await sendLeadSms(lead, 'immediate', settings, { stage: 'immediate', persist: false, logEventFn: async () => {} });
+  const emailResult = await sendLeadEmail(lead, 'immediate', settings, {
+    stage: 'immediate',
+    persist: false,
+    logEventFn: async () => {},
+    ensureSendGridImpl: () => true,
+    sendEmailImpl: async () => ([{ headers: { 'x-message-id': 'email-2' } }])
+  });
+  const init = initializeFollowUpForAvailableChannels(lead, settings, new Date('2026-07-22T00:00:00.000Z'));
+
+  assert.equal(smsResult.success, false);
+  assert.equal(smsResult.reason, 'missing_phone');
+  assert.equal(emailResult.success, true);
+  assert.equal(init.sequence, 'email_only');
+  assert.equal(lead.followUp.nextSmsFollowUpAt, null);
+  assert.ok(lead.followUp.nextEmailFollowUpAt);
+});
+
+test('records SMS failure while preserving successful email result', async () => {
+  const lead = createLead({ _id: 'sms-fail-email-ok', phone: '+12025550125', email: 'ok@example.com' });
+  const settings = {
+    followUpTimingsHours: [24, 72, 168, 336],
+    smsTemplates: { immediate: 'Use {{signupLink}}' },
+    emailTemplates: { immediateSubject: 'Hi', immediateBody: 'Go {{signupLink}}', reminderSubject: 'R', reminderBody: 'R {{signupLink}}' },
+    supportEmail: 'support@fixloapp.com'
+  };
+  const smsResult = await sendLeadSms(lead, 'immediate', settings, {
+    stage: 'immediate',
+    persist: false,
+    logEventFn: async () => {},
+    sendSmsImpl: async () => { throw new Error('sms_down'); }
+  });
+  const emailResult = await sendLeadEmail(lead, 'immediate', settings, {
+    stage: 'immediate',
+    persist: false,
+    logEventFn: async () => {},
+    ensureSendGridImpl: () => true,
+    sendEmailImpl: async () => ([{ headers: { 'x-message-id': 'email-3' } }])
+  });
+
+  assert.equal(smsResult.success, false);
+  assert.equal(lead.sms.status, 'failed');
+  assert.equal(emailResult.success, true);
+  assert.equal(lead.emailChannel.status, 'processed');
+});
+
+test('records email failure while preserving successful SMS result', async () => {
+  const lead = createLead({ _id: 'email-fail-sms-ok', phone: '+12025550126', email: 'bad@example.com' });
+  const settings = {
+    followUpTimingsHours: [24, 72, 168, 336],
+    smsTemplates: { immediate: 'Use {{signupLink}}' },
+    emailTemplates: { immediateSubject: 'Hi', immediateBody: 'Go {{signupLink}}', reminderSubject: 'R', reminderBody: 'R {{signupLink}}' },
+    supportEmail: 'support@fixloapp.com'
+  };
+  const smsResult = await sendLeadSms(lead, 'immediate', settings, {
+    stage: 'immediate',
+    persist: false,
+    logEventFn: async () => {},
+    sendSmsImpl: async () => ({ sid: 'SM' + '3'.repeat(32), status: 'queued' })
+  });
+  const emailResult = await sendLeadEmail(lead, 'immediate', settings, {
+    stage: 'immediate',
+    persist: false,
+    logEventFn: async () => {},
+    ensureSendGridImpl: () => true,
+    sendEmailImpl: async () => { throw new Error('email_down'); }
+  });
+
+  assert.equal(smsResult.success, true);
+  assert.equal(lead.sms.status, 'queued');
+  assert.equal(emailResult.success, false);
+  assert.equal(lead.emailChannel.status, 'failed');
+});
+
+test('prevents duplicate sends per channel stage', async () => {
+  const lead = createLead({
+    _id: 'dup-stage',
+    phone: '+12025550127',
+    email: 'dup@example.com',
+    smsHistory: [{ direction: 'outbound', followUpStage: 'immediate', templateKey: 'immediate', status: 'queued', messageSid: 'SM' + '4'.repeat(32) }],
+    emailHistory: [{ followUpStage: 'immediate', templateKey: 'immediate', status: 'processed', messageId: 'email-dup' }]
+  });
+  const settings = {
+    followUpTimingsHours: [24, 72, 168, 336],
+    smsTemplates: { immediate: 'Use {{signupLink}}' },
+    emailTemplates: { immediateSubject: 'Hi', immediateBody: 'Go {{signupLink}}', reminderSubject: 'R', reminderBody: 'R {{signupLink}}' },
+    supportEmail: 'support@fixloapp.com'
+  };
+  let smsCalls = 0;
+  let emailCalls = 0;
+  const smsResult = await sendLeadSms(lead, 'immediate', settings, {
+    stage: 'immediate',
+    persist: false,
+    logEventFn: async () => {},
+    sendSmsImpl: async () => { smsCalls += 1; return { sid: 'SM' + '5'.repeat(32), status: 'queued' }; }
+  });
+  const emailResult = await sendLeadEmail(lead, 'immediate', settings, {
+    stage: 'immediate',
+    persist: false,
+    logEventFn: async () => {},
+    ensureSendGridImpl: () => true,
+    sendEmailImpl: async () => { emailCalls += 1; return [{ headers: { 'x-message-id': 'email-dup-2' } }]; }
+  });
+
+  assert.equal(smsResult.skipped, true);
+  assert.equal(emailResult.skipped, true);
+  assert.equal(smsCalls, 0);
+  assert.equal(emailCalls, 0);
+});
+
+test('keeps SMS follow-ups enabled when email unsubscribes', async () => {
+  const lead = createLead({
+    _id: '64b0c0a1f5a8d7b3c1e2f901',
+    phone: '+12025550128',
+    email: 'sub@example.com',
+    followUp: { step: 0, smsStep: 0, emailStep: 0, status: 'active', smsEnabled: true, emailEnabled: true, nextFollowUpAt: null, nextSmsFollowUpAt: new Date('2026-07-23T00:00:00.000Z'), nextEmailFollowUpAt: new Date('2026-07-23T00:00:00.000Z') },
+    emailHistory: [{ messageId: 'email-u-1', status: 'processed' }]
+  });
+  const model = require('../models/MetaLead');
+  const eventModel = require('../models/MetaLeadEvent');
+  const findByIdMock = mock.method(model, 'findById', async () => lead);
+  const findOneMock = mock.method(model, 'findOne', async () => null);
+  const eventMock = mock.method(eventModel, 'create', async () => ({}));
+  await handleSendGridEvents([{ event: 'unsubscribe', sg_message_id: 'email-u-1', custom_args: { metaLeadId: lead._id } }]);
+  findByIdMock.mock.restore();
+  findOneMock.mock.restore();
+  eventMock.mock.restore();
+  assert.equal(lead.followUp.smsEnabled, true);
+  assert.equal(lead.followUp.emailEnabled, false);
+});
+
+test('stops only SMS follow-ups on SMS opt-out webhook while keeping email follow-ups active', async () => {
+  const lead = createLead({
+    _id: 'optout-only-sms',
+    phone: '+12025550131',
+    email: 'stop@example.com',
+    smsHistory: [{ messageSid: 'SM' + '9'.repeat(32), direction: 'outbound', templateKey: 'immediate', status: 'queued' }],
+    followUp: {
+      step: 0,
+      smsStep: 0,
+      emailStep: 0,
+      status: 'active',
+      smsEnabled: true,
+      emailEnabled: true,
+      nextFollowUpAt: null,
+      nextSmsFollowUpAt: new Date('2026-07-23T00:00:00.000Z'),
+      nextEmailFollowUpAt: new Date('2026-07-23T00:00:00.000Z')
+    }
+  });
+  await handleTwilioStatusWebhook(
+    {
+      MessageSid: 'SM' + '9'.repeat(32),
+      MessageStatus: 'undelivered',
+      ErrorCode: '21610',
+      ErrorMessage: 'STOP recipient'
+    },
+    {
+      metaLeadModel: { async findOne() { return lead; } },
+      logEventFn: async () => {}
+    }
+  );
+  assert.equal(lead.followUp.smsEnabled, false);
+  assert.equal(lead.followUp.emailEnabled, true);
+});
+
+test('uses canonical pro signup URL in SMS and email content', async () => {
+  const lead = createLead({ _id: 'canonical', phone: '+12025550129', email: 'canonical@example.com' });
+  const settings = {
+    followUpTimingsHours: [24, 72, 168, 336],
+    signupLink: 'https://example.com/not-allowed',
+    smsTemplates: { immediate: 'Join: {{signupLink}}' },
+    emailTemplates: { immediateSubject: 'Hi', immediateBody: '<a href="{{signupLink}}">Join</a>', reminderSubject: 'R', reminderBody: 'R {{signupLink}}' },
+    supportEmail: 'support@fixloapp.com'
+  };
+  let smsBody = '';
+  let emailHtml = '';
+  await sendLeadSms(lead, 'immediate', settings, {
+    stage: 'immediate',
+    persist: false,
+    logEventFn: async () => {},
+    sendSmsImpl: async (_phone, body) => { smsBody = body; return { sid: 'SM' + '6'.repeat(32), status: 'queued' }; }
+  });
+  await sendLeadEmail(lead, 'immediate', settings, {
+    stage: 'immediate',
+    persist: false,
+    logEventFn: async () => {},
+    ensureSendGridImpl: () => true,
+    sendEmailImpl: async (msg) => { emailHtml = msg.html; return [{ headers: { 'x-message-id': 'email-6' } }]; }
+  });
+  assert.match(smsBody, /https:\/\/fixloapp\.com\/pros/);
+  assert.match(emailHtml, /https:\/\/fixloapp\.com\/pros/);
+  assert.doesNotMatch(smsBody, /example\.com\/not-allowed/);
+});
+
+test('audits existing leads with per-channel follow-up fields', async () => {
+  const rows = [
+    createLead({
+      _id: 'audit-1',
+      firstName: 'Both',
+      phone: '+12025550130',
+      email: 'both@example.com',
+      smsHistory: [{ direction: 'outbound', followUpStage: 'immediate', status: 'sent', messageSid: 'SM' + '7'.repeat(32) }],
+      emailHistory: [{ followUpStage: 'immediate', status: 'processed', messageId: 'email-7' }],
+      followUp: { step: 0, smsStep: 0, emailStep: 0, status: 'active', smsEnabled: true, emailEnabled: true, nextFollowUpAt: null, nextSmsFollowUpAt: new Date('2026-07-23T00:00:00.000Z'), nextEmailFollowUpAt: new Date('2026-07-23T00:00:00.000Z') }
+    })
+  ];
+  const mockMethod = mock.method(require('../models/MetaLead'), 'find', () => ({
+    sort() { return this; },
+    limit() { return rows; }
+  }));
+  const report = await auditMetaLeadChannelCoverage(10);
+  mockMethod.mock.restore();
+  assert.equal(report.rows.length, 1);
+  assert.equal(report.rows[0].smsFollowUpsEnabled, true);
+  assert.equal(report.rows[0].emailFollowUpsEnabled, true);
+  assert.equal(report.rows[0].signupUrl, CANONICAL_PRO_SIGNUP_URL);
 });
