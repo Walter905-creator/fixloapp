@@ -5,10 +5,13 @@ const assert = require('node:assert/strict');
 const { mock } = require('node:test');
 
 const {
+  CANONICAL_PRO_SIGNUP_URL,
   getStatusCallbackUrl,
+  normalizeProSignupLink,
   validateTwilioSignature,
   handleTwilioStatusWebhook,
-  retryFailedInitialMetaLeadSmsBatch
+  retryFailedInitialMetaLeadSmsBatch,
+  recoverHistoricalMetaLeadsByForm
 } = require('./metaLeadAutomationService');
 
 function createLead(overrides = {}) {
@@ -131,6 +134,86 @@ test('stores Twilio status callback fields on the matching lead record', async (
   assert.equal(events.length, 1);
 });
 
+test('canonicalizes legacy Fixlo pro signup URLs', () => {
+  assert.equal(normalizeProSignupLink('https://www.fixloapp.com/pros/signup'), CANONICAL_PRO_SIGNUP_URL);
+  assert.equal(normalizeProSignupLink('https://fixloapp.com/pros/signup'), CANONICAL_PRO_SIGNUP_URL);
+  assert.equal(normalizeProSignupLink('https://www.fixloapp.com/pros'), CANONICAL_PRO_SIGNUP_URL);
+  assert.equal(normalizeProSignupLink(''), CANONICAL_PRO_SIGNUP_URL);
+});
+
+test('recovers historical leads from Meta first and falls back to manual recovery only when required', async () => {
+  const results = await recoverHistoricalMetaLeadsByForm({
+    formId: '1913273286015217',
+    targets: [
+      { fullName: 'Lee Martin', email: 'handsonmaintenance621@gmail.com', phone: '+18033153009', trade: 'Painter' },
+      { fullName: 'Roy Villegas', email: 'xproroy13@gmail.com' },
+      { fullName: 'Josh Larsen', email: 'jlarsen2@ymail.com', phone: '+19493754801', trade: 'General construction all trades' }
+    ],
+    metaLeadModel: {
+      async findOne(query) {
+        const serialized = JSON.stringify(query);
+        if (serialized.includes('jlarsen2@ymail.com')) {
+          return {
+            _id: 'existing-josh',
+            metaLeadId: 'recovered-josh',
+            firstName: 'Josh',
+            lastName: 'Larsen'
+          };
+        }
+        return null;
+      }
+    },
+    fetchMetaFormLeadsImpl: async () => ({
+      pageId: '1234567890',
+      leads: [
+        {
+          id: '777777',
+          field_data: [
+            { name: 'full_name', values: ['Lee Martin'] },
+            { name: 'email', values: ['handsonmaintenance621@gmail.com'] },
+            { name: 'phone_number', values: ['+18033153009'] }
+          ]
+        }
+      ]
+    }),
+    createOrUpdateLeadFromMetaImpl: async ({ value }) => ({
+      skipped: false,
+      lead: {
+        _id: 'meta-lee',
+        firstName: 'Lee',
+        lastName: 'Martin',
+        invitationCode: 'FIXLO-LEE1',
+        smsStatus: 'sent',
+        smsHistory: [{ messageSid: 'SM' + '1'.repeat(32), status: 'sent' }],
+        emailStatus: 'processed',
+        emailHistory: [{ messageId: 'email-lee', status: 'processed' }],
+        followUp: { status: 'active', nextFollowUpAt: '2026-07-23T00:00:00.000Z' }
+      }
+    }),
+    recoverManualMetaLeadImpl: async (leadData) => ({
+      skipped: false,
+      lead: {
+        _id: leadData.email === 'xproroy13@gmail.com' ? 'manual-roy' : 'manual-other',
+        firstName: 'Roy',
+        lastName: 'Villegas',
+        invitationCode: 'FIXLO-ROY1',
+        smsStatus: 'sent',
+        smsHistory: [{ messageSid: 'SM' + '2'.repeat(32), status: 'sent' }],
+        emailStatus: 'processed',
+        emailHistory: [{ messageId: 'email-roy', status: 'processed' }],
+        followUp: { status: 'active', nextFollowUpAt: '2026-07-23T01:00:00.000Z' }
+      }
+    })
+  });
+
+  assert.equal(results.canonicalSignupLink, CANONICAL_PRO_SIGNUP_URL);
+  assert.equal(results.results[0].status, 'RECOVERED_FROM_META');
+  assert.equal(results.results[0].matchedMetaLeadId, '777777');
+  assert.equal(results.results[1].status, 'FAILED');
+  assert.match(results.results[1].reason, /manual recovery requires/i);
+  assert.equal(results.results[2].status, 'SKIPPED_DUPLICATE');
+});
+
 test('retries a failed initial SMS and returns the accepted SID', async () => {
   process.env.BACKEND_PUBLIC_URL = 'https://fixloapp.onrender.com';
   const lead = createLead({
@@ -153,7 +236,7 @@ test('retries a failed initial SMS and returns the accepted SID', async () => {
       }
     },
     settingsProvider: async () => ({
-      signupLink: 'https://fixloapp.com/pros/signup',
+      signupLink: 'https://fixloapp.com/pros',
       supportEmail: 'support@fixloapp.com',
       supportPhone: '',
       smsTemplates: { immediate: 'Hi {{firstName}}! Use {{invitationCode}} at {{signupLink}}' }
@@ -295,7 +378,7 @@ test('continues the batch when only one provider call fails', async () => {
       }
     },
     settingsProvider: async () => ({
-      signupLink: 'https://fixloapp.com/pros/signup',
+      signupLink: 'https://fixloapp.com/pros',
       supportEmail: 'support@fixloapp.com',
       supportPhone: '',
       smsTemplates: { immediate: 'Hi {{firstName}}! Use {{invitationCode}}' }

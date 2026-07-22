@@ -13,6 +13,7 @@ const { sendOwnerNotification } = require('../utils/smsSender');
 
 const STOP_KEYWORDS = new Set(['STOP', 'STOPALL', 'UNSUBSCRIBE', 'CANCEL', 'END']);
 const START_KEYWORDS = new Set(['START', 'YES', 'UNSTOP']);
+const CANONICAL_PRO_SIGNUP_URL = 'https://fixloapp.com/pros';
 
 /** Regex for a valid Twilio Message SID. Exported so route/retry code can reuse it. */
 const TWILIO_SID_REGEX = /^SM[a-fA-F0-9]{32}$/;
@@ -58,6 +59,40 @@ function getPageToken(pageId) {
   }
 }
 
+function getAnyMetaAccessToken() {
+  const defaultToken = process.env.META_PAGE_ACCESS_TOKEN || '';
+  if (defaultToken) return defaultToken;
+  if (!process.env.META_PAGE_ACCESS_TOKENS) return '';
+  try {
+    const map = JSON.parse(process.env.META_PAGE_ACCESS_TOKENS);
+    return Object.values(map || {}).find((value) => String(value || '').trim()) || '';
+  } catch {
+    return '';
+  }
+}
+
+function getDefaultPageId() {
+  if (process.env.META_PAGE_ID && isNumericMetaId(String(process.env.META_PAGE_ID))) {
+    return String(process.env.META_PAGE_ID);
+  }
+  if (!process.env.META_PAGE_ACCESS_TOKENS) return '';
+  try {
+    const map = JSON.parse(process.env.META_PAGE_ACCESS_TOKENS);
+    return Object.keys(map || {}).find((key) => isNumericMetaId(String(key))) || '';
+  } catch {
+    return '';
+  }
+}
+
+function normalizeProSignupLink(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return CANONICAL_PRO_SIGNUP_URL;
+  if (/^https:\/\/(?:www\.)?fixloapp\.com\/pros(?:\/signup)?\/?$/i.test(raw)) {
+    return CANONICAL_PRO_SIGNUP_URL;
+  }
+  return raw;
+}
+
 function normalizePhone(phone) {
   if (!phone) return '';
   const normalized = normalizeE164(phone);
@@ -80,7 +115,7 @@ function buildDefaults() {
     invitationCodePrefix: 'FIXLO',
     invitationCodeLength: 8,
     invitationCodeExpiryDays: 30,
-    signupLink: process.env.PRO_SIGNUP_URL || 'https://www.fixloapp.com/pros/signup',
+    signupLink: normalizeProSignupLink(process.env.PRO_SIGNUP_URL || CANONICAL_PRO_SIGNUP_URL),
     supportEmail: process.env.SENDGRID_REPLY_TO_EMAIL || 'support@fixloapp.com',
     supportPhone: process.env.SUPPORT_PHONE || '',
     followUpTimingsHours: FOLLOW_UP_SCHEDULE_HOURS,
@@ -113,7 +148,7 @@ async function getSettings() {
   const defaults = buildDefaults();
   const settings = await AdminSettings.findOne({ _singleton: 'admin' }).lean();
   const saved = settings?.metaLeadAutomation || {};
-  return {
+  const merged = {
     ...defaults,
     ...saved,
     ownerNotifications: { ...defaults.ownerNotifications, ...(saved.ownerNotifications || {}) },
@@ -123,6 +158,8 @@ async function getSettings() {
       ? saved.followUpTimingsHours.map((n) => Number(n))
       : defaults.followUpTimingsHours
   };
+  merged.signupLink = normalizeProSignupLink(merged.signupLink);
+  return merged;
 }
 
 async function saveSettings(nextSettings = {}) {
@@ -134,6 +171,7 @@ async function saveSettings(nextSettings = {}) {
     smsTemplates: { ...current.smsTemplates, ...(nextSettings.smsTemplates || {}) },
     emailTemplates: { ...current.emailTemplates, ...(nextSettings.emailTemplates || {}) }
   };
+  merged.signupLink = normalizeProSignupLink(merged.signupLink);
 
   await AdminSettings.findOneAndUpdate(
     { _singleton: 'admin' },
@@ -667,6 +705,122 @@ function pickField(fields, keys = []) {
   return '';
 }
 
+function normalizeText(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function buildLeadFullName(fields = {}) {
+  const fullName = pickField(fields, ['full_name', 'first_name', 'firstname']);
+  const lastName = pickField(fields, ['last_name', 'lastname']);
+  if (fullName && !lastName) return fullName.trim();
+  return `${fullName} ${lastName}`.trim();
+}
+
+function buildDuplicateConditions({ email = '', phone = '' } = {}) {
+  const conditions = [];
+  if (email) conditions.push({ email });
+  if (phone) conditions.push({ phone });
+  return conditions;
+}
+
+async function findExistingMetaLeadByContact({ email = '', phone = '' } = {}, metaLeadModel = MetaLead) {
+  const duplicateConditions = buildDuplicateConditions({ email, phone });
+  if (!duplicateConditions.length) return null;
+  const query = metaLeadModel.findOne({ $or: duplicateConditions });
+  if (query && typeof query.select === 'function') {
+    return query.select('_id metaLeadId email phone firstName lastName').lean();
+  }
+  return query;
+}
+
+function isDuplicateSkipReason(reason = '') {
+  return /already exists|duplicate/i.test(String(reason || ''));
+}
+
+async function fetchMetaFormLeads(formId, deps = {}) {
+  const axiosInstance = deps.axiosInstance || axios;
+  const token = deps.accessToken || getAnyMetaAccessToken();
+  const pageSize = Number(deps.pageSize || 100);
+
+  if (!isNumericMetaId(String(formId || ''))) {
+    throw new Error('Invalid Meta form ID');
+  }
+  if (!token) {
+    throw new Error('Missing Meta page access token');
+  }
+
+  const { data: form } = await axiosInstance.get(`https://graph.facebook.com/v20.0/${formId}`, {
+    params: {
+      access_token: token,
+      fields: 'id,name,page_id'
+    },
+    timeout: 15000
+  });
+
+  const leads = [];
+  let after = null;
+
+  do {
+    const params = {
+      access_token: token,
+      fields: 'id,created_time,field_data,form_id,ad_id,campaign_id,adgroup_id,is_organic,platform',
+      limit: pageSize
+    };
+    if (after) params.after = after;
+
+    const { data } = await axiosInstance.get(`https://graph.facebook.com/v20.0/${formId}/leads`, {
+      params,
+      timeout: 15000
+    });
+
+    leads.push(...(Array.isArray(data?.data) ? data.data : []));
+    after = data?.paging?.cursors?.after || null;
+  } while (after);
+
+  return {
+    form,
+    pageId: String(form?.page_id || deps.pageId || getDefaultPageId() || ''),
+    leads
+  };
+}
+
+function matchesHistoricalTarget(target = {}, metaLeadData = {}) {
+  const fields = mapFieldData(metaLeadData.field_data || []);
+  const targetEmail = normalizeText(target.email);
+  const targetPhone = normalizePhone(target.phone);
+  const targetName = normalizeText(target.fullName);
+
+  const metaEmail = normalizeText(pickField(fields, ['email', 'email_address']));
+  const metaPhone = normalizePhone(pickField(fields, ['phone_number', 'phone', 'mobile_phone']));
+  const metaName = normalizeText(buildLeadFullName(fields));
+
+  if (targetEmail && metaEmail && targetEmail === metaEmail) return true;
+  if (targetPhone && metaPhone && targetPhone === metaPhone) return true;
+  if (targetName && metaName && targetName === metaName) return true;
+  return false;
+}
+
+function summarizeRecoveredLead({ lead, status, source, reason = null, metaLeadId = null }) {
+  const lastSms = Array.isArray(lead?.smsHistory) && lead.smsHistory.length ? lead.smsHistory[lead.smsHistory.length - 1] : null;
+  const lastEmail = Array.isArray(lead?.emailHistory) && lead.emailHistory.length ? lead.emailHistory[lead.emailHistory.length - 1] : null;
+  return {
+    status,
+    source,
+    reason,
+    matchedMetaLeadId: metaLeadId,
+    leadId: lead ? String(lead._id) : null,
+    name: lead ? `${lead.firstName || ''} ${lead.lastName || ''}`.trim() : '',
+    inviteCodeStatus: lead?.invitationCode ? 'created' : 'missing',
+    inviteCode: lead?.invitationCode || null,
+    smsStatus: lastSms?.status || lead?.smsStatus || 'not_sent',
+    twilioMessageSid: lastSms?.messageSid || null,
+    emailStatus: lastEmail?.status || lead?.emailStatus || 'not_sent',
+    emailMessageId: lastEmail?.messageId || null,
+    followUpStatus: lead?.followUp?.status || 'inactive',
+    nextFollowUpAt: lead?.followUp?.nextFollowUpAt || null
+  };
+}
+
 async function fetchMetaLeadData(metaLeadId, pageId) {
   if (!isNumericMetaId(metaLeadId) || !isNumericMetaId(pageId)) {
     throw new Error('Invalid Meta identifiers');
@@ -1074,6 +1228,165 @@ async function retryFailedInitialMetaLeadSmsBatch({
 
   console.log('[META_SMS] Retry batch completed');
   return results;
+}
+
+async function recoverHistoricalMetaLeadsByForm({
+  formId,
+  targets = [],
+  accessToken = '',
+  pageId = '',
+  metaLeadModel = MetaLead,
+  fetchMetaFormLeadsImpl = fetchMetaFormLeads,
+  createOrUpdateLeadFromMetaImpl = createOrUpdateLeadFromMeta,
+  recoverManualMetaLeadImpl = recoverManualMetaLead
+} = {}) {
+  const normalizedFormId = String(formId || '').trim();
+  if (!normalizedFormId) {
+    throw new Error('formId is required');
+  }
+
+  const normalizedTargets = targets.map((target) => ({
+    fullName: String(target.fullName || '').trim(),
+    email: normalizeText(target.email),
+    phone: normalizePhone(target.phone),
+    trade: String(target.trade || '').trim(),
+    submittedAt: target.submittedAt || null,
+    note: String(target.note || '').trim()
+  }));
+
+  const formData = await fetchMetaFormLeadsImpl(normalizedFormId, { accessToken, pageId });
+  const resolvedPageId = String(formData?.pageId || pageId || getDefaultPageId() || '').trim();
+  const graphLeads = Array.isArray(formData?.leads) ? formData.leads : [];
+  const results = [];
+
+  for (const target of normalizedTargets) {
+    const displayName = target.fullName || target.email || target.phone || 'Unknown target';
+    const existing = await findExistingMetaLeadByContact({ email: target.email, phone: target.phone }, metaLeadModel);
+    if (existing) {
+      results.push({
+        status: 'SKIPPED_DUPLICATE',
+        source: 'duplicate',
+        reason: `MetaLead already exists (${existing._id})`,
+        matchedMetaLeadId: existing.metaLeadId || null,
+        leadId: String(existing._id),
+        name: `${existing.firstName || ''} ${existing.lastName || ''}`.trim() || displayName,
+        inviteCodeStatus: 'unchanged',
+        inviteCode: null,
+        smsStatus: 'unchanged',
+        twilioMessageSid: null,
+        emailStatus: 'unchanged',
+        emailMessageId: null,
+        followUpStatus: 'unchanged',
+        nextFollowUpAt: null
+      });
+      continue;
+    }
+
+    const matchedLead = graphLeads.find((lead) => matchesHistoricalTarget(target, lead));
+    if (matchedLead) {
+      if (!resolvedPageId || !isNumericMetaId(resolvedPageId)) {
+        throw new Error(`Unable to resolve Meta page ID for form ${normalizedFormId}`);
+      }
+      const imported = await createOrUpdateLeadFromMetaImpl({
+        field: 'leadgen',
+        value: {
+          leadgen_id: String(matchedLead.id || ''),
+          page_id: resolvedPageId
+        }
+      });
+
+      if (imported?.skipped) {
+        results.push({
+          status: isDuplicateSkipReason(imported.reason) ? 'SKIPPED_DUPLICATE' : 'SKIPPED',
+          source: 'meta',
+          reason: imported.reason || 'Skipped by Meta ingestion pipeline',
+          matchedMetaLeadId: String(matchedLead.id || ''),
+          leadId: imported.lead ? String(imported.lead._id) : null,
+          name: displayName,
+          inviteCodeStatus: imported.lead?.invitationCode ? 'existing' : 'unchanged',
+          inviteCode: imported.lead?.invitationCode || null,
+          smsStatus: imported.lead?.smsStatus || 'unchanged',
+          twilioMessageSid: null,
+          emailStatus: imported.lead?.emailStatus || 'unchanged',
+          emailMessageId: null,
+          followUpStatus: imported.lead?.followUp?.status || 'unchanged',
+          nextFollowUpAt: imported.lead?.followUp?.nextFollowUpAt || null
+        });
+        continue;
+      }
+
+      results.push(summarizeRecoveredLead({
+        lead: imported.lead,
+        status: 'RECOVERED_FROM_META',
+        source: 'meta',
+        metaLeadId: String(matchedLead.id || '')
+      }));
+      continue;
+    }
+
+    if (!target.fullName || !target.email || !target.phone || !target.trade) {
+      results.push({
+        status: 'FAILED',
+        source: 'manual',
+        reason: 'Meta no longer returns this lead and manual recovery requires fullName, email, phone, and trade',
+        matchedMetaLeadId: null,
+        leadId: null,
+        name: displayName,
+        inviteCodeStatus: 'not_created',
+        inviteCode: null,
+        smsStatus: 'not_sent',
+        twilioMessageSid: null,
+        emailStatus: 'not_sent',
+        emailMessageId: null,
+        followUpStatus: 'not_scheduled',
+        nextFollowUpAt: null
+      });
+      continue;
+    }
+
+    const manual = await recoverManualMetaLeadImpl({
+      fullName: target.fullName,
+      email: target.email,
+      phone: target.phone,
+      trade: target.trade,
+      formId: normalizedFormId,
+      submittedAt: target.submittedAt,
+      source: 'historical_meta_recovery',
+      note: target.note
+    });
+
+    if (manual?.skipped) {
+      results.push({
+        status: isDuplicateSkipReason(manual.skippedReason) ? 'SKIPPED_DUPLICATE' : 'FAILED',
+        source: 'manual',
+        reason: manual.skippedReason || 'Manual recovery skipped',
+        matchedMetaLeadId: null,
+        leadId: manual.existingId ? String(manual.existingId) : null,
+        name: displayName,
+        inviteCodeStatus: 'unchanged',
+        inviteCode: null,
+        smsStatus: 'unchanged',
+        twilioMessageSid: null,
+        emailStatus: 'unchanged',
+        emailMessageId: null,
+        followUpStatus: 'unchanged',
+        nextFollowUpAt: null
+      });
+      continue;
+    }
+
+    results.push(summarizeRecoveredLead({
+      lead: manual.lead,
+      status: 'RECOVERED_MANUAL',
+      source: 'manual'
+    }));
+  }
+
+  return {
+    formId: normalizedFormId,
+    canonicalSignupLink: CANONICAL_PRO_SIGNUP_URL,
+    results
+  };
 }
 
 function matchLeadByPhone(phone, leads = []) {
@@ -1751,6 +2064,7 @@ function verifyMetaSignature(rawBody, headerSignature = '') {
 }
 
 module.exports = {
+  CANONICAL_PRO_SIGNUP_URL,
   STOP_KEYWORDS,
   START_KEYWORDS,
   TWILIO_SID_REGEX,
@@ -1761,6 +2075,7 @@ module.exports = {
   hasValidTwilioSid,
   wasInvalidStatusCallbackFailure,
   getRetryBlockReason,
+  normalizeProSignupLink,
   getSettings,
   saveSettings,
   verifyMetaSignature,
@@ -1776,5 +2091,6 @@ module.exports = {
   computeDashboardMetrics,
   performManualAction,
   importManualLead,
-  recoverManualMetaLead
+  recoverManualMetaLead,
+  recoverHistoricalMetaLeadsByForm
 };

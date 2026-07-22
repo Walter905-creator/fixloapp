@@ -3,6 +3,7 @@ const rateLimit = require('express-rate-limit');
 const requireAuth = require('../middleware/requireAuth');
 const requireAdmin = require('../middleware/requireAdmin');
 const {
+  CANONICAL_PRO_SIGNUP_URL,
   getStatusCallbackUrl,
   getSettings,
   saveSettings,
@@ -17,7 +18,8 @@ const {
   listLeads,
   getLeadDetails,
   computeDashboardMetrics,
-  performManualAction
+  performManualAction,
+  recoverHistoricalMetaLeadsByForm
 } = require('../services/metaLeadAutomationService');
 
 const router = express.Router();
@@ -175,6 +177,27 @@ adminRouter.get('/', async (req, res) => {
   try {
     const data = await listLeads(req.query || {});
     return res.json({ ok: true, ...data });
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+// POST /api/admin/meta-leads/recover-historical
+adminRouter.post('/recover-historical', adminMutationRateLimit, async (req, res) => {
+  const formId = String(req.body?.formId || '').trim();
+  const leads = Array.isArray(req.body?.leads) ? req.body.leads : [];
+
+  if (!formId) {
+    return res.status(400).json({ ok: false, error: 'formId is required' });
+  }
+  if (!leads.length) {
+    return res.status(400).json({ ok: false, error: 'leads array is required' });
+  }
+
+  try {
+    await saveSettings({ signupLink: CANONICAL_PRO_SIGNUP_URL });
+    const report = await recoverHistoricalMetaLeadsByForm({ formId, targets: leads });
+    return res.json({ ok: true, report });
   } catch (error) {
     return res.status(500).json({ ok: false, error: error.message });
   }

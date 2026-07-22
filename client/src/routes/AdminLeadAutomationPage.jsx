@@ -15,7 +15,7 @@ const defaultSettings = {
   invitationCodePrefix: 'FIXLO',
   invitationCodeLength: 8,
   invitationCodeExpiryDays: 30,
-  signupLink: 'https://www.fixloapp.com/pros/signup',
+  signupLink: 'https://fixloapp.com/pros',
   supportEmail: 'support@fixloapp.com',
   supportPhone: '',
   followUpTimingsHours: [24, 72, 168, 336],

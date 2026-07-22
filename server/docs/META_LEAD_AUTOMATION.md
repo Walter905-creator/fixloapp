@@ -67,7 +67,7 @@ Set in backend environment (see `server/.env.example`):
 - `META_PAGE_ACCESS_TOKEN` (single page) OR `META_PAGE_ACCESS_TOKENS` (JSON map for multiple pages)
 - `META_LEAD_SMS_STATUS_CALLBACK_URL` (optional override)
 - `SERVER_BASE_URL` (optional callback URL base)
-- `PRO_SIGNUP_URL` (optional template URL)
+- `PRO_SIGNUP_URL` (optional template URL, default `https://fixloapp.com/pros`)
 - Existing required integrations:
   - Twilio: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`
   - SendGrid: `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL`
