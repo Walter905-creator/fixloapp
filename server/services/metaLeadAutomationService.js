@@ -1949,6 +1949,262 @@ async function importManualLead(leadData = {}) {
 }
 
 /**
+ * recoverPartialMetaLead — Recover a historical Meta lead that has incomplete contact
+ * information (e.g. email-only or phone+trade-only). Unlike recoverManualMetaLead, this
+ * function does not require both email and phone and gracefully handles single-channel
+ * leads — it only sends via the available channel and schedules follow-ups accordingly.
+ *
+ * Idempotency:
+ * - Checks for an existing MetaLead by normalised email or phone before creating.
+ * - If a lead already exists, completes any missing workflow steps without duplication.
+ * - Does not resend a message that has already been attempted (any history entry present).
+ * - Does not create a second invite code.
+ * - Does not schedule a duplicate follow-up sequence.
+ *
+ * @param {object} leadData
+ * @param {string}  leadData.fullName   - Required.
+ * @param {string} [leadData.email]     - Optional. Normalised to lowercase.
+ * @param {string} [leadData.phone]     - Optional. Normalised to E.164.
+ * @param {string} [leadData.trade]     - Optional.
+ * @param {string}  leadData.formId     - Required.
+ * @param {string|Date} [leadData.submittedAt]
+ * @param {string} [leadData.source]
+ * @param {string} [leadData.note]
+ * @returns {object} { status, lead, profileIncomplete, missingFields, emailAvailable,
+ *                     smsAvailable, smsResult, emailResult, followUpChannels }
+ */
+async function recoverPartialMetaLead(leadData = {}) {
+  const settings = await getSettings();
+  const now = new Date();
+
+  const fullName = String(leadData.fullName || '').trim();
+  const normalizedEmail = String(leadData.email || '').trim().toLowerCase();
+  const normalizedPhone = normalizePhone(leadData.phone) || '';
+  const trade = String(leadData.trade || '').trim();
+  const formId = String(leadData.formId || '').trim();
+  const parsedSubmittedAt = parseDate(leadData.submittedAt);
+  const submittedAt = parsedSubmittedAt || now;
+  const source = String(leadData.source || 'recovered_meta_lead').trim() || 'recovered_meta_lead';
+  const note = String(leadData.note || '').trim();
+
+  if (!fullName) {
+    return { skipped: true, skippedReason: 'fullName is required' };
+  }
+  if (!formId) {
+    return { skipped: true, skippedReason: 'formId is required' };
+  }
+  if (!normalizedEmail && !normalizedPhone) {
+    return { skipped: true, skippedReason: 'At least one contact channel (email or phone) is required' };
+  }
+
+  const emailAvailable = !!normalizedEmail;
+  const smsAvailable = !!normalizedPhone;
+
+  const missingFields = [];
+  if (!normalizedPhone) missingFields.push('phone');
+  if (!trade) missingFields.push('trade');
+  if (!normalizedEmail) missingFields.push('email');
+  const profileIncomplete = missingFields.length > 0;
+
+  const followUpChannels = [...(smsAvailable ? ['sms'] : []), ...(emailAvailable ? ['email'] : [])];
+
+  const nameParts = fullName.split(/\s+/).filter(Boolean);
+  const firstName = nameParts.shift() || '';
+  const lastName = nameParts.join(' ');
+
+  // Idempotency: look for an existing MetaLead by available contact info.
+  const duplicateConditions = buildDuplicateConditions({ email: normalizedEmail, phone: normalizedPhone });
+  const existing = duplicateConditions.length
+    ? await MetaLead.findOne({ $or: duplicateConditions })
+    : null;
+
+  if (existing) {
+    const hasInvite = !!existing.invitationCode;
+    const smsSent = existing.smsHistory.some((h) => h.direction === 'outbound');
+    const emailSent = existing.emailHistory.length > 0;
+    const followUpActive = ['active', 'paused', 'stopped', 'completed'].includes(existing.followUp?.status);
+
+    const smsComplete = !smsAvailable || smsSent;
+    const emailComplete = !emailAvailable || emailSent;
+
+    if (hasInvite && smsComplete && emailComplete && followUpActive) {
+      const lastSmsEntry = existing.smsHistory.filter((h) => h.direction === 'outbound').slice(-1)[0];
+      const lastEmailEntry = existing.emailHistory.slice(-1)[0];
+      return {
+        status: 'ALREADY_COMPLETE',
+        lead: existing,
+        profileIncomplete,
+        missingFields,
+        emailAvailable,
+        smsAvailable,
+        smsResult: smsSent
+          ? { success: true, sid: lastSmsEntry?.messageSid || null, skipped: true }
+          : { success: false, reason: 'not_available' },
+        emailResult: emailSent
+          ? { success: true, messageId: lastEmailEntry?.messageId || null, skipped: true }
+          : { success: false, reason: 'not_available' },
+        followUpChannels
+      };
+    }
+
+    // Complete only the missing workflow steps.
+    if (!hasInvite) {
+      await createInviteForLead(existing, settings);
+      console.log(`[META_INVITE] Invite code created: ${existing.invitationCode}`);
+    }
+
+    let smsResult = { success: false, reason: 'not_available' };
+    let emailResult = { success: false, reason: 'not_available' };
+
+    if (smsAvailable && !smsSent) {
+      smsResult = await sendLeadSms(existing, 'immediate', settings);
+      if (smsResult.success) console.log(`[META_SMS] Initial SMS sent SID=${smsResult.sid}`);
+    } else if (smsAvailable) {
+      const lastSmsEntry = existing.smsHistory.filter((h) => h.direction === 'outbound').slice(-1)[0];
+      smsResult = { success: true, sid: lastSmsEntry?.messageSid || null, skipped: true };
+    }
+
+    if (emailAvailable && !emailSent) {
+      emailResult = await sendLeadEmail(existing, 'immediate', settings);
+      if (emailResult.success) console.log(`[META_EMAIL] Initial email sent messageId=${emailResult.messageId}`);
+    } else if (emailAvailable) {
+      const lastEmailEntry = existing.emailHistory.slice(-1)[0];
+      emailResult = { success: true, messageId: lastEmailEntry?.messageId || null, skipped: true };
+    }
+
+    if (!followUpActive) {
+      existing.followUp.status = 'active';
+      existing.followUp.nextFollowUpAt = getNextFollowUpAt(
+        existing.createdAt || now,
+        settings.followUpTimingsHours,
+        0
+      );
+      await existing.save();
+      console.log(`[META_FOLLOWUP] Channel-specific sequence scheduled nextFollowUpAt=${existing.followUp.nextFollowUpAt}`);
+    }
+
+    return {
+      status: 'COMPLETED_EXISTING',
+      lead: existing,
+      profileIncomplete,
+      missingFields,
+      emailAvailable,
+      smsAvailable,
+      smsResult,
+      emailResult,
+      followUpChannels
+    };
+  }
+
+  // No existing lead — create a new one.
+  const identityHash = crypto
+    .createHash('sha1')
+    .update(`${normalizedEmail}|${normalizedPhone}|${formId}`)
+    .digest('hex')
+    .slice(0, 24);
+
+  // metaLeadId uses a lowercase prefix; leadUniqueId uses uppercase — mirrors recoverManualMetaLead.
+  const metaLeadIdVal = `recovered-partial-${identityHash}`;
+  const leadUniqueIdVal = `RECOVERED-PARTIAL-${identityHash}`;
+
+  const noteParts = [
+    'Recovered partial Meta lead imported through manual recovery pipeline.',
+    profileIncomplete ? `Profile incomplete: missing ${missingFields.join(', ')}.` : '',
+    note,
+    parsedSubmittedAt ? '' : 'Original submittedAt unavailable; import time used as submissionTimestamp.'
+  ].filter(Boolean).join(' ');
+
+  const lead = await MetaLead.create({
+    leadUniqueId: leadUniqueIdVal,
+    metaLeadId: metaLeadIdVal,
+    source,
+    manualImport: true,
+    firstName,
+    lastName,
+    phone: normalizedPhone,
+    email: normalizedEmail,
+    trade,
+    campaign: { formId },
+    notes: noteParts,
+    submissionTimestamp: submittedAt,
+    leadStatus: 'in_progress',
+    followUp: {
+      step: 0,
+      status: 'active',
+      lastFollowUpAt: null,
+      nextFollowUpAt: getNextFollowUpAt(now, settings.followUpTimingsHours, 0)
+    }
+  });
+
+  console.log(`[META_DATABASE] Lead inserted: ${lead._id}`);
+
+  await logEvent(
+    lead._id,
+    'lead_submitted',
+    'admin',
+    'Partial lead manually recovered',
+    'Recovered partial Meta lead imported from recovery payload',
+    {
+      formId,
+      source,
+      submissionTimestamp: submittedAt,
+      importedBy: 'manual-meta-recovery-script',
+      missingFields,
+      profileIncomplete
+    }
+  );
+
+  await createInviteForLead(lead, settings);
+  console.log(`[META_INVITE] Invite code created: ${lead.invitationCode}`);
+
+  let smsResult = { success: false, reason: 'not_available' };
+  let emailResult = { success: false, reason: 'not_available' };
+
+  if (smsAvailable) {
+    smsResult = await sendLeadSms(lead, 'immediate', settings);
+    if (smsResult.success) console.log(`[META_SMS] Initial SMS sent SID=${smsResult.sid}`);
+  }
+  if (emailAvailable) {
+    emailResult = await sendLeadEmail(lead, 'immediate', settings);
+    if (emailResult.success) console.log(`[META_EMAIL] Initial email sent messageId=${emailResult.messageId}`);
+  }
+
+  lead.followUp.lastFollowUpAt = now;
+  await lead.save();
+
+  console.log(`[META_FOLLOWUP] Channel-specific sequence scheduled nextFollowUpAt=${lead.followUp.nextFollowUpAt}`);
+
+  await logEvent(
+    lead._id,
+    'followup_started',
+    'system',
+    'Follow-up sequence started',
+    `Channel-specific follow-up scheduled (channels: ${followUpChannels.join(', ')})`,
+    { nextFollowUpAt: lead.followUp.nextFollowUpAt, smsAvailable, emailAvailable }
+  );
+
+  await notifyAdmins(
+    'new_lead',
+    'Recovered Partial Meta Lead Imported',
+    `${firstName} ${lastName}`.trim() || 'Partial Meta lead recovered',
+    lead._id
+  );
+
+  return {
+    status: 'CREATED',
+    lead,
+    profileIncomplete,
+    missingFields,
+    emailAvailable,
+    smsAvailable,
+    smsResult,
+    emailResult,
+    invitationCode: lead.invitationCode,
+    followUpChannels
+  };
+}
+
+/**
  * recoverManualMetaLead — Recover a missing Meta lead using provided lead details.
  *
  * Idempotency is enforced with exact duplicate checks on normalized phone and
@@ -2135,5 +2391,6 @@ module.exports = {
   performManualAction,
   importManualLead,
   recoverManualMetaLead,
+  recoverPartialMetaLead,
   recoverHistoricalMetaLeadsByForm
 };
