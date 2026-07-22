@@ -2,7 +2,6 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const requireAuth = require('../middleware/requireAuth');
 const requireAdmin = require('../middleware/requireAdmin');
-const { verify } = require('../utils/jwt');
 const {
   getStatusCallbackUrl,
   getSettings,
@@ -18,8 +17,7 @@ const {
   listLeads,
   getLeadDetails,
   computeDashboardMetrics,
-  performManualAction,
-  retryFailedInitialMetaLeadSmsBatch
+  performManualAction
 } = require('../services/metaLeadAutomationService');
 
 const router = express.Router();
@@ -112,44 +110,6 @@ router.post('/webhook/sendgrid/meta-leads/events', webhookRateLimit, express.jso
   }
 });
 
-// ── Diagnostic middleware for Meta Leads admin routes ─────────────────────────
-//
-// Logs the full authentication state when an admin route is entered so that
-// any future auth regression can be traced without touching production code.
-// Remove or gate behind NODE_ENV once the auth path is stable.
-//
-// NOTE: This middleware intentionally verifies the JWT independently of
-// requireAuth so it can report the decoded payload even if requireAuth later
-// rejects the request.  The extra verification is acceptable overhead for a
-// diagnostic helper.
-function metaAuthDiag(req, _res, next) {
-  const hasAuthHeader = !!(req.headers.authorization);
-  const raw = req.headers.authorization || '';
-  const hasBearerPrefix = raw.startsWith('Bearer ');
-  // Slice only to check presence — the token value is never logged.
-  const token = hasBearerPrefix ? raw.slice(7) : null;
-  let jwtOk = false;
-  let decoded = null;
-  if (token) {
-    try {
-      decoded = verify(token);
-      jwtOk = true;
-    } catch (err) {
-      // JWT is invalid or expired; requireAuth will send the 401 response.
-      console.log(`[META_AUTH] JWT decode error: ${err.message}`);
-    }
-  }
-  console.log('[META_AUTH] route entered');
-  console.log(`[META_AUTH] authorization header present: ${hasAuthHeader ? 'yes' : 'no'}`);
-  console.log(`[META_AUTH] bearer token parsed: ${hasBearerPrefix ? 'yes' : 'no'}`);
-  console.log(`[META_AUTH] JWT verified: ${jwtOk ? 'yes' : 'no'}`);
-  console.log(`[META_AUTH] decoded role: ${decoded?.role ?? '(none)'}`);
-  console.log(`[META_AUTH] decoded isAdmin: ${decoded?.isAdmin ?? '(none)'}`);
-  console.log(`[META_AUTH] req.user present: ${req.user ? 'yes' : 'no'}`);
-  console.log(`[META_AUTH] req.admin present: ${req.admin ? 'yes' : 'no'}`);
-  next();
-}
-
 // ── Admin sub-router ─────────────────────────────────────────────────────────
 //
 // All routes in this group require a valid admin JWT (same middleware chain as
@@ -157,7 +117,6 @@ function metaAuthDiag(req, _res, next) {
 // outer router (which has no path prefix in index.js) sees the full path and
 // passes /api/admin/meta-leads/* to this sub-router.
 const adminRouter = express.Router();
-adminRouter.use(metaAuthDiag);
 adminRouter.use(requireAuth);
 adminRouter.use(requireAdmin);
 
@@ -221,35 +180,26 @@ adminRouter.get('/', async (req, res) => {
   }
 });
 
-/**
- * One-time idempotent retry endpoint for the three Meta leads whose initial SMS
- * failed because of the invalid relative StatusCallback URL (2026-07-19 incident).
- *
- * POST /api/admin/meta-leads/retry-failed-initial-sms-20260719
- *
- * For each lead the endpoint:
- *  - Returns ALREADY_SENT if a valid Twilio SID already exists in smsHistory.
- *  - Retries only the initial SMS (templateKey="immediate") when no SID exists.
- *  - Never creates new documents, invite codes, emails, or follow-ups.
- *  - Is fully idempotent — safe to call multiple times.
- */
+// Temporary auth diagnostic endpoint is disabled after successful production
+// verification. Returning 410 avoids accidental fall-through into :id handlers.
+adminRouter.get('/auth-diagnostic', (_req, res) => {
+  return res.status(410).json({
+    ok: false,
+    disabled: true,
+    reason: 'Temporary auth diagnostic endpoint has been disabled.'
+  });
+});
+
+// Temporary one-time retry endpoint is disabled after successful production
+// verification to prevent further operational use.
 adminRouter.post(
   '/retry-failed-initial-sms-20260719',
   adminMutationRateLimit,
-  async (_req, res) => {
-    const TARGET_IDS = [
-      '6a5f4c298a89f5ec882f359c',
-      '6a5f4c2b8a89f5ec882f35b2',
-      '6a5f4c2c8a89f5ec882f35c8'
-    ];
-
-    try {
-      const results = await retryFailedInitialMetaLeadSmsBatch({ targetIds: TARGET_IDS });
-      return res.json({ ok: true, results });
-    } catch (error) {
-      return res.status(500).json({ ok: false, error: error.message });
-    }
-  }
+  async (_req, res) => res.status(410).json({
+    ok: false,
+    disabled: true,
+    reason: 'Temporary retry endpoint has been disabled after successful 2026-07-19 recovery verification.'
+  })
 );
 
 // GET /api/admin/meta-leads/:id  (must come after all fixed-path GET routes)
