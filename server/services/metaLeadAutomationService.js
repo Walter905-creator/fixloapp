@@ -803,12 +803,16 @@ function matchesHistoricalTarget(target = {}, metaLeadData = {}) {
 function summarizeRecoveredLead({ lead, status, source, reason = null, metaLeadId = null }) {
   const lastSms = Array.isArray(lead?.smsHistory) && lead.smsHistory.length ? lead.smsHistory[lead.smsHistory.length - 1] : null;
   const lastEmail = Array.isArray(lead?.emailHistory) && lead.emailHistory.length ? lead.emailHistory[lead.emailHistory.length - 1] : null;
+  const followUpScheduled = lead?.followUp?.status === 'active';
+  const nextFollowUpDate = lead?.followUp?.nextFollowUpAt || null;
   return {
     status,
+    recoveryMethod: source,
     source,
     reason,
     matchedMetaLeadId: metaLeadId,
     leadId: lead ? String(lead._id) : null,
+    mongoDocumentId: lead ? String(lead._id) : null,
     name: lead ? `${lead.firstName || ''} ${lead.lastName || ''}`.trim() : '',
     inviteCodeStatus: lead?.invitationCode ? 'created' : 'missing',
     inviteCode: lead?.invitationCode || null,
@@ -816,8 +820,12 @@ function summarizeRecoveredLead({ lead, status, source, reason = null, metaLeadI
     twilioMessageSid: lastSms?.messageSid || null,
     emailStatus: lastEmail?.status || lead?.emailStatus || 'not_sent',
     emailMessageId: lastEmail?.messageId || null,
+    sendGridMessageId: lastEmail?.messageId || null,
     followUpStatus: lead?.followUp?.status || 'inactive',
-    nextFollowUpAt: lead?.followUp?.nextFollowUpAt || null
+    followUpScheduled,
+    nextFollowUpAt: nextFollowUpDate,
+    nextFollowUpDate,
+    signupLink: CANONICAL_PRO_SIGNUP_URL
   };
 }
 
@@ -1272,10 +1280,12 @@ async function recoverHistoricalMetaLeadsByForm({
     if (existing) {
       results.push({
         status: 'SKIPPED_DUPLICATE',
+        recoveryMethod: 'duplicate',
         source: 'duplicate',
         reason: `MetaLead already exists (${existing._id})`,
         matchedMetaLeadId: existing.metaLeadId || null,
         leadId: String(existing._id),
+        mongoDocumentId: String(existing._id),
         name: `${existing.firstName || ''} ${existing.lastName || ''}`.trim() || displayName,
         inviteCodeStatus: 'unchanged',
         inviteCode: null,
@@ -1283,8 +1293,12 @@ async function recoverHistoricalMetaLeadsByForm({
         twilioMessageSid: null,
         emailStatus: 'unchanged',
         emailMessageId: null,
+        sendGridMessageId: null,
         followUpStatus: 'unchanged',
-        nextFollowUpAt: null
+        followUpScheduled: false,
+        nextFollowUpAt: null,
+        nextFollowUpDate: null,
+        signupLink: CANONICAL_PRO_SIGNUP_URL
       });
       continue;
     }
@@ -1305,10 +1319,12 @@ async function recoverHistoricalMetaLeadsByForm({
       if (imported?.skipped) {
         results.push({
           status: isDuplicateSkipReason(imported.reason) ? 'SKIPPED_DUPLICATE' : 'SKIPPED',
+          recoveryMethod: 'meta',
           source: 'meta',
           reason: imported.reason || 'Skipped by Meta ingestion pipeline',
           matchedMetaLeadId: String(matchedLead.id || ''),
           leadId: imported.lead ? String(imported.lead._id) : null,
+          mongoDocumentId: imported.lead ? String(imported.lead._id) : null,
           name: displayName,
           inviteCodeStatus: imported.lead?.invitationCode ? 'existing' : 'unchanged',
           inviteCode: imported.lead?.invitationCode || null,
@@ -1316,8 +1332,12 @@ async function recoverHistoricalMetaLeadsByForm({
           twilioMessageSid: null,
           emailStatus: imported.lead?.emailStatus || 'unchanged',
           emailMessageId: null,
+          sendGridMessageId: null,
           followUpStatus: imported.lead?.followUp?.status || 'unchanged',
-          nextFollowUpAt: imported.lead?.followUp?.nextFollowUpAt || null
+          followUpScheduled: imported.lead?.followUp?.status === 'active',
+          nextFollowUpAt: imported.lead?.followUp?.nextFollowUpAt || null,
+          nextFollowUpDate: imported.lead?.followUp?.nextFollowUpAt || null,
+          signupLink: CANONICAL_PRO_SIGNUP_URL
         });
         continue;
       }
@@ -1337,10 +1357,12 @@ async function recoverHistoricalMetaLeadsByForm({
       reasonParts.push('manual recovery requires fullName, email, phone, and trade');
       results.push({
         status: 'FAILED',
+        recoveryMethod: 'manual',
         source: 'manual',
         reason: reasonParts.join('; '),
         matchedMetaLeadId: null,
         leadId: null,
+        mongoDocumentId: null,
         name: displayName,
         inviteCodeStatus: 'not_created',
         inviteCode: null,
@@ -1348,8 +1370,12 @@ async function recoverHistoricalMetaLeadsByForm({
         twilioMessageSid: null,
         emailStatus: 'not_sent',
         emailMessageId: null,
+        sendGridMessageId: null,
         followUpStatus: 'not_scheduled',
-        nextFollowUpAt: null
+        followUpScheduled: false,
+        nextFollowUpAt: null,
+        nextFollowUpDate: null,
+        signupLink: CANONICAL_PRO_SIGNUP_URL
       });
       continue;
     }
@@ -1361,17 +1387,19 @@ async function recoverHistoricalMetaLeadsByForm({
       trade: target.trade,
       formId: normalizedFormId,
       submittedAt: target.submittedAt,
-      source: 'historical_meta_recovery',
+      source: 'recovered_meta_lead',
       note: target.note
     });
 
     if (manual?.skipped) {
       results.push({
         status: isDuplicateSkipReason(manual.skippedReason) ? 'SKIPPED_DUPLICATE' : 'FAILED',
+        recoveryMethod: 'manual',
         source: 'manual',
         reason: manual.skippedReason || 'Manual recovery skipped',
         matchedMetaLeadId: null,
         leadId: manual.existingId ? String(manual.existingId) : null,
+        mongoDocumentId: manual.existingId ? String(manual.existingId) : null,
         name: displayName,
         inviteCodeStatus: 'unchanged',
         inviteCode: null,
@@ -1379,8 +1407,12 @@ async function recoverHistoricalMetaLeadsByForm({
         twilioMessageSid: null,
         emailStatus: 'unchanged',
         emailMessageId: null,
+        sendGridMessageId: null,
         followUpStatus: 'unchanged',
-        nextFollowUpAt: null
+        followUpScheduled: false,
+        nextFollowUpAt: null,
+        nextFollowUpDate: null,
+        signupLink: CANONICAL_PRO_SIGNUP_URL
       });
       continue;
     }
@@ -1548,7 +1580,7 @@ async function listLeads(filters = {}) {
   const allowedLeadStatuses = new Set(['new', 'in_progress', 'registered', 'subscribed', 'closed']);
   const allowedRegistrationStatuses = new Set(['not_registered', 'registered', 'subscribed']);
   const allowedFollowUpStatuses = new Set(['active', 'paused', 'stopped', 'completed']);
-  const allowedSources = new Set(['instagram', 'facebook', 'meta_unknown', 'manual_meta_import']);
+  const allowedSources = new Set(['instagram', 'facebook', 'meta_unknown', 'manual_meta_import', 'recovered_meta_lead']);
 
   if (allowedLeadStatuses.has(String(filters.status))) query.leadStatus = String(filters.status);
   if (allowedRegistrationStatuses.has(String(filters.registrationStatus))) query.registrationStatus = String(filters.registrationStatus);
