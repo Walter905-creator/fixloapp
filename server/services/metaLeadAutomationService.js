@@ -1254,7 +1254,14 @@ async function recoverHistoricalMetaLeadsByForm({
     note: String(target.note || '').trim()
   }));
 
-  const formData = await fetchMetaFormLeadsImpl(normalizedFormId, { accessToken, pageId });
+  let formData = null;
+  let graphLookupError = '';
+  try {
+    formData = await fetchMetaFormLeadsImpl(normalizedFormId, { accessToken, pageId });
+  } catch (error) {
+    graphLookupError = String(error?.response?.data?.error?.message || error?.message || 'Meta Graph lookup failed');
+  }
+
   const resolvedPageId = String(formData?.pageId || pageId || getDefaultPageId() || '').trim();
   const graphLeads = Array.isArray(formData?.leads) ? formData.leads : [];
   const results = [];
@@ -1325,10 +1332,13 @@ async function recoverHistoricalMetaLeadsByForm({
     }
 
     if (!target.fullName || !target.email || !target.phone || !target.trade) {
+      const reasonParts = [];
+      if (graphLookupError) reasonParts.push(`Meta lookup unavailable: ${graphLookupError}`);
+      reasonParts.push('manual recovery requires fullName, email, phone, and trade');
       results.push({
         status: 'FAILED',
         source: 'manual',
-        reason: 'Meta no longer returns this lead and manual recovery requires fullName, email, phone, and trade',
+        reason: reasonParts.join('; '),
         matchedMetaLeadId: null,
         leadId: null,
         name: displayName,
@@ -1378,13 +1388,14 @@ async function recoverHistoricalMetaLeadsByForm({
     results.push(summarizeRecoveredLead({
       lead: manual.lead,
       status: 'RECOVERED_MANUAL',
-      source: 'manual'
+      source: graphLookupError ? 'manual_after_meta_lookup_failure' : 'manual'
     }));
   }
 
   return {
     formId: normalizedFormId,
     canonicalSignupLink: CANONICAL_PRO_SIGNUP_URL,
+    graphLookupError: graphLookupError || null,
     results
   };
 }
