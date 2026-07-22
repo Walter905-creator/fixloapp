@@ -1013,7 +1013,10 @@ async function fetchMetaFormLeads(formId, deps = {}) {
     throw new Error('Missing Meta page access token');
   }
 
-  const { data: form } = await axiosInstance.get(`https://graph.facebook.com/v20.0/${formId}`, {
+  // formId has already been validated as a purely numeric Meta ID by isNumericMetaId();
+  // encodeURIComponent is applied here so that no user-controlled string reaches the URL path.
+  const safeFormId = encodeURIComponent(String(formId));
+  const { data: form } = await axiosInstance.get(`https://graph.facebook.com/v20.0/${safeFormId}`, {
     params: {
       access_token: token,
       fields: 'id,name,page_id'
@@ -1032,7 +1035,7 @@ async function fetchMetaFormLeads(formId, deps = {}) {
     };
     if (after) params.after = after;
 
-    const { data } = await axiosInstance.get(`https://graph.facebook.com/v20.0/${formId}/leads`, {
+    const { data } = await axiosInstance.get(`https://graph.facebook.com/v20.0/${safeFormId}/leads`, {
       params,
       timeout: 15000
     });
@@ -2830,7 +2833,7 @@ async function markWebhookEventFailed(eventId, errorMessage = '') {
   const event = await MetaWebhookEvent.findById(eventId);
   if (!event) return;
   const retryCount = (event.retryCount || 0) + 1;
-  const nextRetryAt = new Date(Date.now() + Math.min(retryCount * 60000, 10 * 60000));
+  const nextRetryAt = new Date(Date.now() + Math.min(retryCount * 60000, MAX_RETRY_DELAY_MS));
   await MetaWebhookEvent.findByIdAndUpdate(eventId, {
     status: 'failed',
     lastError: String(errorMessage || '').slice(0, 2000),
@@ -2844,7 +2847,7 @@ async function markWebhookEventFailed(eventId, errorMessage = '') {
  * state (e.g. after a server restart).  Called by the scheduled job.
  */
 async function retryUnprocessedWebhookEvents() {
-  const cutoff = new Date(Date.now() - 5 * 60000); // older than 5 minutes
+  const cutoff = new Date(Date.now() - WEBHOOK_RETRY_CUTOFF_MS);
   const events = await MetaWebhookEvent.find({
     status: { $in: ['pending', 'processing', 'failed'] },
     $or: [
@@ -2963,6 +2966,15 @@ let _fullReconciliationRunning = false;
 
 const FULL_RECONCILIATION_FORM_ID =
   process.env.META_LEAD_FORM_ID || '1913273286015217';
+
+/** Maximum number of individual lead results stored in a MetaReconciliationRun document. */
+const MAX_STORED_RESULTS = 200;
+/** Maximum backoff delay for webhook event retries (ms). */
+const MAX_RETRY_DELAY_MS = 10 * 60000; // 10 minutes
+/** Age cutoff — only retry webhook events older than this (ms). */
+const WEBHOOK_RETRY_CUTOFF_MS = 5 * 60000; // 5 minutes
+/** Leads sitting without any outreach for longer than this threshold are flagged as stale (ms). */
+const STALE_LEAD_THRESHOLD_MS = 2 * 60000; // 2 minutes
 
 /**
  * Fetch every available lead from Meta for the given form, compare against
@@ -3210,7 +3222,7 @@ async function performFullMetaReconciliation({
         duplicatesSkipped: summary.duplicatesSkipped,
         unreachable: summary.unreachable,
         failed: summary.failed,
-        results: summary.results.slice(0, 200)
+        results: summary.results.slice(0, MAX_STORED_RESULTS)
       };
       await MetaReconciliationRun.findByIdAndUpdate(run._id, updateFields);
     }
@@ -3273,7 +3285,7 @@ async function getLastReconciliationRun(formId = FULL_RECONCILIATION_FORM_ID) {
  * for more than 2 minutes without having had any outreach attempted.
  */
 async function alertStaleLeads() {
-  const twoMinutesAgo = new Date(Date.now() - 2 * 60000);
+  const twoMinutesAgo = new Date(Date.now() - STALE_LEAD_THRESHOLD_MS);
   const staleLeads = await MetaLead.find({
     leadStatus: { $in: ['new', 'in_progress'] },
     createdAt: { $lte: twoMinutesAgo },
@@ -3351,5 +3363,6 @@ module.exports = {
   performFullMetaReconciliation,
   getLastReconciliationRun,
   // Alerting
-  alertStaleLeads
+  alertStaleLeads,
+  notifyAdmins
 };

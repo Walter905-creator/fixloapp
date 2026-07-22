@@ -26,7 +26,8 @@ const {
   markWebhookEventProcessed,
   markWebhookEventFailed,
   performFullMetaReconciliation,
-  getLastReconciliationRun
+  getLastReconciliationRun,
+  notifyAdmins
 } = require('../services/metaLeadAutomationService');
 
 const router = express.Router();
@@ -94,6 +95,13 @@ router.post('/webhook/meta-leads', webhookRateLimit, async (req, res) => {
       } catch (asyncError) {
         console.error(`[META_WEBHOOK] Async processing failed: ${asyncError.message}`);
         await markWebhookEventFailed(eventDoc?._id, asyncError.message);
+        notifyAdmins(
+          'webhook_error',
+          'Meta Webhook — Processing Failed',
+          `Async processing of a Meta leadgen webhook event failed: ${asyncError.message}`,
+          eventDoc?._id || null,
+          'MetaWebhookEvent'
+        ).catch(() => {}); // fire-and-forget; do not throw
       }
     });
   } catch (error) {
