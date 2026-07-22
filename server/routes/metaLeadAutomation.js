@@ -101,11 +101,11 @@ router.post('/webhook/meta-leads', webhookRateLimit, async (req, res) => {
           `Async processing of a Meta leadgen webhook event failed: ${asyncError.message}`,
           eventDoc?._id || null,
           'MetaWebhookEvent'
-        ).catch(() => {}); // fire-and-forget; do not throw
+        ).catch(notifyErr => console.error('[META_WEBHOOK] Failed to notify admins:', notifyErr.message));
       }
     });
   } catch (error) {
-    if (eventDoc?._id) await markWebhookEventFailed(eventDoc._id, error.message);
+    if (eventDoc?._id) markWebhookEventFailed(eventDoc._id, error.message).catch(() => {});
     // Only send an error response if we haven't already responded.
     if (!res.headersSent) {
       return res.status(500).json({ ok: false, error: error.message });

@@ -2833,7 +2833,7 @@ async function markWebhookEventFailed(eventId, errorMessage = '') {
   const event = await MetaWebhookEvent.findById(eventId);
   if (!event) return;
   const retryCount = (event.retryCount || 0) + 1;
-  const nextRetryAt = new Date(Date.now() + Math.min(retryCount * 60000, MAX_RETRY_DELAY_MS));
+  const nextRetryAt = new Date(Date.now() + Math.min(Math.pow(2, retryCount) * 60000, MAX_RETRY_DELAY_MS));
   await MetaWebhookEvent.findByIdAndUpdate(eventId, {
     status: 'failed',
     lastError: String(errorMessage || '').slice(0, 2000),
@@ -3227,7 +3227,7 @@ async function performFullMetaReconciliation({
       await MetaReconciliationRun.findByIdAndUpdate(run._id, updateFields);
     }
 
-    // 4. Notify admins if any leads were recovered.
+    // 4. Notify admins and log if any leads were recovered.
     if (summary.newlyRecovered > 0 || summary.existingIncomplete > 0) {
       await notifyAdmins(
         'reconciliation_recovered',
@@ -3235,9 +3235,6 @@ async function performFullMetaReconciliation({
         `Reconciliation for form ${normalizedFormId}: recovered ${summary.newlyRecovered} new, completed ${summary.existingIncomplete} existing. Total from Meta: ${summary.totalFromMeta}.`,
         null
       );
-    }
-
-    if (summary.newlyRecovered > 0 || summary.existingIncomplete > 0) {
       console.log(`[META_RECONCILE] form=${normalizedFormId} total=${summary.totalFromMeta} new=${summary.newlyRecovered} completed=${summary.existingIncomplete} already_ok=${summary.alreadyComplete} unreachable=${summary.unreachable} failed=${summary.failed}`);
     }
 
