@@ -2883,6 +2883,21 @@ async function retryUnprocessedWebhookEvents() {
 // ── Lead completeness classification ────────────────────────────────────────
 
 /**
+ * Return the stored `missingFields` array for a lead document when it is
+ * non-empty, otherwise fall back to the provided `fallback` array (e.g. the
+ * freshly-computed list derived from raw Meta field data).
+ *
+ * @param {object} lead     - MetaLead document (or plain object).
+ * @param {string[]} fallback - Fallback array if the document has none.
+ * @returns {string[]}
+ */
+function resolveMissingFields(lead, fallback = []) {
+  return Array.isArray(lead.missingFields) && lead.missingFields.length > 0
+    ? lead.missingFields
+    : fallback;
+}
+
+/**
  * Determine whether an existing MetaLead has completed all applicable workflow
  * steps.  Returns 'ALREADY_COMPLETE', 'EXISTING_INCOMPLETE', or 'UNREACHABLE'.
  */
@@ -2977,6 +2992,8 @@ const FULL_RECONCILIATION_FORM_ID =
 
 /** Maximum number of individual lead results stored in a MetaReconciliationRun document. */
 const MAX_STORED_RESULTS = 200;
+/** Milliseconds per day — used for date-range calculations. */
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /** Maximum backoff delay for webhook event retries (ms). */
 const MAX_RETRY_DELAY_MS = 10 * 60000; // 10 minutes
 /** Age cutoff — only retry webhook events older than this (ms). */
@@ -3067,7 +3084,7 @@ async function performFullMetaReconciliation({
     summary.totalFromMeta = metaLeads.length;
 
     // Apply 30-day lookback filter client-side (Meta Graph API has no native date filter).
-    const sinceDate = daysBack > 0 ? new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000) : null;
+    const sinceDate = daysBack > 0 ? new Date(Date.now() - daysBack * MS_PER_DAY) : null;
     if (sinceDate) {
       metaLeads = metaLeads.filter((l) => {
         const ts = parseDate(l.created_time);
@@ -3138,9 +3155,7 @@ async function performFullMetaReconciliation({
           leadResult.inviteCode = existingLead.invitationCode || null;
           // Merge stored profile flags, falling back to freshly computed values.
           leadResult.profileIncomplete = existingLead.profileIncomplete ?? leadProfileIncomplete;
-          leadResult.missingFields = Array.isArray(existingLead.missingFields) && existingLead.missingFields.length
-            ? existingLead.missingFields
-            : leadMissingFields;
+          leadResult.missingFields = resolveMissingFields(existingLead, leadMissingFields);
 
           const completeness = classifyLeadCompleteness(existingLead);
 
@@ -3216,9 +3231,7 @@ async function performFullMetaReconciliation({
               leadResult.leadId = String(newLead._id);
               leadResult.inviteCode = newLead.invitationCode || null;
               leadResult.profileIncomplete = newLead.profileIncomplete ?? leadProfileIncomplete;
-              leadResult.missingFields = Array.isArray(newLead.missingFields) && newLead.missingFields.length
-                ? newLead.missingFields
-                : leadMissingFields;
+              leadResult.missingFields = resolveMissingFields(newLead, leadMissingFields);
 
               const lastSms = Array.isArray(newLead.smsHistory) && newLead.smsHistory.length
                 ? newLead.smsHistory.filter((h) => h.direction === 'outbound').slice(-1)[0]
