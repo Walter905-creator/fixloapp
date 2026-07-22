@@ -30,7 +30,10 @@ const reconciliationResultSchema = new mongoose.Schema({
   nextSmsFollowUpAt: { type: Date, default: null },
   nextEmailFollowUpAt: { type: Date, default: null },
   signupUrl: { type: String, default: 'https://fixloapp.com/pros' },
-  reason: { type: String, default: null }
+  reason: { type: String, default: null },
+  submittedAt: { type: Date, default: null },
+  profileIncomplete: { type: Boolean, default: false },
+  missingFields: { type: [String], default: [] }
 }, { _id: false });
 
 const metaReconciliationRunSchema = new mongoose.Schema({

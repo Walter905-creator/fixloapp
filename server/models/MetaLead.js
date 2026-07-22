@@ -159,6 +159,8 @@ const metaLeadSchema = new mongoose.Schema({
   followUp: { type: followUpSchema, default: () => ({}) },
   assignedRecruiter: { type: String, default: '' },
   notes: { type: String, default: '' },
+  profileIncomplete: { type: Boolean, default: false, index: true },
+  missingFields: { type: [String], default: [] },
   smsHistory: { type: [smsHistorySchema], default: [] },
   emailHistory: { type: [emailHistorySchema], default: [] }
 }, { timestamps: true });
