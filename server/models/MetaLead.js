@@ -2,14 +2,22 @@ const mongoose = require('mongoose');
 
 const followUpSchema = new mongoose.Schema({
   step: { type: Number, default: 0 },
+  smsStep: { type: Number, default: 0 },
+  emailStep: { type: Number, default: 0 },
   status: {
     type: String,
     enum: ['active', 'paused', 'stopped', 'completed'],
     default: 'active',
     index: true
   },
+  smsEnabled: { type: Boolean, default: true, index: true },
+  emailEnabled: { type: Boolean, default: true, index: true },
   lastFollowUpAt: { type: Date, default: null },
+  lastSmsFollowUpAt: { type: Date, default: null },
+  lastEmailFollowUpAt: { type: Date, default: null },
   nextFollowUpAt: { type: Date, default: null },
+  nextSmsFollowUpAt: { type: Date, default: null },
+  nextEmailFollowUpAt: { type: Date, default: null },
   pausedAt: { type: Date, default: null },
   pausedReason: { type: String, default: null },
   stoppedReason: { type: String, default: null }
@@ -25,6 +33,8 @@ const smsHistorySchema = new mongoose.Schema({
   },
   body: { type: String, default: '' },
   templateKey: { type: String, default: '' },
+  followUpStage: { type: String, default: '' },
+  idempotencyKey: { type: String, default: '' },
   sentAt: { type: Date, default: null },
   updatedAt: { type: Date, default: Date.now },
   errorCode: { type: String, default: null },
@@ -40,6 +50,8 @@ const emailHistorySchema = new mongoose.Schema({
   },
   subject: { type: String, default: '' },
   templateKey: { type: String, default: '' },
+  followUpStage: { type: String, default: '' },
+  idempotencyKey: { type: String, default: '' },
   sentAt: { type: Date, default: null },
   updatedAt: { type: Date, default: Date.now },
   reason: { type: String, default: null },
@@ -55,6 +67,30 @@ const campaignSchema = new mongoose.Schema({
   adName: { type: String, default: '' },
   formId: { type: String, default: '' },
   formName: { type: String, default: '' }
+}, { _id: false });
+
+const contactabilitySchema = new mongoose.Schema({
+  smsAvailable: { type: Boolean, default: false },
+  emailAvailable: { type: Boolean, default: false }
+}, { _id: false });
+
+const smsStateSchema = new mongoose.Schema({
+  attempted: { type: Boolean, default: false },
+  messageSid: { type: String, default: null },
+  status: { type: String, default: 'pending' },
+  errorCode: { type: String, default: null },
+  errorMessage: { type: String, default: null },
+  sentAt: { type: Date, default: null },
+  deliveredAt: { type: Date, default: null }
+}, { _id: false });
+
+const emailStateSchema = new mongoose.Schema({
+  attempted: { type: Boolean, default: false },
+  messageId: { type: String, default: null },
+  status: { type: String, default: 'pending' },
+  error: { type: String, default: null },
+  sentAt: { type: Date, default: null },
+  deliveredAt: { type: Date, default: null }
 }, { _id: false });
 
 const metaLeadSchema = new mongoose.Schema({
@@ -117,6 +153,9 @@ const metaLeadSchema = new mongoose.Schema({
   smsOptOut: { type: Boolean, default: false, index: true },
   smsOptOutAt: { type: Date, default: null },
   smsOptInAt: { type: Date, default: null },
+  contactability: { type: contactabilitySchema, default: () => ({}) },
+  sms: { type: smsStateSchema, default: () => ({}) },
+  email: { type: emailStateSchema, default: () => ({}) },
   followUp: { type: followUpSchema, default: () => ({}) },
   assignedRecruiter: { type: String, default: '' },
   notes: { type: String, default: '' },
@@ -126,6 +165,8 @@ const metaLeadSchema = new mongoose.Schema({
 
 metaLeadSchema.index({ createdAt: -1 });
 metaLeadSchema.index({ 'followUp.nextFollowUpAt': 1, 'followUp.status': 1 });
+metaLeadSchema.index({ 'followUp.nextSmsFollowUpAt': 1, 'followUp.status': 1, 'followUp.smsEnabled': 1 });
+metaLeadSchema.index({ 'followUp.nextEmailFollowUpAt': 1, 'followUp.status': 1, 'followUp.emailEnabled': 1 });
 metaLeadSchema.index({ leadStatus: 1, registrationStatus: 1, createdAt: -1 });
 metaLeadSchema.index({ 'campaign.campaignId': 1, source: 1, createdAt: -1 });
 

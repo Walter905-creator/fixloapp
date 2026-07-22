@@ -16,6 +16,7 @@ const {
   handleTwilioInboundWebhook,
   handleSendGridEvents,
   listLeads,
+  auditMetaLeadChannelCoverage,
   getLeadDetails,
   computeDashboardMetrics,
   performManualAction,
@@ -177,6 +178,17 @@ adminRouter.get('/', async (req, res) => {
   try {
     const data = await listLeads(req.query || {});
     return res.json({ ok: true, ...data });
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+// GET /api/admin/meta-leads/audit/contact-channels
+adminRouter.get('/audit/contact-channels', async (req, res) => {
+  try {
+    const limit = Number(req.query?.limit || 500);
+    const report = await auditMetaLeadChannelCoverage(limit);
+    return res.json({ ok: true, ...report });
   } catch (error) {
     return res.status(500).json({ ok: false, error: error.message });
   }

@@ -38,6 +38,7 @@ const SMS_STATUS_PRECEDENCE = {
   opted_out: 5
 };
 const FOLLOW_UP_SCHEDULE_HOURS = [24, 72, 168, 336];
+const FOLLOW_UP_STAGE_KEYS = ['24h', '72h', '7d', '14d'];
 
 let sendgridReady = false;
 function ensureSendGrid() {
@@ -115,7 +116,7 @@ function buildDefaults() {
     invitationCodePrefix: 'FIXLO',
     invitationCodeLength: 8,
     invitationCodeExpiryDays: 30,
-    signupLink: normalizeProSignupLink(process.env.PRO_SIGNUP_URL || CANONICAL_PRO_SIGNUP_URL),
+    signupLink: CANONICAL_PRO_SIGNUP_URL,
     supportEmail: process.env.SENDGRID_REPLY_TO_EMAIL || 'support@fixloapp.com',
     supportPhone: process.env.SUPPORT_PHONE || '',
     followUpTimingsHours: FOLLOW_UP_SCHEDULE_HOURS,
@@ -158,7 +159,7 @@ async function getSettings() {
       ? saved.followUpTimingsHours.map((n) => Number(n))
       : defaults.followUpTimingsHours
   };
-  merged.signupLink = normalizeProSignupLink(merged.signupLink);
+  merged.signupLink = CANONICAL_PRO_SIGNUP_URL;
   return merged;
 }
 
@@ -171,7 +172,7 @@ async function saveSettings(nextSettings = {}) {
     smsTemplates: { ...current.smsTemplates, ...(nextSettings.smsTemplates || {}) },
     emailTemplates: { ...current.emailTemplates, ...(nextSettings.emailTemplates || {}) }
   };
-  merged.signupLink = normalizeProSignupLink(merged.signupLink);
+  merged.signupLink = CANONICAL_PRO_SIGNUP_URL;
 
   await AdminSettings.findOneAndUpdate(
     { _singleton: 'admin' },
@@ -252,7 +253,7 @@ function buildMessageVars(lead, settings) {
     trade,
     tradeSuffix: lead.trade ? ` for ${lead.trade}` : '',
     invitationCode: lead.invitationCode,
-    signupLink: settings.signupLink,
+    signupLink: CANONICAL_PRO_SIGNUP_URL,
     supportEmail: settings.supportEmail,
     supportPhone: settings.supportPhone || ''
   };
@@ -385,9 +386,25 @@ function validateTwilioSignature({ authToken = process.env.TWILIO_AUTH_TOKEN, si
   // Route mount confirmation is logged by the route file on startup.
 })();
 
-async function sendLeadSms(lead, templateKey, settings, force = false) {
-  if (!lead.phone) return { success: false, reason: 'missing_phone' };
-  if (lead.smsOptOut && !force) return { success: false, reason: 'opted_out' };
+async function sendLeadSms(lead, templateKey, settings, options = {}) {
+  const stage = options.stage || templateKey;
+  const force = Boolean(options.force);
+  const persist = options.persist !== false;
+
+  if (!isSmsChannelAvailable(lead, { force })) {
+    console.log(`[META_SMS] Follow-up skipped: reason=${lead.smsOptOut && !force ? 'opted_out' : 'channel_unavailable'} lead=${lead._id}`);
+    return { success: false, reason: lead.smsOptOut && !force ? 'opted_out' : 'missing_phone' };
+  }
+
+  const idempotencyKey = buildMessageIdempotencyKey(lead, 'sms', stage);
+  const existing = findSmsEntryForStage(lead, stage);
+  if (existing) {
+    const sid = normalizeTwilioSid(existing.messageSid);
+    if (sid || existing.status === 'queued' || existing.status === 'sent' || existing.status === 'delivered') {
+      console.log(`[META_SMS] Follow-up skipped: reason=duplicate_attempt lead=${lead._id} stage=${stage}`);
+      return { success: true, skipped: true, reason: 'duplicate_attempt', sid: sid || null };
+    }
+  }
 
   const vars = buildMessageVars(lead, settings);
   const body = template(settings.smsTemplates?.[templateKey] || '', vars);
@@ -395,74 +412,113 @@ async function sendLeadSms(lead, templateKey, settings, force = false) {
 
   const callbackUrl = getStatusCallbackUrl();
   const smsOptions = {};
-  if (callbackUrl) {
-    smsOptions.statusCallback = callbackUrl;
-    console.log(`[META_SMS] Status callback URL valid: ${callbackUrl}`);
-  } else {
-    console.warn(`[META_SMS] Sending SMS without StatusCallback (BACKEND_PUBLIC_URL not configured)`);
-  }
+  if (callbackUrl) smsOptions.statusCallback = callbackUrl;
 
-  console.log(`[META_SMS] Sending initial SMS to lead ${lead._id} template=${templateKey}`);
-
+  console.log(`[META_SMS] Initial send started lead=${lead._id} stage=${stage}`);
   try {
-    const twilioRes = await sendSms(lead.phone, body, smsOptions);
-    console.log(`[META_SMS] Twilio accepted SID=${twilioRes.sid}`);
-    lead.smsStatus = 'sent';
+    const twilioRes = await sendSmsImpl(lead.phone, body, smsOptions);
+    const normalizedStatus = twilioRes.status || 'sent';
+    lead.smsStatus = normalizedStatus;
+    lead.sms = {
+      ...(lead.sms || {}),
+      attempted: true,
+      messageSid: twilioRes.sid || null,
+      status: normalizedStatus,
+      errorCode: null,
+      errorMessage: null,
+      sentAt: new Date(),
+      deliveredAt: normalizedStatus === 'delivered' ? new Date() : (lead.sms?.deliveredAt || null)
+    };
     lead.smsHistory.push({
       messageSid: twilioRes.sid,
       direction: 'outbound',
-      status: twilioRes.status || 'sent',
+      status: normalizedStatus,
       body,
       templateKey,
+      followUpStage: stage,
+      idempotencyKey,
       sentAt: new Date(),
       updatedAt: new Date()
     });
-    await lead.save();
+    if (persist) await lead.save();
 
+    console.log(`[META_SMS] Initial send accepted lead=${lead._id} sid=${twilioRes.sid || ''}`);
     await logEvent(lead._id, 'sms_sent', 'sms', 'SMS sent', `Template ${templateKey}`, {
       sid: twilioRes.sid,
-      status: twilioRes.status,
-      templateKey
+      status: normalizedStatus,
+      templateKey,
+      followUpStage: stage,
+      idempotencyKey
     });
-
-    return { success: true, sid: twilioRes.sid };
+    return { success: true, sid: twilioRes.sid || null, status: normalizedStatus };
   } catch (error) {
-    console.error(`[META_SMS] Twilio rejected error=${error.message} code=${error.code || 'N/A'}`);
     lead.smsStatus = 'failed';
+    lead.sms = {
+      ...(lead.sms || {}),
+      attempted: true,
+      messageSid: null,
+      status: 'failed',
+      errorCode: error.code ? String(error.code) : null,
+      errorMessage: error.message,
+      sentAt: new Date(),
+      deliveredAt: null
+    };
     lead.smsHistory.push({
       direction: 'outbound',
       status: 'failed',
       body,
       templateKey,
+      followUpStage: stage,
+      idempotencyKey,
       sentAt: new Date(),
       updatedAt: new Date(),
       errorCode: error.code ? String(error.code) : null,
       errorMessage: error.message
     });
-    await lead.save();
+    if (persist) await lead.save();
 
+    console.log(`[META_SMS] Initial send failed lead=${lead._id} stage=${stage} reason=${error.message}`);
     await logEvent(lead._id, 'sms_failed', 'sms', 'SMS failed', error.message, {
       templateKey,
+      followUpStage: stage,
+      idempotencyKey,
       errorCode: error.code || null
     });
-
-    return { success: false, error: error.message };
+    return { success: false, error: error.message, reason: 'provider_error' };
   }
 }
 
-async function sendLeadEmail(lead, templateKey, settings) {
-  if (!lead.email) return { success: false, reason: 'missing_email' };
-  if (!ensureSendGrid()) return { success: false, reason: 'sendgrid_not_configured' };
+async function sendLeadEmail(lead, templateKey, settings, options = {}) {
+  const stage = options.stage || templateKey;
+  const force = Boolean(options.force);
+  const persist = options.persist !== false;
+  const sendEmailImpl = options.sendEmailImpl || ((msg) => sgMail.send(msg));
+  const ensureSendGridImpl = options.ensureSendGridImpl || ensureSendGrid;
+
+  if (!isEmailChannelAvailable(lead, { force })) {
+    console.log(`[META_EMAIL] Follow-up skipped: reason=${hasReachableEmail(lead) ? 'unsubscribed' : 'channel_unavailable'} lead=${lead._id}`);
+    return { success: false, reason: hasReachableEmail(lead) ? 'unsubscribed' : 'missing_email' };
+  }
+  if (!ensureSendGridImpl()) return { success: false, reason: 'sendgrid_not_configured' };
+
+  const idempotencyKey = buildMessageIdempotencyKey(lead, 'email', stage);
+  const existing = findEmailEntryForStage(lead, stage);
+  if (existing) {
+    const hasMessageId = Boolean(String(existing.messageId || '').trim());
+    if (hasMessageId || ['processed', 'delivered', 'open', 'click'].includes(existing.status)) {
+      console.log(`[META_EMAIL] Follow-up skipped: reason=duplicate_attempt lead=${lead._id} stage=${stage}`);
+      return { success: true, skipped: true, reason: 'duplicate_attempt', messageId: existing.messageId || null };
+    }
+  }
 
   const vars = buildMessageVars(lead, settings);
   const subjectTemplate = templateKey === 'immediate' ? settings.emailTemplates?.immediateSubject : settings.emailTemplates?.reminderSubject;
   const bodyTemplate = templateKey === 'immediate' ? settings.emailTemplates?.immediateBody : settings.emailTemplates?.reminderBody;
-
   const subject = template(subjectTemplate || '', vars);
   const html = template(bodyTemplate || '', vars);
-
   if (!subject || !html) return { success: false, reason: 'missing_template' };
 
+  console.log(`[META_EMAIL] Initial send started lead=${lead._id} stage=${stage}`);
   try {
     const msg = {
       to: lead.email,
@@ -472,46 +528,75 @@ async function sendLeadEmail(lead, templateKey, settings) {
       html,
       customArgs: {
         metaLeadId: String(lead._id),
-        templateKey
+        templateKey,
+        followUpStage: stage,
+        idempotencyKey
       }
     };
-
-    const [response] = await sgMail.send(msg);
+    const [response] = await sendEmailImpl(msg);
     const messageId = response?.headers?.['x-message-id'] || null;
 
     lead.emailStatus = 'processed';
+    lead.email = {
+      ...(lead.email || {}),
+      attempted: true,
+      messageId,
+      status: 'processed',
+      error: null,
+      sentAt: new Date(),
+      deliveredAt: lead.email?.deliveredAt || null
+    };
     lead.emailHistory.push({
       messageId,
       status: 'processed',
       subject,
       templateKey,
+      followUpStage: stage,
+      idempotencyKey,
       sentAt: new Date(),
       updatedAt: new Date()
     });
-    await lead.save();
+    if (persist) await lead.save();
 
+    console.log(`[META_EMAIL] Initial send accepted lead=${lead._id} messageId=${messageId || ''}`);
     await logEvent(lead._id, 'email_sent', 'email', 'Email sent', `Template ${templateKey}`, {
       messageId,
-      templateKey
+      templateKey,
+      followUpStage: stage,
+      idempotencyKey
     });
-
     return { success: true, messageId };
   } catch (error) {
     lead.emailStatus = 'pending';
+    lead.email = {
+      ...(lead.email || {}),
+      attempted: true,
+      messageId: null,
+      status: 'failed',
+      error: error.message,
+      sentAt: new Date(),
+      deliveredAt: null
+    };
     lead.emailHistory.push({
       messageId: null,
       status: 'dropped',
       subject,
       templateKey,
+      followUpStage: stage,
+      idempotencyKey,
       sentAt: new Date(),
       updatedAt: new Date(),
       reason: error.message
     });
-    await lead.save();
+    if (persist) await lead.save();
 
-    await logEvent(lead._id, 'email_failed', 'email', 'Email failed', error.message, { templateKey });
-
-    return { success: false, error: error.message };
+    console.log(`[META_EMAIL] Initial send failed lead=${lead._id} stage=${stage} reason=${error.message}`);
+    await logEvent(lead._id, 'email_failed', 'email', 'Email failed', error.message, {
+      templateKey,
+      followUpStage: stage,
+      idempotencyKey
+    });
+    return { success: false, error: error.message, reason: 'provider_error' };
   }
 }
 
@@ -528,9 +613,137 @@ function getNextFollowUpAt(createdAt, timings, step) {
   return new Date(new Date(createdAt).getTime() + (hourOffset * 60 * 60 * 1000));
 }
 
+function hasReachablePhone(lead = {}) {
+  return Boolean(normalizePhone(lead.phone));
+}
+
+function hasReachableEmail(lead = {}) {
+  return Boolean(String(lead.email || '').trim());
+}
+
+function isSmsChannelAvailable(lead = {}, { force = false } = {}) {
+  if (!hasReachablePhone(lead)) return false;
+  if (lead.smsOptOut && !force) return false;
+  return true;
+}
+
+function isEmailChannelAvailable(lead = {}, { force = false } = {}) {
+  if (!hasReachableEmail(lead)) return false;
+  if (!force && String(lead.emailStatus || '').toLowerCase() === 'unsubscribed') return false;
+  return true;
+}
+
+function getFollowUpStage(step) {
+  return FOLLOW_UP_STAGE_KEYS[Number(step)] || null;
+}
+
+function buildMessageIdempotencyKey(lead, channel, stage) {
+  return `${String(lead?._id || '')}:${channel}:${stage}`;
+}
+
+function hasSmsAttemptForStage(lead = {}, stage = '') {
+  return (lead.smsHistory || []).some((item) => item.direction === 'outbound'
+    && (item.followUpStage === stage || item.templateKey === stage));
+}
+
+function hasEmailAttemptForStage(lead = {}, stage = '') {
+  return (lead.emailHistory || []).some((item) => item.followUpStage === stage || item.templateKey === stage);
+}
+
+function findSmsEntryForStage(lead = {}, stage = '') {
+  return (lead.smsHistory || []).slice().reverse().find((item) => item.direction === 'outbound'
+    && (item.followUpStage === stage || item.templateKey === stage)) || null;
+}
+
+function findEmailEntryForStage(lead = {}, stage = '') {
+  return (lead.emailHistory || []).slice().reverse().find((item) => item.followUpStage === stage || item.templateKey === stage) || null;
+}
+
+function syncLegacyFollowUpPointers(lead = {}) {
+  const smsNext = lead?.followUp?.nextSmsFollowUpAt || null;
+  const emailNext = lead?.followUp?.nextEmailFollowUpAt || null;
+  const candidates = [smsNext, emailNext].filter(Boolean).map((value) => new Date(value));
+  if (!candidates.length) {
+    lead.followUp.nextFollowUpAt = null;
+    return;
+  }
+  candidates.sort((a, b) => a.getTime() - b.getTime());
+  lead.followUp.nextFollowUpAt = candidates[0];
+}
+
+function setChannelAvailabilityFlags(lead = {}, { force = false } = {}) {
+  const smsAvailable = isSmsChannelAvailable(lead, { force });
+  const emailAvailable = isEmailChannelAvailable(lead, { force });
+  lead.contactability = {
+    ...(lead.contactability || {}),
+    smsAvailable,
+    emailAvailable
+  };
+  lead.followUp.smsEnabled = smsAvailable;
+  lead.followUp.emailEnabled = emailAvailable;
+  if (!smsAvailable) lead.followUp.nextSmsFollowUpAt = null;
+  if (!emailAvailable) lead.followUp.nextEmailFollowUpAt = null;
+  syncLegacyFollowUpPointers(lead);
+  return { smsAvailable, emailAvailable };
+}
+
+function setInitialChannelFollowUpSchedule(lead, settings, now = new Date()) {
+  if (lead.followUp.smsEnabled) {
+    lead.followUp.smsStep = 0;
+    lead.followUp.nextSmsFollowUpAt = getNextFollowUpAt(now, settings.followUpTimingsHours, 0);
+  } else {
+    lead.followUp.smsStep = Number(lead.followUp.smsStep || 0);
+    lead.followUp.nextSmsFollowUpAt = null;
+  }
+  if (lead.followUp.emailEnabled) {
+    lead.followUp.emailStep = 0;
+    lead.followUp.nextEmailFollowUpAt = getNextFollowUpAt(now, settings.followUpTimingsHours, 0);
+  } else {
+    lead.followUp.emailStep = Number(lead.followUp.emailStep || 0);
+    lead.followUp.nextEmailFollowUpAt = null;
+  }
+  syncLegacyFollowUpPointers(lead);
+}
+
+function recalculateFollowUpLifecycle(lead = {}) {
+  const smsActive = Boolean(lead.followUp.smsEnabled && lead.followUp.nextSmsFollowUpAt);
+  const emailActive = Boolean(lead.followUp.emailEnabled && lead.followUp.nextEmailFollowUpAt);
+  if (!smsActive && !emailActive) {
+    lead.followUp.status = 'completed';
+    lead.leadStatus = 'closed';
+  } else if (lead.followUp.status === 'completed') {
+    lead.followUp.status = 'active';
+  }
+  syncLegacyFollowUpPointers(lead);
+}
+
+function initializeFollowUpForAvailableChannels(lead, settings, now = new Date()) {
+  const availability = setChannelAvailabilityFlags(lead);
+  if (!availability.smsAvailable && !availability.emailAvailable) {
+    lead.followUp.status = 'stopped';
+    lead.followUp.stoppedReason = 'no_reachable_channels';
+    lead.leadStatus = 'closed';
+    lead.followUp.lastFollowUpAt = null;
+    syncLegacyFollowUpPointers(lead);
+    return { availability, sequence: 'none' };
+  }
+
+  lead.followUp.status = lead.followUp.status === 'paused' ? 'paused' : 'active';
+  setInitialChannelFollowUpSchedule(lead, settings, lead.createdAt || now);
+  lead.followUp.lastFollowUpAt = now;
+
+  if (availability.smsAvailable && availability.emailAvailable) return { availability, sequence: 'dual' };
+  if (availability.smsAvailable) return { availability, sequence: 'sms_only' };
+  return { availability, sequence: 'email_only' };
+}
+
 async function markSequenceStopped(lead, reason) {
   lead.followUp.status = 'stopped';
   lead.followUp.stoppedReason = reason;
+  lead.followUp.smsEnabled = false;
+  lead.followUp.emailEnabled = false;
+  lead.followUp.nextSmsFollowUpAt = null;
+  lead.followUp.nextEmailFollowUpAt = null;
   lead.followUp.nextFollowUpAt = null;
   await lead.save();
 
@@ -598,29 +811,73 @@ async function processLeadFollowUp(lead, settings) {
   if (!settings.automaticReminders) return;
   if (lead.followUp.status !== 'active') return;
   if (lead.registrationStatus !== 'not_registered') return;
-  if (lead.smsOptOut) return;
-
-  const nextStep = Number(lead.followUp.step || 0);
-  const templateKey = reminderTemplateByStep(nextStep);
-
-  await sendLeadSms(lead, templateKey, settings);
-  await sendLeadEmail(lead, 'reminder', settings);
-
-  lead.followUp.lastFollowUpAt = new Date();
-  lead.followUp.step = nextStep + 1;
-
-  const nextAt = getNextFollowUpAt(lead.createdAt, settings.followUpTimingsHours, lead.followUp.step);
-  if (nextAt) {
-    lead.followUp.nextFollowUpAt = nextAt;
-  } else {
-    lead.followUp.status = 'completed';
-    lead.followUp.nextFollowUpAt = null;
-    lead.leadStatus = 'closed';
+  setChannelAvailabilityFlags(lead);
+  const fallbackStep = Number(lead.followUp.step || 0);
+  if (lead.followUp.smsEnabled && !lead.followUp.nextSmsFollowUpAt) {
+    const smsStep = Number.isFinite(Number(lead.followUp.smsStep)) ? Number(lead.followUp.smsStep) : fallbackStep;
+    lead.followUp.smsStep = Math.max(0, smsStep);
+    lead.followUp.nextSmsFollowUpAt = getNextFollowUpAt(lead.createdAt, settings.followUpTimingsHours, lead.followUp.smsStep);
   }
+  if (lead.followUp.emailEnabled && !lead.followUp.nextEmailFollowUpAt) {
+    const emailStep = Number.isFinite(Number(lead.followUp.emailStep)) ? Number(lead.followUp.emailStep) : fallbackStep;
+    lead.followUp.emailStep = Math.max(0, emailStep);
+    lead.followUp.nextEmailFollowUpAt = getNextFollowUpAt(lead.createdAt, settings.followUpTimingsHours, lead.followUp.emailStep);
+  }
+  syncLegacyFollowUpPointers(lead);
+
+  const now = new Date();
+  let smsRun = null;
+  let emailRun = null;
+
+  if (lead.followUp.smsEnabled && lead.followUp.nextSmsFollowUpAt && lead.followUp.nextSmsFollowUpAt <= now) {
+    const smsStep = Number(lead.followUp.smsStep || 0);
+    const smsStage = getFollowUpStage(smsStep);
+    if (smsStage) {
+      const smsTemplate = reminderTemplateByStep(smsStep);
+      smsRun = await sendLeadSms(lead, smsTemplate, settings, { stage: smsStage, persist: false });
+      lead.followUp.lastSmsFollowUpAt = now;
+      if (smsRun.success || smsRun.skipped) {
+        lead.followUp.smsStep = smsStep + 1;
+      }
+      lead.followUp.nextSmsFollowUpAt = getNextFollowUpAt(lead.createdAt, settings.followUpTimingsHours, lead.followUp.smsStep);
+      if (!lead.followUp.nextSmsFollowUpAt) lead.followUp.smsEnabled = false;
+      console.log(`[META_SMS] Follow-up scheduled lead=${lead._id} stage=${smsStage} next=${lead.followUp.nextSmsFollowUpAt || 'none'}`);
+    } else {
+      lead.followUp.smsEnabled = false;
+      lead.followUp.nextSmsFollowUpAt = null;
+      console.log(`[META_SMS] Follow-up skipped: reason=no_more_stages lead=${lead._id}`);
+    }
+  }
+
+  if (lead.followUp.emailEnabled && lead.followUp.nextEmailFollowUpAt && lead.followUp.nextEmailFollowUpAt <= now) {
+    const emailStep = Number(lead.followUp.emailStep || 0);
+    const emailStage = getFollowUpStage(emailStep);
+    if (emailStage) {
+      emailRun = await sendLeadEmail(lead, 'reminder', settings, { stage: emailStage, persist: false });
+      lead.followUp.lastEmailFollowUpAt = now;
+      if (emailRun.success || emailRun.skipped) {
+        lead.followUp.emailStep = emailStep + 1;
+      }
+      lead.followUp.nextEmailFollowUpAt = getNextFollowUpAt(lead.createdAt, settings.followUpTimingsHours, lead.followUp.emailStep);
+      if (!lead.followUp.nextEmailFollowUpAt) lead.followUp.emailEnabled = false;
+      console.log(`[META_EMAIL] Follow-up scheduled lead=${lead._id} stage=${emailStage} next=${lead.followUp.nextEmailFollowUpAt || 'none'}`);
+    } else {
+      lead.followUp.emailEnabled = false;
+      lead.followUp.nextEmailFollowUpAt = null;
+      console.log(`[META_EMAIL] Follow-up skipped: reason=no_more_stages lead=${lead._id}`);
+    }
+  }
+
+  lead.followUp.lastFollowUpAt = now;
+  lead.followUp.step = Math.max(Number(lead.followUp.smsStep || 0), Number(lead.followUp.emailStep || 0));
+  recalculateFollowUpLifecycle(lead);
   await lead.save();
 
   await logEvent(lead._id, 'followup_sent', 'system', 'Automated follow-up sent', `Step ${lead.followUp.step}`, {
-    templateKey,
+    sms: smsRun,
+    email: emailRun,
+    nextSmsFollowUpAt: lead.followUp.nextSmsFollowUpAt,
+    nextEmailFollowUpAt: lead.followUp.nextEmailFollowUpAt,
     nextFollowUpAt: lead.followUp.nextFollowUpAt
   });
 }
@@ -823,8 +1080,12 @@ function summarizeRecoveredLead({ lead, status, source, reason = null, metaLeadI
     sendGridMessageId: lastEmail?.messageId || null,
     followUpStatus: lead?.followUp?.status || 'inactive',
     followUpScheduled,
+    smsFollowUpsEnabled: Boolean(lead?.followUp?.smsEnabled),
+    emailFollowUpsEnabled: Boolean(lead?.followUp?.emailEnabled),
     nextFollowUpAt: nextFollowUpDate,
     nextFollowUpDate,
+    nextSmsFollowUpAt: lead?.followUp?.nextSmsFollowUpAt || null,
+    nextEmailFollowUpAt: lead?.followUp?.nextEmailFollowUpAt || null,
     signupLink: CANONICAL_PRO_SIGNUP_URL
   };
 }
@@ -922,9 +1183,15 @@ async function createOrUpdateLeadFromMeta(change) {
     leadStatus: 'in_progress',
     followUp: {
       step: 0,
+      smsStep: 0,
+      emailStep: 0,
       status: 'active',
+      smsEnabled: true,
+      emailEnabled: true,
       lastFollowUpAt: null,
-      nextFollowUpAt: getNextFollowUpAt(new Date(), settings.followUpTimingsHours, 0)
+      nextFollowUpAt: null,
+      nextSmsFollowUpAt: null,
+      nextEmailFollowUpAt: null
     }
   });
 
@@ -935,16 +1202,33 @@ async function createOrUpdateLeadFromMeta(change) {
   });
 
   await createInviteForLead(lead, settings);
+  const availability = setChannelAvailabilityFlags(lead);
+  if (availability.smsAvailable) console.log(`[META_SMS] Channel available lead=${lead._id}`);
+  else console.log(`[META_SMS] Channel unavailable lead=${lead._id}`);
+  if (availability.emailAvailable) console.log(`[META_EMAIL] Channel available lead=${lead._id}`);
+  else console.log(`[META_EMAIL] Channel unavailable lead=${lead._id}`);
 
-  await sendLeadSms(lead, 'immediate', settings);
-  await sendLeadEmail(lead, 'immediate', settings);
+  const smsResult = availability.smsAvailable
+    ? await sendLeadSms(lead, 'immediate', settings, { stage: 'immediate', persist: false })
+    : { success: false, reason: 'missing_phone' };
+  const emailResult = availability.emailAvailable
+    ? await sendLeadEmail(lead, 'immediate', settings, { stage: 'immediate', persist: false })
+    : { success: false, reason: 'missing_email' };
 
-  lead.followUp.lastFollowUpAt = new Date();
-  lead.followUp.nextFollowUpAt = getNextFollowUpAt(lead.createdAt, settings.followUpTimingsHours, 0);
+  const followUpInit = initializeFollowUpForAvailableChannels(lead, settings, new Date());
+  if (followUpInit.sequence === 'dual') console.log(`[META_FOLLOWUP] Dual-channel sequence scheduled lead=${lead._id}`);
+  else if (followUpInit.sequence === 'sms_only') console.log(`[META_FOLLOWUP] SMS-only sequence scheduled lead=${lead._id}`);
+  else if (followUpInit.sequence === 'email_only') console.log(`[META_FOLLOWUP] Email-only sequence scheduled lead=${lead._id}`);
+  else console.log(`[META_FOLLOWUP] No reachable channels lead=${lead._id}`);
+
   await lead.save();
 
-  await logEvent(lead._id, 'followup_started', 'system', 'Follow-up sequence started', 'Immediate SMS/email sent', {
-    nextFollowUpAt: lead.followUp.nextFollowUpAt
+  await logEvent(lead._id, 'followup_started', 'system', 'Follow-up sequence started', 'Immediate outreach completed', {
+    smsResult,
+    emailResult,
+    nextFollowUpAt: lead.followUp.nextFollowUpAt,
+    nextSmsFollowUpAt: lead.followUp.nextSmsFollowUpAt,
+    nextEmailFollowUpAt: lead.followUp.nextEmailFollowUpAt
   });
 
   await notifyOwnerIfEnabled(lead, settings, 'new_lead');
@@ -985,9 +1269,13 @@ async function processFollowUpCycle() {
   const now = new Date();
   const candidates = await MetaLead.find({
     'followUp.status': 'active',
-    'followUp.nextFollowUpAt': { $lte: now },
     leadStatus: { $nin: ['closed'] },
-    registrationStatus: 'not_registered'
+    registrationStatus: 'not_registered',
+    $or: [
+      { 'followUp.nextSmsFollowUpAt': { $lte: now } },
+      { 'followUp.nextEmailFollowUpAt': { $lte: now } },
+      { 'followUp.nextFollowUpAt': { $lte: now } }
+    ]
   }).limit(100);
 
   let processed = 0;
@@ -1058,6 +1346,22 @@ async function handleTwilioStatusWebhook(payload = {}, deps = {}) {
 
   if (shouldPromoteLeadSmsStatus(lead.smsStatus, normalizedStatus)) {
     lead.smsStatus = normalizedStatus;
+  }
+  lead.sms = {
+    ...(lead.sms || {}),
+    attempted: true,
+    messageSid: sid,
+    status: normalizedStatus,
+    errorCode: payload.ErrorCode || null,
+    errorMessage: payload.ErrorMessage || null,
+    sentAt: lead.sms?.sentAt || historyItem.sentAt || null,
+    deliveredAt: normalizedStatus === 'delivered' ? new Date() : (lead.sms?.deliveredAt || null)
+  };
+  if (String(payload.ErrorCode || '') === '21610' || normalizedStatus === 'opted_out') {
+    lead.smsOptOut = true;
+    lead.followUp.smsEnabled = false;
+    lead.followUp.nextSmsFollowUpAt = null;
+    syncLegacyFollowUpPointers(lead);
   }
 
   await lead.save();
@@ -1351,10 +1655,10 @@ async function recoverHistoricalMetaLeadsByForm({
       continue;
     }
 
-    if (!target.fullName || !target.email || !target.phone || !target.trade) {
+    if (!target.fullName || (!target.email && !target.phone)) {
       const reasonParts = [];
       if (graphLookupError) reasonParts.push(`Meta lookup unavailable: ${graphLookupError}`);
-      reasonParts.push('manual recovery requires fullName, email, phone, and trade');
+      reasonParts.push('manual recovery requires fullName and at least one contact channel (email or phone)');
       results.push({
         status: 'FAILED',
         recoveryMethod: 'manual',
@@ -1384,7 +1688,7 @@ async function recoverHistoricalMetaLeadsByForm({
       fullName: target.fullName,
       email: target.email,
       phone: target.phone,
-      trade: target.trade,
+      trade: target.trade || '',
       formId: normalizedFormId,
       submittedAt: target.submittedAt,
       source: 'recovered_meta_lead',
@@ -1456,6 +1760,10 @@ async function handleTwilioInboundWebhook(payload = {}) {
     lead.smsOptOut = true;
     lead.smsOptOutAt = new Date();
     lead.smsStatus = 'opted_out';
+    lead.followUp.smsEnabled = false;
+    lead.followUp.nextSmsFollowUpAt = null;
+    syncLegacyFollowUpPointers(lead);
+    recalculateFollowUpLifecycle(lead);
     lead.smsHistory.push({
       direction: 'inbound',
       status: 'stop_received',
@@ -1465,7 +1773,6 @@ async function handleTwilioInboundWebhook(payload = {}) {
     });
     await lead.save();
 
-    await markSequenceStopped(lead, 'stop_reply');
     await logEvent(lead._id, 'stop_received', 'sms', 'STOP received', body);
 
     await sendSms(lead.phone, settings.smsTemplates?.unsubscribed || 'You have been unsubscribed from Fixlo SMS updates. Reply START to subscribe again.');
@@ -1475,6 +1782,15 @@ async function handleTwilioInboundWebhook(payload = {}) {
   if (START_KEYWORDS.has(normalizedBody)) {
     lead.smsOptOut = false;
     lead.smsOptInAt = new Date();
+    lead.followUp.smsEnabled = hasReachablePhone(lead);
+    if (lead.registrationStatus === 'not_registered' && lead.followUp.smsEnabled) {
+      if (!Number.isFinite(Number(lead.followUp.smsStep))) lead.followUp.smsStep = Number(lead.followUp.step || 0);
+      if (!lead.followUp.nextSmsFollowUpAt) {
+        lead.followUp.nextSmsFollowUpAt = new Date(Date.now() + (60 * 60 * 1000));
+      }
+      if (lead.followUp.status === 'completed') lead.followUp.status = 'active';
+    }
+    syncLegacyFollowUpPointers(lead);
     lead.smsHistory.push({
       direction: 'inbound',
       status: 'start_received',
@@ -1482,13 +1798,6 @@ async function handleTwilioInboundWebhook(payload = {}) {
       sentAt: new Date(),
       updatedAt: new Date()
     });
-
-    if (lead.registrationStatus === 'not_registered' && lead.followUp.status !== 'completed') {
-      lead.followUp.status = 'active';
-      if (!lead.followUp.nextFollowUpAt) {
-        lead.followUp.nextFollowUpAt = new Date(Date.now() + (60 * 60 * 1000));
-      }
-    }
 
     await lead.save();
     await logEvent(lead._id, 'start_received', 'sms', 'START received', body);
@@ -1556,6 +1865,21 @@ async function handleSendGridEvents(events = []) {
     if (mappedStatus === 'click') lead.emailStatus = 'clicked';
     if (mappedStatus === 'bounce') lead.emailStatus = 'bounced';
     if (mappedStatus === 'unsubscribe') lead.emailStatus = 'unsubscribed';
+    lead.email = {
+      ...(lead.email || {}),
+      attempted: true,
+      messageId: history?.messageId || lead.email?.messageId || null,
+      status: mappedStatus,
+      error: event.reason || lead.email?.error || null,
+      sentAt: lead.email?.sentAt || history?.sentAt || null,
+      deliveredAt: mappedStatus === 'delivered' ? new Date() : (lead.email?.deliveredAt || null)
+    };
+    if (mappedStatus === 'unsubscribe') {
+      lead.followUp.emailEnabled = false;
+      lead.followUp.nextEmailFollowUpAt = null;
+      syncLegacyFollowUpPointers(lead);
+      recalculateFollowUpLifecycle(lead);
+    }
 
     await lead.save();
 
@@ -1612,6 +1936,36 @@ async function listLeads(filters = {}) {
       total,
       totalPages: Math.ceil(total / limit)
     }
+  };
+}
+
+async function auditMetaLeadChannelCoverage(limit = 500) {
+  const leads = await MetaLead.find({}).sort({ createdAt: -1 }).limit(Math.max(1, Math.min(2000, Number(limit) || 500)));
+  const rows = leads.map((lead) => {
+    const smsStage = findSmsEntryForStage(lead, 'immediate') || (lead.smsHistory || []).filter((item) => item.direction === 'outbound').slice(-1)[0] || null;
+    const emailStage = findEmailEntryForStage(lead, 'immediate') || (lead.emailHistory || []).slice(-1)[0] || null;
+    const phoneAvailable = isSmsChannelAvailable(lead, { force: true });
+    const emailAvailable = isEmailChannelAvailable(lead, { force: true });
+    return {
+      leadId: String(lead._id),
+      name: `${lead.firstName || ''} ${lead.lastName || ''}`.trim() || lead.email || lead.phone || 'Unknown',
+      phoneAvailable,
+      emailAvailable,
+      initialSmsStatus: smsStage?.status || lead.smsStatus || 'not_sent',
+      twilioSid: smsStage?.messageSid || lead.sms?.messageSid || null,
+      initialEmailStatus: emailStage?.status || lead.emailStatus || 'not_sent',
+      sendGridMessageId: emailStage?.messageId || lead.email?.messageId || null,
+      smsFollowUpsEnabled: Boolean(lead.followUp?.smsEnabled),
+      emailFollowUpsEnabled: Boolean(lead.followUp?.emailEnabled),
+      nextSmsFollowUpAt: lead.followUp?.nextSmsFollowUpAt || null,
+      nextEmailFollowUpAt: lead.followUp?.nextEmailFollowUpAt || null,
+      signupUrl: CANONICAL_PRO_SIGNUP_URL
+    };
+  });
+  return {
+    generatedAt: new Date().toISOString(),
+    canonicalSignupUrl: CANONICAL_PRO_SIGNUP_URL,
+    rows
   };
 }
 
@@ -1746,9 +2100,9 @@ async function performManualAction(leadId, action, payload = {}) {
   const settings = await getSettings();
 
   if (action === 'resend_sms') {
-    await sendLeadSms(lead, 'immediate', settings, true);
+    await sendLeadSms(lead, 'immediate', settings, { force: true, stage: 'immediate' });
   } else if (action === 'resend_email') {
-    await sendLeadEmail(lead, 'immediate', settings);
+    await sendLeadEmail(lead, 'immediate', settings, { force: true, stage: 'immediate' });
   } else if (action === 'pause') {
     lead.followUp.status = 'paused';
     lead.followUp.pausedAt = new Date();
@@ -1756,14 +2110,19 @@ async function performManualAction(leadId, action, payload = {}) {
     await lead.save();
   } else if (action === 'resume') {
     lead.followUp.status = 'active';
-    if (!lead.followUp.nextFollowUpAt) {
-      lead.followUp.nextFollowUpAt = new Date(Date.now() + (60 * 60 * 1000));
-    }
+    setChannelAvailabilityFlags(lead);
+    if (lead.followUp.smsEnabled && !lead.followUp.nextSmsFollowUpAt) lead.followUp.nextSmsFollowUpAt = new Date(Date.now() + (60 * 60 * 1000));
+    if (lead.followUp.emailEnabled && !lead.followUp.nextEmailFollowUpAt) lead.followUp.nextEmailFollowUpAt = new Date(Date.now() + (60 * 60 * 1000));
+    syncLegacyFollowUpPointers(lead);
     await lead.save();
   } else if (action === 'mark_closed') {
     lead.leadStatus = 'closed';
     lead.followUp.status = 'stopped';
     lead.followUp.stoppedReason = payload.reason || 'closed_by_admin';
+    lead.followUp.smsEnabled = false;
+    lead.followUp.emailEnabled = false;
+    lead.followUp.nextSmsFollowUpAt = null;
+    lead.followUp.nextEmailFollowUpAt = null;
     lead.followUp.nextFollowUpAt = null;
     await lead.save();
   } else if (action === 'assign_recruiter') {
@@ -1878,9 +2237,15 @@ async function importManualLead(leadData = {}) {
     leadStatus: 'in_progress',
     followUp: {
       step: 0,
+      smsStep: 0,
+      emailStep: 0,
       status: 'active',
+      smsEnabled: true,
+      emailEnabled: true,
       lastFollowUpAt: null,
-      nextFollowUpAt: getNextFollowUpAt(now, settings.followUpTimingsHours, 0)
+      nextFollowUpAt: null,
+      nextSmsFollowUpAt: null,
+      nextEmailFollowUpAt: null
     }
   });
 
@@ -1899,27 +2264,25 @@ async function importManualLead(leadData = {}) {
 
   // ── Timeline: invitation_created already logged by createInviteForLead ──
 
-  // ── SMS ─────────────────────────────────────────────────────────────────
-  let smsResult;
-  if (normalizedPhone) {
-    smsResult = await sendLeadSms(lead, 'immediate', settings);
-  } else {
-    smsResult = { success: false, reason: 'missing_phone' };
-    await logEvent(
-      lead._id,
-      'sms_skipped',
-      'sms',
-      'SMS skipped — no phone number',
-      'Lead has no phone number; SMS step skipped',
-      { reason: 'skipped_missing_phone' }
-    );
-  }
+  const availability = setChannelAvailabilityFlags(lead);
+  if (availability.smsAvailable) console.log(`[META_SMS] Channel available lead=${lead._id}`);
+  else console.log(`[META_SMS] Channel unavailable lead=${lead._id}`);
+  if (availability.emailAvailable) console.log(`[META_EMAIL] Channel available lead=${lead._id}`);
+  else console.log(`[META_EMAIL] Channel unavailable lead=${lead._id}`);
 
-  // ── Email ────────────────────────────────────────────────────────────────
-  const emailResult = await sendLeadEmail(lead, 'immediate', settings);
+  const smsResult = availability.smsAvailable
+    ? await sendLeadSms(lead, 'immediate', settings, { stage: 'immediate', persist: false })
+    : { success: false, reason: 'missing_phone' };
+  const emailResult = availability.emailAvailable
+    ? await sendLeadEmail(lead, 'immediate', settings, { stage: 'immediate', persist: false })
+    : { success: false, reason: 'missing_email' };
 
-  // ── Enrol in follow-up sequence ──────────────────────────────────────────
-  lead.followUp.lastFollowUpAt = now;
+  const followUpInit = initializeFollowUpForAvailableChannels(lead, settings, now);
+  if (followUpInit.sequence === 'dual') console.log(`[META_FOLLOWUP] Dual-channel sequence scheduled lead=${lead._id}`);
+  else if (followUpInit.sequence === 'sms_only') console.log(`[META_FOLLOWUP] SMS-only sequence scheduled lead=${lead._id}`);
+  else if (followUpInit.sequence === 'email_only') console.log(`[META_FOLLOWUP] Email-only sequence scheduled lead=${lead._id}`);
+  else console.log(`[META_FOLLOWUP] No reachable channels lead=${lead._id}`);
+
   await lead.save();
 
   await logEvent(
@@ -1927,8 +2290,12 @@ async function importManualLead(leadData = {}) {
     'followup_started',
     'system',
     'Follow-up sequence started',
-    'Immediate welcome email/SMS sent; automated reminders scheduled',
-    { nextFollowUpAt: lead.followUp.nextFollowUpAt }
+    'Immediate outreach completed',
+    {
+      nextFollowUpAt: lead.followUp.nextFollowUpAt,
+      nextSmsFollowUpAt: lead.followUp.nextSmsFollowUpAt,
+      nextEmailFollowUpAt: lead.followUp.nextEmailFollowUpAt
+    }
   );
 
   // ── Admin notification ───────────────────────────────────────────────────
@@ -2019,15 +2386,18 @@ async function recoverPartialMetaLead(leadData = {}) {
     : null;
 
   if (existing) {
+    setChannelAvailabilityFlags(existing);
     const hasInvite = !!existing.invitationCode;
-    const smsSent = existing.smsHistory.some((h) => h.direction === 'outbound');
-    const emailSent = existing.emailHistory.length > 0;
-    const followUpActive = ['active', 'paused', 'stopped', 'completed'].includes(existing.followUp?.status);
+    const smsSent = hasSmsAttemptForStage(existing, 'immediate');
+    const emailSent = hasEmailAttemptForStage(existing, 'immediate');
+    const followUpActive = existing.followUp?.status === 'active';
 
     const smsComplete = !smsAvailable || smsSent;
     const emailComplete = !emailAvailable || emailSent;
 
     if (hasInvite && smsComplete && emailComplete && followUpActive) {
+      syncLegacyFollowUpPointers(existing);
+      await existing.save();
       const lastSmsEntry = existing.smsHistory.filter((h) => h.direction === 'outbound').slice(-1)[0];
       const lastEmailEntry = existing.emailHistory.slice(-1)[0];
       return {
@@ -2057,7 +2427,7 @@ async function recoverPartialMetaLead(leadData = {}) {
     let emailResult = { success: false, reason: 'not_available' };
 
     if (smsAvailable && !smsSent) {
-      smsResult = await sendLeadSms(existing, 'immediate', settings);
+      smsResult = await sendLeadSms(existing, 'immediate', settings, { stage: 'immediate', persist: false });
       if (smsResult.success) console.log(`[META_SMS] Initial SMS sent SID=${smsResult.sid}`);
     } else if (smsAvailable) {
       const lastSmsEntry = existing.smsHistory.filter((h) => h.direction === 'outbound').slice(-1)[0];
@@ -2065,23 +2435,28 @@ async function recoverPartialMetaLead(leadData = {}) {
     }
 
     if (emailAvailable && !emailSent) {
-      emailResult = await sendLeadEmail(existing, 'immediate', settings);
+      emailResult = await sendLeadEmail(existing, 'immediate', settings, { stage: 'immediate', persist: false });
       if (emailResult.success) console.log(`[META_EMAIL] Initial email sent messageId=${emailResult.messageId}`);
     } else if (emailAvailable) {
       const lastEmailEntry = existing.emailHistory.slice(-1)[0];
       emailResult = { success: true, messageId: lastEmailEntry?.messageId || null, skipped: true };
     }
 
-    if (!followUpActive) {
+    if (!smsAvailable && !emailAvailable) {
+      existing.followUp.status = 'stopped';
+      existing.followUp.stoppedReason = 'no_reachable_channels';
+      existing.leadStatus = 'closed';
+      console.log(`[META_FOLLOWUP] No reachable channels lead=${existing._id}`);
+    } else if (!followUpActive) {
       existing.followUp.status = 'active';
-      existing.followUp.nextFollowUpAt = getNextFollowUpAt(
-        existing.createdAt || now,
-        settings.followUpTimingsHours,
-        0
-      );
-      await existing.save();
-      console.log(`[META_FOLLOWUP] Channel-specific sequence scheduled nextFollowUpAt=${existing.followUp.nextFollowUpAt}`);
+      setInitialChannelFollowUpSchedule(existing, settings, existing.createdAt || now);
+      if (smsAvailable && emailAvailable) console.log(`[META_FOLLOWUP] Dual-channel sequence scheduled lead=${existing._id}`);
+      else if (smsAvailable) console.log(`[META_FOLLOWUP] SMS-only sequence scheduled lead=${existing._id}`);
+      else console.log(`[META_FOLLOWUP] Email-only sequence scheduled lead=${existing._id}`);
+    } else {
+      syncLegacyFollowUpPointers(existing);
     }
+    await existing.save();
 
     return {
       status: 'COMPLETED_EXISTING',
@@ -2130,9 +2505,15 @@ async function recoverPartialMetaLead(leadData = {}) {
     leadStatus: 'in_progress',
     followUp: {
       step: 0,
+      smsStep: 0,
+      emailStep: 0,
       status: 'active',
+      smsEnabled: true,
+      emailEnabled: true,
       lastFollowUpAt: null,
-      nextFollowUpAt: getNextFollowUpAt(now, settings.followUpTimingsHours, 0)
+      nextFollowUpAt: null,
+      nextSmsFollowUpAt: null,
+      nextEmailFollowUpAt: null
     }
   });
 
@@ -2160,19 +2541,27 @@ async function recoverPartialMetaLead(leadData = {}) {
   let smsResult = { success: false, reason: 'not_available' };
   let emailResult = { success: false, reason: 'not_available' };
 
+  const availability = setChannelAvailabilityFlags(lead);
+  if (availability.smsAvailable) console.log(`[META_SMS] Channel available lead=${lead._id}`);
+  else console.log(`[META_SMS] Channel unavailable lead=${lead._id}`);
+  if (availability.emailAvailable) console.log(`[META_EMAIL] Channel available lead=${lead._id}`);
+  else console.log(`[META_EMAIL] Channel unavailable lead=${lead._id}`);
+
   if (smsAvailable) {
-    smsResult = await sendLeadSms(lead, 'immediate', settings);
+    smsResult = await sendLeadSms(lead, 'immediate', settings, { stage: 'immediate', persist: false });
     if (smsResult.success) console.log(`[META_SMS] Initial SMS sent SID=${smsResult.sid}`);
   }
   if (emailAvailable) {
-    emailResult = await sendLeadEmail(lead, 'immediate', settings);
+    emailResult = await sendLeadEmail(lead, 'immediate', settings, { stage: 'immediate', persist: false });
     if (emailResult.success) console.log(`[META_EMAIL] Initial email sent messageId=${emailResult.messageId}`);
   }
 
-  lead.followUp.lastFollowUpAt = now;
+  const followUpInit = initializeFollowUpForAvailableChannels(lead, settings, now);
+  if (followUpInit.sequence === 'dual') console.log(`[META_FOLLOWUP] Dual-channel sequence scheduled lead=${lead._id}`);
+  else if (followUpInit.sequence === 'sms_only') console.log(`[META_FOLLOWUP] SMS-only sequence scheduled lead=${lead._id}`);
+  else if (followUpInit.sequence === 'email_only') console.log(`[META_FOLLOWUP] Email-only sequence scheduled lead=${lead._id}`);
+  else console.log(`[META_FOLLOWUP] No reachable channels lead=${lead._id}`);
   await lead.save();
-
-  console.log(`[META_FOLLOWUP] Channel-specific sequence scheduled nextFollowUpAt=${lead.followUp.nextFollowUpAt}`);
 
   await logEvent(
     lead._id,
@@ -2180,7 +2569,13 @@ async function recoverPartialMetaLead(leadData = {}) {
     'system',
     'Follow-up sequence started',
     `Channel-specific follow-up scheduled (channels: ${followUpChannels.join(', ')})`,
-    { nextFollowUpAt: lead.followUp.nextFollowUpAt, smsAvailable, emailAvailable }
+    {
+      nextFollowUpAt: lead.followUp.nextFollowUpAt,
+      nextSmsFollowUpAt: lead.followUp.nextSmsFollowUpAt,
+      nextEmailFollowUpAt: lead.followUp.nextEmailFollowUpAt,
+      smsAvailable,
+      emailAvailable
+    }
   );
 
   await notifyAdmins(
@@ -2235,8 +2630,8 @@ async function recoverManualMetaLead(leadData = {}) {
   const source = String(leadData.source || 'recovered_meta_lead').trim() || 'recovered_meta_lead';
   const note = String(leadData.note || '').trim();
 
-  if (!fullName || !normalizedEmail || !normalizedPhone || !trade || !formId) {
-    return { skipped: true, skippedReason: 'Missing required lead fields (name/email/phone/trade/formId)' };
+  if (!fullName || !formId || (!normalizedEmail && !normalizedPhone)) {
+    return { skipped: true, skippedReason: 'Missing required lead fields (name/formId and at least one contact channel)' };
   }
 
   const nameParts = fullName.split(/\s+/).filter(Boolean);
@@ -2290,9 +2685,15 @@ async function recoverManualMetaLead(leadData = {}) {
     leadStatus: 'in_progress',
     followUp: {
       step: 0,
+      smsStep: 0,
+      emailStep: 0,
       status: 'active',
+      smsEnabled: true,
+      emailEnabled: true,
       lastFollowUpAt: null,
-      nextFollowUpAt: getNextFollowUpAt(now, settings.followUpTimingsHours, 0)
+      nextFollowUpAt: null,
+      nextSmsFollowUpAt: null,
+      nextEmailFollowUpAt: null
     }
   });
 
@@ -2312,10 +2713,24 @@ async function recoverManualMetaLead(leadData = {}) {
 
   await createInviteForLead(lead, settings);
 
-  const smsResult = await sendLeadSms(lead, 'immediate', settings);
-  const emailResult = await sendLeadEmail(lead, 'immediate', settings);
+  const availability = setChannelAvailabilityFlags(lead);
+  if (availability.smsAvailable) console.log(`[META_SMS] Channel available lead=${lead._id}`);
+  else console.log(`[META_SMS] Channel unavailable lead=${lead._id}`);
+  if (availability.emailAvailable) console.log(`[META_EMAIL] Channel available lead=${lead._id}`);
+  else console.log(`[META_EMAIL] Channel unavailable lead=${lead._id}`);
 
-  lead.followUp.lastFollowUpAt = now;
+  const smsResult = availability.smsAvailable
+    ? await sendLeadSms(lead, 'immediate', settings, { stage: 'immediate', persist: false })
+    : { success: false, reason: 'missing_phone' };
+  const emailResult = availability.emailAvailable
+    ? await sendLeadEmail(lead, 'immediate', settings, { stage: 'immediate', persist: false })
+    : { success: false, reason: 'missing_email' };
+
+  const followUpInit = initializeFollowUpForAvailableChannels(lead, settings, now);
+  if (followUpInit.sequence === 'dual') console.log(`[META_FOLLOWUP] Dual-channel sequence scheduled lead=${lead._id}`);
+  else if (followUpInit.sequence === 'sms_only') console.log(`[META_FOLLOWUP] SMS-only sequence scheduled lead=${lead._id}`);
+  else if (followUpInit.sequence === 'email_only') console.log(`[META_FOLLOWUP] Email-only sequence scheduled lead=${lead._id}`);
+  else console.log(`[META_FOLLOWUP] No reachable channels lead=${lead._id}`);
   await lead.save();
 
   await logEvent(
@@ -2324,7 +2739,11 @@ async function recoverManualMetaLead(leadData = {}) {
     'system',
     'Follow-up sequence started',
     'Immediate welcome email/SMS sent; automated reminders scheduled',
-    { nextFollowUpAt: lead.followUp.nextFollowUpAt }
+    {
+      nextFollowUpAt: lead.followUp.nextFollowUpAt,
+      nextSmsFollowUpAt: lead.followUp.nextSmsFollowUpAt,
+      nextEmailFollowUpAt: lead.followUp.nextEmailFollowUpAt
+    }
   );
 
   await notifyAdmins(
@@ -2374,6 +2793,9 @@ module.exports = {
   hasValidTwilioSid,
   wasInvalidStatusCallbackFailure,
   getRetryBlockReason,
+  sendLeadSms,
+  sendLeadEmail,
+  initializeFollowUpForAvailableChannels,
   normalizeProSignupLink,
   getSettings,
   saveSettings,
@@ -2386,6 +2808,7 @@ module.exports = {
   handleTwilioInboundWebhook,
   handleSendGridEvents,
   listLeads,
+  auditMetaLeadChannelCoverage,
   getLeadDetails,
   computeDashboardMetrics,
   performManualAction,
@@ -2394,3 +2817,4 @@ module.exports = {
   recoverPartialMetaLead,
   recoverHistoricalMetaLeadsByForm
 };
+  const sendSmsImpl = options.sendSmsImpl || sendSms;
