@@ -1951,7 +1951,7 @@ async function importManualLead(leadData = {}) {
 /**
  * recoverPartialMetaLead — Recover a historical Meta lead that has incomplete contact
  * information (e.g. email-only or phone+trade-only). Unlike recoverManualMetaLead, this
- * function does not require all four contact fields and gracefully handles single-channel
+ * function does not require both email and phone and gracefully handles single-channel
  * leads — it only sends via the available channel and schedules follow-ups accordingly.
  *
  * Idempotency:
@@ -2103,6 +2103,7 @@ async function recoverPartialMetaLead(leadData = {}) {
     .digest('hex')
     .slice(0, 24);
 
+  // metaLeadId uses a lowercase prefix; leadUniqueId uses uppercase — mirrors recoverManualMetaLead.
   const metaLeadIdVal = `recovered-partial-${identityHash}`;
   const leadUniqueIdVal = `RECOVERED-PARTIAL-${identityHash}`;
 
