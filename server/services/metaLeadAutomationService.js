@@ -1160,6 +1160,12 @@ async function createOrUpdateLeadFromMeta(change) {
   const state = pickField(fields, ['state', 'region']);
   const zipCode = pickField(fields, ['zip', 'zipcode', 'postal_code']);
 
+  const missingFields = [];
+  if (!phone) missingFields.push('phone');
+  if (!email) missingFields.push('email');
+  if (!trade) missingFields.push('trade');
+  const profileIncomplete = missingFields.length > 0;
+
   const lead = await MetaLead.create({
     leadUniqueId: `META-${metaLeadId}`,
     metaLeadId,
@@ -1172,6 +1178,8 @@ async function createOrUpdateLeadFromMeta(change) {
     city,
     state,
     zipCode,
+    profileIncomplete,
+    missingFields,
     submissionTimestamp: parseDate(enriched.data?.created_time) || new Date(),
     campaign: {
       campaignId: enriched.data?.campaign_id || '',
@@ -2875,6 +2883,21 @@ async function retryUnprocessedWebhookEvents() {
 // ── Lead completeness classification ────────────────────────────────────────
 
 /**
+ * Return the stored `missingFields` array for a lead document when it is
+ * non-empty, otherwise fall back to the provided `fallback` array (e.g. the
+ * freshly-computed list derived from raw Meta field data).
+ *
+ * @param {object} lead     - MetaLead document (or plain object).
+ * @param {string[]} fallback - Fallback array if the document has none.
+ * @returns {string[]}
+ */
+function resolveMissingFields(lead, fallback = []) {
+  return Array.isArray(lead.missingFields) && lead.missingFields.length > 0
+    ? lead.missingFields
+    : fallback;
+}
+
+/**
  * Determine whether an existing MetaLead has completed all applicable workflow
  * steps.  Returns 'ALREADY_COMPLETE', 'EXISTING_INCOMPLETE', or 'UNREACHABLE'.
  */
@@ -2969,6 +2992,8 @@ const FULL_RECONCILIATION_FORM_ID =
 
 /** Maximum number of individual lead results stored in a MetaReconciliationRun document. */
 const MAX_STORED_RESULTS = 200;
+/** Milliseconds per day — used for date-range calculations. */
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /** Maximum backoff delay for webhook event retries (ms). */
 const MAX_RETRY_DELAY_MS = 10 * 60000; // 10 minutes
 /** Age cutoff — only retry webhook events older than this (ms). */
@@ -2986,13 +3011,16 @@ const STALE_LEAD_THRESHOLD_MS = 2 * 60000; // 2 minutes
  * @param {string} [options.accessToken] Override the default page access token.
  * @param {string} [options.pageId]      Override the default page ID.
  * @param {string} [options.triggeredBy] 'scheduled' | 'admin' | 'api'
+ * @param {number} [options.daysBack]    How many days back to reconcile (default: 30). Leads older
+ *                                       than this threshold are skipped. Set to 0 to process all.
  * @returns {Promise<object>} Reconciliation summary.
  */
 async function performFullMetaReconciliation({
   formId = FULL_RECONCILIATION_FORM_ID,
   accessToken = '',
   pageId = '',
-  triggeredBy = 'scheduled'
+  triggeredBy = 'scheduled',
+  daysBack = 30
 } = {}) {
   const normalizedFormId = String(formId || '').trim();
   if (!normalizedFormId) throw new Error('formId is required');
@@ -3055,18 +3083,37 @@ async function performFullMetaReconciliation({
 
     summary.totalFromMeta = metaLeads.length;
 
+    // Apply 30-day lookback filter client-side (Meta Graph API has no native date filter).
+    const sinceDate = daysBack > 0 ? new Date(Date.now() - daysBack * MS_PER_DAY) : null;
+    if (sinceDate) {
+      metaLeads = metaLeads.filter((l) => {
+        const ts = parseDate(l.created_time);
+        return !ts || ts >= sinceDate;
+      });
+      console.log(`[META_RECONCILE] ${metaLeads.length} leads within last ${daysBack} days (of ${summary.totalFromMeta} total)`);
+    }
+
     // 2. Process each lead.
     for (const metaLead of metaLeads) {
       const metaLeadId = String(metaLead.id || '');
       if (!metaLeadId) continue;
 
+      const submittedAt = parseDate(metaLead.created_time) || null;
       const fields = mapFieldData(metaLead.field_data || []);
       const email = pickField(fields, ['email', 'email_address']).trim().toLowerCase();
       const rawPhone = pickField(fields, ['phone_number', 'phone', 'mobile_phone']);
       const phone = normalizePhone(rawPhone);
+      const trade = pickField(fields, ['trade', 'service', 'service_type']);
       const firstName = pickField(fields, ['first_name', 'firstname', 'full_name']);
       const lastName = pickField(fields, ['last_name', 'lastname']);
       const name = `${firstName} ${lastName}`.trim() || email || phone || metaLeadId;
+
+      // Compute profile completeness from the raw Meta data.
+      const leadMissingFields = [];
+      if (!phone) leadMissingFields.push('phone');
+      if (!email) leadMissingFields.push('email');
+      if (!trade) leadMissingFields.push('trade');
+      const leadProfileIncomplete = leadMissingFields.length > 0;
 
       const leadResult = {
         metaLeadId,
@@ -3087,7 +3134,10 @@ async function performFullMetaReconciliation({
         nextSmsFollowUpAt: null,
         nextEmailFollowUpAt: null,
         signupUrl: CANONICAL_PRO_SIGNUP_URL,
-        reason: null
+        reason: null,
+        submittedAt,
+        profileIncomplete: leadProfileIncomplete,
+        missingFields: leadMissingFields
       };
 
       try {
@@ -3103,6 +3153,9 @@ async function performFullMetaReconciliation({
         if (existingLead) {
           leadResult.leadId = String(existingLead._id);
           leadResult.inviteCode = existingLead.invitationCode || null;
+          // Merge stored profile flags, falling back to freshly computed values.
+          leadResult.profileIncomplete = existingLead.profileIncomplete ?? leadProfileIncomplete;
+          leadResult.missingFields = resolveMissingFields(existingLead, leadMissingFields);
 
           const completeness = classifyLeadCompleteness(existingLead);
 
@@ -3177,6 +3230,8 @@ async function performFullMetaReconciliation({
               leadResult.recoveryMethod = 'META_GRAPH';
               leadResult.leadId = String(newLead._id);
               leadResult.inviteCode = newLead.invitationCode || null;
+              leadResult.profileIncomplete = newLead.profileIncomplete ?? leadProfileIncomplete;
+              leadResult.missingFields = resolveMissingFields(newLead, leadMissingFields);
 
               const lastSms = Array.isArray(newLead.smsHistory) && newLead.smsHistory.length
                 ? newLead.smsHistory.filter((h) => h.direction === 'outbound').slice(-1)[0]
