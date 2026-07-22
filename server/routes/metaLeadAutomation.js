@@ -180,28 +180,6 @@ adminRouter.get('/', async (req, res) => {
   }
 });
 
-// Temporary auth diagnostic endpoint is disabled after successful production
-// verification. Returning 410 avoids accidental fall-through into :id handlers.
-adminRouter.get('/auth-diagnostic', (_req, res) => {
-  return res.status(410).json({
-    ok: false,
-    disabled: true,
-    reason: 'Temporary auth diagnostic endpoint has been disabled.'
-  });
-});
-
-// Temporary one-time retry endpoint is disabled after successful production
-// verification to prevent further operational use.
-adminRouter.post(
-  '/retry-failed-initial-sms-20260719',
-  adminMutationRateLimit,
-  async (_req, res) => res.status(410).json({
-    ok: false,
-    disabled: true,
-    reason: 'Temporary retry endpoint has been disabled after successful 2026-07-19 recovery verification.'
-  })
-);
-
 // GET /api/admin/meta-leads/:id  (must come after all fixed-path GET routes)
 adminRouter.get('/:id', async (req, res) => {
   try {
