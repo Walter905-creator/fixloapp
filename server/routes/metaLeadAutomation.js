@@ -4,6 +4,7 @@ const requireAuth = require('../middleware/requireAuth');
 const requireAdmin = require('../middleware/requireAdmin');
 const {
   CANONICAL_PRO_SIGNUP_URL,
+  FULL_RECONCILIATION_FORM_ID,
   getStatusCallbackUrl,
   getSettings,
   saveSettings,
@@ -20,7 +21,13 @@ const {
   getLeadDetails,
   computeDashboardMetrics,
   performManualAction,
-  recoverHistoricalMetaLeadsByForm
+  recoverHistoricalMetaLeadsByForm,
+  saveWebhookEvent,
+  markWebhookEventProcessed,
+  markWebhookEventFailed,
+  performFullMetaReconciliation,
+  getLastReconciliationRun,
+  notifyAdmins
 } = require('../services/metaLeadAutomationService');
 
 const router = express.Router();
@@ -60,22 +67,52 @@ router.get('/webhook/meta-leads', webhookRateLimit, (req, res) => {
 });
 
 router.post('/webhook/meta-leads', webhookRateLimit, async (req, res) => {
+  // Persist the raw payload to MongoDB FIRST so a server restart cannot lose a
+  // lead.  The 200 response is returned immediately after signature verification;
+  // processing then continues asynchronously.
+  let eventDoc = null;
   try {
     const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body || {}));
-    const signature = req.headers['x-hub-signature-256'];
+    const signature = req.headers['x-hub-signature-256'] || '';
 
     if (!verifyMetaSignature(rawBody, signature)) {
       return res.status(401).json({ ok: false, error: 'Invalid Meta signature' });
     }
 
     const parsed = JSON.parse(rawBody.toString('utf8'));
-    const result = await processMetaWebhookPayload(parsed);
 
-    return res.status(200).json({ ok: true, ...result });
+    // Write durable event record before any processing.
+    eventDoc = await saveWebhookEvent(parsed, signature);
+
+    // Return 200 immediately — Meta does not wait for processing.
+    res.status(200).json({ ok: true });
+
+    // Process asynchronously so a slow/failing pipeline cannot block the response.
+    setImmediate(async () => {
+      try {
+        const result = await processMetaWebhookPayload(parsed);
+        await markWebhookEventProcessed(eventDoc?._id, result);
+      } catch (asyncError) {
+        console.error(`[META_WEBHOOK] Async processing failed: ${asyncError.message}`);
+        await markWebhookEventFailed(eventDoc?._id, asyncError.message);
+        notifyAdmins(
+          'webhook_error',
+          'Meta Webhook — Processing Failed',
+          `Async processing of a Meta leadgen webhook event failed: ${asyncError.message}`,
+          eventDoc?._id || null,
+          'MetaWebhookEvent'
+        ).catch(notifyErr => console.error('[META_WEBHOOK] Failed to notify admins:', notifyErr.message));
+      }
+    });
   } catch (error) {
-    return res.status(500).json({ ok: false, error: error.message });
+    if (eventDoc?._id) markWebhookEventFailed(eventDoc._id, error.message).catch(() => {});
+    // Only send an error response if we haven't already responded.
+    if (!res.headersSent) {
+      return res.status(500).json({ ok: false, error: error.message });
+    }
   }
 });
+
 
 router.post('/webhook/twilio/meta-leads/status', webhookRateLimit, express.urlencoded({ extended: false }), async (req, res) => {
   // Validate Twilio signature to reject spoofed requests.
@@ -173,6 +210,32 @@ adminRouter.post('/jobs/reconcile/run', adminMutationRateLimit, async (_req, res
   }
 });
 
+// POST /api/admin/meta-leads/jobs/meta-reconcile/run
+// Full production reconciliation — fetches every available Meta lead for the
+// configured form, compares against MongoDB, imports missing, completes
+// incomplete.  Idempotent and safe to trigger manually.
+adminRouter.post('/jobs/meta-reconcile/run', adminMutationRateLimit, async (req, res) => {
+  try {
+    const formId = String(req.body?.formId || FULL_RECONCILIATION_FORM_ID).trim();
+    const result = await performFullMetaReconciliation({ formId, triggeredBy: 'admin' });
+    return res.json({ ok: true, result });
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+// GET /api/admin/meta-leads/reconciliation/last
+// Returns the most recent full reconciliation run and the next scheduled time.
+adminRouter.get('/reconciliation/last', async (req, res) => {
+  try {
+    const formId = String(req.query?.formId || FULL_RECONCILIATION_FORM_ID).trim();
+    const data = await getLastReconciliationRun(formId);
+    return res.json({ ok: true, ...data });
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
 // GET /api/admin/meta-leads  (list)
 adminRouter.get('/', async (req, res) => {
   try {
@@ -254,3 +317,4 @@ adminRouter.post('/:id/actions/:action', adminMutationRateLimit, async (req, res
 router.use('/api/admin/meta-leads', adminRouter);
 
 module.exports = router;
+
