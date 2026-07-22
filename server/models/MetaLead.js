@@ -84,7 +84,7 @@ const smsStateSchema = new mongoose.Schema({
   deliveredAt: { type: Date, default: null }
 }, { _id: false });
 
-const emailStateSchema = new mongoose.Schema({
+const emailChannelSchema = new mongoose.Schema({
   attempted: { type: Boolean, default: false },
   messageId: { type: String, default: null },
   status: { type: String, default: 'pending' },
@@ -155,7 +155,7 @@ const metaLeadSchema = new mongoose.Schema({
   smsOptInAt: { type: Date, default: null },
   contactability: { type: contactabilitySchema, default: () => ({}) },
   sms: { type: smsStateSchema, default: () => ({}) },
-  email: { type: emailStateSchema, default: () => ({}) },
+  emailChannel: { type: emailChannelSchema, default: () => ({}) },
   followUp: { type: followUpSchema, default: () => ({}) },
   assignedRecruiter: { type: String, default: '' },
   notes: { type: String, default: '' },

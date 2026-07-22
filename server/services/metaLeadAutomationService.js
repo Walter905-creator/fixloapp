@@ -390,6 +390,8 @@ async function sendLeadSms(lead, templateKey, settings, options = {}) {
   const stage = options.stage || templateKey;
   const force = Boolean(options.force);
   const persist = options.persist !== false;
+  const sendSmsImpl = options.sendSmsImpl || sendSms;
+  const logEventFn = options.logEventFn || logEvent;
 
   if (!isSmsChannelAvailable(lead, { force })) {
     console.log(`[META_SMS] Follow-up skipped: reason=${lead.smsOptOut && !force ? 'opted_out' : 'channel_unavailable'} lead=${lead._id}`);
@@ -443,7 +445,7 @@ async function sendLeadSms(lead, templateKey, settings, options = {}) {
     if (persist) await lead.save();
 
     console.log(`[META_SMS] Initial send accepted lead=${lead._id} sid=${twilioRes.sid || ''}`);
-    await logEvent(lead._id, 'sms_sent', 'sms', 'SMS sent', `Template ${templateKey}`, {
+    await logEventFn(lead._id, 'sms_sent', 'sms', 'SMS sent', `Template ${templateKey}`, {
       sid: twilioRes.sid,
       status: normalizedStatus,
       templateKey,
@@ -478,7 +480,7 @@ async function sendLeadSms(lead, templateKey, settings, options = {}) {
     if (persist) await lead.save();
 
     console.log(`[META_SMS] Initial send failed lead=${lead._id} stage=${stage} reason=${error.message}`);
-    await logEvent(lead._id, 'sms_failed', 'sms', 'SMS failed', error.message, {
+    await logEventFn(lead._id, 'sms_failed', 'sms', 'SMS failed', error.message, {
       templateKey,
       followUpStage: stage,
       idempotencyKey,
@@ -494,6 +496,7 @@ async function sendLeadEmail(lead, templateKey, settings, options = {}) {
   const persist = options.persist !== false;
   const sendEmailImpl = options.sendEmailImpl || ((msg) => sgMail.send(msg));
   const ensureSendGridImpl = options.ensureSendGridImpl || ensureSendGrid;
+  const logEventFn = options.logEventFn || logEvent;
 
   if (!isEmailChannelAvailable(lead, { force })) {
     console.log(`[META_EMAIL] Follow-up skipped: reason=${hasReachableEmail(lead) ? 'unsubscribed' : 'channel_unavailable'} lead=${lead._id}`);
@@ -537,14 +540,14 @@ async function sendLeadEmail(lead, templateKey, settings, options = {}) {
     const messageId = response?.headers?.['x-message-id'] || null;
 
     lead.emailStatus = 'processed';
-    lead.email = {
-      ...(lead.email || {}),
+    lead.emailChannel = {
+      ...(lead.emailChannel || {}),
       attempted: true,
       messageId,
       status: 'processed',
       error: null,
       sentAt: new Date(),
-      deliveredAt: lead.email?.deliveredAt || null
+      deliveredAt: lead.emailChannel?.deliveredAt || null
     };
     lead.emailHistory.push({
       messageId,
@@ -559,7 +562,7 @@ async function sendLeadEmail(lead, templateKey, settings, options = {}) {
     if (persist) await lead.save();
 
     console.log(`[META_EMAIL] Initial send accepted lead=${lead._id} messageId=${messageId || ''}`);
-    await logEvent(lead._id, 'email_sent', 'email', 'Email sent', `Template ${templateKey}`, {
+    await logEventFn(lead._id, 'email_sent', 'email', 'Email sent', `Template ${templateKey}`, {
       messageId,
       templateKey,
       followUpStage: stage,
@@ -568,8 +571,8 @@ async function sendLeadEmail(lead, templateKey, settings, options = {}) {
     return { success: true, messageId };
   } catch (error) {
     lead.emailStatus = 'pending';
-    lead.email = {
-      ...(lead.email || {}),
+    lead.emailChannel = {
+      ...(lead.emailChannel || {}),
       attempted: true,
       messageId: null,
       status: 'failed',
@@ -591,7 +594,7 @@ async function sendLeadEmail(lead, templateKey, settings, options = {}) {
     if (persist) await lead.save();
 
     console.log(`[META_EMAIL] Initial send failed lead=${lead._id} stage=${stage} reason=${error.message}`);
-    await logEvent(lead._id, 'email_failed', 'email', 'Email failed', error.message, {
+    await logEventFn(lead._id, 'email_failed', 'email', 'Email failed', error.message, {
       templateKey,
       followUpStage: stage,
       idempotencyKey
@@ -1688,7 +1691,7 @@ async function recoverHistoricalMetaLeadsByForm({
       fullName: target.fullName,
       email: target.email,
       phone: target.phone,
-      trade: target.trade || '',
+      trade: target.trade || undefined,
       formId: normalizedFormId,
       submittedAt: target.submittedAt,
       source: 'recovered_meta_lead',
@@ -1865,14 +1868,14 @@ async function handleSendGridEvents(events = []) {
     if (mappedStatus === 'click') lead.emailStatus = 'clicked';
     if (mappedStatus === 'bounce') lead.emailStatus = 'bounced';
     if (mappedStatus === 'unsubscribe') lead.emailStatus = 'unsubscribed';
-    lead.email = {
-      ...(lead.email || {}),
+    lead.emailChannel = {
+      ...(lead.emailChannel || {}),
       attempted: true,
-      messageId: history?.messageId || lead.email?.messageId || null,
+      messageId: history?.messageId || lead.emailChannel?.messageId || null,
       status: mappedStatus,
-      error: event.reason || lead.email?.error || null,
-      sentAt: lead.email?.sentAt || history?.sentAt || null,
-      deliveredAt: mappedStatus === 'delivered' ? new Date() : (lead.email?.deliveredAt || null)
+      error: event.reason || lead.emailChannel?.error || null,
+      sentAt: lead.emailChannel?.sentAt || history?.sentAt || null,
+      deliveredAt: mappedStatus === 'delivered' ? new Date() : (lead.emailChannel?.deliveredAt || null)
     };
     if (mappedStatus === 'unsubscribe') {
       lead.followUp.emailEnabled = false;
@@ -1954,7 +1957,7 @@ async function auditMetaLeadChannelCoverage(limit = 500) {
       initialSmsStatus: smsStage?.status || lead.smsStatus || 'not_sent',
       twilioSid: smsStage?.messageSid || lead.sms?.messageSid || null,
       initialEmailStatus: emailStage?.status || lead.emailStatus || 'not_sent',
-      sendGridMessageId: emailStage?.messageId || lead.email?.messageId || null,
+      sendGridMessageId: emailStage?.messageId || lead.emailChannel?.messageId || null,
       smsFollowUpsEnabled: Boolean(lead.followUp?.smsEnabled),
       emailFollowUpsEnabled: Boolean(lead.followUp?.emailEnabled),
       nextSmsFollowUpAt: lead.followUp?.nextSmsFollowUpAt || null,
@@ -2817,4 +2820,3 @@ module.exports = {
   recoverPartialMetaLead,
   recoverHistoricalMetaLeadsByForm
 };
-  const sendSmsImpl = options.sendSmsImpl || sendSms;

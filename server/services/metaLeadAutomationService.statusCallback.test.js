@@ -24,15 +24,15 @@ function createLead(overrides = {}) {
     _id: overrides._id || 'lead-1',
     firstName: overrides.firstName || 'Test',
     lastName: overrides.lastName || 'Lead',
-    email: overrides.email || 'test@example.com',
-    phone: overrides.phone || '+12025550100',
+    email: overrides.email === undefined ? 'test@example.com' : overrides.email,
+    phone: overrides.phone === undefined ? '+12025550100' : overrides.phone,
     invitationCode: overrides.invitationCode === undefined ? 'FIXLO1234' : overrides.invitationCode,
     smsStatus: overrides.smsStatus || 'failed',
     emailStatus: overrides.emailStatus || 'pending',
     smsOptOut: overrides.smsOptOut || false,
     contactability: overrides.contactability || { smsAvailable: false, emailAvailable: false },
     sms: overrides.sms || { attempted: false, messageSid: null, status: 'pending', errorCode: null, errorMessage: null, sentAt: null, deliveredAt: null },
-    email: overrides.email || { attempted: false, messageId: null, status: 'pending', error: null, sentAt: null, deliveredAt: null },
+    emailChannel: overrides.emailChannel || { attempted: false, messageId: null, status: 'pending', error: null, sentAt: null, deliveredAt: null },
     followUp: overrides.followUp || {
       step: 0,
       smsStep: 0,
@@ -436,11 +436,13 @@ test('sends immediate SMS and email and schedules both follow-up channels when b
   const smsResult = await sendLeadSms(lead, 'immediate', settings, {
     stage: 'immediate',
     persist: false,
+    logEventFn: async () => {},
     sendSmsImpl: async () => ({ sid: 'SM' + '1'.repeat(32), status: 'queued' })
   });
   const emailResult = await sendLeadEmail(lead, 'immediate', settings, {
     stage: 'immediate',
     persist: false,
+    logEventFn: async () => {},
     ensureSendGridImpl: () => true,
     sendEmailImpl: async () => ([{ headers: { 'x-message-id': 'email-1' } }])
   });
@@ -454,7 +456,11 @@ test('sends immediate SMS and email and schedules both follow-up channels when b
 });
 
 test('phone-only lead sends SMS, skips email, and schedules SMS-only follow-ups', async () => {
-  const lead = createLead({ _id: 'sms-only', phone: '+12025550124', email: '' });
+  const lead = {
+    ...createLead({ _id: 'sms-only', phone: '+12025550124' }),
+    email: '',
+    emailHistory: []
+  };
   const settings = {
     followUpTimingsHours: [24, 72, 168, 336],
     smsTemplates: { immediate: 'Use {{signupLink}}' },
@@ -464,9 +470,10 @@ test('phone-only lead sends SMS, skips email, and schedules SMS-only follow-ups'
   const smsResult = await sendLeadSms(lead, 'immediate', settings, {
     stage: 'immediate',
     persist: false,
+    logEventFn: async () => {},
     sendSmsImpl: async () => ({ sid: 'SM' + '2'.repeat(32), status: 'queued' })
   });
-  const emailResult = await sendLeadEmail(lead, 'immediate', settings, { stage: 'immediate', persist: false, ensureSendGridImpl: () => true });
+  const emailResult = await sendLeadEmail(lead, 'immediate', settings, { stage: 'immediate', persist: false, logEventFn: async () => {}, ensureSendGridImpl: () => true });
   const init = initializeFollowUpForAvailableChannels(lead, settings, new Date('2026-07-22T00:00:00.000Z'));
 
   assert.equal(smsResult.success, true);
@@ -485,10 +492,11 @@ test('email-only lead sends email, skips SMS, and schedules email-only follow-up
     emailTemplates: { immediateSubject: 'Hi', immediateBody: 'Go {{signupLink}}', reminderSubject: 'R', reminderBody: 'R {{signupLink}}' },
     supportEmail: 'support@fixloapp.com'
   };
-  const smsResult = await sendLeadSms(lead, 'immediate', settings, { stage: 'immediate', persist: false });
+  const smsResult = await sendLeadSms(lead, 'immediate', settings, { stage: 'immediate', persist: false, logEventFn: async () => {} });
   const emailResult = await sendLeadEmail(lead, 'immediate', settings, {
     stage: 'immediate',
     persist: false,
+    logEventFn: async () => {},
     ensureSendGridImpl: () => true,
     sendEmailImpl: async () => ([{ headers: { 'x-message-id': 'email-2' } }])
   });
@@ -513,11 +521,13 @@ test('records SMS failure while preserving successful email result', async () =>
   const smsResult = await sendLeadSms(lead, 'immediate', settings, {
     stage: 'immediate',
     persist: false,
+    logEventFn: async () => {},
     sendSmsImpl: async () => { throw new Error('sms_down'); }
   });
   const emailResult = await sendLeadEmail(lead, 'immediate', settings, {
     stage: 'immediate',
     persist: false,
+    logEventFn: async () => {},
     ensureSendGridImpl: () => true,
     sendEmailImpl: async () => ([{ headers: { 'x-message-id': 'email-3' } }])
   });
@@ -525,7 +535,7 @@ test('records SMS failure while preserving successful email result', async () =>
   assert.equal(smsResult.success, false);
   assert.equal(lead.sms.status, 'failed');
   assert.equal(emailResult.success, true);
-  assert.equal(lead.email.status, 'processed');
+  assert.equal(lead.emailChannel.status, 'processed');
 });
 
 test('records email failure while preserving successful SMS result', async () => {
@@ -539,11 +549,13 @@ test('records email failure while preserving successful SMS result', async () =>
   const smsResult = await sendLeadSms(lead, 'immediate', settings, {
     stage: 'immediate',
     persist: false,
+    logEventFn: async () => {},
     sendSmsImpl: async () => ({ sid: 'SM' + '3'.repeat(32), status: 'queued' })
   });
   const emailResult = await sendLeadEmail(lead, 'immediate', settings, {
     stage: 'immediate',
     persist: false,
+    logEventFn: async () => {},
     ensureSendGridImpl: () => true,
     sendEmailImpl: async () => { throw new Error('email_down'); }
   });
@@ -551,7 +563,7 @@ test('records email failure while preserving successful SMS result', async () =>
   assert.equal(smsResult.success, true);
   assert.equal(lead.sms.status, 'queued');
   assert.equal(emailResult.success, false);
-  assert.equal(lead.email.status, 'failed');
+  assert.equal(lead.emailChannel.status, 'failed');
 });
 
 test('prevents duplicate sends per channel stage', async () => {
@@ -573,11 +585,13 @@ test('prevents duplicate sends per channel stage', async () => {
   const smsResult = await sendLeadSms(lead, 'immediate', settings, {
     stage: 'immediate',
     persist: false,
+    logEventFn: async () => {},
     sendSmsImpl: async () => { smsCalls += 1; return { sid: 'SM' + '5'.repeat(32), status: 'queued' }; }
   });
   const emailResult = await sendLeadEmail(lead, 'immediate', settings, {
     stage: 'immediate',
     persist: false,
+    logEventFn: async () => {},
     ensureSendGridImpl: () => true,
     sendEmailImpl: async () => { emailCalls += 1; return [{ headers: { 'x-message-id': 'email-dup-2' } }]; }
   });
@@ -590,18 +604,21 @@ test('prevents duplicate sends per channel stage', async () => {
 
 test('keeps SMS follow-ups enabled when email unsubscribes', async () => {
   const lead = createLead({
-    _id: 'unsubscribe-case',
+    _id: '64b0c0a1f5a8d7b3c1e2f901',
     phone: '+12025550128',
     email: 'sub@example.com',
     followUp: { step: 0, smsStep: 0, emailStep: 0, status: 'active', smsEnabled: true, emailEnabled: true, nextFollowUpAt: null, nextSmsFollowUpAt: new Date('2026-07-23T00:00:00.000Z'), nextEmailFollowUpAt: new Date('2026-07-23T00:00:00.000Z') },
     emailHistory: [{ messageId: 'email-u-1', status: 'processed' }]
   });
   const model = require('../models/MetaLead');
+  const eventModel = require('../models/MetaLeadEvent');
   const findByIdMock = mock.method(model, 'findById', async () => lead);
   const findOneMock = mock.method(model, 'findOne', async () => null);
+  const eventMock = mock.method(eventModel, 'create', async () => ({}));
   await handleSendGridEvents([{ event: 'unsubscribe', sg_message_id: 'email-u-1', custom_args: { metaLeadId: lead._id } }]);
   findByIdMock.mock.restore();
   findOneMock.mock.restore();
+  eventMock.mock.restore();
   assert.equal(lead.followUp.smsEnabled, true);
   assert.equal(lead.followUp.emailEnabled, false);
 });
@@ -654,11 +671,13 @@ test('uses canonical pro signup URL in SMS and email content', async () => {
   await sendLeadSms(lead, 'immediate', settings, {
     stage: 'immediate',
     persist: false,
+    logEventFn: async () => {},
     sendSmsImpl: async (_phone, body) => { smsBody = body; return { sid: 'SM' + '6'.repeat(32), status: 'queued' }; }
   });
   await sendLeadEmail(lead, 'immediate', settings, {
     stage: 'immediate',
     persist: false,
+    logEventFn: async () => {},
     ensureSendGridImpl: () => true,
     sendEmailImpl: async (msg) => { emailHtml = msg.html; return [{ headers: { 'x-message-id': 'email-6' } }]; }
   });
