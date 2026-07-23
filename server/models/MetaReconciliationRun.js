@@ -38,6 +38,8 @@ const reconciliationResultSchema = new mongoose.Schema({
 
 const metaReconciliationRunSchema = new mongoose.Schema({
   formId: { type: String, required: true, index: true },
+  formName: { type: String, default: '' },
+  pageId: { type: String, default: '', index: true },
   triggeredBy: {
     type: String,
     enum: ['scheduled', 'admin', 'api'],
@@ -53,6 +55,8 @@ const metaReconciliationRunSchema = new mongoose.Schema({
   completedAt: { type: Date, default: null },
   graphError: { type: String, default: null },
   totalFromMeta: { type: Number, default: 0 },
+  totalConsidered: { type: Number, default: 0 },
+  latestLeadTimestamp: { type: Date, default: null },
   alreadyComplete: { type: Number, default: 0 },
   existingIncomplete: { type: Number, default: 0 },
   newlyRecovered: { type: Number, default: 0 },
