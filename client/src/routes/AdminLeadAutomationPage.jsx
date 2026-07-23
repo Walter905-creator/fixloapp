@@ -204,8 +204,8 @@ export default function AdminLeadAutomationPage() {
             </label>
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div>
-                <p className="text-xs text-gray-500 mb-1">Target form ID</p>
-                <input aria-label="Target form ID" className="w-full border rounded px-2 py-1" value={settings.targetFormId || ''} onChange={(e) => setSettings((p) => ({ ...p, targetFormId: e.target.value.replace(/\D+/g, '') }))} />
+                <label htmlFor="meta-target-form-id" className="block text-xs text-gray-500 mb-1">Target form ID</label>
+                <input id="meta-target-form-id" aria-label="Target form ID" className="w-full border rounded px-2 py-1" value={settings.targetFormId || ''} onChange={(e) => setSettings((p) => ({ ...p, targetFormId: e.target.value.replace(/\D+/g, '') }))} />
               </div>
               <div>
                 <p className="text-xs text-gray-500 mb-1">Code prefix</p>
@@ -224,12 +224,12 @@ export default function AdminLeadAutomationPage() {
                 <input className="w-full border rounded px-2 py-1" value={settings.supportPhone || ''} onChange={(e) => setSettings((p) => ({ ...p, supportPhone: e.target.value }))} />
               </div>
               <div>
-                <p className="text-xs text-gray-500 mb-1">Meta data access expires</p>
-                <input aria-label="Meta data access expiration date" type="date" className="w-full border rounded px-2 py-1" value={settings.dataAccessExpiresAt ? String(settings.dataAccessExpiresAt).slice(0, 10) : ''} onChange={(e) => setSettings((p) => ({ ...p, dataAccessExpiresAt: e.target.value || null }))} />
+                <label htmlFor="meta-data-access-expires" className="block text-xs text-gray-500 mb-1">Meta data access expires</label>
+                <input id="meta-data-access-expires" aria-label="Meta data access expiration date" type="date" className="w-full border rounded px-2 py-1" value={settings.dataAccessExpiresAt ? String(settings.dataAccessExpiresAt).slice(0, 10) : ''} onChange={(e) => setSettings((p) => ({ ...p, dataAccessExpiresAt: e.target.value || null }))} />
               </div>
               <div>
-                <p className="text-xs text-gray-500 mb-1">Warn before expiry (days)</p>
-                <input aria-label="Warn before expiry days" type="number" min="1" className="w-full border rounded px-2 py-1" value={settings.dataAccessWarningDays || 14} onChange={(e) => setSettings((p) => ({ ...p, dataAccessWarningDays: Number(e.target.value || 14) }))} />
+                <label htmlFor="meta-data-access-warning-days" className="block text-xs text-gray-500 mb-1">Warn before expiry (days)</label>
+                <input id="meta-data-access-warning-days" aria-label="Warn before expiry days" type="number" min="1" className="w-full border rounded px-2 py-1" value={settings.dataAccessWarningDays || 14} onChange={(e) => setSettings((p) => ({ ...p, dataAccessWarningDays: Number(e.target.value || 14) }))} />
               </div>
             </div>
             <div className="space-y-2 text-sm">
@@ -277,6 +277,11 @@ export default function AdminLeadAutomationPage() {
               {metaConnection?.directFormLookup?.error && (
                 <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
                   Direct form lookup: {metaConnection.directFormLookup.error}
+                </div>
+              )}
+              {metaConnection?.pageFormsError && (
+                <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded px-2 py-1">
+                  Page forms lookup: {metaConnection.pageFormsError}
                 </div>
               )}
               <div className="overflow-auto">

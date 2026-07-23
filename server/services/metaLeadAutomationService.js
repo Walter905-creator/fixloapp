@@ -1190,6 +1190,7 @@ async function getMetaLeadFormDiagnostics({
     targetFormId: resolvedFormId || null,
     classification: null,
     warning,
+    pageFormsError: null,
     accessibleForms: [],
     targetForm: null,
     directFormLookup: {
@@ -1206,7 +1207,7 @@ async function getMetaLeadFormDiagnostics({
       pageSize
     });
   } catch (error) {
-    diagnostics.directFormLookup.error = getMetaGraphErrorMessage(error);
+    diagnostics.pageFormsError = getMetaGraphErrorMessage(error);
     diagnostics.classification = isUnsupportedMetaEndpointError(error)
       ? 'FORM_ENDPOINT_NOT_SUPPORTED'
       : 'FORM_ACCESS_BLOCKED_FOR_ANOTHER_REASON';
