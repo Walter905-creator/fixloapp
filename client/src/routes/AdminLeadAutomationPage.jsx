@@ -12,12 +12,15 @@ function authHeaders() {
 
 const defaultSettings = {
   enabled: true,
+  targetFormId: '',
   invitationCodePrefix: 'FIXLO',
   invitationCodeLength: 8,
   invitationCodeExpiryDays: 30,
   signupLink: 'https://fixloapp.com/pros',
   supportEmail: 'support@fixloapp.com',
   supportPhone: '',
+  dataAccessExpiresAt: null,
+  dataAccessWarningDays: 14,
   followUpTimingsHours: [24, 72, 168, 336],
   automaticReminders: true,
   ownerNotifications: {
@@ -32,6 +35,7 @@ const defaultSettings = {
 
 export default function AdminLeadAutomationPage() {
   const [metrics, setMetrics] = useState(null);
+  const [metaConnection, setMetaConnection] = useState(null);
   const [leads, setLeads] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
   const [settings, setSettings] = useState(defaultSettings);
@@ -77,18 +81,21 @@ export default function AdminLeadAutomationPage() {
         ...(query.followUpStatus ? { followUpStatus: query.followUpStatus } : {})
       });
 
-      const [dashboardRes, leadsRes] = await Promise.all([
+      const [dashboardRes, leadsRes, metaFormsRes] = await Promise.all([
         fetch(`${API_BASE}/api/admin/meta-leads/dashboard`, { headers: authHeaders() }),
-        fetch(`${API_BASE}/api/admin/meta-leads?${searchParams.toString()}`, { headers: authHeaders() })
+        fetch(`${API_BASE}/api/admin/meta-leads?${searchParams.toString()}`, { headers: authHeaders() }),
+        fetch(`${API_BASE}/api/admin/meta-leads/meta/forms`, { headers: authHeaders() })
       ]);
 
-      if (!dashboardRes.ok || !leadsRes.ok) throw new Error('Failed to load lead automation data');
+      if (!dashboardRes.ok || !leadsRes.ok || !metaFormsRes.ok) throw new Error('Failed to load lead automation data');
 
       const dashboardData = await dashboardRes.json();
       const leadsData = await leadsRes.json();
+      const metaFormsData = await metaFormsRes.json();
 
       setMetrics(dashboardData.metrics || null);
       setSettings({ ...defaultSettings, ...(dashboardData.settings || {}) });
+      setMetaConnection(metaFormsData.ok ? metaFormsData : null);
       setLeads(leadsData.items || []);
       setPagination(leadsData.pagination || { page: 1, totalPages: 1, total: 0 });
     } catch (e) {
@@ -115,6 +122,7 @@ export default function AdminLeadAutomationPage() {
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to save settings');
       setSettings({ ...defaultSettings, ...(data.settings || {}) });
+      await loadDashboard(pagination.page || 1);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -122,12 +130,13 @@ export default function AdminLeadAutomationPage() {
     }
   };
 
-  const runJob = async (job) => {
+  const runJob = async (job, body = null) => {
     setError('');
     try {
       const res = await fetch(`${API_BASE}/api/admin/meta-leads/jobs/${job}/run`, {
         method: 'POST',
-        headers: authHeaders()
+        headers: authHeaders(),
+        body: body ? JSON.stringify(body) : undefined
       });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || `Failed to run ${job}`);
@@ -155,11 +164,23 @@ export default function AdminLeadAutomationPage() {
           <div className="flex gap-2">
             <button onClick={() => runJob('followups')} className="px-3 py-2 rounded border border-slate-300 text-sm">Run Follow-Ups</button>
             <button onClick={() => runJob('reconcile')} className="px-3 py-2 rounded border border-slate-300 text-sm">Run Reconcile</button>
+            <button onClick={() => runJob('meta-reconcile', { formId: settings.targetFormId || undefined, daysBack: 30 })} className="px-3 py-2 rounded border border-emerald-300 text-sm text-emerald-700">Run 30-Day Meta Reconcile</button>
             <button onClick={() => loadDashboard(pagination.page || 1)} className="px-3 py-2 rounded bg-blue-600 text-white text-sm">Refresh</button>
           </div>
         </div>
 
         {error && <div className="p-3 rounded border border-red-300 bg-red-50 text-red-700 text-sm">{error}</div>}
+        {metaConnection?.warning && (
+          <div className={`p-3 rounded border text-sm ${
+            metaConnection.warning.severity === 'error'
+              ? 'border-red-300 bg-red-50 text-red-700'
+              : metaConnection.warning.severity === 'warning'
+                ? 'border-amber-300 bg-amber-50 text-amber-800'
+                : 'border-sky-300 bg-sky-50 text-sky-800'
+          }`}>
+            {metaConnection.warning.message}
+          </div>
+        )}
 
         <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-3">
           {stats.map(([label, value]) => (
@@ -183,6 +204,10 @@ export default function AdminLeadAutomationPage() {
             </label>
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div>
+                <p className="text-xs text-gray-500 mb-1">Target form ID</p>
+                <input className="w-full border rounded px-2 py-1" value={settings.targetFormId || ''} onChange={(e) => setSettings((p) => ({ ...p, targetFormId: e.target.value.replace(/\D+/g, '') }))} />
+              </div>
+              <div>
                 <p className="text-xs text-gray-500 mb-1">Code prefix</p>
                 <input className="w-full border rounded px-2 py-1" value={settings.invitationCodePrefix || 'FIXLO'} onChange={(e) => setSettings((p) => ({ ...p, invitationCodePrefix: e.target.value.toUpperCase() }))} />
               </div>
@@ -197,6 +222,14 @@ export default function AdminLeadAutomationPage() {
               <div>
                 <p className="text-xs text-gray-500 mb-1">Support phone</p>
                 <input className="w-full border rounded px-2 py-1" value={settings.supportPhone || ''} onChange={(e) => setSettings((p) => ({ ...p, supportPhone: e.target.value }))} />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Meta data access expires</p>
+                <input type="date" className="w-full border rounded px-2 py-1" value={settings.dataAccessExpiresAt ? String(settings.dataAccessExpiresAt).slice(0, 10) : ''} onChange={(e) => setSettings((p) => ({ ...p, dataAccessExpiresAt: e.target.value || null }))} />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Warn before expiry (days)</p>
+                <input type="number" min="1" className="w-full border rounded px-2 py-1" value={settings.dataAccessWarningDays || 14} onChange={(e) => setSettings((p) => ({ ...p, dataAccessWarningDays: Number(e.target.value || 14) }))} />
               </div>
             </div>
             <div className="space-y-2 text-sm">
@@ -231,6 +264,48 @@ export default function AdminLeadAutomationPage() {
           </form>
 
           <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 p-4 space-y-3">
+            <div className="border border-slate-200 rounded-lg p-3 space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h2 className="font-semibold">Meta Form Access</h2>
+                  <p className="text-xs text-gray-500">Graph API {metaConnection?.graphApiVersion || '—'} · Page {metaConnection?.pageId || '—'}</p>
+                </div>
+                <div className="text-xs font-semibold text-slate-700">
+                  Classification: {metaConnection?.classification || '—'}
+                </div>
+              </div>
+              {metaConnection?.directFormLookup?.error && (
+                <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                  Direct form lookup: {metaConnection.directFormLookup.error}
+                </div>
+              )}
+              <div className="overflow-auto">
+                <table className="min-w-full text-xs">
+                  <thead>
+                    <tr className="border-b text-left text-gray-500">
+                      <th className="py-2">ID</th>
+                      <th className="py-2">Name</th>
+                      <th className="py-2">Status</th>
+                      <th className="py-2">Created</th>
+                      <th className="py-2">Page</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(metaConnection?.accessibleForms || []).map((form) => (
+                      <tr key={form.id} className={`border-b last:border-b-0 ${form.id === metaConnection?.targetFormId ? 'bg-emerald-50' : ''}`}>
+                        <td className="py-2 font-mono">{form.id}</td>
+                        <td className="py-2">{form.name || '—'}</td>
+                        <td className="py-2">{form.status || '—'}</td>
+                        <td className="py-2">{form.createdTime ? new Date(form.createdTime).toLocaleString() : '—'}</td>
+                        <td className="py-2 font-mono">{form.pageId || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {!metaConnection?.accessibleForms?.length && <p className="py-2 text-xs text-gray-500">No accessible forms returned.</p>}
+              </div>
+            </div>
+
             <div className="flex flex-wrap items-center gap-2">
               <input
                 value={query.search}

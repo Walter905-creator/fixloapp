@@ -20,6 +20,7 @@ const {
   auditMetaLeadChannelCoverage,
   getLeadDetails,
   computeDashboardMetrics,
+  buildMetaDataAccessWarning,
   performManualAction,
   recoverHistoricalMetaLeadsByForm,
   saveWebhookEvent,
@@ -27,6 +28,7 @@ const {
   markWebhookEventFailed,
   performFullMetaReconciliation,
   getLastReconciliationRun,
+  getMetaLeadFormDiagnostics,
   notifyAdmins
 } = require('../services/metaLeadAutomationService');
 
@@ -184,7 +186,12 @@ adminRouter.post('/settings', adminMutationRateLimit, async (req, res) => {
 adminRouter.get('/dashboard', async (_req, res) => {
   try {
     const [metrics, settings] = await Promise.all([computeDashboardMetrics(), getSettings()]);
-    return res.json({ ok: true, metrics, settings });
+    return res.json({
+      ok: true,
+      metrics,
+      settings,
+      metaConnectionWarning: buildMetaDataAccessWarning(settings)
+    });
   } catch (error) {
     return res.status(500).json({ ok: false, error: error.message });
   }
@@ -233,6 +240,22 @@ adminRouter.get('/reconciliation/last', async (req, res) => {
     const formId = String(req.query?.formId || FULL_RECONCILIATION_FORM_ID).trim();
     const data = await getLastReconciliationRun(formId);
     return res.json({ ok: true, ...data });
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+// GET /api/admin/meta-leads/meta/forms
+// Returns accessible forms for the configured page token and classifies the target form.
+adminRouter.get('/meta/forms', async (req, res) => {
+  try {
+    const settings = await getSettings();
+    const diagnostics = await getMetaLeadFormDiagnostics({
+      formId: String(req.query?.formId || settings.targetFormId || FULL_RECONCILIATION_FORM_ID || '').trim(),
+      pageId: String(req.query?.pageId || '').trim(),
+      settings
+    });
+    return res.json({ ok: true, ...diagnostics });
   } catch (error) {
     return res.status(500).json({ ok: false, error: error.message });
   }
@@ -319,4 +342,3 @@ adminRouter.post('/:id/actions/:action', adminMutationRateLimit, async (req, res
 router.use('/api/admin/meta-leads', adminRouter);
 
 module.exports = router;
-
