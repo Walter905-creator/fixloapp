@@ -162,6 +162,20 @@ const adminRouter = express.Router();
 adminRouter.use(requireAuth);
 adminRouter.use(requireAdmin);
 
+// Middleware: reject any :id that is not a valid MongoDB ObjectId so that
+// literal path segments (e.g. "auth-diagnostic") that were not caught by a
+// fixed route never reach Mongoose findById.
+function requireValidObjectId(req, res, next) {
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({
+      ok: false,
+      error: 'INVALID_ID',
+      message: 'Invalid Meta lead ID'
+    });
+  }
+  return next();
+}
+
 // GET /api/admin/meta-leads/settings
 adminRouter.get('/settings', async (_req, res) => {
   try {
@@ -361,14 +375,7 @@ adminRouter.get('/runs', async (req, res) => {
 
 // GET /api/admin/meta-leads/:id  (must come after all fixed-path GET routes)
 // Validates that :id is a legal MongoDB ObjectId before forwarding to Mongoose.
-adminRouter.get('/:id', async (req, res) => {
-  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-    return res.status(400).json({
-      ok: false,
-      error: 'INVALID_ID',
-      message: 'Invalid Meta lead ID'
-    });
-  }
+adminRouter.get('/:id', requireValidObjectId, async (req, res) => {
   try {
     const data = await getLeadDetails(req.params.id);
     if (!data) return res.status(404).json({ ok: false, error: 'Lead not found' });
@@ -380,14 +387,7 @@ adminRouter.get('/:id', async (req, res) => {
 
 // POST /api/admin/meta-leads/:id/actions/:action  (must come after all fixed-path POST routes)
 // Validates that :id is a legal MongoDB ObjectId before forwarding to Mongoose.
-adminRouter.post('/:id/actions/:action', adminMutationRateLimit, async (req, res) => {
-  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-    return res.status(400).json({
-      ok: false,
-      error: 'INVALID_ID',
-      message: 'Invalid Meta lead ID'
-    });
-  }
+adminRouter.post('/:id/actions/:action', requireValidObjectId, adminMutationRateLimit, async (req, res) => {
   try {
     const actionMap = {
       'resend-sms': 'resend_sms',

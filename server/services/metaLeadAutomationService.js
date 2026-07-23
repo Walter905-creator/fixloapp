@@ -2984,6 +2984,12 @@ async function completeExistingLead(lead, settings) {
 
 // ── Meta access diagnostics ───────────────────────────────────────────────────
 
+/** Meta Graph API OAuth error subcodes that indicate an invalid/expired token. */
+const TOKEN_INVALID_SUBCODES = new Set([458, 459, 460, 463, 467]);
+
+/** Regex to extract a permission name from Meta's "Missing permissions: X" error messages. */
+const MISSING_PERMISSION_PATTERN = /missing permissions?:\s*([a-z_,\s]+)/i;
+
 /**
  * Convert an Axios error from the Meta Graph API into a structured, sanitized
  * error object.  No tokens or secrets are included in the returned value.
@@ -3000,10 +3006,10 @@ function parseGraphError(err) {
   const subcode = Number(errData.error_subcode || 0);
   const type = errData.type || 'GraphError';
 
-  // Token errors: code 190 family.
-  const tokenInvalid = code === 190 || subcode === 458 || subcode === 459 || subcode === 460 || subcode === 463 || subcode === 467;
+  // Token errors: code 190 family or known invalid-token subcodes.
+  const tokenInvalid = code === 190 || TOKEN_INVALID_SUBCODES.has(subcode);
 
-  // Page-permission errors: code 200, 10, or permission-denied messages.
+  // Page-permission errors: code 200 or 10.
   const pageAccessDenied = code === 200 || code === 10;
 
   // Form / lead-access errors.
@@ -3017,8 +3023,7 @@ function parseGraphError(err) {
   // the optional required_permissions field that Meta sometimes includes.
   let missingPermission = errData.required_permissions || null;
   if (!missingPermission) {
-    // (#100) message: Missing permissions: leads_retrieval
-    const permMatch = message.match(/missing permissions?:\s*([a-z_,\s]+)/i);
+    const permMatch = message.match(MISSING_PERMISSION_PATTERN);
     if (permMatch) missingPermission = permMatch[1].trim();
   }
 
