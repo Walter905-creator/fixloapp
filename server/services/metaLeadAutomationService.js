@@ -3165,8 +3165,9 @@ async function completeExistingLead(lead, settings) {
 
 /** In-memory lock prevents concurrent runs on the same server instance. */
 let _fullReconciliationRunning = false;
-const _loggedStaleConfiguredForms = new Set();
+const _loggedStaleConfiguredForms = new Map();
 
+/** Legacy single-form env var kept for backward-compatible reads/admin defaults. */
 const FULL_RECONCILIATION_FORM_ID =
   process.env.META_LEAD_FORM_ID || '';
 
@@ -3174,6 +3175,8 @@ const FULL_RECONCILIATION_FORM_ID =
 const MAX_STORED_RESULTS = 200;
 /** Milliseconds per day — used for date-range calculations. */
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+/** Suppression TTL for repeated stale-form log spam. */
+const STALE_FORM_LOG_TTL_MS = 7 * MS_PER_DAY;
 /** Maximum backoff delay for webhook event retries (ms). */
 const MAX_RETRY_DELAY_MS = 10 * 60000; // 10 minutes
 /** Age cutoff — only retry webhook events older than this (ms). */
@@ -3213,19 +3216,30 @@ function buildReconciliationSummary({
 
 function logStaleConfiguredFormOnce(formId, classification, message) {
   const key = `${formId}:${classification}`;
+  const now = Date.now();
+  for (const [logKey, timestamp] of _loggedStaleConfiguredForms.entries()) {
+    if (now - timestamp > STALE_FORM_LOG_TTL_MS) _loggedStaleConfiguredForms.delete(logKey);
+  }
   if (_loggedStaleConfiguredForms.has(key)) return;
-  _loggedStaleConfiguredForms.add(key);
+  _loggedStaleConfiguredForms.set(key, now);
   console.warn(`[META_FORMS] Stale configured form ignored: ${formId} classification=${classification} reason=${message}`);
 }
 
 function clearStaleConfiguredFormLog(formId) {
   const prefix = `${formId}:`;
-  const matchingLogKeys = [..._loggedStaleConfiguredForms].filter((logKey) => logKey.startsWith(prefix));
+  const matchingLogKeys = [];
+  for (const logKey of _loggedStaleConfiguredForms.keys()) {
+    if (logKey.startsWith(prefix)) matchingLogKeys.push(logKey);
+  }
   for (const logKey of matchingLogKeys) {
     _loggedStaleConfiguredForms.delete(logKey);
   }
 }
 
+/**
+ * Mutate a lead's campaign form metadata when reconciliation identifies a newer
+ * source form association. Returns true when the lead document was modified.
+ */
 function syncLeadCampaignForm(existingLead, formId, formName) {
   const nextFormId = String(formId || '').trim();
   const nextFormName = String(formName || '').trim();
@@ -3241,6 +3255,10 @@ function syncLeadCampaignForm(existingLead, formId, formName) {
     formName: nextFormName || currentFormName
   };
   return true;
+}
+
+function deduplicateFormsById(forms = []) {
+  return [...new Map(forms.map((form) => [form.id, form])).values()];
 }
 
 async function performSingleMetaFormReconciliation({
@@ -3611,8 +3629,7 @@ async function resolveMetaReconciliationForms({
     activeForms,
     archivedForms,
     legacyConfiguredIds,
-    // Remove duplicate forms by ID while preserving the configured/discovered order.
-    selectedForms: [...new Map(selectedForms.map((item) => [item.id, item])).values()],
+    selectedForms: deduplicateFormsById(selectedForms),
     staleConfiguredForms
   };
 }
@@ -3720,7 +3737,9 @@ async function performFullMetaReconciliation({
 
 /**
  * Return the most recent MetaReconciliationRun for the given form, plus the
- * next scheduled run time (15-minute boundary).
+ * next scheduled run time (15-minute boundary). When formId is omitted and no
+ * legacy single-form env var is configured, the latest run across all forms is
+ * returned.
  */
 async function getLastReconciliationRun(formId = '') {
   const normalizedFormId = String(formId || FULL_RECONCILIATION_FORM_ID || '').trim();

@@ -187,6 +187,8 @@ test('auto-discovers active forms and continues when one form fails', async () =
   assert.equal(result.totals.totalFromMeta, 3);
   assert.equal(result.totals.existingIncomplete, 1);
   assert.equal(result.totals.failed, 1);
+  assert.equal(result.processedForms[1].lastError, 'Graph API unavailable');
+  assert.equal(result.processedForms[1].failed, 1);
 });
 
 test('returns null and logs when BACKEND_PUBLIC_URL is missing', () => {

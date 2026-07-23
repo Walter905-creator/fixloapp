@@ -222,8 +222,8 @@ adminRouter.post('/jobs/meta-reconcile/run', adminMutationRateLimit, async (req,
     const rawDaysBack = req.body?.daysBack !== undefined ? Number(req.body.daysBack) : 30;
     const daysBack = Number.isFinite(rawDaysBack) && rawDaysBack >= 0 ? Math.floor(rawDaysBack) : 30;
     const result = await performFullMetaReconciliation({
-      formId: formId || undefined,
-      formIds: formIds || undefined,
+      formId,
+      formIds,
       daysBack,
       triggeredBy: 'admin'
     });
