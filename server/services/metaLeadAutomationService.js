@@ -2982,6 +2982,243 @@ async function completeExistingLead(lead, settings) {
   return { smsResult, emailResult };
 }
 
+// ── Meta access diagnostics ───────────────────────────────────────────────────
+
+/**
+ * Convert an Axios error from the Meta Graph API into a structured, sanitized
+ * error object.  No tokens or secrets are included in the returned value.
+ *
+ * @param {Error} err - Axios error (or any Error)
+ * @returns {object} Structured Graph error descriptor.
+ */
+function parseGraphError(err) {
+  const resp = err?.response;
+  const httpStatus = resp?.status || null;
+  const errData = resp?.data?.error || {};
+  const message = errData.message || err?.message || 'Unknown error';
+  const code = Number(errData.code || 0);
+  const subcode = Number(errData.error_subcode || 0);
+  const type = errData.type || 'GraphError';
+
+  // Token errors: code 190 family.
+  const tokenInvalid = code === 190 || subcode === 458 || subcode === 459 || subcode === 460 || subcode === 463 || subcode === 467;
+
+  // Page-permission errors: code 200, 10, or permission-denied messages.
+  const pageAccessDenied = code === 200 || code === 10;
+
+  // Form / lead-access errors.
+  const formAccessDenied =
+    code === 200 ||
+    /lead.form/i.test(message) ||
+    /lead.gen/i.test(message) ||
+    /form/i.test(message);
+
+  // Try to extract a specific missing permission from the error message or
+  // the optional required_permissions field that Meta sometimes includes.
+  let missingPermission = errData.required_permissions || null;
+  if (!missingPermission) {
+    // (#100) message: Missing permissions: leads_retrieval
+    const permMatch = message.match(/missing permissions?:\s*([a-z_,\s]+)/i);
+    if (permMatch) missingPermission = permMatch[1].trim();
+  }
+
+  return {
+    httpStatus,
+    type,
+    code,
+    subcode,
+    message,
+    tokenInvalid,
+    pageAccessDenied,
+    formAccessDenied,
+    missingPermission: missingPermission || null
+  };
+}
+
+/**
+ * Verify live production Meta configuration by calling the Graph API.
+ * Does NOT expose token values; all secrets are redacted or omitted.
+ *
+ * Checks (in order):
+ *  1. Environment variable presence
+ *  2. Token validity via /debug_token
+ *  3. Page accessibility and name
+ *  4. Form ownership / accessibility
+ *  5. Lead-retrieval permission (fetches 1 lead — non-destructive)
+ *  6. Leadgen webhook subscription
+ *
+ * @param {object} [opts]
+ * @param {string} [opts.formId]  Override the form to check (default: FULL_RECONCILIATION_FORM_ID).
+ * @returns {Promise<object>} Structured diagnostic object safe to return to an admin API.
+ */
+async function diagnoseMetaAccess({ formId = FULL_RECONCILIATION_FORM_ID } = {}) {
+  const normalizedFormId = String(formId || FULL_RECONCILIATION_FORM_ID).trim();
+
+  const diag = {
+    pageIdConfigured: false,
+    pageTokenConfigured: false,
+    tokenValid: false,
+    pageAccessible: false,
+    pageName: null,
+    formId: normalizedFormId,
+    formAccessible: false,
+    leadgenSubscriptionActive: false,
+    canRetrieveLeads: false,
+    latestLeadTimestamp: null,
+    // Diagnostic detail — sanitized
+    configuredAppId: process.env.META_APP_ID
+      ? `${String(process.env.META_APP_ID).slice(0, 4)}…` : null,
+    configuredPageId: null,
+    tokenType: null,
+    tokenExpiresAt: null,
+    grantedPermissions: [],
+    missingPermission: null,
+    graphErrors: [],
+    error: null
+  };
+
+  const pageId = getDefaultPageId();
+  const token = getAnyMetaAccessToken();
+
+  diag.pageIdConfigured = !!pageId;
+  diag.pageTokenConfigured = !!token;
+  diag.configuredPageId = pageId || null;
+
+  if (!token) {
+    diag.error = 'META_PAGE_ACCESS_TOKEN is not configured';
+    return diag;
+  }
+
+  // ── Step 1: Validate token via /debug_token ─────────────────────────────────
+  try {
+    const { data: dbgResp } = await axios.get('https://graph.facebook.com/v20.0/debug_token', {
+      params: { input_token: token, access_token: token },
+      timeout: 12000
+    });
+    const td = dbgResp?.data || {};
+    diag.tokenValid = td.is_valid === true;
+    diag.tokenType = td.type || null;
+    if (td.expires_at && td.expires_at > 0) {
+      diag.tokenExpiresAt = new Date(td.expires_at * 1000).toISOString();
+    }
+    if (Array.isArray(td.scopes)) {
+      diag.grantedPermissions = td.scopes;
+    }
+    if (!diag.tokenValid) {
+      const tokenErr = td.error || {};
+      const structured = {
+        step: 'token_debug',
+        httpStatus: null,
+        type: tokenErr.type || 'OAuthException',
+        code: Number(tokenErr.code || 190),
+        subcode: Number(tokenErr.error_subcode || 0),
+        message: tokenErr.message || 'Token is invalid or expired',
+        tokenInvalid: true,
+        pageAccessDenied: false,
+        formAccessDenied: false,
+        missingPermission: null
+      };
+      diag.graphErrors.push(structured);
+      diag.error = structured.message;
+      return diag; // No point continuing with an invalid token.
+    }
+  } catch (err) {
+    const ge = parseGraphError(err);
+    diag.graphErrors.push({ step: 'token_debug', ...ge });
+    diag.error = ge.message;
+    return diag;
+  }
+
+  // ── Step 2: Verify Page access ───────────────────────────────────────────────
+  if (pageId) {
+    const safePageId = encodeURIComponent(pageId);
+    try {
+      const { data: pageInfo } = await axios.get(`https://graph.facebook.com/v20.0/${safePageId}`, {
+        params: { access_token: token, fields: 'id,name,leadgen_tos_accepted' },
+        timeout: 12000
+      });
+      diag.pageAccessible = true;
+      diag.pageName = pageInfo?.name || null;
+    } catch (err) {
+      const ge = parseGraphError(err);
+      diag.graphErrors.push({ step: 'page_access', ...ge });
+      diag.error = diag.error || ge.message;
+    }
+  }
+
+  // ── Step 3: Check leadgen webhook subscription ───────────────────────────────
+  if (pageId && diag.tokenValid) {
+    const safePageId = encodeURIComponent(pageId);
+    try {
+      const { data: subResp } = await axios.get(
+        `https://graph.facebook.com/v20.0/${safePageId}/subscribed_apps`,
+        { params: { access_token: token }, timeout: 12000 }
+      );
+      const apps = Array.isArray(subResp?.data) ? subResp.data : [];
+      const configuredAppId = process.env.META_APP_ID ? String(process.env.META_APP_ID) : null;
+      if (configuredAppId) {
+        diag.leadgenSubscriptionActive = apps.some(
+          (a) =>
+            String(a.id) === configuredAppId &&
+            Array.isArray(a.subscribed_fields) &&
+            a.subscribed_fields.includes('leadgen')
+        );
+      } else {
+        diag.leadgenSubscriptionActive = apps.some(
+          (a) => Array.isArray(a.subscribed_fields) && a.subscribed_fields.includes('leadgen')
+        );
+      }
+    } catch (err) {
+      const ge = parseGraphError(err);
+      diag.graphErrors.push({ step: 'webhook_subscriptions', ...ge });
+      // Non-fatal — continue.
+    }
+  }
+
+  // ── Step 4: Verify form ownership / accessibility ────────────────────────────
+  if (isNumericMetaId(normalizedFormId)) {
+    const safeFormId = encodeURIComponent(normalizedFormId);
+    try {
+      await axios.get(`https://graph.facebook.com/v20.0/${safeFormId}`, {
+        params: { access_token: token, fields: 'id,name,page_id,status,leads_count' },
+        timeout: 12000
+      });
+      diag.formAccessible = true;
+    } catch (err) {
+      const ge = parseGraphError(err);
+      diag.graphErrors.push({ step: 'form_access', ...ge });
+      diag.error = diag.error || ge.message;
+      if (ge.missingPermission) diag.missingPermission = ge.missingPermission;
+    }
+  }
+
+  // ── Step 5: Attempt to read leads (1 record only — non-destructive) ───────────
+  if (diag.formAccessible && isNumericMetaId(normalizedFormId)) {
+    const safeFormId = encodeURIComponent(normalizedFormId);
+    try {
+      const { data: leadsResp } = await axios.get(
+        `https://graph.facebook.com/v20.0/${safeFormId}/leads`,
+        {
+          params: { access_token: token, limit: 1, fields: 'id,created_time' },
+          timeout: 12000
+        }
+      );
+      diag.canRetrieveLeads = true;
+      const leads = Array.isArray(leadsResp?.data) ? leadsResp.data : [];
+      if (leads.length > 0) {
+        diag.latestLeadTimestamp = leads[0]?.created_time || null;
+      }
+    } catch (err) {
+      const ge = parseGraphError(err);
+      diag.graphErrors.push({ step: 'leads_retrieval', ...ge });
+      diag.error = diag.error || ge.message;
+      if (ge.missingPermission) diag.missingPermission = ge.missingPermission;
+    }
+  }
+
+  return diag;
+}
+
 // ── Full Meta ↔ Fixlo production reconciliation ──────────────────────────────
 
 /** In-memory lock prevents concurrent runs on the same server instance. */
@@ -3414,6 +3651,8 @@ module.exports = {
   completeExistingLead,
   performFullMetaReconciliation,
   getLastReconciliationRun,
+  // Meta access diagnostics
+  diagnoseMetaAccess,
   // Alerting
   alertStaleLeads,
   notifyAdmins
