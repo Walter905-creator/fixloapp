@@ -4,7 +4,6 @@ const requireAuth = require('../middleware/requireAuth');
 const requireAdmin = require('../middleware/requireAdmin');
 const {
   CANONICAL_PRO_SIGNUP_URL,
-  FULL_RECONCILIATION_FORM_ID,
   getStatusCallbackUrl,
   getSettings,
   saveSettings,
@@ -216,10 +215,18 @@ adminRouter.post('/jobs/reconcile/run', adminMutationRateLimit, async (_req, res
 // incomplete.  Idempotent and safe to trigger manually.
 adminRouter.post('/jobs/meta-reconcile/run', adminMutationRateLimit, async (req, res) => {
   try {
-    const formId = String(req.body?.formId || FULL_RECONCILIATION_FORM_ID).trim();
+    const formId = String(req.body?.formId || '').trim();
+    const formIds = Array.isArray(req.body?.formIds)
+      ? req.body.formIds
+      : String(req.body?.formIds || '').trim();
     const rawDaysBack = req.body?.daysBack !== undefined ? Number(req.body.daysBack) : 30;
     const daysBack = Number.isFinite(rawDaysBack) && rawDaysBack >= 0 ? Math.floor(rawDaysBack) : 30;
-    const result = await performFullMetaReconciliation({ formId, daysBack, triggeredBy: 'admin' });
+    const result = await performFullMetaReconciliation({
+      formId: formId || undefined,
+      formIds: formIds || undefined,
+      daysBack,
+      triggeredBy: 'admin'
+    });
     return res.json({ ok: true, result });
   } catch (error) {
     return res.status(500).json({ ok: false, error: error.message });
@@ -230,7 +237,7 @@ adminRouter.post('/jobs/meta-reconcile/run', adminMutationRateLimit, async (req,
 // Returns the most recent full reconciliation run and the next scheduled time.
 adminRouter.get('/reconciliation/last', async (req, res) => {
   try {
-    const formId = String(req.query?.formId || FULL_RECONCILIATION_FORM_ID).trim();
+    const formId = String(req.query?.formId || '').trim();
     const data = await getLastReconciliationRun(formId);
     return res.json({ ok: true, ...data });
   } catch (error) {
@@ -319,4 +326,3 @@ adminRouter.post('/:id/actions/:action', adminMutationRateLimit, async (req, res
 router.use('/api/admin/meta-leads', adminRouter);
 
 module.exports = router;
-

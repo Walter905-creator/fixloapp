@@ -7,12 +7,17 @@ const { mock } = require('node:test');
 const {
   CANONICAL_PRO_SIGNUP_URL,
   getStatusCallbackUrl,
+  getMetaGraphApiVersion,
+  getConfiguredMetaLeadFormIds,
   normalizeProSignupLink,
   validateTwilioSignature,
   handleTwilioStatusWebhook,
   handleSendGridEvents,
   retryFailedInitialMetaLeadSmsBatch,
   recoverHistoricalMetaLeadsByForm,
+  classifyConfiguredMetaForm,
+  resolveMetaReconciliationForms,
+  performFullMetaReconciliation,
   sendLeadSms,
   sendLeadEmail,
   initializeFollowUpForAvailableChannels,
@@ -62,6 +67,9 @@ test.afterEach(() => {
   delete process.env.SERVER_BASE_URL;
   delete process.env.TWILIO_AUTH_TOKEN;
   delete process.env.NODE_ENV;
+  delete process.env.META_GRAPH_API_VERSION;
+  delete process.env.META_LEAD_FORM_IDS;
+  delete process.env.META_PAGE_ID;
   mock.restoreAll();
 });
 
@@ -79,6 +87,106 @@ test('normalizes trailing slashes in BACKEND_PUBLIC_URL', () => {
     getStatusCallbackUrl(),
     'https://fixloapp.onrender.com/webhook/twilio/meta-leads/status'
   );
+});
+
+test('uses configured Meta Graph API version when valid', () => {
+  process.env.META_GRAPH_API_VERSION = 'v21.0';
+  assert.equal(getMetaGraphApiVersion(), 'v21.0');
+});
+
+test('falls back to default Meta Graph API version when invalid', () => {
+  process.env.META_GRAPH_API_VERSION = '21';
+  assert.equal(getMetaGraphApiVersion(), 'v20.0');
+});
+
+test('parses configured meta lead form ids from env', () => {
+  process.env.META_LEAD_FORM_IDS = '123, 456,123';
+  assert.deepEqual(getConfiguredMetaLeadFormIds(), ['123', '456']);
+});
+
+test('classifies a configured form as belonging to a different page', async () => {
+  const result = await classifyConfiguredMetaForm('1913273286015217', {
+    pageId: '209920418876728',
+    discoveredForms: [],
+    fetchMetaLeadFormImpl: async () => ({
+      id: '1913273286015217',
+      name: 'Old Form',
+      status: 'ACTIVE',
+      page_id: '999999999999999',
+      active: true,
+      archived: false
+    })
+  });
+
+  assert.equal(result.classification, 'FORM_BELONGS_TO_DIFFERENT_PAGE');
+});
+
+test('resolves only active configured forms and marks stale ones', async () => {
+  const forms = await resolveMetaReconciliationForms({
+    pageId: '209920418876728',
+    formIds: '111,222,333',
+    discoverPageFormsImpl: async () => ([
+      { id: '111', name: 'Active A', status: 'ACTIVE', page_id: '209920418876728', active: true, archived: false },
+      { id: '222', name: 'Archived B', status: 'ARCHIVED', page_id: '209920418876728', active: false, archived: true }
+    ]),
+    classifyConfiguredMetaFormImpl: async (formId) => {
+      if (formId === '111') {
+        return {
+          classification: 'FORM_FOUND_ACTIVE',
+          form: { id: '111', name: 'Active A', status: 'ACTIVE', page_id: '209920418876728', active: true, archived: false }
+        };
+      }
+      if (formId === '222') {
+        return {
+          classification: 'FORM_FOUND_ARCHIVED',
+          form: { id: '222', name: 'Archived B', status: 'ARCHIVED', page_id: '209920418876728', active: false, archived: true }
+        };
+      }
+      return {
+        classification: 'FORM_NOT_FOUND',
+        error: 'Unsupported get request'
+      };
+    }
+  });
+
+  assert.equal(forms.selectedForms.length, 1);
+  assert.equal(forms.selectedForms[0].id, '111');
+  assert.deepEqual(forms.staleConfiguredForms.map((item) => item.classification), ['FORM_FOUND_ARCHIVED', 'FORM_NOT_FOUND']);
+});
+
+test('auto-discovers active forms and continues when one form fails', async () => {
+  process.env.META_PAGE_ID = '209920418876728';
+
+  const result = await performFullMetaReconciliation({
+    triggeredBy: 'admin',
+    discoverPageFormsImpl: async () => ([
+      { id: '111', name: 'Active A', status: 'ACTIVE', page_id: '209920418876728', active: true, archived: false },
+      { id: '222', name: 'Active B', status: 'ACTIVE', page_id: '209920418876728', active: true, archived: false }
+    ]),
+    classifyConfiguredMetaFormImpl: async () => {
+      throw new Error('should not be called');
+    },
+    performSingleMetaFormReconciliationImpl: async ({ form }) => {
+      if (form.id === '222') throw new Error('Graph API unavailable');
+      return {
+        formId: form.id,
+        formName: form.name,
+        totalFromMeta: 3,
+        totalConsidered: 2,
+        alreadyComplete: 1,
+        existingIncomplete: 1,
+        newlyRecovered: 0,
+        duplicatesSkipped: 0,
+        unreachable: 0,
+        failed: 0
+      };
+    }
+  });
+
+  assert.equal(result.processedForms.length, 2);
+  assert.equal(result.totals.totalFromMeta, 3);
+  assert.equal(result.totals.existingIncomplete, 1);
+  assert.equal(result.totals.failed, 1);
 });
 
 test('returns null and logs when BACKEND_PUBLIC_URL is missing', () => {
