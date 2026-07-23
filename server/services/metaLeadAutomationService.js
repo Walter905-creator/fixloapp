@@ -3220,9 +3220,27 @@ function logStaleConfiguredFormOnce(formId, classification, message) {
 
 function clearStaleConfiguredFormLog(formId) {
   const prefix = `${formId}:`;
-  for (const key of _loggedStaleConfiguredForms) {
-    if (key.startsWith(prefix)) _loggedStaleConfiguredForms.delete(key);
+  const matchingLogKeys = [..._loggedStaleConfiguredForms].filter((logKey) => logKey.startsWith(prefix));
+  for (const logKey of matchingLogKeys) {
+    _loggedStaleConfiguredForms.delete(logKey);
   }
+}
+
+function syncLeadCampaignForm(existingLead, formId, formName) {
+  const nextFormId = String(formId || '').trim();
+  const nextFormName = String(formName || '').trim();
+  const currentFormId = String(existingLead.campaign?.formId || '').trim();
+  const currentFormName = String(existingLead.campaign?.formName || '').trim();
+  const shouldUpdate = currentFormId !== nextFormId || (nextFormName && currentFormName !== nextFormName);
+
+  if (!shouldUpdate) return false;
+
+  existingLead.campaign = {
+    ...(existingLead.campaign?.toObject ? existingLead.campaign.toObject() : existingLead.campaign),
+    formId: nextFormId,
+    formName: nextFormName || currentFormName
+  };
+  return true;
 }
 
 async function performSingleMetaFormReconciliation({
@@ -3354,17 +3372,11 @@ async function performSingleMetaFormReconciliation({
         }
 
         if (existingLead) {
-          const existingFormId = String(existingLead.campaign?.formId || '').trim();
-          const existingFormName = String(existingLead.campaign?.formName || '').trim();
-          const shouldUpdateCampaignForm = existingFormId !== normalizedForm.id ||
-            ((summary.formName || normalizedForm.name) && existingFormName !== String(summary.formName || normalizedForm.name));
-          if (shouldUpdateCampaignForm) {
-            existingLead.campaign = {
-              ...(existingLead.campaign?.toObject ? existingLead.campaign.toObject() : existingLead.campaign),
-              formId: normalizedForm.id,
-              formName: String(summary.formName || normalizedForm.name || existingFormName)
-            };
-          }
+          const shouldUpdateCampaignForm = syncLeadCampaignForm(
+            existingLead,
+            normalizedForm.id,
+            summary.formName || normalizedForm.name
+          );
 
           leadResult.leadId = String(existingLead._id);
           leadResult.inviteCode = existingLead.invitationCode || null;
@@ -3599,6 +3611,7 @@ async function resolveMetaReconciliationForms({
     activeForms,
     archivedForms,
     legacyConfiguredIds,
+    // Remove duplicate forms by ID while preserving the configured/discovered order.
     selectedForms: [...new Map(selectedForms.map((item) => [item.id, item])).values()],
     staleConfiguredForms
   };
