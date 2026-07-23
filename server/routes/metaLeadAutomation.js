@@ -162,6 +162,10 @@ const adminRouter = express.Router();
 adminRouter.use(requireAuth);
 adminRouter.use(requireAdmin);
 
+function resolveConfiguredFormId(candidate, settings) {
+  return String(candidate || settings?.targetFormId || FULL_RECONCILIATION_FORM_ID || '').trim();
+}
+
 // GET /api/admin/meta-leads/settings
 adminRouter.get('/settings', async (_req, res) => {
   try {
@@ -223,7 +227,8 @@ adminRouter.post('/jobs/reconcile/run', adminMutationRateLimit, async (_req, res
 // incomplete.  Idempotent and safe to trigger manually.
 adminRouter.post('/jobs/meta-reconcile/run', adminMutationRateLimit, async (req, res) => {
   try {
-    const formId = String(req.body?.formId || FULL_RECONCILIATION_FORM_ID).trim();
+    const settings = await getSettings();
+    const formId = resolveConfiguredFormId(req.body?.formId, settings);
     const rawDaysBack = req.body?.daysBack !== undefined ? Number(req.body.daysBack) : 30;
     const daysBack = Number.isFinite(rawDaysBack) && rawDaysBack >= 0 ? Math.floor(rawDaysBack) : 30;
     const result = await performFullMetaReconciliation({ formId, daysBack, triggeredBy: 'admin' });
@@ -237,7 +242,8 @@ adminRouter.post('/jobs/meta-reconcile/run', adminMutationRateLimit, async (req,
 // Returns the most recent full reconciliation run and the next scheduled time.
 adminRouter.get('/reconciliation/last', async (req, res) => {
   try {
-    const formId = String(req.query?.formId || FULL_RECONCILIATION_FORM_ID).trim();
+    const settings = await getSettings();
+    const formId = resolveConfiguredFormId(req.query?.formId, settings);
     const data = await getLastReconciliationRun(formId);
     return res.json({ ok: true, ...data });
   } catch (error) {
@@ -251,7 +257,7 @@ adminRouter.get('/meta/forms', async (req, res) => {
   try {
     const settings = await getSettings();
     const diagnostics = await getMetaLeadFormDiagnostics({
-      formId: String(req.query?.formId || settings.targetFormId || FULL_RECONCILIATION_FORM_ID || '').trim(),
+      formId: resolveConfiguredFormId(req.query?.formId, settings),
       pageId: String(req.query?.pageId || '').trim(),
       settings
     });

@@ -205,7 +205,7 @@ export default function AdminLeadAutomationPage() {
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div>
                 <p className="text-xs text-gray-500 mb-1">Target form ID</p>
-                <input className="w-full border rounded px-2 py-1" value={settings.targetFormId || ''} onChange={(e) => setSettings((p) => ({ ...p, targetFormId: e.target.value.replace(/\D+/g, '') }))} />
+                <input aria-label="Target form ID" className="w-full border rounded px-2 py-1" value={settings.targetFormId || ''} onChange={(e) => setSettings((p) => ({ ...p, targetFormId: e.target.value.replace(/\D+/g, '') }))} />
               </div>
               <div>
                 <p className="text-xs text-gray-500 mb-1">Code prefix</p>
@@ -225,11 +225,11 @@ export default function AdminLeadAutomationPage() {
               </div>
               <div>
                 <p className="text-xs text-gray-500 mb-1">Meta data access expires</p>
-                <input type="date" className="w-full border rounded px-2 py-1" value={settings.dataAccessExpiresAt ? String(settings.dataAccessExpiresAt).slice(0, 10) : ''} onChange={(e) => setSettings((p) => ({ ...p, dataAccessExpiresAt: e.target.value || null }))} />
+                <input aria-label="Meta data access expiration date" type="date" className="w-full border rounded px-2 py-1" value={settings.dataAccessExpiresAt ? String(settings.dataAccessExpiresAt).slice(0, 10) : ''} onChange={(e) => setSettings((p) => ({ ...p, dataAccessExpiresAt: e.target.value || null }))} />
               </div>
               <div>
                 <p className="text-xs text-gray-500 mb-1">Warn before expiry (days)</p>
-                <input type="number" min="1" className="w-full border rounded px-2 py-1" value={settings.dataAccessWarningDays || 14} onChange={(e) => setSettings((p) => ({ ...p, dataAccessWarningDays: Number(e.target.value || 14) }))} />
+                <input aria-label="Warn before expiry days" type="number" min="1" className="w-full border rounded px-2 py-1" value={settings.dataAccessWarningDays || 14} onChange={(e) => setSettings((p) => ({ ...p, dataAccessWarningDays: Number(e.target.value || 14) }))} />
               </div>
             </div>
             <div className="space-y-2 text-sm">

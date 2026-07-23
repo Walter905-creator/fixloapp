@@ -140,8 +140,9 @@ function isMetaAccessBlockedError(error) {
 function normalizeMetaLeadAutomationSettings(settings = {}) {
   const normalized = { ...settings };
   normalized.signupLink = CANONICAL_PRO_SIGNUP_URL;
-  normalized.targetFormId = isNumericMetaId(String(normalized.targetFormId || '').trim())
-    ? String(normalized.targetFormId).trim()
+  const targetFormId = String(normalized.targetFormId || '').trim();
+  normalized.targetFormId = isNumericMetaId(targetFormId)
+    ? targetFormId
     : '';
   const expiresAt = parseDate(normalized.dataAccessExpiresAt);
   normalized.dataAccessExpiresAt = expiresAt ? expiresAt.toISOString() : null;
