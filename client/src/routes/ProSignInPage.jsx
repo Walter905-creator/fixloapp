@@ -18,7 +18,7 @@ export default function ProSignInPage(){
     setError('');
     
     const form = new FormData(e.currentTarget);
-    const payload = { phone: form.get('phone'), password: form.get('password') };
+    const payload = { identifier: form.get('identifier'), password: form.get('password') };
     
     try{
       const url = `${api}/api/pro-auth/login`;
@@ -34,7 +34,7 @@ export default function ProSignInPage(){
         if(data?.token && data?.pro) {
           // Store auth data using AuthContext
           const userData = {
-            role: 'pro',
+            role: data?.pro?.role || 'pro',
             id: data.pro.id,
             name: data.pro.name,
             email: data.pro.email,
@@ -85,12 +85,12 @@ export default function ProSignInPage(){
         <div className="card p-6">
           <form onSubmit={submit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-800 mb-1">Phone Number</label>
+              <label className="block text-sm font-medium text-slate-800 mb-1">Email or phone number</label>
               <input 
-                name="phone" 
+                name="identifier" 
                 className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                type="tel" 
-                placeholder="(555) 123-4567"
+                type="text" 
+                placeholder="name@example.com or (555) 123-4567"
                 required
                 disabled={loading}
               />
