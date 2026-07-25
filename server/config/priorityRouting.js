@@ -74,7 +74,7 @@ function findPriorityProByPhone(phone) {
  * @returns {string} Owner phone in E.164 format
  */
 function getOwnerPhone() {
-  return process.env.OWNER_PHONE || PRIORITY_ROUTING.charlotte.phone;
+  return process.env.FIXLO_OWNER_PHONE || process.env.OWNER_PHONE || PRIORITY_ROUTING.charlotte.phone;
 }
 
 module.exports = {

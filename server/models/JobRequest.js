@@ -96,6 +96,10 @@ const JobRequestSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  stripeCheckoutSessionId: {
+    type: String,
+    trim: true
+  },
   applePayToken: {
     type: String,
     trim: true
@@ -137,6 +141,24 @@ const JobRequestSchema = new mongoose.Schema({
   },
   paymentReleasedBy: {
     type: String, // Admin user email
+    trim: true
+  },
+  estimateFeeEligible: {
+    type: Boolean,
+    default: false
+  },
+  estimateFeeRequired: {
+    type: Boolean,
+    default: false
+  },
+  estimateFeeAmountCents: {
+    type: Number,
+    default: 0
+  },
+  estimateFeeCurrency: {
+    type: String,
+    default: 'usd',
+    lowercase: true,
     trim: true
   },
   // Clock in/out tracking
@@ -279,6 +301,39 @@ const JobRequestSchema = new mongoose.Schema({
   },
   // Customer reference
   customerId: {
+    type: String,
+    trim: true
+  },
+  ownerSmsStatus: {
+    type: String,
+    enum: ['pending', 'sent', 'failed', 'skipped'],
+    default: 'pending'
+  },
+  ownerSmsSentAt: {
+    type: Date
+  },
+  ownerSmsProviderId: {
+    type: String,
+    trim: true
+  },
+  ownerEmailStatus: {
+    type: String,
+    enum: ['pending', 'sent', 'failed', 'skipped'],
+    default: 'pending'
+  },
+  ownerEmailSentAt: {
+    type: Date
+  },
+  ownerEmailProviderId: {
+    type: String,
+    trim: true
+  },
+  ownerNotificationStage: {
+    type: String,
+    enum: ['none', 'pending', 'paid', 'standard'],
+    default: 'none'
+  },
+  ownerNotificationLastError: {
     type: String,
     trim: true
   },

@@ -471,6 +471,11 @@ function ServiceLeadForm({service, city}){
 
       const result = await res.json();
       console.log('✅ Request submitted successfully:', result);
+
+      if (result.requiresPayment && result?.data?.checkoutUrl) {
+        window.location.assign(result.data.checkoutUrl);
+        return;
+      }
       
       setSuccess(true);
       

@@ -141,11 +141,22 @@ function normalizeMetaForm(form = {}) {
 }
 
 function sanitizeMetaGraphError(error) {
-  return String(
-    error?.response?.data?.error?.message ||
-    error?.message ||
-    'Meta Graph API error'
-  );
+  const graphError = error?.response?.data?.error || {};
+  const payload = {
+    message: String(
+      graphError?.message ||
+      error?.message ||
+      'Meta Graph API error'
+    ),
+    type: graphError?.type ? String(graphError.type) : undefined,
+    code: Number.isFinite(Number(graphError?.code)) ? Number(graphError.code) : undefined,
+    errorSubcode: Number.isFinite(Number(graphError?.error_subcode)) ? Number(graphError.error_subcode) : undefined,
+    errorUserTitle: graphError?.error_user_title ? String(graphError.error_user_title) : undefined,
+    errorUserMsg: graphError?.error_user_msg ? String(graphError.error_user_msg) : undefined,
+    fbTraceId: graphError?.fbtrace_id ? String(graphError.fbtrace_id) : undefined
+  };
+
+  return JSON.stringify(payload);
 }
 
 function isMetaNotFoundError(error) {
@@ -1925,7 +1936,7 @@ async function recoverHistoricalMetaLeadsByForm({
   try {
     formData = await fetchMetaFormLeadsImpl(normalizedFormId, { accessToken, pageId });
   } catch (error) {
-    graphLookupError = String(error?.response?.data?.error?.message || error?.message || 'Meta Graph lookup failed');
+    graphLookupError = sanitizeMetaGraphError(error);
   }
 
   const resolvedPageId = String(formData?.pageId || pageId || getDefaultPageId() || '').trim();

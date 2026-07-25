@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
+const mongoose = require('mongoose');
 const axios = require('axios');
 const Pro = require('../models/Pro');
 const JobRequest = require('../models/JobRequest');
@@ -9,6 +10,9 @@ const EarlyAccessSpots = require('../models/EarlyAccessSpots');
 const { applyReferralFreeMonth, hasExistingReward } = require('../services/applyReferralFreeMonth');
 const { sendSms } = require('../utils/twilio');
 const { notify: ownerNotify } = require('../services/ownerNotificationService');
+const { sendHomeownerConfirmation } = require('../utils/smsSender');
+const { notifyOwnerForLead } = require('../services/ownerLeadNotificationService');
+const { routeLead } = require('../services/leadAssignmentService');
 
 // Initialize Stripe with validation
 let stripe;
@@ -418,10 +422,73 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
         const session = event.data.object;
         console.log(`✅ Checkout session completed: ${session.id}`);
         console.log(`👤 Customer: ${session.customer}, Subscription: ${session.subscription}`);
-        
+
         // Audit log
         console.log(`📝 Audit: Session ${session.id} | Customer: ${session.customer} | Subscription: ${session.subscription} | Time: ${new Date().toISOString()}`);
-        
+
+        // ---------- Homeowner estimate-fee payment ----------
+        if (session.metadata?.requestType === 'homeowner_estimate_fee') {
+          try {
+            const rawLeadId = session.metadata?.leadId;
+            if (!rawLeadId || !mongoose.Types.ObjectId.isValid(String(rawLeadId))) {
+              console.error('❌ homeowner_estimate_fee webhook missing or invalid leadId in metadata');
+              break;
+            }
+            // Cast to ObjectId to sanitize the tainted string before the DB query
+            const leadId = new mongoose.Types.ObjectId(String(rawLeadId));
+
+            const lead = await JobRequest.findById(leadId);
+            if (!lead) {
+              console.error(`❌ homeowner_estimate_fee webhook: JobRequest ${rawLeadId} not found`);
+              break;
+            }
+
+            // Idempotency guard — don't double-process
+            if (lead.paymentStatus === 'captured') {
+              console.log(`ℹ️ homeowner_estimate_fee already captured for lead ${leadId}, skipping`);
+              break;
+            }
+
+            lead.paymentStatus = 'captured';
+            lead.paymentCapturedAt = new Date();
+            lead.stripeCheckoutSessionId = session.id;
+            await lead.save();
+            console.log(`💰 Estimate fee captured for lead ${leadId}`);
+
+            // Send homeowner confirmation SMS
+            if (lead.smsConsent) {
+              try {
+                const hwResult = await sendHomeownerConfirmation(lead);
+                if (hwResult.success) {
+                  console.log(`✅ Homeowner confirmation SMS sent (SID: ${hwResult.messageId})`);
+                } else {
+                  console.log(`⚠️ Homeowner confirmation SMS skipped: ${hwResult.reason || hwResult.error}`);
+                }
+              } catch (smsErr) {
+                console.error('❌ Homeowner confirmation SMS error:', smsErr.message);
+              }
+            }
+
+            // Notify owner
+            try {
+              await notifyOwnerForLead(lead, { stage: 'paid', amountPaidCents: lead.estimateFeeAmountCents || 0 });
+            } catch (notifyErr) {
+              console.error('❌ Owner notification error after estimate fee payment:', notifyErr.message);
+            }
+
+            // Route lead to pros
+            try {
+              await routeLead(lead._id);
+            } catch (routeErr) {
+              console.error('❌ Lead routing error after estimate fee payment:', routeErr.message);
+            }
+          } catch (estimateFeeErr) {
+            console.error('❌ Failed to process homeowner_estimate_fee checkout.session.completed:', estimateFeeErr.message);
+          }
+          break;
+        }
+
+        // ---------- Pro subscription / AI subscription ----------
         // Retrieve subscription to access product metadata
         let subscriptionTier = null;
         let professionalPlan = session.metadata?.plan || 'pro';

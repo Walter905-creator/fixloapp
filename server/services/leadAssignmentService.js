@@ -11,6 +11,11 @@ const {
   markLeadDeclined,
   expireAccessRecord
 } = require('./leadTrackingService');
+const {
+  CHARLOTTE_SERVICE_RADIUS_MILES,
+  CHARLOTTE_SERVICE_CENTER_LAT,
+  CHARLOTTE_SERVICE_CENTER_LNG
+} = require('../config/charlotteEstimateFee');
 
 const DEFAULT_RADIUS_MILES = 30;
 const PREMIUM_WINDOW_MS = 60 * 60 * 1000;
@@ -52,6 +57,29 @@ function getLeadCoordinates(lead) {
   const coordinates = lead?.location?.coordinates;
   if (!Array.isArray(coordinates) || coordinates.length !== 2) {
     return null;
+  }
+
+  function getOwnerMatchQuery() {
+    const ownerProId = String(process.env.FIXLO_OWNER_PRO_ID || '').trim();
+    const ownerEmail = String(process.env.FIXLO_OWNER_EMAIL || process.env.OWNER_EMAIL || '').trim().toLowerCase();
+    const ownerPhone = String(process.env.FIXLO_OWNER_PHONE || process.env.OWNER_PHONE || '').trim();
+    const or = [];
+    if (ownerProId && mongoose.Types.ObjectId.isValid(ownerProId)) or.push({ _id: ownerProId });
+    if (ownerEmail) or.push({ email: ownerEmail });
+    if (ownerPhone) or.push({ phone: ownerPhone });
+    return or.length ? { $or: or } : null;
+  }
+
+  function isCharlotteLead(lead) {
+    const coords = getLeadCoordinates(lead);
+    if (!coords) return false;
+    const miles = calculateDistance(
+      CHARLOTTE_SERVICE_CENTER_LAT,
+      CHARLOTTE_SERVICE_CENTER_LNG,
+      coords.latitude,
+      coords.longitude
+    );
+    return Number.isFinite(miles) && miles <= CHARLOTTE_SERVICE_RADIUS_MILES;
   }
 
   const [longitude, latitude] = coordinates;
@@ -100,7 +128,7 @@ async function getMatchingProsForLead(lead, maxDistanceMiles = DEFAULT_RADIUS_MI
     .select('_id name phone email country whatsappOptIn smsConsent trade location avgRating rating completedJobs subscriptionPlan subscriptionPrice leadPriority subscriptionActive subscriptionStatus wantsNotifications paymentStatus isActive serviceRadiusMiles')
     .limit(100);
 
-  return pros
+  const ranked = pros
     .filter(hasActiveSubscription)
     .map((pro) => {
       const [proLongitude, proLatitude] = pro.location?.coordinates || [];
@@ -126,6 +154,37 @@ async function getMatchingProsForLead(lead, maxDistanceMiles = DEFAULT_RADIUS_MI
 
       return a.distanceMiles - b.distanceMiles;
     });
+
+  if (!isCharlotteLead(lead)) {
+    return ranked;
+  }
+
+  const ownerQuery = getOwnerMatchQuery();
+  if (!ownerQuery) {
+    return ranked;
+  }
+
+  const ownerPro = await Pro.findOne(ownerQuery)
+    .select('_id name phone email country whatsappOptIn smsConsent trade location avgRating rating completedJobs subscriptionPlan subscriptionPrice leadPriority subscriptionActive subscriptionStatus wantsNotifications paymentStatus isActive serviceRadiusMiles');
+
+  if (!ownerPro || !hasActiveSubscription(ownerPro)) {
+    return ranked;
+  }
+
+  const alreadyIncluded = ranked.some(({ pro }) => String(pro._id) === String(ownerPro._id));
+  if (alreadyIncluded) {
+    return ranked;
+  }
+
+  const [ownerLng, ownerLat] = ownerPro.location?.coordinates || [];
+  const ownerDistance = Number.isFinite(ownerLng) && Number.isFinite(ownerLat)
+    ? calculateDistance(coords.latitude, coords.longitude, ownerLat, ownerLng)
+    : DEFAULT_RADIUS_MILES;
+
+  return [
+    ...ranked,
+    { pro: ownerPro, distanceMiles: ownerDistance }
+  ].sort((a, b) => a.distanceMiles - b.distanceMiles);
 }
 
 async function getLeadAssignmentState(leadId) {
