@@ -77,7 +77,7 @@ export default function RecruiterLogin() {
             </div>
 
             <div className="text-right">
-              <Link to="/forgot-password" className="text-blue-400 text-sm hover:text-blue-300">
+              <Link to="/recruiter/forgot-password" className="text-blue-400 text-sm hover:text-blue-300">
                 Forgot password?
               </Link>
             </div>

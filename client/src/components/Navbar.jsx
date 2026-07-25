@@ -15,27 +15,24 @@ const loginGroups = [
     heading: 'Homeowner',
     items: [
       { to: '/login/homeowner', label: 'Login' },
-      { to: '/signup/homeowner', label: 'Create Account' }
+      { to: '/signup/homeowner', label: 'Create Account' },
+      { to: '/forgot-password', label: 'Forgot Password' }
     ]
   },
   {
     heading: 'Pro',
     items: [
       { to: '/login/pro', label: 'Login' },
-      { to: '/signup/pro', label: 'Create Account' }
+      { to: '/signup/pro', label: 'Create Account' },
+      { to: '/pros/forgot-password', label: 'Forgot Password' }
     ]
   },
   {
     heading: 'Recruiter',
     items: [
       { to: '/login/recruiter', label: 'Login' },
-      { to: '/signup/recruiter', label: 'Create Account' }
-    ]
-  },
-  {
-    heading: 'Account Help',
-    items: [
-      { to: '/forgot-password', label: 'Forgot Password' }
+      { to: '/signup/recruiter', label: 'Create Account' },
+      { to: '/recruiter/forgot-password', label: 'Forgot Password' }
     ]
   }
 ];
