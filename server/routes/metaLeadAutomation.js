@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const rateLimit = require('express-rate-limit');
 const requireAuth = require('../middleware/requireAuth');
 const requireAdmin = require('../middleware/requireAdmin');
@@ -28,6 +29,7 @@ const {
   markWebhookEventFailed,
   performFullMetaReconciliation,
   getLastReconciliationRun,
+  diagnoseMetaAccess,
   getMetaLeadFormDiagnostics,
   notifyAdmins,
   repairLeadFollowUps,
@@ -163,6 +165,20 @@ router.post('/webhook/sendgrid/meta-leads/events', webhookRateLimit, express.jso
 const adminRouter = express.Router();
 adminRouter.use(requireAuth);
 adminRouter.use(requireAdmin);
+
+// Middleware: reject any :id that is not a valid MongoDB ObjectId so that
+// literal path segments (e.g. "auth-diagnostic") that were not caught by a
+// fixed route never reach Mongoose findById.
+function requireValidObjectId(req, res, next) {
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({
+      ok: false,
+      error: 'INVALID_ID',
+      message: 'Invalid Meta lead ID'
+    });
+  }
+  return next();
+}
 
 function resolveConfiguredFormId(candidate, settings) {
   return String(candidate || settings?.targetFormId || FULL_RECONCILIATION_FORM_ID || '').trim();
@@ -319,6 +335,51 @@ adminRouter.post('/recover-historical', adminMutationRateLimit, async (req, res)
   }
 });
 
+// GET /api/admin/meta-leads/auth-diagnostic
+// Verifies that admin auth works and reports basic Meta env-var presence without
+// exposing secret values.  Must be registered BEFORE /:id so the literal string
+// "auth-diagnostic" is never forwarded to Mongoose findById.
+adminRouter.get('/auth-diagnostic', async (req, res) => {
+  const configured = {
+    META_APP_ID: !!process.env.META_APP_ID,
+    META_APP_SECRET: !!process.env.META_APP_SECRET,
+    META_PAGE_ID: !!process.env.META_PAGE_ID,
+    META_PAGE_ACCESS_TOKEN: !!process.env.META_PAGE_ACCESS_TOKEN,
+    META_WEBHOOK_VERIFY_TOKEN: !!process.env.META_WEBHOOK_VERIFY_TOKEN,
+    FORM_ID: FULL_RECONCILIATION_FORM_ID,
+    SENDGRID_API_KEY: !!process.env.SENDGRID_API_KEY,
+    TWILIO_ACCOUNT_SID: !!process.env.TWILIO_ACCOUNT_SID,
+    TWILIO_AUTH_TOKEN: !!process.env.TWILIO_AUTH_TOKEN,
+    TWILIO_FROM_NUMBER: !!process.env.TWILIO_FROM_NUMBER
+  };
+  const allMetaConfigured =
+    configured.META_PAGE_ID &&
+    configured.META_PAGE_ACCESS_TOKEN &&
+    configured.META_WEBHOOK_VERIFY_TOKEN;
+  return res.json({
+    ok: true,
+    adminAuthenticated: true,
+    configured,
+    allMetaConfigured,
+    checkedAt: new Date().toISOString()
+  });
+});
+
+// GET /api/admin/meta-leads/meta-access-diagnostic
+// Calls the live Meta Graph API to verify token validity, page access, form
+// access, lead-retrieval permission, and webhook subscription.
+// Does NOT run a full reconciliation — only probes access.
+// Must be registered BEFORE /:id.
+adminRouter.get('/meta-access-diagnostic', async (req, res) => {
+  try {
+    const formId = String(req.query?.formId || FULL_RECONCILIATION_FORM_ID).trim();
+    const diag = await diagnoseMetaAccess({ formId });
+    return res.json({ ok: true, diagnostic: diag, checkedAt: new Date().toISOString() });
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
 // POST /api/admin/meta-leads/followups/repair
 // Idempotent repair of leads with successful immediate messages but missing follow-up state.
 adminRouter.post('/followups/repair', adminMutationRateLimit, async (req, res) => {
@@ -327,6 +388,38 @@ adminRouter.post('/followups/repair', adminMutationRateLimit, async (req, res) =
     const limit = Number(req.body?.limit || 500);
     const report = await repairLeadFollowUps({ dryRun, limit });
     return res.json({ ok: true, report });
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+// GET /api/admin/meta-leads/reconciliation-status
+// Alias for the most recent reconciliation run + next scheduled time.
+// Must be registered BEFORE /:id.
+adminRouter.get('/reconciliation-status', async (req, res) => {
+  try {
+    const formId = String(req.query?.formId || FULL_RECONCILIATION_FORM_ID).trim();
+    const data = await getLastReconciliationRun(formId);
+    return res.json({ ok: true, ...data });
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+// GET /api/admin/meta-leads/runs
+// Returns the N most recent reconciliation run summaries for the dashboard.
+// Must be registered BEFORE /:id.
+adminRouter.get('/runs', async (req, res) => {
+  try {
+    const MetaReconciliationRun = require('../models/MetaReconciliationRun');
+    const formId = String(req.query?.formId || FULL_RECONCILIATION_FORM_ID).trim();
+    const limit = Math.min(Number(req.query?.limit || 20), 100);
+    const runs = await MetaReconciliationRun.find({ formId })
+      .sort({ startedAt: -1 })
+      .limit(limit)
+      .select('-results') // omit large per-lead array for list view
+      .lean();
+    return res.json({ ok: true, formId, runs });
   } catch (error) {
     return res.status(500).json({ ok: false, error: error.message });
   }
@@ -369,7 +462,8 @@ adminRouter.post('/import', adminMutationRateLimit, async (req, res) => {
 });
 
 // GET /api/admin/meta-leads/:id  (must come after all fixed-path GET routes)
-adminRouter.get('/:id', async (req, res) => {
+// Validates that :id is a legal MongoDB ObjectId before forwarding to Mongoose.
+adminRouter.get('/:id', requireValidObjectId, async (req, res) => {
   try {
     const data = await getLeadDetails(req.params.id);
     if (!data) return res.status(404).json({ ok: false, error: 'Lead not found' });
@@ -380,7 +474,8 @@ adminRouter.get('/:id', async (req, res) => {
 });
 
 // POST /api/admin/meta-leads/:id/actions/:action  (must come after all fixed-path POST routes)
-adminRouter.post('/:id/actions/:action', adminMutationRateLimit, async (req, res) => {
+// Validates that :id is a legal MongoDB ObjectId before forwarding to Mongoose.
+adminRouter.post('/:id/actions/:action', requireValidObjectId, adminMutationRateLimit, async (req, res) => {
   try {
     const actionMap = {
       'resend-sms': 'resend_sms',

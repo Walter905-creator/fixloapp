@@ -27,17 +27,30 @@ const authRateLimit = rateLimit({
   legacyHeaders: false,
 });
 
-// Even stricter rate limiting for admin endpoints
+// Admin-endpoint rate limiting — intentionally generous so that protected
+// diagnostic and reconciliation endpoints do not exhaust the budget after
+// only a handful of requests.  The handler enriches the response with the
+// standard RateLimit headers so callers know exactly when to retry.
 const adminRateLimit = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 10, // limit each IP to 10 admin requests per hour
-  message: {
-    error: 'Too many admin requests',
-    message: 'Please try again later',
-    retryAfter: '1 hour'
-  },
-  standardHeaders: true,
+  windowMs: 60 * 60 * 1000, // 1 hour window
+  max: 200, // 200 requests per hour per IP — covers diagnostics + reconciliation runs
+  standardHeaders: true,  // Return RateLimit-* headers (draft-6)
   legacyHeaders: false,
+  handler: (req, res, _next, options) => {
+    const resetMs = req.rateLimit?.resetTime
+      ? req.rateLimit.resetTime.getTime()
+      : Date.now() + options.windowMs;
+    const retryAfterSec = Math.ceil((resetMs - Date.now()) / 1000);
+    res.setHeader('Retry-After', retryAfterSec);
+    return res.status(429).json({
+      error: 'ADMIN_RATE_LIMIT_EXCEEDED',
+      message: 'Too many admin requests — please retry after the window resets.',
+      limit: options.max,
+      remaining: req.rateLimit?.remaining ?? 0,
+      resetAt: new Date(resetMs).toISOString(),
+      retryAfterSeconds: retryAfterSec
+    });
+  }
 });
 
 module.exports = {
