@@ -834,7 +834,7 @@ function initializeFollowUpForAvailableChannels(lead, settings, now = new Date()
  * @param {Date}    [opts.initialEmailSentAt] - when the immediate email was sent (null = not sent)
  * @param {string}  [opts.importBatchId]    - batch identifier for event metadata
  * @param {string}  [opts.source]           - source label for event metadata
- * @returns {Promise<{smsSmsScheduled: boolean, emailScheduled: boolean, smsNextAt: Date|null, emailNextAt: Date|null}>}
+ * @returns {Promise<{smsScheduled: boolean, emailScheduled: boolean, smsNextAt: Date|null, emailNextAt: Date|null}>}
  */
 async function initializeMetaLeadFollowUps({
   lead,
@@ -4266,14 +4266,12 @@ async function classifyImportRow(row = {}) {
 
   if (!phone && !email) return { classification: 'INVALID_CONTACT', existingLead: null };
 
-  // 1. Search by normalized Meta lead ID
-  let existing = metaLeadId ? await MetaLead.findOne({ metaLeadId }) : null;
-
-  // 2. Search by normalized phone
-  if (!existing && phone) existing = await MetaLead.findOne({ phone });
-
-  // 3. Search by normalized lowercase email
-  if (!existing && email) existing = await MetaLead.findOne({ email });
+  // Search by normalized Meta lead ID, phone, and email in a single query
+  const orClauses = [];
+  if (metaLeadId) orClauses.push({ metaLeadId });
+  if (phone) orClauses.push({ phone });
+  if (email) orClauses.push({ email });
+  const existing = await MetaLead.findOne({ $or: orClauses });
 
   if (!existing) return { classification: 'NEW', existingLead: null };
 

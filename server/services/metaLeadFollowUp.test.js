@@ -507,7 +507,7 @@ test('20. Follow-up dates are stored as Date objects, not strings', async () => 
 });
 
 // Bonus: Hiram Casiano deduplication logic
-test('Bonus: Duplicate contact detection by phone and email', async () => {
+test('21. Duplicate contact detection by phone and email', async () => {
   // Simulate leads #5 and #9 from the import batch (both are Hiram Casiano)
   const lead5 = { metaLeadId: '1899901847345688', phone: '+18456487303', email: 'mr.casiano10940@gmail.com' };
   const lead9 = { metaLeadId: '1699823154578594', phone: '+18456487303', email: 'mr.casiano10940@gmail.com' };

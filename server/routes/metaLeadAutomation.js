@@ -293,7 +293,7 @@ adminRouter.post('/recover-historical', adminMutationRateLimit, async (req, res)
 // Idempotent repair of leads with successful immediate messages but missing follow-up state.
 adminRouter.post('/followups/repair', adminMutationRateLimit, async (req, res) => {
   try {
-    const dryRun = req.body?.dryRun !== false;  // default true for safety
+    const dryRun = req.body?.dryRun ?? true;  // default true for safety
     const limit = Number(req.body?.limit || 500);
     const report = await repairLeadFollowUps({ dryRun, limit });
     return res.json({ ok: true, report });
