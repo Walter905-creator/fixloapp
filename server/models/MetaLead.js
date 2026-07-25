@@ -18,6 +18,10 @@ const followUpSchema = new mongoose.Schema({
   nextFollowUpAt: { type: Date, default: null },
   nextSmsFollowUpAt: { type: Date, default: null },
   nextEmailFollowUpAt: { type: Date, default: null },
+  // Timestamps for the initial (immediate) outreach — used as the sequence start
+  // for follow-up scheduling and repair.
+  initialSmsSentAt: { type: Date, default: null },
+  initialEmailSentAt: { type: Date, default: null },
   pausedAt: { type: Date, default: null },
   pausedReason: { type: String, default: null },
   stoppedReason: { type: String, default: null }
@@ -108,6 +112,8 @@ const metaLeadSchema = new mongoose.Schema({
   phone: { type: String, default: '', index: true },
   email: { type: String, default: '', lowercase: true, trim: true, index: true },
   trade: { type: String, default: '' },
+  trades: { type: [String], default: [] },
+  importBatchId: { type: String, default: '', index: true },
   city: { type: String, default: '' },
   state: { type: String, default: '' },
   zipCode: { type: String, default: '' },
