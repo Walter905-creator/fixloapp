@@ -429,15 +429,17 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
         // ---------- Homeowner estimate-fee payment ----------
         if (session.metadata?.requestType === 'homeowner_estimate_fee') {
           try {
-            const leadId = session.metadata?.leadId;
-            if (!leadId || !mongoose.Types.ObjectId.isValid(String(leadId))) {
+            const rawLeadId = session.metadata?.leadId;
+            if (!rawLeadId || !mongoose.Types.ObjectId.isValid(String(rawLeadId))) {
               console.error('❌ homeowner_estimate_fee webhook missing or invalid leadId in metadata');
               break;
             }
+            // Cast to ObjectId to sanitize the tainted string before the DB query
+            const leadId = new mongoose.Types.ObjectId(String(rawLeadId));
 
             const lead = await JobRequest.findById(leadId);
             if (!lead) {
-              console.error(`❌ homeowner_estimate_fee webhook: JobRequest ${leadId} not found`);
+              console.error(`❌ homeowner_estimate_fee webhook: JobRequest ${rawLeadId} not found`);
               break;
             }
 
