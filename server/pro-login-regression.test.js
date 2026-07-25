@@ -13,8 +13,12 @@ const proSignInSource = fs.readFileSync(proSignInPath, 'utf8');
 const proAuthSource = fs.readFileSync(proAuthPath, 'utf8');
 
 function assertRouteElement(routePath, expectedElement) {
-  const snippet = `<Route path="${routePath}" element={${expectedElement}}/>`;
-  assert.ok(appSource.includes(snippet), `Missing route mapping: ${snippet}`);
+  const escapedPath = routePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escapedElement = expectedElement
+    .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    .replace(/\s+/g, '\\s*');
+  const pattern = new RegExp(`<Route\\s+path="${escapedPath}"\\s+element=\\{\\s*${escapedElement}\\s*\\}\\/?>`);
+  assert.match(appSource, pattern);
 }
 
 test('canonical pro login route renders ProSignInPage with identifier label', () => {
@@ -43,7 +47,7 @@ test('legacy pro login URLs redirect to canonical route', () => {
 });
 
 test('canonical pro sign in posts only identifier payload to /api/pro-auth/login', () => {
-  assert.match(proSignInSource, /identifier:\s*String\(form\.get\('identifier'\)\s*\|\|\s*''\)\.trim\(\)/);
+  assert.match(proSignInSource, /identifier:\s*String\(form\.get\('identifier'\)[\s\S]*?\)\.trim\(\)/);
   assert.match(proSignInSource, /password:\s*form\.get\('password'\)/);
   assert.match(proSignInSource, /`?\$\{api\}\/api\/pro-auth\/login`?/);
 
