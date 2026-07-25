@@ -8,54 +8,118 @@ const { sendSms } = require('../utils/twilio');
 const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
 const { notify: ownerNotify } = require('../services/ownerNotificationService');
 
-// Admin owner email (Walter Arevalo) - should be set via environment variable
-const OWNER_EMAIL = process.env.OWNER_EMAIL || 'pro4u.improvements@gmail.com';
-const OWNER_USER_ID = process.env.OWNER_USER_ID; // Optional: match by user ID as well
-// Admin owner phone - allows login by phone number in addition to email match
-const OWNER_PHONE_RAW = process.env.OWNER_PHONE; // E.g. "+15164449953" or "1516-444-9953"
+// Admin owner identifiers (all supported env aliases)
+const OWNER_EMAIL_FALLBACK = 'pro4u.improvements@gmail.com';
+
+const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
+const normalizeDigits = (value) => String(value || '').replace(/\D/g, '');
+
+const getNormalizedOwnerConfig = () => {
+  const ownerEmails = [
+    process.env.OWNER_EMAIL || OWNER_EMAIL_FALLBACK,
+    process.env.FIXLO_OWNER_EMAIL
+  ].map(normalizeEmail).filter(Boolean);
+
+  const ownerPhones = [
+    process.env.OWNER_PHONE,
+    process.env.FIXLO_OWNER_PHONE
+  ]
+    .map((raw) => {
+      if (!raw) return null;
+      const normalized = normalizePhoneToE164(raw);
+      return normalized.success ? normalized.phone : null;
+    })
+    .filter(Boolean);
+
+  const ownerPhoneDigits = ownerPhones.map(normalizeDigits).filter(Boolean);
+  const ownerIds = [
+    process.env.OWNER_USER_ID,
+    process.env.FIXLO_OWNER_PRO_ID
+  ].map((id) => String(id || '').trim()).filter(Boolean);
+
+  return { ownerEmails, ownerPhones, ownerPhoneDigits, ownerIds };
+};
+
+const isOwnerPro = (pro) => {
+  if (!pro) return false;
+  const { ownerEmails, ownerPhones, ownerPhoneDigits, ownerIds } = getNormalizedOwnerConfig();
+  const proId = String(pro._id || '').trim();
+  const proEmail = normalizeEmail(pro.email);
+  const proPhoneNorm = normalizePhoneToE164(pro.phone || '').phone || null;
+  const proPhoneDigits = normalizeDigits(pro.phone);
+
+  return (
+    (proId && ownerIds.includes(proId)) ||
+    (proEmail && ownerEmails.includes(proEmail)) ||
+    (proPhoneNorm && ownerPhones.includes(proPhoneNorm)) ||
+    (proPhoneDigits && ownerPhoneDigits.includes(proPhoneDigits))
+  );
+};
+
+const findProByPhoneIdentifier = async (identifier) => {
+  const normalizationResult = normalizePhoneToE164(identifier);
+  if (!normalizationResult.success) return null;
+
+  const normalizedPhone = normalizationResult.phone;
+  let pro = await Pro.findOne({ phone: normalizedPhone });
+  if (pro) return pro;
+
+  // Legacy fallback for old records with non-E.164 formatting in database
+  const inputDigits = normalizeDigits(identifier);
+  if (!inputDigits) return null;
+  const acceptableDigits = new Set([inputDigits]);
+  if (inputDigits.length === 10) acceptableDigits.add(`1${inputDigits}`);
+  if (inputDigits.length === 11 && inputDigits.startsWith('1')) acceptableDigits.add(inputDigits.slice(1));
+
+  const suffix = inputDigits.slice(-7);
+  const candidates = await Pro.find({
+    phone: { $regex: `${suffix}$` }
+  }).limit(25);
+
+  return candidates.find((candidate) => {
+    const candidateDigits = normalizeDigits(candidate.phone);
+    return acceptableDigits.has(candidateDigits);
+  }) || null;
+};
 
 router.use(requireDatabase);
 
-// Pro login endpoint - uses phone number
+// Pro login endpoint - supports email or phone identifier
 router.post('/login', async (req, res) => {
-  const { phone, password } = req.body || {};
-  if (!phone || !password) return res.status(400).json({ error: 'Phone number and password required' });
+  const body = req.body || {};
+  const identifierRaw = body.identifier ?? body.email ?? body.phone;
+  const password = body.password;
+  const identifier = String(identifierRaw || '').trim();
+  if (!identifier || !password) return res.status(400).json({ error: 'Identifier and password are required' });
 
   try {
-    // Normalize phone number for lookup
-    const normalizationResult = normalizePhoneToE164(phone);
-    
-    if (!normalizationResult.success) {
-      console.error('❌ Login phone normalization failed:', normalizationResult.error);
-      return res.status(400).json({ error: 'Invalid phone number format' });
+    let pro = null;
+
+    if (identifier.includes('@')) {
+      const email = normalizeEmail(identifier);
+      pro = await Pro.findOne({ email });
+    } else {
+      pro = await findProByPhoneIdentifier(identifier);
     }
-    
-    const normalizedPhone = normalizationResult.phone;
-    const pro = await Pro.findOne({ phone: normalizedPhone });
+
     if (!pro) return res.status(401).json({ error: 'Invalid credentials' });
 
-    // Check if password is not set (null)
-    if (!pro.password) {
-      return res.status(403).json({ 
-        error: 'Password not set. Please reset your password.',
-        requiresPasswordReset: true
-      });
-    }
-
+    if (!pro.password) return res.status(401).json({ error: 'Invalid credentials' });
     const ok = await bcrypt.compare(password, pro.password);
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
 
-    // Check if this user is the owner
-    const ownerPhoneNorm = OWNER_PHONE_RAW ? (normalizePhoneToE164(OWNER_PHONE_RAW).phone || null) : null;
-    const isOwner = pro.email?.toLowerCase() === OWNER_EMAIL.toLowerCase() || 
-                    (OWNER_USER_ID && pro._id.toString() === OWNER_USER_ID) ||
-                    (ownerPhoneNorm && normalizedPhone === ownerPhoneNorm);
-    
+    const isOwner = isOwnerPro(pro);
+    if (!isOwner && pro.isActive === false) {
+      return res.status(403).json({ error: 'Account is disabled' });
+    }
+
+    const effectiveRole = isOwner ? 'admin' : (pro.role || 'pro');
+
     if (isOwner && process.env.NODE_ENV !== 'production') {
       console.log('🔐 Owner logged in - granting admin access');
     }
 
-    const token = sign({ role: pro.role || 'pro', id: pro._id, phone: pro.phone, isAdmin: isOwner });
+    const token = sign({ role: effectiveRole, id: pro._id, phone: pro.phone, isAdmin: isOwner });
     res.json({ 
       token, 
       pro: { 
@@ -64,6 +128,7 @@ router.post('/login', async (req, res) => {
         trade: pro.trade,
         email: pro.email,
         phone: pro.phone,
+        role: effectiveRole,
         isAdmin: isOwner
       } 
     });
