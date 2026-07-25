@@ -12,14 +12,13 @@ const appSource = fs.readFileSync(appPath, 'utf8');
 const proSignInSource = fs.readFileSync(proSignInPath, 'utf8');
 const proAuthSource = fs.readFileSync(proAuthPath, 'utf8');
 
-function assertRouteElement(routePath, expectedElementPattern) {
-  const escapedPath = routePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const pattern = new RegExp(`<Route\\s+path="${escapedPath}"\\s+element=\\{${expectedElementPattern}\\}/>`);
-  assert.match(appSource, pattern);
+function assertRouteElement(routePath, expectedElement) {
+  const snippet = `<Route path="${routePath}" element={${expectedElement}}/>`;
+  assert.ok(appSource.includes(snippet), `Missing route mapping: ${snippet}`);
 }
 
 test('canonical pro login route renders ProSignInPage with identifier label', () => {
-  assertRouteElement('/pros/login', '<ProSignInPage');
+  assertRouteElement('/pros/login', '<ProSignInPage/>');
   assert.match(proSignInSource, /Email or phone number/);
   assert.match(proSignInSource, /name="identifier"/);
   assert.match(proSignInSource, /type="text"/);
@@ -39,7 +38,7 @@ test('legacy pro login URLs redirect to canonical route', () => {
   ];
 
   for (const legacyRoute of legacyRoutes) {
-    assertRouteElement(legacyRoute, '<Navigate to="/pros/login" replace');
+    assertRouteElement(legacyRoute, '<Navigate to="/pros/login" replace/>');
   }
 });
 
