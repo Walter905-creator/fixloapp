@@ -168,7 +168,8 @@ const metaLeadSchema = new mongoose.Schema({
   profileIncomplete: { type: Boolean, default: false, index: true },
   missingFields: { type: [String], default: [] },
   smsHistory: { type: [smsHistorySchema], default: [] },
-  emailHistory: { type: [emailHistorySchema], default: [] }
+  emailHistory: { type: [emailHistorySchema], default: [] },
+  historicalRecoveryCompleted: { type: Boolean, default: false, index: true }
 }, { timestamps: true });
 
 metaLeadSchema.index({ createdAt: -1 });
