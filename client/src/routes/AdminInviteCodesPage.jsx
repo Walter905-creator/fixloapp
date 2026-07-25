@@ -101,7 +101,7 @@ export default function AdminInviteCodesPage() {
         ...(durationFilter && { membershipDuration: durationFilter })
       });
       const res = await fetch(`${API_BASE}/api/invite-codes?${params}`, { headers: authHeaders() });
-      if (res.status === 401) { navigate('/login/pro'); return; }
+      if (res.status === 401) { navigate('/pros/login'); return; }
       const data = await res.json();
       if (data.ok) {
         setCodes(data.invites || []);

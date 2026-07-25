@@ -301,7 +301,7 @@ export default function ProSignup() {
           <div className="mt-6 text-center">
             <p className="text-blue-200 text-sm">
               Already have an account?{' '}
-              <Link to="/login/pro" className="text-blue-400 hover:text-blue-300 font-semibold">
+              <Link to="/pros/login" className="text-blue-400 hover:text-blue-300 font-semibold">
                 Sign In
               </Link>
             </p>

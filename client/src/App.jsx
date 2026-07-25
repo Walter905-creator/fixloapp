@@ -70,7 +70,6 @@ import RecruiterDashboard from './pages/RecruiterDashboard.jsx';
 import ProDashboard from './pages/ProDashboard.jsx';
 // Auth pages
 import HomeownerLogin from './pages/auth/HomeownerLogin.jsx';
-import ProLogin from './pages/auth/ProLogin.jsx';
 import RecruiterLogin from './pages/auth/RecruiterLogin.jsx';
 import HomeownerSignup from './pages/auth/HomeownerSignup.jsx';
 import ProSignup from './pages/auth/ProSignup.jsx';
@@ -173,6 +172,10 @@ export default function App(){
       <Route path="/pro/setup-account/:token" element={<ProSetupAccountPage/>}/>
       <Route path="/pro/sign-in" element={<Navigate to="/pros/login" replace/>}/>
       <Route path="/pro/login" element={<Navigate to="/pros/login" replace/>}/>
+      <Route path="/pro-signin" element={<Navigate to="/pros/login" replace/>}/>
+      <Route path="/signin" element={<Navigate to="/pros/login" replace/>}/>
+      <Route path="/auth/login/pro" element={<Navigate to="/pros/login" replace/>}/>
+      <Route path="/pros/signin" element={<Navigate to="/pros/login" replace/>}/>
       <Route path="/pro/forgot-password" element={<Navigate to="/pros/forgot-password" replace/>}/>
       <Route path="/pro/reset-password" element={<Navigate to="/pros/reset-password" replace/>}/>
       
@@ -328,7 +331,7 @@ export default function App(){
       
       {/* Unified auth routes */}
       <Route path="/login/homeowner" element={<HomeownerLogin/>}/>
-      <Route path="/login/pro" element={<ProLogin/>}/>
+      <Route path="/login/pro" element={<Navigate to="/pros/login" replace/>}/>
       <Route path="/login/recruiter" element={<RecruiterLogin/>}/>
       <Route path="/signup/homeowner" element={<HomeownerSignup/>}/>
       <Route path="/signup/pro" element={<ProSignup/>}/>
