@@ -44,6 +44,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [estimateFee, setEstimateFee] = useState({ checked: false, eligible: false, amountCents: 0 });
 
   const totalSteps = 7;
 
@@ -138,6 +139,49 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
     }));
   };
 
+  const canCheckEstimateFee = Boolean(
+    formData.address?.trim() &&
+    formData.city?.trim() &&
+    formData.state?.trim() &&
+    /^\d{5}$/.test(String(formData.zip || '').trim())
+  );
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      if (!canCheckEstimateFee) {
+        setEstimateFee({ checked: false, eligible: false, amountCents: 0 });
+        return;
+      }
+      try {
+        const response = await csrfFetch(`${API_URL}/api/requests/estimate-fee`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            address: formData.address,
+            city: formData.city,
+            state: formData.state,
+            zipCode: formData.zip
+          })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!cancelled && response.ok && data.ok) {
+          setEstimateFee({
+            checked: true,
+            eligible: Boolean(data.eligible),
+            amountCents: Number(data.amountCents || 0)
+          });
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setEstimateFee({ checked: true, eligible: false, amountCents: 0 });
+        }
+      }
+    };
+    run();
+    return () => { cancelled = true; };
+  }, [canCheckEstimateFee, formData.address, formData.city, formData.state, formData.zip]);
+
   const handleSubmitRequest = async () => {
     // Free quote submission — no payment required
     setIsSubmitting(true);
@@ -155,8 +199,11 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
         serviceType: formData.serviceType === 'Other' ? formData.otherServiceType : formData.serviceType,
         fullName: formData.name,
         phone: normalizedPhone,
+        email: '',
+        address: formData.address,
         city: formData.city,
         state: formData.state,
+        zipCode: formData.zip,
         smsConsent: formData.smsConsent || false,
         details: formData.description || ''
       };
@@ -175,6 +222,11 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
       const responseData = await res.json();
       if (!responseData.requestId && !responseData.ok) {
         throw new Error(responseData.error || 'Request was not created properly');
+      }
+
+      if (responseData.requiresPayment && responseData?.data?.checkoutUrl) {
+        window.location.assign(responseData.data.checkoutUrl);
+        return;
       }
 
       // Track Meta Pixel Lead event
@@ -429,14 +481,17 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
       case 6:
         return (
           <div className="space-y-4">
-            <h3 className="text-xl font-bold text-slate-900">Free Quote & Terms</h3>
+            <h3 className="text-xl font-bold text-slate-900">Estimate & Terms</h3>
             <div className="bg-emerald-50 p-6 rounded-lg space-y-3 text-slate-800 border border-emerald-200">
-              <p className="font-semibold text-lg text-emerald-800">✓ Your quote request is completely free!</p>
+              {estimateFee.checked && estimateFee.eligible ? (
+                <div className="rounded-lg border border-emerald-300 bg-white p-4">
+                  <p className="text-sm font-semibold text-slate-900">Estimate Fee</p>
+                  <p className="text-2xl font-bold text-slate-900">${(estimateFee.amountCents / 100).toFixed(0)}</p>
+                </div>
+              ) : (
+                <p className="font-semibold text-lg text-emerald-800">✓ Your estimate request has no upfront fee.</p>
+              )}
               <ul className="space-y-2 text-sm">
-                <li className="flex items-start">
-                  <span className="font-semibold mr-2">•</span>
-                  <span><strong>No upfront fees</strong> — getting a quote costs nothing</span>
-                </li>
                 <li className="flex items-start">
                   <span className="font-semibold mr-2">•</span>
                   <span>Get matched with verified local professionals for free</span>
@@ -464,7 +519,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
                 className="mt-1 h-5 w-5 text-brand border-slate-300 rounded focus:ring-brand"
               />
               <span className="text-slate-700">
-                I understand and agree to the terms. I acknowledge that getting a free quote has no upfront fees or obligations.
+                I understand and agree to the terms for this estimate request.
               </span>
             </label>
             {errors.termsAccepted && <p className="text-red-600 text-sm">{errors.termsAccepted}</p>}
@@ -484,7 +539,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
               <div className="bg-green-50 p-4 rounded-lg space-y-2 text-sm text-slate-800">
                 <p className="font-semibold text-green-800">✓ Free quote request created</p>
                 <p className="font-semibold text-green-800">✓ Verified professionals notified</p>
-                <p className="text-green-700">No upfront fees charged</p>
+                <p className="text-green-700">Request received successfully</p>
               </div>
               <p className="text-slate-700 font-medium">
                 Your free quote request has been submitted successfully. A professional will contact you soon.
@@ -506,7 +561,11 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
           <div className="space-y-4">
             <h3 className="text-xl font-bold text-slate-900">Contact Information</h3>
             <div className="bg-emerald-50 p-3 rounded-lg text-sm text-emerald-800 border border-emerald-200">
-              <strong>Free Quote</strong> — No payment required to submit your request.
+              {estimateFee.checked && estimateFee.eligible ? (
+                <strong>Estimate Fee</strong>
+              ) : (
+                <strong>Estimate Request</strong>
+              )}
             </div>
             <input
               type="text"
@@ -561,7 +620,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
               }}
               className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? 'Submitting...' : 'Request Free Quote'}
+              {isSubmitting ? 'Submitting...' : 'Request Service'}
             </button>
           </div>
         );

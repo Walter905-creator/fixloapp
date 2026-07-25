@@ -41,7 +41,11 @@ const {
 
 // ----------------------- Models & Services -----------------------
 const Pro = require("./models/Pro");
+const JobRequest = require("./models/JobRequest");
 const geocodingService = require("./utils/geocoding");
+const { routeLead } = require("./services/leadAssignmentService");
+const { notifyOwnerForLead } = require("./services/ownerLeadNotificationService");
+const { sendHomeownerConfirmation } = require("./utils/smsSender");
 
 // ----------------------- Stripe (lazy) -----------------------
 let stripe = null;
@@ -980,6 +984,46 @@ app.post("/webhook/stripe", async (req, res) => {
   try {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
+      const homeownerEstimateFeeLeadId = session?.metadata?.requestType === 'homeowner_estimate_fee'
+        ? session?.metadata?.leadId
+        : null;
+
+      if (homeownerEstimateFeeLeadId) {
+        const lead = await JobRequest.findById(homeownerEstimateFeeLeadId);
+        if (!lead) {
+          console.warn(`⚠️ Stripe homeowner estimate webhook lead not found: ${homeownerEstimateFeeLeadId}`);
+        } else if (lead.paymentStatus !== 'captured') {
+          lead.paymentStatus = 'captured';
+          lead.paymentCapturedAt = new Date();
+          lead.stripeCheckoutSessionId = session.id;
+          lead.stripePaymentIntentId = String(session.payment_intent || lead.stripePaymentIntentId || '');
+          await lead.save();
+
+          try {
+            if (lead.smsConsent) {
+              await sendHomeownerConfirmation(lead);
+            }
+          } catch (smsErr) {
+            console.error(`❌ Homeowner confirmation SMS after payment failed (${lead._id}):`, smsErr.message);
+          }
+
+          try {
+            await notifyOwnerForLead(lead, {
+              stage: 'paid',
+              amountPaidCents: Number(session.amount_total || lead.estimateFeeAmountCents || 0)
+            });
+          } catch (ownerNotifyErr) {
+            console.error(`❌ Owner paid-lead notification failed (${lead._id}):`, ownerNotifyErr.message);
+          }
+
+          try {
+            await routeLead(lead._id);
+          } catch (routingErr) {
+            console.error(`❌ Lead routing after payment failed (${lead._id}):`, routingErr.message);
+          }
+        }
+      }
+
       const proId = session.metadata?.proId;
       if (proId) {
         await Pro.findByIdAndUpdate(proId, {

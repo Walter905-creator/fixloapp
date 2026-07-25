@@ -6,8 +6,9 @@ const Pro = require('../models/Pro');
 const { geocodeAddress } = require('../utils/geocode');
 const { sendSms, normalizeE164, isUSPhoneNumber } = require('../utils/twilio');
 const { notifyProOfLead } = require('../utils/notifications');
-const { sendHomeownerConfirmation, sendOwnerNotification } = require('../utils/smsSender');
-const { getPriorityConfig, hasPriorityRouting, getDelayMs, getOwnerPhone } = require('../config/priorityRouting');
+const { sendHomeownerConfirmation } = require('../utils/smsSender');
+const { notifyOwnerForLead } = require('../services/ownerLeadNotificationService');
+const { getPriorityConfig, hasPriorityRouting, getDelayMs } = require('../config/priorityRouting');
 const { ensureLeadCreatedEvent } = require('../services/leadTrackingService');
 
 function milesToMeters(mi) { return mi * 1609.344; }
@@ -145,12 +146,7 @@ router.post('/', async (req, res) => {
         if (isUSPhoneNumber(phone)) {
           try {
             console.log(`📢 Sending owner notification for USA lead`);
-            const ownerNotificationResult = await sendOwnerNotification(getOwnerPhone(), savedLead);
-            if (ownerNotificationResult.success) {
-              console.log(`✅ Owner notification sent successfully (SID: ${ownerNotificationResult.messageId})`);
-            } else {
-              console.log(`⚠️ Owner notification failed: ${ownerNotificationResult.reason || ownerNotificationResult.error}`);
-            }
+            await notifyOwnerForLead(savedLead, { stage: 'standard', amountPaidCents: 0 });
           } catch (ownerNotifyError) {
             console.error('❌ Owner notification error:', ownerNotifyError.message);
             // Don't fail lead submission if owner notification fails

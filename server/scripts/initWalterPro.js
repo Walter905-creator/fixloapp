@@ -1,73 +1,79 @@
 // Initialize Walter Pro user on server startup
 const Pro = require('../models/Pro');
+const mongoose = require('mongoose');
+const CHARLOTTE_COORDS = [-80.8431, 35.2271];
+const CHARLOTTE_ADDRESS = 'Charlotte, NC, United States';
 
-const PLACEHOLDER_PHONE = '+19999999999';
+function getOwnerIdentifiers() {
+  return {
+    proId: String(process.env.FIXLO_OWNER_PRO_ID || '').trim(),
+    email: String(process.env.FIXLO_OWNER_EMAIL || process.env.OWNER_EMAIL || '').trim().toLowerCase(),
+    phone: String(process.env.FIXLO_OWNER_PHONE || process.env.OWNER_PHONE || '').trim()
+  };
+}
 
-/**
- * Create initial Pro user if doesn't exist.
- * Uses OWNER_PHONE env variable for the phone number so the account
- * can receive SMS reset codes and log in with the real phone.
- * If the account already exists with the placeholder phone and OWNER_PHONE
- * is now configured, it updates the phone automatically.
- */
+function buildOwnerQuery({ proId, email, phone }) {
+  const or = [];
+  if (proId && mongoose.Types.ObjectId.isValid(proId)) or.push({ _id: proId });
+  if (email) or.push({ email });
+  if (phone) or.push({ phone });
+  return or.length ? { $or: or } : null;
+}
+
 async function initializeWalterPro() {
   try {
-    const email = 'pro4u.improvements@gmail.com';
-    const ownerPhone = process.env.OWNER_PHONE || PLACEHOLDER_PHONE;
-    
-    // Check if user already exists (search by email only, regardless of role)
-    const existingPro = await Pro.findOne({ email: email.toLowerCase() });
-    
-    if (existingPro) {
-      // If phone is still the placeholder and we now have a real number, update it
-      if (existingPro.phone === PLACEHOLDER_PHONE && ownerPhone !== PLACEHOLDER_PHONE) {
-        existingPro.phone = ownerPhone;
-        await existingPro.save({ validateBeforeSave: true });
-        console.log('✅ Walter Pro phone updated to real number');
-      } else {
-        console.log('✅ Walter Pro user already exists');
-      }
-      return existingPro;
-    }
-    
-    // Create new Pro user
-    const walterPro = await Pro.create({
-      name: 'Walter Arevalo',
-      firstName: 'Walter',
-      lastName: 'Arevalo',
-      email: email.toLowerCase(),
-      phone: ownerPhone,
-      trade: 'handyman',
-      location: {
-        type: 'Point',
-        coordinates: [-74.006, 40.7128], // NYC coordinates
-        address: 'New York, NY'
-      },
-      city: 'New York',
-      state: 'NY',
-      dob: new Date('1990-01-01'),
-      password: null, // No password set - requires reset via SMS
-      isActive: true,
-      isFreePro: true,
-      paymentStatus: 'active',
-      verificationStatus: 'verified',
-      isVerified: true,
-      backgroundCheckStatus: 'clear'
-    });
-    
-    console.log('✅ Walter Pro user created successfully');
-    console.log('📧 Email:', walterPro.email);
-    console.log('📱 Phone:', ownerPhone === PLACEHOLDER_PHONE ? 'placeholder (set OWNER_PHONE env var)' : 'configured');
-    console.log('🔑 Password: Not set - requires password reset via SMS');
-    
-    return walterPro;
-  } catch (error) {
-    // Duplicate key error — user was created concurrently or exists with a different role
-    if (error?.code === 11000) {
-      console.log('✅ Walter Pro already exists — skipping initialization');
+    const identifiers = getOwnerIdentifiers();
+    const ownerQuery = buildOwnerQuery(identifiers);
+
+    if (!ownerQuery) {
+      console.error('[OWNER_PRO_SETUP] Missing owner identifiers. Configure FIXLO_OWNER_PRO_ID and/or FIXLO_OWNER_EMAIL and/or FIXLO_OWNER_PHONE.');
+      console.error('[OWNER_PRO_SETUP] One-time admin operation: set owner env vars in Render, then restart the backend.');
       return null;
     }
-    console.error('❌ Failed to initialize Walter Pro user:', error);
+
+    const ownerPro = await Pro.findOne(ownerQuery);
+    if (!ownerPro) {
+      console.error('[OWNER_PRO_SETUP] No existing owner professional account matched FIXLO_OWNER_PRO_ID/FIXLO_OWNER_EMAIL/FIXLO_OWNER_PHONE.');
+      console.error('[OWNER_PRO_SETUP] One-time admin operation: set FIXLO_OWNER_PRO_ID to an existing Pro _id (or correct owner email/phone), then restart the backend.');
+      return null;
+    }
+
+    ownerPro.isActive = true; // active: true
+    ownerPro.subscriptionActive = ownerPro.subscriptionActive !== false;
+    ownerPro.paymentStatus = ownerPro.paymentStatus === 'failed' ? 'active' : ownerPro.paymentStatus;
+    ownerPro.subscriptionStatus = ownerPro.subscriptionStatus === 'paused' ? 'active' : ownerPro.subscriptionStatus;
+    ownerPro.isVerified = true; // approved: true
+    ownerPro.verificationStatus = 'verified'; // approved: true
+    ownerPro.wantsNotifications = true; // leadNotificationsEnabled: true
+    ownerPro.notificationSettings = {
+      ...(ownerPro.notificationSettings || {}),
+      sms: true,
+      email: true
+    };
+    ownerPro.serviceRadiusMiles = 30;
+    ownerPro.country = 'US';
+    ownerPro.state = 'NC';
+    ownerPro.city = 'Charlotte';
+    ownerPro.location = {
+      ...(ownerPro.location || {}),
+      type: 'Point',
+      coordinates: CHARLOTTE_COORDS,
+      address: ownerPro.location?.address || CHARLOTTE_ADDRESS
+    };
+
+    if (identifiers.email) ownerPro.email = identifiers.email;
+    if (identifiers.phone) ownerPro.phone = identifiers.phone;
+
+    if (ownerPro.backgroundCheckStatus === 'suspended') {
+      ownerPro.backgroundCheckStatus = 'clear'; // suspended: false
+    }
+
+    await ownerPro.save({ validateBeforeSave: true });
+
+    console.log(`[OWNER_PRO_SETUP] ✅ Owner pro configured for Charlotte lead routing (${ownerPro._id})`);
+    return ownerPro;
+  } catch (error) {
+    console.error('❌ Failed to configure owner professional account:', error);
     throw error;
   }
 }
