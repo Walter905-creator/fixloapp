@@ -26,7 +26,9 @@ const {
   markWebhookEventFailed,
   performFullMetaReconciliation,
   getLastReconciliationRun,
-  notifyAdmins
+  notifyAdmins,
+  repairLeadFollowUps,
+  importBatchLeads
 } = require('../services/metaLeadAutomationService');
 
 const router = express.Router();
@@ -281,6 +283,55 @@ adminRouter.post('/recover-historical', adminMutationRateLimit, async (req, res)
   try {
     await saveSettings({ signupLink: CANONICAL_PRO_SIGNUP_URL });
     const report = await recoverHistoricalMetaLeadsByForm({ formId, targets: leads });
+    return res.json({ ok: true, report });
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+// POST /api/admin/meta-leads/followups/repair
+// Idempotent repair of leads with successful immediate messages but missing follow-up state.
+adminRouter.post('/followups/repair', adminMutationRateLimit, async (req, res) => {
+  try {
+    const dryRun = req.body?.dryRun ?? true;  // default true for safety
+    const limit = Number(req.body?.limit || 500);
+    const report = await repairLeadFollowUps({ dryRun, limit });
+    return res.json({ ok: true, report });
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+// POST /api/admin/meta-leads/import
+// Batch import of manually provided Meta leads with deduplication, immediate
+// outreach, and follow-up enrollment.  Supports two-phase execution:
+//   Phase A: { dryRun: true, sendImmediate: false }
+//   Phase B: { dryRun: false, sendImmediate: true }
+adminRouter.post('/import', adminMutationRateLimit, async (req, res) => {
+  try {
+    const {
+      leads,
+      importBatchId,
+      source = 'meta_csv_manual',
+      dryRun = true,
+      sendImmediate = false,
+      initializeFollowUps = true,
+      repairExistingFollowUps = true
+    } = req.body || {};
+
+    if (!Array.isArray(leads) || !leads.length) {
+      return res.status(400).json({ ok: false, error: 'leads array is required' });
+    }
+
+    const report = await importBatchLeads({
+      leads,
+      importBatchId,
+      source,
+      dryRun,
+      sendImmediate,
+      initializeFollowUps,
+      repairExistingFollowUps
+    });
     return res.json({ ok: true, report });
   } catch (error) {
     return res.status(500).json({ ok: false, error: error.message });
