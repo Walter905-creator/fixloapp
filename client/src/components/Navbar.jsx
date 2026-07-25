@@ -22,7 +22,7 @@ const loginGroups = [
   {
     heading: 'Pro',
     items: [
-      { to: '/login/pro', label: 'Login' },
+      { to: '/pros/login', label: 'Login' },
       { to: '/signup/pro', label: 'Create Account' },
       { to: '/pros/forgot-password', label: 'Forgot Password' }
     ]

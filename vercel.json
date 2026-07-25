@@ -6,6 +6,12 @@
     { "source": "/for-professionals", "destination": "/for-pros", "permanent": true },
     { "source": "/pro/register", "destination": "/pros/signup", "permanent": true },
     { "source": "/pro/login", "destination": "/pros/login", "permanent": true },
+    { "source": "/login/pro", "destination": "/pros/login", "permanent": true },
+    { "source": "/pro/sign-in", "destination": "/pros/login", "permanent": true },
+    { "source": "/pro-signin", "destination": "/pros/login", "permanent": true },
+    { "source": "/pros/signin", "destination": "/pros/login", "permanent": true },
+    { "source": "/signin", "destination": "/pros/login", "permanent": true },
+    { "source": "/auth/login/pro", "destination": "/pros/login", "permanent": true },
     { "source": "/charlotte", "destination": "/request?city=charlotte-nc", "permanent": true }
   ],
   "rewrites": [

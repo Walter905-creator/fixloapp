@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import HelmetSEO from '../seo/HelmetSEO';
@@ -12,13 +12,17 @@ export default function ProSignInPage(){
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
+  useEffect(() => {
+    console.info('[PRO_LOGIN_UI] identifier login version active');
+  }, []);
+
   async function submit(e){
     e.preventDefault();
     setLoading(true);
     setError('');
     
     const form = new FormData(e.currentTarget);
-    const payload = { identifier: form.get('identifier'), password: form.get('password') };
+    const payload = { identifier: String(form.get('identifier') || '').trim(), password: form.get('password') };
     
     try{
       const url = `${api}/api/pro-auth/login`;
