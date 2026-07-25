@@ -337,34 +337,58 @@ async function sendLeadNotification(pro, lead) {
  * Send owner notification for any new USA lead.
  * Owner phone is always US-based, no consent check required (business owner)
  */
-async function sendOwnerNotification(ownerPhone, lead) {
+async function sendOwnerNotification(ownerPhone, lead, options = {}) {
   if (!ownerPhone || !lead) {
     return { success: false, reason: 'Missing owner phone or lead data' };
   }
+
+  const {
+    stage = 'standard',
+    paymentStatus = 'unpaid',
+    amountPaidCents = 0,
+    adminDashboardUrl = process.env.OWNER_DASHBOARD_URL || `${process.env.CLIENT_URL || 'https://fixloapp.com'}/admin`
+  } = options;
   
   // Owner notifications bypass consent checks as they are business notifications
   // Use direct SMS sending for owner (not using sendNonReferralSms to avoid consent checks)
   try {
+    const leadId = String(lead._id || '');
+    const ownerIdempotencyUserId = String(lead._id || '');
+    const alreadySent = leadId
+      ? await SmsNotification.wasAlreadySent(leadId, ownerIdempotencyUserId, 'owner')
+      : false;
+    if (alreadySent) {
+      return {
+        success: false,
+        idempotent: true,
+        reason: `Duplicate owner ${stage} notification prevented`
+      };
+    }
+
     const service = lead.trade || lead.serviceType || 'Service Request';
     const city = lead.city || 'Unknown City';
     const state = lead.state || 'N/A';
-    const name = lead.name || 'Customer';
+    const name = String(lead.name || 'Customer').split(' ')[0];
     const phone = lead.phone || 'N/A';
-    const description = lead.description || 'No details provided';
-    const address = lead.address || 'Address not provided';
-    const preferredTime = lead.preferredTime || lead.urgency || 'Not specified';
+    const email = lead.email || 'N/A';
+    const description = String(lead.description || 'No details provided').replace(/\s+/g, ' ').slice(0, 180);
+    const paymentLabel = stage === 'paid'
+      ? 'Paid'
+      : (stage === 'pending' ? 'Pending' : paymentStatus);
+    const amountLabel = amountPaidCents > 0 ? `$${(amountPaidCents / 100).toFixed(2)}` : '$0.00';
 
     const message =
-      `🚨 NEW FIXLO LEAD 🚨\n\n` +
+      `🚨 New Fixlo service request\n\n` +
       `Service: ${service}\n` +
-      `Location: ${city}, ${state}\n` +
       `Customer: ${name}\n` +
-      `Phone: ${phone}\n\n` +
-      `Project Details:\n"${description}"\n\n` +
-      `Address:\n${address}\n\n` +
-      `Preferred Time:\n${preferredTime}\n\n` +
+      `City/State: ${city}, ${state}\n` +
+      `Phone: ${phone}\n` +
+      `Email: ${email}\n` +
+      `Summary: ${description}\n` +
+      `Payment: ${paymentLabel}\n` +
+      `Amount Paid: ${amountLabel}\n` +
       `Lead ID: ${lead._id}\n` +
-      `Received: ${new Date().toLocaleString()}`;
+      `Admin: ${adminDashboardUrl}`;
     
     console.log(`📢 Sending owner notification to ${SmsNotification.maskPhoneNumber(ownerPhone)}`);
     
@@ -374,8 +398,8 @@ async function sendOwnerNotification(ownerPhone, lead) {
     try {
       await SmsNotification.recordNotification({
         notificationType: 'owner',
-        leadId: lead._id,
-        userId: 'owner',
+        leadId: leadId || lead._id,
+        userId: ownerIdempotencyUserId,
         userModel: 'JobRequest',
         phoneNumberMasked: SmsNotification.maskPhoneNumber(ownerPhone),
         status: 'sent',
@@ -392,7 +416,8 @@ async function sendOwnerNotification(ownerPhone, lead) {
       success: true,
       messageId: result.sid,
       channel: 'sms',
-      notificationType: 'owner'
+      notificationType: 'owner',
+      stage
     };
   } catch (error) {
     console.error(`❌ Failed to send owner notification:`, error.message);

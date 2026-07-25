@@ -4,23 +4,18 @@ const mongoose = require('mongoose');
 
 // Models & utils
 const JobRequest = require('../models/JobRequest');
-const Pro = require('../models/Pro');
 const { geocodeAddress } = require('../utils/geocoding');
 const { isUSPhoneNumber } = require('../utils/twilio');
-const { sendOwnerNotification, sendHomeownerConfirmation, sendProLeadAlert } = require('../utils/smsSender');
+const { sendHomeownerConfirmation } = require('../utils/smsSender');
 const { routeLead } = require('../services/leadAssignmentService');
-const { getPriorityConfig, getOwnerPhone } = require('../config/priorityRouting');
-const { HOMEOWNER_REQUEST_PRICE_CENTS } = require('../config/pricing');
-const { notify: ownerNotify } = require('../services/ownerNotificationService');
-
-// Homeowner quote requests are free — no upfront charge
-const HOMEOWNER_REQUEST_AMOUNT_CENTS = HOMEOWNER_REQUEST_PRICE_CENTS; // 0
+const { notifyOwnerForLead } = require('../services/ownerLeadNotificationService');
+const {
+  CHARLOTTE_ESTIMATE_FEE_ENABLED,
+  CHARLOTTE_ESTIMATE_FEE_AMOUNT_CENTS,
+  evaluateCharlotteEstimateFeeEligibility
+} = require('../config/charlotteEstimateFee');
 
 // ---------- Helpers ----------
-
-function milesToMeters(mi) {
-  return mi * 1609.344;
-}
 
 function isValidE164(phone) {
   return /^\+\d{10,15}$/.test(phone);
@@ -31,6 +26,13 @@ function normalizeUSPhone(phone) {
   if (digits.length === 10) return `+1${digits}`;
   if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
   return null;
+}
+
+function buildAddressString({ address, city, state, zipCode }) {
+  return [address, city, state, zipCode, 'USA']
+    .map((value) => String(value || '').trim())
+    .filter(Boolean)
+    .join(', ');
 }
 
 // ---------- Stripe ----------
@@ -65,6 +67,29 @@ if (process.env.STRIPE_SECRET_KEY) {
 
 // ---------- POST /api/requests ----------
 
+router.post('/estimate-fee', async (req, res) => {
+  try {
+    const { address, city, state, zipCode } = req.body || {};
+    const eligibility = await evaluateCharlotteEstimateFeeEligibility({
+      address,
+      city,
+      state,
+      zip: zipCode
+    });
+
+    return res.json({
+      ok: true,
+      eligible: eligibility.eligible,
+      amountCents: eligibility.amountCents || 0,
+      amountDollars: Number(((eligibility.amountCents || 0) / 100).toFixed(2)),
+      feeLabel: eligibility.eligible ? 'Estimate Fee' : null
+    });
+  } catch (error) {
+    console.error('❌ Estimate fee eligibility error:', error.message);
+    return res.status(500).json({ ok: false, error: 'Unable to determine estimate fee eligibility' });
+  }
+});
+
 router.post('/', async (req, res) => {
   const isDev = process.env.NODE_ENV !== 'production';
   if (isDev) console.log(`[REQUESTS] ► Incoming  | POST /api/requests`);
@@ -74,8 +99,11 @@ router.post('/', async (req, res) => {
       serviceType,
       fullName,
       phone,
+      email,
+      address,
       city,
       state,
+      zipCode,
       smsConsent,
       details
     } = req.body || {};
@@ -125,13 +153,14 @@ router.post('/', async (req, res) => {
 
     let lat = 39.8283;
     let lng = -98.5795;
-    let formattedAddress = `${city}, ${state}`;
+    const geocodeSource = buildAddressString({ address, city, state, zipCode }) || `${city}, ${state}`;
+    let formattedAddress = geocodeSource;
 
     // 5️⃣ GUARD GEOCODING (DO NOT BREAK FLOW)
     let coords = null;
     try {
       if (typeof geocodeAddress === 'function') {
-        const geo = await geocodeAddress(formattedAddress);
+        const geo = await geocodeAddress(geocodeSource);
         lat = geo.lat;
         lng = geo.lng;
         formattedAddress = geo.formatted;
@@ -140,6 +169,15 @@ router.post('/', async (req, res) => {
     } catch (e) {
       console.warn('⚠️ Geocoding failed, using default coordinates:', e.message);
     }
+
+    const eligibility = await evaluateCharlotteEstimateFeeEligibility({
+      address,
+      city,
+      state,
+      zip: zipCode,
+      coordinates: coords
+    });
+    const requiresEstimateFee = eligibility.eligible && CHARLOTTE_ESTIMATE_FEE_ENABLED;
 
     // ---------- Save Job ----------
 
@@ -154,17 +192,25 @@ router.post('/', async (req, res) => {
       const jobData = {
         requestId,
         name: fullName.trim(),
+        email: email?.trim().toLowerCase() || undefined,
         phone: normalizedPhone,
         trade: rawService,
-        address: formattedAddress,
+        address: address?.trim() || formattedAddress,
         city: city.trim(),
         state: state.trim(),
+        zip: String(zipCode || '').trim(),
         description: details?.trim() || 'No additional details provided',
         preferredTime: req.body.preferredTime?.trim() || '',
         status: 'pending',
         smsConsent,
         smsConsentAt: smsConsent ? new Date() : null,
-        source: 'website'
+        source: 'website',
+        estimateFeeEligible: eligibility.eligible,
+        estimateFeeRequired: requiresEstimateFee,
+        estimateFeeAmountCents: requiresEstimateFee ? CHARLOTTE_ESTIMATE_FEE_AMOUNT_CENTS : 0,
+        estimateFeeCurrency: 'usd',
+        ownerSmsStatus: 'pending',
+        ownerEmailStatus: 'pending'
       };
 
       savedLead = await JobRequest.create(jobData);
@@ -172,6 +218,59 @@ router.post('/', async (req, res) => {
       // 6️⃣ LOG CRITICAL EVENTS
       console.log('💾 Job saved:', requestId, '| ID:', savedLead._id);
       if (isDev) console.log(`[REQUESTS] ✓ DB save    | JobRequest _id=${savedLead._id}`);
+
+      if (requiresEstimateFee) {
+        if (!stripe) {
+          return res.status(503).json({
+            ok: false,
+            error: 'Estimate fee payments are temporarily unavailable'
+          });
+        }
+
+        const encodedLeadId = encodeURIComponent(String(savedLead._id));
+        const successUrl = `${process.env.CLIENT_URL || 'https://fixloapp.com'}/request?payment=success&leadId=${encodedLeadId}`;
+        const cancelUrl = `${process.env.CLIENT_URL || 'https://fixloapp.com'}/request?payment=cancelled&leadId=${encodedLeadId}`;
+
+        const session = await stripe.checkout.sessions.create({
+          mode: 'payment',
+          payment_method_types: ['card'],
+          line_items: [
+            {
+              price_data: {
+                currency: 'usd',
+                unit_amount: CHARLOTTE_ESTIMATE_FEE_AMOUNT_CENTS,
+                product_data: {
+                  name: 'Estimate Fee'
+                }
+              },
+              quantity: 1
+            }
+          ],
+          success_url: successUrl,
+          cancel_url: cancelUrl,
+          metadata: {
+            requestType: 'homeowner_estimate_fee',
+            leadId: String(savedLead._id),
+            requestId: requestId
+          }
+        });
+
+        savedLead.stripeCheckoutSessionId = session.id;
+        savedLead.paymentStatus = 'authorized';
+        await savedLead.save();
+
+        return res.status(202).json({
+          ok: true,
+          success: true,
+          requiresPayment: true,
+          requestId,
+          data: {
+            leadId: savedLead._id,
+            checkoutUrl: session.url,
+            estimateFeeAmountCents: CHARLOTTE_ESTIMATE_FEE_AMOUNT_CENTS
+          }
+        });
+      }
 
       // Send homeowner confirmation SMS
       if (smsConsent) {
@@ -187,40 +286,20 @@ router.post('/', async (req, res) => {
         }
       }
 
-      // Send owner notification for any USA lead
-      if (isUSPhoneNumber(phone)) {
-        try {
-          console.log(`📢 Sending owner notification for USA lead`);
-          const ownerResult = await sendOwnerNotification(getOwnerPhone(), savedLead);
-          if (ownerResult.success) {
-            console.log(`✅ Owner notification sent successfully (SID: ${ownerResult.messageId})`);
-          } else {
-            console.log(`⚠️ Owner notification skipped: ${ownerResult.reason || ownerResult.error}`);
-          }
-        } catch (ownerErr) {
-          // Don't fail lead processing if owner notification fails
-          console.error('❌ Owner notification error:', ownerErr.message);
-        }
+      // Owner admin notification for all successfully-created requests
+      if (!savedLead.estimateFeeRequired && isUSPhoneNumber(phone)) {
+        await notifyOwnerForLead(savedLead, {
+          stage: 'standard',
+          amountPaidCents: 0
+        });
       }
-
-      // Fire-and-forget owner email notification for service request
-      ownerNotify('service_request', {
-        service:       rawService,
-        homeownerName: savedLead.name,
-        email:         savedLead.email || 'N/A',
-        phone:         savedLead.phone,
-        city:          savedLead.city || city?.trim() || 'N/A',
-        state:         savedLead.state || state?.trim() || 'N/A',
-        requestedDate: savedLead.createdAt?.toISOString() || new Date().toISOString(),
-        leadId:        String(savedLead._id)
-      }).catch(() => {});
     } else {
       if (isDev) console.log(`[REQUESTS] ⚠ DB save    | MongoDB not connected (readyState=${mongoose.connection.readyState}), skipping save`);
     }
 
     // ---------- Notify Pros ----------
 
-    if (savedLead) {
+    if (savedLead && !savedLead.estimateFeeRequired) {
       try {
         await routeLead(savedLead._id);
       } catch (routingError) {
@@ -236,7 +315,9 @@ router.post('/', async (req, res) => {
       ok: true,
       success: true,
       requestId,
-      message: 'Your free quote request has been submitted successfully. A professional will contact you soon.',
+      message: savedLead?.estimateFeeRequired
+        ? 'Your request has been received and will be routed after payment confirmation.'
+        : 'Your free quote request has been submitted successfully. A professional will contact you soon.',
       data: {
         leadId: savedLead?._id || null
       }

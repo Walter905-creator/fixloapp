@@ -29,7 +29,9 @@ const {
   performFullMetaReconciliation,
   getLastReconciliationRun,
   getMetaLeadFormDiagnostics,
-  notifyAdmins
+  notifyAdmins,
+  repairLeadFollowUps,
+  importBatchLeads
 } = require('../services/metaLeadAutomationService');
 
 const router = express.Router();
@@ -229,9 +231,17 @@ adminRouter.post('/jobs/meta-reconcile/run', adminMutationRateLimit, async (req,
   try {
     const settings = await getSettings();
     const formId = resolveConfiguredFormId(req.body?.formId, settings);
+    const formIds = Array.isArray(req.body?.formIds)
+      ? req.body.formIds
+      : String(req.body?.formIds || '').trim();
     const rawDaysBack = req.body?.daysBack !== undefined ? Number(req.body.daysBack) : 30;
     const daysBack = Number.isFinite(rawDaysBack) && rawDaysBack >= 0 ? Math.floor(rawDaysBack) : 30;
-    const result = await performFullMetaReconciliation({ formId, daysBack, triggeredBy: 'admin' });
+    const result = await performFullMetaReconciliation({
+      formId,
+      formIds,
+      daysBack,
+      triggeredBy: 'admin'
+    });
     return res.json({ ok: true, result });
   } catch (error) {
     return res.status(500).json({ ok: false, error: error.message });
@@ -303,6 +313,55 @@ adminRouter.post('/recover-historical', adminMutationRateLimit, async (req, res)
   try {
     await saveSettings({ signupLink: CANONICAL_PRO_SIGNUP_URL });
     const report = await recoverHistoricalMetaLeadsByForm({ formId, targets: leads });
+    return res.json({ ok: true, report });
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+// POST /api/admin/meta-leads/followups/repair
+// Idempotent repair of leads with successful immediate messages but missing follow-up state.
+adminRouter.post('/followups/repair', adminMutationRateLimit, async (req, res) => {
+  try {
+    const dryRun = req.body?.dryRun ?? true;  // default true for safety
+    const limit = Number(req.body?.limit || 500);
+    const report = await repairLeadFollowUps({ dryRun, limit });
+    return res.json({ ok: true, report });
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+// POST /api/admin/meta-leads/import
+// Batch import of manually provided Meta leads with deduplication, immediate
+// outreach, and follow-up enrollment.  Supports two-phase execution:
+//   Phase A: { dryRun: true, sendImmediate: false }
+//   Phase B: { dryRun: false, sendImmediate: true }
+adminRouter.post('/import', adminMutationRateLimit, async (req, res) => {
+  try {
+    const {
+      leads,
+      importBatchId,
+      source = 'meta_csv_manual',
+      dryRun = true,
+      sendImmediate = false,
+      initializeFollowUps = true,
+      repairExistingFollowUps = true
+    } = req.body || {};
+
+    if (!Array.isArray(leads) || !leads.length) {
+      return res.status(400).json({ ok: false, error: 'leads array is required' });
+    }
+
+    const report = await importBatchLeads({
+      leads,
+      importBatchId,
+      source,
+      dryRun,
+      sendImmediate,
+      initializeFollowUps,
+      repairExistingFollowUps
+    });
     return res.json({ ok: true, report });
   } catch (error) {
     return res.status(500).json({ ok: false, error: error.message });

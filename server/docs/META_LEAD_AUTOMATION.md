@@ -41,6 +41,8 @@
   - `resend-sms`, `resend-email`, `pause`, `resume`, `mark-closed`, `assign-recruiter`, `add-note`
 - `POST /api/admin/meta-leads/jobs/followups/run`
 - `POST /api/admin/meta-leads/jobs/reconcile/run`
+- `POST /api/admin/meta-leads/jobs/meta-reconcile/run`
+  - Discovers active page forms automatically, or validates `formId` / `formIds` before reconciling.
 
 ### Scheduler jobs
 Added in `server/services/scheduledTasks.js`:
@@ -48,6 +50,10 @@ Added in `server/services/scheduledTasks.js`:
   - Sends due reminders at configured intervals.
 - `meta-lead-registration-reconcile` (every 15 minutes)
   - Detects registration/subscription/invitation redemption and stops follow-ups automatically.
+- `meta-full-reconcile` (every 15 minutes)
+  - Discovers/validates all active accessible forms for the configured page.
+  - Ignores stale configured forms without blocking valid forms.
+  - Reconciles recent leads across every active form and records results per form.
 
 ### Admin dashboard pages
 - `client/src/routes/AdminLeadAutomationPage.jsx`
@@ -65,6 +71,9 @@ Set in backend environment (see `server/.env.example`):
 - `META_WEBHOOK_VERIFY_TOKEN`
 - `META_APP_SECRET`
 - `META_PAGE_ACCESS_TOKEN` (single page) OR `META_PAGE_ACCESS_TOKENS` (JSON map for multiple pages)
+- `META_PAGE_ID` (required for scheduled form discovery/validation)
+- `META_GRAPH_API_VERSION` (optional, defaults to `v20.0`)
+- `META_LEAD_FORM_IDS` (optional comma-separated allowlist; each ID is validated against the page before use)
 - `META_LEAD_SMS_STATUS_CALLBACK_URL` (optional override)
 - `SERVER_BASE_URL` (optional callback URL base)
 - `PRO_SIGNUP_URL` (optional template URL, default `https://fixloapp.com/pros`)

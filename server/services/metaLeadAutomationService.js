@@ -45,6 +45,9 @@ const SMS_STATUS_PRECEDENCE = {
 };
 const FOLLOW_UP_SCHEDULE_HOURS = [24, 72, 168, 336];
 const FOLLOW_UP_STAGE_KEYS = ['24h', '72h', '7d', '14d'];
+const DEFAULT_META_GRAPH_API_VERSION = 'v20.0';
+const ARCHIVED_META_FORM_STATUSES = new Set(['ARCHIVED', 'DELETED', 'DISABLED', 'INACTIVE']);
+const ACTIVE_META_FORM_STATUSES = new Set(['ACTIVE']);
 
 let sendgridReady = false;
 function ensureSendGrid() {
@@ -89,6 +92,88 @@ function getDefaultPageId() {
   } catch {
     return '';
   }
+}
+
+function getMetaGraphApiVersion() {
+  const raw = String(process.env.META_GRAPH_API_VERSION || '').trim();
+  return /^v\d+\.\d+$/i.test(raw) ? raw.toLowerCase() : DEFAULT_META_GRAPH_API_VERSION;
+}
+
+function getMetaGraphApiUrl(pathname = '') {
+  return `https://graph.facebook.com/${getMetaGraphApiVersion()}/${pathname}`;
+}
+
+function parseConfiguredFormIds(value) {
+  if (Array.isArray(value)) {
+    return [...new Set(value.map((item) => String(item || '').trim()).filter(Boolean))];
+  }
+
+  return [...new Set(
+    String(value || '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+  )];
+}
+
+function getConfiguredMetaLeadFormIds(options = {}) {
+  if (options.formIds !== undefined) return parseConfiguredFormIds(options.formIds);
+  if (options.formId !== undefined) return parseConfiguredFormIds(options.formId);
+  if (process.env.META_LEAD_FORM_IDS) return parseConfiguredFormIds(process.env.META_LEAD_FORM_IDS);
+  return [];
+}
+
+function getLegacyMetaLeadFormIds() {
+  return parseConfiguredFormIds(process.env.META_LEAD_FORM_ID);
+}
+
+function normalizeMetaForm(form = {}) {
+  const status = String(form.status || '').trim().toUpperCase();
+  const archived = ARCHIVED_META_FORM_STATUSES.has(status);
+  const active = ACTIVE_META_FORM_STATUSES.has(status) || (!status && !archived);
+
+  return {
+    id: String(form.id || '').trim(),
+    name: String(form.name || '').trim(),
+    status,
+    created_time: form.created_time || null,
+    page_id: String(form.page_id || '').trim(),
+    locale: form.locale || null,
+    active,
+    archived
+  };
+}
+
+function sanitizeMetaGraphError(error) {
+  const graphError = error?.response?.data?.error || {};
+  const payload = {
+    message: String(
+      graphError?.message ||
+      error?.message ||
+      'Meta Graph API error'
+    ),
+    type: graphError?.type ? String(graphError.type) : undefined,
+    code: Number.isFinite(Number(graphError?.code)) ? Number(graphError.code) : undefined,
+    errorSubcode: Number.isFinite(Number(graphError?.error_subcode)) ? Number(graphError.error_subcode) : undefined,
+    errorUserTitle: graphError?.error_user_title ? String(graphError.error_user_title) : undefined,
+    errorUserMsg: graphError?.error_user_msg ? String(graphError.error_user_msg) : undefined,
+    fbTraceId: graphError?.fbtrace_id ? String(graphError.fbtrace_id) : undefined
+  };
+
+  return JSON.stringify(payload);
+}
+
+function isMetaNotFoundError(error) {
+  const code = Number(error?.response?.data?.error?.code || 0);
+  const subcode = Number(error?.response?.data?.error?.error_subcode || 0);
+  const message = sanitizeMetaGraphError(error);
+  return code === 100 || subcode === 33 || /does not exist|unsupported get request/i.test(message);
+}
+
+function isMetaPermissionError(error) {
+  const code = Number(error?.response?.data?.error?.code || 0);
+  const message = sanitizeMetaGraphError(error);
+  return code === 10 || code === 200 || /missing permissions|permission|access token|not visible/i.test(message);
 }
 
 function normalizeProSignupLink(value) {
@@ -823,6 +908,111 @@ function initializeFollowUpForAvailableChannels(lead, settings, now = new Date()
   return { availability, sequence: 'email_only' };
 }
 
+/**
+ * Shared follow-up initializer — called from ALL ingestion paths after immediate
+ * messages are sent.  Stores initialSmsSentAt / initialEmailSentAt, sets
+ * channel-specific next follow-up dates (real MongoDB Date values), and creates
+ * followup_scheduled timeline events.
+ *
+ * SMS failure does not block email initialization, and vice versa.
+ * Meta Graph API unavailability does not block either channel.
+ *
+ * @param {object} opts
+ * @param {object}   opts.lead              - MetaLead document (pre-saved or saved)
+ * @param {object}   opts.settings          - merged automation settings
+ * @param {Date}    [opts.initialSmsSentAt] - when the immediate SMS was sent (null = not sent)
+ * @param {Date}    [opts.initialEmailSentAt] - when the immediate email was sent (null = not sent)
+ * @param {string}  [opts.importBatchId]    - batch identifier for event metadata
+ * @param {string}  [opts.source]           - source label for event metadata
+ * @returns {Promise<{smsScheduled: boolean, emailScheduled: boolean, smsNextAt: Date|null, emailNextAt: Date|null}>}
+ */
+async function initializeMetaLeadFollowUps({
+  lead,
+  settings,
+  initialSmsSentAt = null,
+  initialEmailSentAt = null,
+  importBatchId = '',
+  source = '',
+  logEventFn = logEvent
+} = {}) {
+  let smsScheduled = false;
+  let emailScheduled = false;
+
+  // ── SMS channel ──────────────────────────────────────────────────────────
+  try {
+    if (initialSmsSentAt && isSmsChannelAvailable(lead)) {
+      const smsBaseTime = new Date(initialSmsSentAt);
+      const smsStep = Math.max(0, Number(lead.followUp.smsStep || 0));
+      const nextSmsAt = getNextFollowUpAt(smsBaseTime, settings.followUpTimingsHours, smsStep);
+
+      lead.followUp.initialSmsSentAt = smsBaseTime;
+      lead.followUp.smsStep = smsStep;
+      lead.followUp.smsEnabled = true;
+      lead.followUp.nextSmsFollowUpAt = nextSmsAt || null;
+      smsScheduled = !!nextSmsAt;
+
+      if (smsScheduled) {
+        const smsStage = getFollowUpStage(smsStep) || `step${smsStep}`;
+        const smsTemplate = reminderTemplateByStep(smsStep);
+        await logEventFn(lead._id, 'followup_scheduled', 'sms', 'SMS follow-up scheduled', `Follow-up step 1 scheduled`, {
+          sequenceStep: smsStep + 1,
+          scheduledFor: nextSmsAt,
+          templateKey: smsTemplate,
+          source: source || 'system',
+          importBatchId: importBatchId || undefined
+        });
+      }
+    }
+  } catch (smsErr) {
+    console.error(`[META_FOLLOWUP] SMS init error lead=${lead._id} reason=${smsErr.message}`);
+  }
+
+  // ── Email channel ────────────────────────────────────────────────────────
+  try {
+    if (initialEmailSentAt && isEmailChannelAvailable(lead)) {
+      const emailBaseTime = new Date(initialEmailSentAt);
+      const emailStep = Math.max(0, Number(lead.followUp.emailStep || 0));
+      const nextEmailAt = getNextFollowUpAt(emailBaseTime, settings.followUpTimingsHours, emailStep);
+
+      lead.followUp.initialEmailSentAt = emailBaseTime;
+      lead.followUp.emailStep = emailStep;
+      lead.followUp.emailEnabled = true;
+      lead.followUp.nextEmailFollowUpAt = nextEmailAt || null;
+      emailScheduled = !!nextEmailAt;
+
+      if (emailScheduled) {
+        const emailStage = getFollowUpStage(emailStep) || `step${emailStep}`;
+        const emailTemplate = reminderTemplateByStep(emailStep);
+        await logEventFn(lead._id, 'followup_scheduled', 'email', 'Email follow-up scheduled', `Follow-up step 1 scheduled`, {
+          sequenceStep: emailStep + 1,
+          scheduledFor: nextEmailAt,
+          templateKey: emailTemplate,
+          source: source || 'system',
+          importBatchId: importBatchId || undefined
+        });
+      }
+    }
+  } catch (emailErr) {
+    console.error(`[META_FOLLOWUP] Email init error lead=${lead._id} reason=${emailErr.message}`);
+  }
+
+  // Sync the legacy nextFollowUpAt from channel-specific dates
+  syncLegacyFollowUpPointers(lead);
+
+  // Activate the sequence overall if at least one channel is ready
+  if ((smsScheduled || emailScheduled) && lead.followUp.status !== 'paused') {
+    lead.followUp.status = 'active';
+  }
+
+  return {
+    smsScheduled,
+    emailScheduled,
+    smsNextAt: lead.followUp.nextSmsFollowUpAt || null,
+    emailNextAt: lead.followUp.nextEmailFollowUpAt || null
+  };
+}
+
+
 async function markSequenceStopped(lead, reason) {
   lead.followUp.status = 'stopped';
   lead.followUp.stoppedReason = reason;
@@ -1095,10 +1285,10 @@ async function fetchMetaFormLeads(formId, deps = {}) {
   // formId has already been validated as a purely numeric Meta ID by isNumericMetaId();
   // encodeURIComponent is applied here so that no user-controlled string reaches the URL path.
   const safeFormId = encodeURIComponent(String(formId));
-  const { data: form } = await axiosInstance.get(buildMetaGraphUrl(safeFormId), {
+  const { data: form } = await axiosInstance.get(getMetaGraphApiUrl(safeFormId), {
     params: {
       access_token: token,
-      fields: 'id,name,page_id,status,created_time'
+      fields: 'id,name,status,created_time,page_id,locale'
     },
     timeout: 15000
   });
@@ -1114,7 +1304,7 @@ async function fetchMetaFormLeads(formId, deps = {}) {
     };
     if (after) params.after = after;
 
-    const { data } = await axiosInstance.get(buildMetaGraphUrl(`${safeFormId}/leads`), {
+    const { data } = await axiosInstance.get(getMetaGraphApiUrl(`${safeFormId}/leads`), {
       params,
       timeout: 15000
     });
@@ -1130,47 +1320,109 @@ async function fetchMetaFormLeads(formId, deps = {}) {
   };
 }
 
-async function fetchMetaPageForms(pageId, deps = {}) {
+async function fetchMetaLeadForm(formId, deps = {}) {
   const axiosInstance = deps.axiosInstance || axios;
-  const normalizedPageId = String(pageId || '').trim();
-  const token = deps.accessToken || getPageToken(normalizedPageId) || getAnyMetaAccessToken();
+  const token = deps.accessToken || getAnyMetaAccessToken();
+
+  if (!isNumericMetaId(String(formId || ''))) {
+    throw new Error('Invalid Meta form ID');
+  }
+  if (!token) {
+    throw new Error('Missing Meta page access token');
+  }
+
+  const safeFormId = encodeURIComponent(String(formId));
+  const { data } = await axiosInstance.get(getMetaGraphApiUrl(safeFormId), {
+    params: {
+      access_token: token,
+      fields: 'id,name,status,created_time,page_id,locale'
+    },
+    timeout: 15000
+  });
+
+  return normalizeMetaForm(data || {});
+}
+
+async function fetchMetaPageLeadForms(pageId, deps = {}) {
+  const axiosInstance = deps.axiosInstance || axios;
+  const token = deps.accessToken || getPageToken(pageId) || getAnyMetaAccessToken();
   const pageSize = Number(deps.pageSize || 100);
 
-  if (!isNumericMetaId(normalizedPageId)) {
+  if (!isNumericMetaId(String(pageId || ''))) {
     throw new Error('Invalid Meta page ID');
   }
   if (!token) {
     throw new Error('Missing Meta page access token');
   }
 
-  const safePageId = encodeURIComponent(normalizedPageId);
+  const safePageId = encodeURIComponent(String(pageId));
   const forms = [];
   let after = null;
 
   do {
     const params = {
       access_token: token,
-      fields: 'id,name,status,created_time,page_id',
+      fields: 'id,name,status,created_time,page_id,locale',
       limit: pageSize
     };
     if (after) params.after = after;
 
-    const { data } = await axiosInstance.get(buildMetaGraphUrl(`${safePageId}/leadgen_forms`), {
+    const { data } = await axiosInstance.get(getMetaGraphApiUrl(`${safePageId}/leadgen_forms`), {
       params,
       timeout: 15000
     });
 
-    forms.push(...(Array.isArray(data?.data) ? data.data : []));
+    const batch = Array.isArray(data?.data) ? data.data.map((form) => normalizeMetaForm({
+      ...form,
+      page_id: form?.page_id || pageId
+    })) : [];
+    forms.push(...batch);
     after = data?.paging?.cursors?.after || null;
   } while (after);
 
-  return forms.map((form) => ({
-    id: String(form?.id || ''),
-    name: String(form?.name || ''),
-    status: String(form?.status || ''),
-    createdTime: form?.created_time || null,
-    pageId: String(form?.page_id || normalizedPageId)
-  }));
+  return forms;
+}
+
+async function classifyConfiguredMetaForm(formId, deps = {}) {
+  const normalizedFormId = String(formId || '').trim();
+  const normalizedPageId = String(deps.pageId || getDefaultPageId() || '').trim();
+  const discoveredForms = Array.isArray(deps.discoveredForms) ? deps.discoveredForms : [];
+  const fromPage = discoveredForms.find((form) => form.id === normalizedFormId);
+
+  if (fromPage) {
+    return {
+      classification: fromPage.active ? 'FORM_FOUND_ACTIVE' : 'FORM_FOUND_ARCHIVED',
+      form: fromPage,
+      foundOnPage: true
+    };
+  }
+
+  try {
+    const form = await (deps.fetchMetaLeadFormImpl || fetchMetaLeadForm)(normalizedFormId, deps);
+    if (form.page_id && normalizedPageId && form.page_id !== normalizedPageId) {
+      return {
+        classification: 'FORM_BELONGS_TO_DIFFERENT_PAGE',
+        form,
+        foundOnPage: false
+      };
+    }
+
+    return {
+      classification: form.active ? 'FORM_FOUND_ACTIVE' : 'FORM_FOUND_ARCHIVED',
+      form,
+      foundOnPage: false
+    };
+  } catch (error) {
+    const sanitizedError = sanitizeMetaGraphError(error);
+    return {
+      classification: isMetaPermissionError(error)
+        ? 'FORM_NOT_VISIBLE_TO_TOKEN'
+        : (isMetaNotFoundError(error) ? 'FORM_NOT_FOUND' : 'FORM_NOT_FOUND'),
+      form: null,
+      foundOnPage: false,
+      error: sanitizedError
+    };
+  }
 }
 
 async function getMetaLeadFormDiagnostics({
@@ -1183,13 +1435,20 @@ async function getMetaLeadFormDiagnostics({
   const activeSettings = settings || await getSettings();
   const resolvedPageId = String(pageId || getDefaultPageId() || '').trim();
   const resolvedFormId = String(formId || activeSettings.targetFormId || FULL_RECONCILIATION_FORM_ID || '').trim();
-  const warning = buildMetaDataAccessWarning(activeSettings);
+  const mapDiagnosticForm = (form = {}) => ({
+    id: String(form.id || '').trim(),
+    name: String(form.name || '').trim(),
+    status: String(form.status || '').trim().toUpperCase(),
+    createdTime: form.createdTime || form.created_time || null,
+    pageId: String(form.pageId || form.page_id || '').trim()
+  });
+
   const diagnostics = {
-    graphApiVersion: META_GRAPH_API_VERSION,
+    graphApiVersion: getMetaGraphApiVersion(),
     pageId: resolvedPageId || null,
     targetFormId: resolvedFormId || null,
     classification: null,
-    warning,
+    warning: buildMetaDataAccessWarning(activeSettings),
     pageFormsError: null,
     accessibleForms: [],
     targetForm: null,
@@ -1202,10 +1461,10 @@ async function getMetaLeadFormDiagnostics({
   };
 
   try {
-    diagnostics.accessibleForms = await fetchMetaPageForms(resolvedPageId, {
+    diagnostics.accessibleForms = (await fetchMetaPageLeadForms(resolvedPageId, {
       accessToken,
       pageSize
-    });
+    })).map(mapDiagnosticForm);
   } catch (error) {
     diagnostics.pageFormsError = getMetaGraphErrorMessage(error);
     diagnostics.classification = isUnsupportedMetaEndpointError(error)
@@ -1226,29 +1485,20 @@ async function getMetaLeadFormDiagnostics({
 
   diagnostics.directFormLookup.attempted = true;
   try {
-    const { data } = await axios.get(buildMetaGraphUrl(encodeURIComponent(resolvedFormId)), {
-      params: {
-        access_token: accessToken || getPageToken(resolvedPageId) || getAnyMetaAccessToken(),
-        fields: 'id,name,status,created_time,page_id'
-      },
-      timeout: 15000
+    const form = await fetchMetaLeadForm(resolvedFormId, {
+      accessToken: accessToken || getPageToken(resolvedPageId) || getAnyMetaAccessToken(),
+      axiosInstance: axios
     });
-
+    const directForm = mapDiagnosticForm(form);
     diagnostics.directFormLookup.ok = true;
-    diagnostics.directFormLookup.form = {
-      id: String(data?.id || ''),
-      name: String(data?.name || ''),
-      status: String(data?.status || ''),
-      createdTime: data?.created_time || null,
-      pageId: String(data?.page_id || '')
-    };
+    diagnostics.directFormLookup.form = directForm;
 
-    if (!diagnostics.targetForm && diagnostics.directFormLookup.form.id) {
-      diagnostics.targetForm = diagnostics.directFormLookup.form;
-      if (diagnostics.directFormLookup.form.pageId && diagnostics.directFormLookup.form.pageId !== resolvedPageId) {
+    if (!diagnostics.targetForm && directForm.id) {
+      diagnostics.targetForm = directForm;
+      if (directForm.pageId && directForm.pageId !== resolvedPageId) {
         diagnostics.classification = 'FORM_BELONGS_TO_DIFFERENT_PAGE';
       } else {
-        diagnostics.classification = isArchivedMetaFormStatus(diagnostics.directFormLookup.form.status)
+        diagnostics.classification = isArchivedMetaFormStatus(directForm.status)
           ? 'FORM_ARCHIVED'
           : 'FORM_FOUND';
       }
@@ -1330,7 +1580,7 @@ async function fetchMetaLeadData(metaLeadId, pageId) {
   const token = getPageToken(pageId);
   if (!token) throw new Error('Missing Meta page access token');
 
-  const { data } = await axios.get(`https://graph.facebook.com/v20.0/${metaLeadId}`, {
+  const { data } = await axios.get(getMetaGraphApiUrl(metaLeadId), {
     params: {
       access_token: token,
       fields: 'id,created_time,field_data,form_id,ad_id,campaign_id,adgroup_id,is_organic,platform'
@@ -1339,16 +1589,16 @@ async function fetchMetaLeadData(metaLeadId, pageId) {
   });
 
   const [form, campaign, adSet, ad] = await Promise.all([
-    data.form_id ? axios.get(`https://graph.facebook.com/v20.0/${data.form_id}`, {
+    data.form_id ? axios.get(getMetaGraphApiUrl(data.form_id), {
       params: { access_token: token, fields: 'id,name' }, timeout: 15000
     }).then((r) => r.data).catch(() => null) : null,
-    data.campaign_id ? axios.get(`https://graph.facebook.com/v20.0/${data.campaign_id}`, {
+    data.campaign_id ? axios.get(getMetaGraphApiUrl(data.campaign_id), {
       params: { access_token: token, fields: 'id,name' }, timeout: 15000
     }).then((r) => r.data).catch(() => null) : null,
-    data.adgroup_id ? axios.get(`https://graph.facebook.com/v20.0/${data.adgroup_id}`, {
+    data.adgroup_id ? axios.get(getMetaGraphApiUrl(data.adgroup_id), {
       params: { access_token: token, fields: 'id,name' }, timeout: 15000
     }).then((r) => r.data).catch(() => null) : null,
-    data.ad_id ? axios.get(`https://graph.facebook.com/v20.0/${data.ad_id}`, {
+    data.ad_id ? axios.get(getMetaGraphApiUrl(data.ad_id), {
       params: { access_token: token, fields: 'id,name' }, timeout: 15000
     }).then((r) => r.data).catch(() => null) : null
   ]);
@@ -1448,6 +1698,7 @@ async function createOrUpdateLeadFromMeta(change) {
   if (availability.emailAvailable) console.log(`[META_EMAIL] Channel available lead=${lead._id}`);
   else console.log(`[META_EMAIL] Channel unavailable lead=${lead._id}`);
 
+  const nowSend = new Date();
   const smsResult = availability.smsAvailable
     ? await sendLeadSms(lead, 'immediate', settings, { stage: 'immediate', persist: false })
     : { success: false, reason: 'missing_phone' };
@@ -1455,11 +1706,20 @@ async function createOrUpdateLeadFromMeta(change) {
     ? await sendLeadEmail(lead, 'immediate', settings, { stage: 'immediate', persist: false })
     : { success: false, reason: 'missing_email' };
 
-  const followUpInit = initializeFollowUpForAvailableChannels(lead, settings, new Date());
+  const initialSmsSentAt = smsResult.success ? nowSend : null;
+  const initialEmailSentAt = emailResult.success ? nowSend : null;
+
+  // Use the shared initializer so all ingestion paths persist channel-specific
+  // follow-up state (initialSmsSentAt, initialEmailSentAt, nextSmsFollowUpAt,
+  // nextEmailFollowUpAt) and create followup_scheduled events.
+  const followUpInit = initializeFollowUpForAvailableChannels(lead, settings, nowSend);
   if (followUpInit.sequence === 'dual') console.log(`[META_FOLLOWUP] Dual-channel sequence scheduled lead=${lead._id}`);
   else if (followUpInit.sequence === 'sms_only') console.log(`[META_FOLLOWUP] SMS-only sequence scheduled lead=${lead._id}`);
   else if (followUpInit.sequence === 'email_only') console.log(`[META_FOLLOWUP] Email-only sequence scheduled lead=${lead._id}`);
   else console.log(`[META_FOLLOWUP] No reachable channels lead=${lead._id}`);
+
+  // Persist channel timestamps via shared initializer (creates followup_scheduled events)
+  await initializeMetaLeadFollowUps({ lead, settings, initialSmsSentAt, initialEmailSentAt, source: 'webhook' });
 
   await lead.save();
 
@@ -1506,6 +1766,8 @@ async function processFollowUpCycle() {
   const settings = await getSettings();
   if (!settings.enabled) return { processed: 0, skipped: 0, reason: 'disabled' };
 
+  console.log('[META_FOLLOWUP] Cycle started');
+
   const now = new Date();
   const candidates = await MetaLead.find({
     'followUp.status': 'active',
@@ -1518,23 +1780,63 @@ async function processFollowUpCycle() {
     ]
   }).limit(100);
 
+  console.log(`[META_FOLLOWUP] Candidates: ${candidates.length}`);
+
+  // Count eligibility before processing
+  const eligibleSms = candidates.filter(
+    (l) => l.followUp.smsEnabled && l.followUp.nextSmsFollowUpAt && l.followUp.nextSmsFollowUpAt <= now
+  ).length;
+  const eligibleEmail = candidates.filter(
+    (l) => l.followUp.emailEnabled && l.followUp.nextEmailFollowUpAt && l.followUp.nextEmailFollowUpAt <= now
+  ).length;
+  console.log(`[META_FOLLOWUP] Eligible SMS: ${eligibleSms}`);
+  console.log(`[META_FOLLOWUP] Eligible email: ${eligibleEmail}`);
+
   let processed = 0;
   let skipped = 0;
+  let smsSent = 0;
+  let emailSent = 0;
+  let failed = 0;
 
   for (const lead of candidates) {
-    await maybeSyncRegistration(lead, settings);
-    await syncInvitationRedemption(lead, settings);
+    // Per-lead error isolation: one failed lead must not terminate the batch.
+    try {
+      await maybeSyncRegistration(lead, settings);
+      await syncInvitationRedemption(lead, settings);
 
-    if (lead.registrationStatus !== 'not_registered' || lead.followUp.status !== 'active') {
-      skipped += 1;
-      continue;
+      if (lead.registrationStatus !== 'not_registered') {
+        console.log(`[META_FOLLOWUP] Skipped lead=${lead._id} reason=REGISTERED`);
+        skipped += 1;
+        continue;
+      }
+      if (lead.followUp.status !== 'active') {
+        const skipReason = lead.followUp.status === 'stopped' ? 'OPTED_OUT' : 'CHANNEL_PAUSED';
+        console.log(`[META_FOLLOWUP] Skipped lead=${lead._id} reason=${skipReason}`);
+        skipped += 1;
+        continue;
+      }
+
+      const beforeSmsStep = lead.followUp.smsStep;
+      const beforeEmailStep = lead.followUp.emailStep;
+      await processLeadFollowUp(lead, settings);
+
+      // Determine what was sent
+      if (Number(lead.followUp.smsStep) > Number(beforeSmsStep)) smsSent += 1;
+      if (Number(lead.followUp.emailStep) > Number(beforeEmailStep)) emailSent += 1;
+      processed += 1;
+    } catch (leadErr) {
+      failed += 1;
+      console.error(`[META_FOLLOWUP] Error lead=${lead._id} reason=${leadErr.message}`);
     }
-
-    await processLeadFollowUp(lead, settings);
-    processed += 1;
   }
 
-  return { processed, skipped };
+  console.log(`[META_FOLLOWUP] SMS sent: ${smsSent}`);
+  console.log(`[META_FOLLOWUP] Email sent: ${emailSent}`);
+  console.log(`[META_FOLLOWUP] Skipped: ${skipped}`);
+  console.log(`[META_FOLLOWUP] Failed: ${failed}`);
+  console.log('[META_FOLLOWUP] Cycle completed');
+
+  return { processed, skipped, smsSent, emailSent, failed };
 }
 
 async function reconcileLeadRegistrations(limit = 200) {
@@ -1811,7 +2113,7 @@ async function recoverHistoricalMetaLeadsByForm({
   try {
     formData = await fetchMetaFormLeadsImpl(normalizedFormId, { accessToken, pageId });
   } catch (error) {
-    graphLookupError = String(error?.response?.data?.error?.message || error?.message || 'Meta Graph lookup failed');
+    graphLookupError = sanitizeMetaGraphError(error);
   }
 
   const resolvedPageId = String(formData?.pageId || pageId || getDefaultPageId() || '').trim();
@@ -2525,6 +2827,15 @@ async function importManualLead(leadData = {}) {
   else if (followUpInit.sequence === 'email_only') console.log(`[META_FOLLOWUP] Email-only sequence scheduled lead=${lead._id}`);
   else console.log(`[META_FOLLOWUP] No reachable channels lead=${lead._id}`);
 
+  // Persist channel timestamps and create followup_scheduled events
+  await initializeMetaLeadFollowUps({
+    lead,
+    settings,
+    initialSmsSentAt: smsResult.success ? now : null,
+    initialEmailSentAt: emailResult.success ? now : null,
+    source: 'manual_import'
+  });
+
   await lead.save();
 
   await logEvent(
@@ -2798,27 +3109,21 @@ async function recoverPartialMetaLead(leadData = {}) {
     if (emailResult.success) console.log(`[META_EMAIL] Initial email sent messageId=${emailResult.messageId}`);
   }
 
-  const followUpInit = initializeFollowUpForAvailableChannels(lead, settings, now);
-  if (followUpInit.sequence === 'dual') console.log(`[META_FOLLOWUP] Dual-channel sequence scheduled lead=${lead._id}`);
-  else if (followUpInit.sequence === 'sms_only') console.log(`[META_FOLLOWUP] SMS-only sequence scheduled lead=${lead._id}`);
-  else if (followUpInit.sequence === 'email_only') console.log(`[META_FOLLOWUP] Email-only sequence scheduled lead=${lead._id}`);
-  else console.log(`[META_FOLLOWUP] No reachable channels lead=${lead._id}`);
+  const initialSmsSentAtPartial = smsResult && smsResult.success ? now : null;
+  const initialEmailSentAtPartial = emailResult && emailResult.success ? now : null;
+  await initializeMetaLeadFollowUps({
+    lead,
+    settings,
+    initialSmsSentAt: initialSmsSentAtPartial,
+    initialEmailSentAt: initialEmailSentAtPartial,
+    source: source || 'manual_recovery'
+  });
+  if (lead.followUp.nextSmsFollowUpAt || lead.followUp.nextEmailFollowUpAt) {
+    console.log(`[META_FOLLOWUP] Follow-up sequence scheduled lead=${lead._id} sms=${lead.followUp.nextSmsFollowUpAt} email=${lead.followUp.nextEmailFollowUpAt}`);
+  } else {
+    console.log(`[META_FOLLOWUP] No reachable channels lead=${lead._id}`);
+  }
   await lead.save();
-
-  await logEvent(
-    lead._id,
-    'followup_started',
-    'system',
-    'Follow-up sequence started',
-    `Channel-specific follow-up scheduled (channels: ${followUpChannels.join(', ')})`,
-    {
-      nextFollowUpAt: lead.followUp.nextFollowUpAt,
-      nextSmsFollowUpAt: lead.followUp.nextSmsFollowUpAt,
-      nextEmailFollowUpAt: lead.followUp.nextEmailFollowUpAt,
-      smsAvailable,
-      emailAvailable
-    }
-  );
 
   await notifyAdmins(
     'new_lead',
@@ -2968,11 +3273,20 @@ async function recoverManualMetaLead(leadData = {}) {
     ? await sendLeadEmail(lead, 'immediate', settings, { stage: 'immediate', persist: false })
     : { success: false, reason: 'missing_email' };
 
-  const followUpInit = initializeFollowUpForAvailableChannels(lead, settings, now);
-  if (followUpInit.sequence === 'dual') console.log(`[META_FOLLOWUP] Dual-channel sequence scheduled lead=${lead._id}`);
-  else if (followUpInit.sequence === 'sms_only') console.log(`[META_FOLLOWUP] SMS-only sequence scheduled lead=${lead._id}`);
-  else if (followUpInit.sequence === 'email_only') console.log(`[META_FOLLOWUP] Email-only sequence scheduled lead=${lead._id}`);
-  else console.log(`[META_FOLLOWUP] No reachable channels lead=${lead._id}`);
+  const initialSmsSentAtManual = smsResult && smsResult.success ? now : null;
+  const initialEmailSentAtManual = emailResult && emailResult.success ? now : null;
+  await initializeMetaLeadFollowUps({
+    lead,
+    settings,
+    initialSmsSentAt: initialSmsSentAtManual,
+    initialEmailSentAt: initialEmailSentAtManual,
+    source: source || 'manual_recovery'
+  });
+  if (lead.followUp.nextSmsFollowUpAt || lead.followUp.nextEmailFollowUpAt) {
+    console.log(`[META_FOLLOWUP] Follow-up sequence scheduled lead=${lead._id} sms=${lead.followUp.nextSmsFollowUpAt} email=${lead.followUp.nextEmailFollowUpAt}`);
+  } else {
+    console.log(`[META_FOLLOWUP] No reachable channels lead=${lead._id}`);
+  }
   await lead.save();
 
   await logEvent(
@@ -3133,11 +3447,14 @@ function classifyLeadCompleteness(lead) {
   const hasInitialSms = hasPhone ? hasSmsAttemptForStage(lead, 'immediate') : true;
   const hasInitialEmail = hasEmail ? hasEmailAttemptForStage(lead, 'immediate') : true;
 
-  // A lead with at least one reachable channel and active follow-up is considered
-  // complete when: invite issued, immediate outreach sent, follow-up scheduled.
-  const followUpOk = lead.followUp?.status === 'active' ||
+  // A lead with active follow-up is considered ALREADY_COMPLETE only when:
+  // 1. invite issued, 2. immediate outreach sent, 3. follow-up scheduled (or stopped/completed).
+  // An active lead with null follow-up dates is NOT complete — it needs repair.
+  const smsFollowUpReady = !hasPhone || !lead.followUp?.smsEnabled || !!lead.followUp?.nextSmsFollowUpAt;
+  const emailFollowUpReady = !hasEmail || !lead.followUp?.emailEnabled || !!lead.followUp?.nextEmailFollowUpAt;
+  const followUpOk = (lead.followUp?.status === 'active' && smsFollowUpReady && emailFollowUpReady) ||
     lead.followUp?.status === 'completed' ||
-    lead.followUp?.status === 'stopped'; // stopped = opted out — also "complete"
+    lead.followUp?.status === 'stopped';
 
   if (hasInvite && hasInitialSms && hasInitialEmail && followUpOk) return 'ALREADY_COMPLETE';
   return 'EXISTING_INCOMPLETE';
@@ -3149,6 +3466,7 @@ function classifyLeadCompleteness(lead) {
  * - Sends initial SMS if phone available and not yet sent.
  * - Sends initial email if email available and not yet sent.
  * - Activates follow-up sequence if not yet active.
+ * - Repairs null follow-up dates on active leads.
  * Never re-sends a message that was already attempted for the 'immediate' stage.
  */
 async function completeExistingLead(lead, settings) {
@@ -3167,30 +3485,60 @@ async function completeExistingLead(lead, settings) {
   let emailResult = { success: false, reason: 'not_available' };
 
   // Initial SMS
+  let smsSentAt = null;
   if (hasPhone && !hasSmsAttemptForStage(lead, 'immediate') && !lead.smsOptOut) {
     smsResult = await sendLeadSms(lead, 'immediate', settings, { stage: 'immediate', persist: false });
-    if (smsResult.success) console.log(`[META_RECONCILE] Initial SMS sent SID=${smsResult.sid} lead=${lead._id}`);
-    else console.warn(`[META_RECONCILE] Initial SMS failed reason=${smsResult.reason} lead=${lead._id}`);
+    if (smsResult.success) {
+      smsSentAt = new Date();
+      lead.followUp.initialSmsSentAt = smsSentAt;
+      console.log(`[META_RECONCILE] Initial SMS sent SID=${smsResult.sid} lead=${lead._id}`);
+    } else {
+      console.warn(`[META_RECONCILE] Initial SMS failed reason=${smsResult.reason} lead=${lead._id}`);
+    }
   } else if (hasPhone) {
     const entry = findSmsEntryForStage(lead, 'immediate');
     smsResult = { success: true, sid: entry?.messageSid || null, skipped: true };
+    // Use existing timestamp as baseline for follow-up repair
+    smsSentAt = lead.followUp.initialSmsSentAt || entry?.sentAt || null;
   }
 
   // Initial email
+  let emailSentAt = null;
   if (hasEmail && !hasEmailAttemptForStage(lead, 'immediate')) {
     emailResult = await sendLeadEmail(lead, 'immediate', settings, { stage: 'immediate', persist: false });
-    if (emailResult.success) console.log(`[META_RECONCILE] Initial email sent messageId=${emailResult.messageId} lead=${lead._id}`);
-    else console.warn(`[META_RECONCILE] Initial email failed reason=${emailResult.reason} lead=${lead._id}`);
+    if (emailResult.success) {
+      emailSentAt = new Date();
+      lead.followUp.initialEmailSentAt = emailSentAt;
+      console.log(`[META_RECONCILE] Initial email sent messageId=${emailResult.messageId} lead=${lead._id}`);
+    } else {
+      console.warn(`[META_RECONCILE] Initial email failed reason=${emailResult.reason} lead=${lead._id}`);
+    }
   } else if (hasEmail) {
     const entry = findEmailEntryForStage(lead, 'immediate');
     emailResult = { success: true, messageId: entry?.messageId || null, skipped: true };
+    emailSentAt = lead.followUp.initialEmailSentAt || entry?.sentAt || null;
   }
 
   // Follow-up sequence
   if (lead.followUp?.status !== 'active' && lead.followUp?.status !== 'stopped') {
-    initializeFollowUpForAvailableChannels(lead, settings, lead.createdAt || new Date());
+    const baseTime = smsSentAt || emailSentAt || lead.createdAt || new Date();
+    initializeFollowUpForAvailableChannels(lead, settings, baseTime);
     console.log(`[META_RECONCILE] Follow-up sequence activated lead=${lead._id}`);
-  } else {
+  } else if (lead.followUp?.status === 'active') {
+    // Repair missing follow-up dates even when status is already active
+    const baseTime = smsSentAt || emailSentAt || lead.createdAt || new Date();
+    if (lead.followUp.smsEnabled && !lead.followUp.nextSmsFollowUpAt) {
+      const smsStep = Math.max(0, Number(lead.followUp.smsStep || 0));
+      lead.followUp.smsStep = smsStep;
+      lead.followUp.nextSmsFollowUpAt = getNextFollowUpAt(baseTime, settings.followUpTimingsHours, smsStep);
+      console.log(`[META_RECONCILE] Repaired missing SMS follow-up date lead=${lead._id} next=${lead.followUp.nextSmsFollowUpAt}`);
+    }
+    if (lead.followUp.emailEnabled && !lead.followUp.nextEmailFollowUpAt) {
+      const emailStep = Math.max(0, Number(lead.followUp.emailStep || 0));
+      lead.followUp.emailStep = emailStep;
+      lead.followUp.nextEmailFollowUpAt = getNextFollowUpAt(baseTime, settings.followUpTimingsHours, emailStep);
+      console.log(`[META_RECONCILE] Repaired missing email follow-up date lead=${lead._id} next=${lead.followUp.nextEmailFollowUpAt}`);
+    }
     syncLegacyFollowUpPointers(lead);
   }
 
@@ -3208,11 +3556,14 @@ async function completeExistingLead(lead, settings) {
 
 /** In-memory lock prevents concurrent runs on the same server instance. */
 let _fullReconciliationRunning = false;
+const _loggedStaleConfiguredForms = new Map();
 
 /** Maximum number of individual lead results stored in a MetaReconciliationRun document. */
 const MAX_STORED_RESULTS = 200;
 /** Milliseconds per day — used for date-range calculations. */
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+/** Suppression TTL for repeated stale-form log spam. */
+const STALE_FORM_LOG_TTL_MS = 7 * MS_PER_DAY;
 /** Maximum backoff delay for webhook event retries (ms). */
 const MAX_RETRY_DELAY_MS = 10 * 60000; // 10 minutes
 /** Age cutoff — only retry webhook events older than this (ms). */
@@ -3220,55 +3571,26 @@ const WEBHOOK_RETRY_CUTOFF_MS = 5 * 60000; // 5 minutes
 /** Leads sitting without any outreach for longer than this threshold are flagged as stale (ms). */
 const STALE_LEAD_THRESHOLD_MS = 2 * 60000; // 2 minutes
 
-/**
- * Fetch every available lead from Meta for the given form, compare against
- * production MongoDB, import any that are missing, and complete any that are
- * incomplete.  The operation is fully idempotent and paginated.
- *
- * @param {object} options
- * @param {string} [options.formId]      Override the default form ID.
- * @param {string} [options.accessToken] Override the default page access token.
- * @param {string} [options.pageId]      Override the default page ID.
- * @param {string} [options.triggeredBy] 'scheduled' | 'admin' | 'api'
- * @param {number} [options.daysBack]    How many days back to reconcile (default: 30). Leads older
- *                                       than this threshold are skipped. Set to 0 to process all.
- * @returns {Promise<object>} Reconciliation summary.
- */
-async function performFullMetaReconciliation({
-  formId = FULL_RECONCILIATION_FORM_ID,
-  accessToken = '',
+function buildReconciliationSummary({
+  formId = '',
+  formName = '',
   pageId = '',
   triggeredBy = 'scheduled',
-  daysBack = 30
+  startedAt = new Date()
 } = {}) {
-  const normalizedFormId = String(formId || '').trim();
-  if (!normalizedFormId) throw new Error('formId is required');
-
-  if (_fullReconciliationRunning) {
-    console.log('[META_RECONCILE] Another reconciliation is already running — skipping');
-    return { skipped: true, reason: 'already_running' };
-  }
-  _fullReconciliationRunning = true;
-
-  let run;
-  try {
-    run = await MetaReconciliationRun.create({
-      formId: normalizedFormId,
-      triggeredBy,
-      status: 'running',
-      startedAt: new Date()
-    });
-  } catch (err) {
-    console.error(`[META_RECONCILE] Failed to create run record: ${err.message}`);
-  }
-
-  const summary = {
-    runId: run ? String(run._id) : null,
-    formId: normalizedFormId,
-    startedAt: run?.startedAt || new Date(),
+  return {
+    runId: null,
+    formId: String(formId || '').trim(),
+    formName: String(formName || '').trim(),
+    pageId: String(pageId || '').trim(),
+    triggeredBy,
+    startedAt,
     completedAt: null,
     graphError: null,
+    lastError: null,
     totalFromMeta: 0,
+    totalConsidered: 0,
+    latestLeadTimestamp: null,
     alreadyComplete: 0,
     existingIncomplete: 0,
     newlyRecovered: 0,
@@ -3277,42 +3599,130 @@ async function performFullMetaReconciliation({
     failed: 0,
     results: []
   };
+}
+
+function logStaleConfiguredFormOnce(formId, classification, message) {
+  const key = `${formId}:${classification}`;
+  const now = Date.now();
+  for (const [logKey, timestamp] of _loggedStaleConfiguredForms.entries()) {
+    if (now - timestamp > STALE_FORM_LOG_TTL_MS) _loggedStaleConfiguredForms.delete(logKey);
+  }
+  if (_loggedStaleConfiguredForms.has(key)) return;
+  _loggedStaleConfiguredForms.set(key, now);
+  console.warn(`[META_FORMS] Stale configured form ignored: ${formId} classification=${classification} reason=${message}`);
+}
+
+function clearStaleConfiguredFormLog(formId) {
+  const prefix = `${formId}:`;
+  const matchingLogKeys = [];
+  for (const logKey of _loggedStaleConfiguredForms.keys()) {
+    if (logKey.startsWith(prefix)) matchingLogKeys.push(logKey);
+  }
+  for (const logKey of matchingLogKeys) {
+    _loggedStaleConfiguredForms.delete(logKey);
+  }
+}
+
+/**
+ * Mutate a lead's campaign form metadata when reconciliation identifies a newer
+ * source form association. Returns true when the lead document was modified.
+ */
+function syncLeadCampaignForm(existingLead, formId, formName) {
+  const nextFormId = String(formId || '').trim();
+  const nextFormName = String(formName || '').trim();
+  const currentFormId = String(existingLead.campaign?.formId || '').trim();
+  const currentFormName = String(existingLead.campaign?.formName || '').trim();
+  const shouldUpdate = currentFormId !== nextFormId || (nextFormName && currentFormName !== nextFormName);
+
+  if (!shouldUpdate) return false;
+
+  existingLead.campaign = {
+    ...(existingLead.campaign?.toObject ? existingLead.campaign.toObject() : existingLead.campaign),
+    formId: nextFormId,
+    formName: nextFormName || currentFormName
+  };
+  return true;
+}
+
+function deduplicateFormsById(forms = []) {
+  return [...new Map(forms.map((form) => [form.id, form])).values()];
+}
+
+async function performSingleMetaFormReconciliation({
+  form,
+  accessToken = '',
+  pageId = '',
+  triggeredBy = 'scheduled',
+  daysBack = 30,
+  fetchMetaFormLeadsImpl = fetchMetaFormLeads,
+  createOrUpdateLeadFromMetaImpl = createOrUpdateLeadFromMeta
+} = {}) {
+  const normalizedForm = normalizeMetaForm(form || {});
+  if (!normalizedForm.id) throw new Error('form.id is required');
+
+  let run;
+  try {
+    run = await MetaReconciliationRun.create({
+      formId: normalizedForm.id,
+      formName: normalizedForm.name,
+      pageId: normalizedForm.page_id || String(pageId || '').trim(),
+      triggeredBy,
+      status: 'running',
+      startedAt: new Date()
+    });
+  } catch (err) {
+    console.error(`[META_RECONCILE] Failed to create run record: ${err.message}`);
+  }
+
+  const summary = buildReconciliationSummary({
+    formId: normalizedForm.id,
+    formName: normalizedForm.name,
+    pageId: normalizedForm.page_id || pageId,
+    triggeredBy,
+    startedAt: run?.startedAt || new Date()
+  });
+  summary.runId = run ? String(run._id) : null;
 
   try {
     const settings = await getSettings();
 
-    // 1. Fetch all leads from Meta Graph API.
     let metaLeads = [];
-    let resolvedPageId = pageId || getDefaultPageId();
+    let resolvedPageId = summary.pageId || getDefaultPageId();
     try {
-      const formData = await fetchMetaFormLeads(normalizedFormId, { accessToken, pageId });
+      const formData = await fetchMetaFormLeadsImpl(normalizedForm.id, { accessToken, pageId: summary.pageId || pageId });
       metaLeads = formData.leads || [];
       resolvedPageId = formData.pageId || resolvedPageId;
-      console.log(`[META_RECONCILE] Fetched ${metaLeads.length} leads from Meta form ${normalizedFormId}`);
+      summary.formName = formData.form?.name || summary.formName;
+      summary.pageId = String(resolvedPageId || summary.pageId || '');
+      console.log(`[META_RECONCILE] Leads returned for form ${normalizedForm.id}: ${metaLeads.length}`);
     } catch (err) {
-      summary.graphError = String(err?.response?.data?.error?.message || err?.message || 'Meta Graph API error');
+      summary.graphError = sanitizeMetaGraphError(err);
       console.error(`[META_RECONCILE] Graph API error: ${summary.graphError}`);
       await notifyAdmins(
         'webhook_failure',
         'Meta Graph API Error — Reconciliation',
-        `Reconciliation for form ${normalizedFormId} failed to fetch leads from Meta: ${summary.graphError}`,
+        `Reconciliation for form ${normalizedForm.id} failed to fetch leads from Meta: ${summary.graphError}`,
         null
       );
     }
 
     summary.totalFromMeta = metaLeads.length;
+    summary.latestLeadTimestamp = metaLeads.reduce((latest, lead) => {
+      const candidate = parseDate(lead?.created_time);
+      if (!candidate) return latest;
+      return !latest || candidate > latest ? candidate : latest;
+    }, null);
 
-    // Apply 30-day lookback filter client-side (Meta Graph API has no native date filter).
     const sinceDate = daysBack > 0 ? new Date(Date.now() - daysBack * MS_PER_DAY) : null;
     if (sinceDate) {
-      metaLeads = metaLeads.filter((l) => {
-        const ts = parseDate(l.created_time);
+      metaLeads = metaLeads.filter((lead) => {
+        const ts = parseDate(lead.created_time);
         return !ts || ts >= sinceDate;
       });
       console.log(`[META_RECONCILE] ${metaLeads.length} leads within last ${daysBack} days (of ${summary.totalFromMeta} total)`);
     }
+    summary.totalConsidered = metaLeads.length;
 
-    // 2. Process each lead.
     for (const metaLead of metaLeads) {
       const metaLeadId = String(metaLead.id || '');
       if (!metaLeadId) continue;
@@ -3327,7 +3737,6 @@ async function performFullMetaReconciliation({
       const lastName = pickField(fields, ['last_name', 'lastname']);
       const name = `${firstName} ${lastName}`.trim() || email || phone || metaLeadId;
 
-      // Compute profile completeness from the raw Meta data.
       const leadMissingFields = [];
       if (!phone) leadMissingFields.push('phone');
       if (!email) leadMissingFields.push('email');
@@ -3360,19 +3769,22 @@ async function performFullMetaReconciliation({
       };
 
       try {
-        // 2a. Check by exact Meta lead ID first.
         let existingLead = await MetaLead.findOne({ metaLeadId });
 
-        // 2b. If not found by ID, try by contact info (normalized dedup).
         if (!existingLead && (email || phone)) {
           const conditions = buildDuplicateConditions({ email, phone });
           if (conditions.length) existingLead = await MetaLead.findOne({ $or: conditions });
         }
 
         if (existingLead) {
+          const shouldUpdateCampaignForm = syncLeadCampaignForm(
+            existingLead,
+            normalizedForm.id,
+            summary.formName || normalizedForm.name
+          );
+
           leadResult.leadId = String(existingLead._id);
           leadResult.inviteCode = existingLead.invitationCode || null;
-          // Merge stored profile flags, falling back to freshly computed values.
           leadResult.profileIncomplete = existingLead.profileIncomplete ?? leadProfileIncomplete;
           leadResult.missingFields = resolveMissingFields(existingLead, leadMissingFields);
 
@@ -3381,6 +3793,7 @@ async function performFullMetaReconciliation({
           if (completeness === 'UNREACHABLE') {
             leadResult.classification = 'UNREACHABLE';
             leadResult.reason = 'No phone or email available';
+            if (shouldUpdateCampaignForm) await existingLead.save();
             summary.unreachable += 1;
           } else if (completeness === 'ALREADY_COMPLETE') {
             leadResult.classification = 'ALREADY_COMPLETE';
@@ -3389,9 +3802,9 @@ async function performFullMetaReconciliation({
             leadResult.nextFollowUpAt = existingLead.followUp?.nextFollowUpAt || null;
             leadResult.nextSmsFollowUpAt = existingLead.followUp?.nextSmsFollowUpAt || null;
             leadResult.nextEmailFollowUpAt = existingLead.followUp?.nextEmailFollowUpAt || null;
+            if (shouldUpdateCampaignForm) await existingLead.save();
             summary.alreadyComplete += 1;
           } else {
-            // EXISTING_INCOMPLETE — complete missing steps.
             const { smsResult, emailResult } = await completeExistingLead(existingLead, settings);
 
             leadResult.classification = 'EXISTING_INCOMPLETE';
@@ -3409,7 +3822,6 @@ async function performFullMetaReconciliation({
             summary.existingIncomplete += 1;
           }
 
-          // Fill common status fields.
           const lastSms = Array.isArray(existingLead.smsHistory) && existingLead.smsHistory.length
             ? existingLead.smsHistory.filter((h) => h.direction === 'outbound').slice(-1)[0]
             : null;
@@ -3420,55 +3832,51 @@ async function performFullMetaReconciliation({
           if (!leadResult.twilioStatus && lastSms?.status) leadResult.twilioStatus = lastSms.status;
           if (!leadResult.sendGridMessageId && lastEmail?.messageId) leadResult.sendGridMessageId = lastEmail.messageId;
           if (!leadResult.sendGridStatus && lastEmail?.status) leadResult.sendGridStatus = lastEmail.status;
-
+        } else if (!resolvedPageId || !isNumericMetaId(String(resolvedPageId))) {
+          leadResult.classification = 'FAILED';
+          leadResult.reason = 'Cannot resolve Meta page ID — lead cannot be auto-imported';
+          summary.failed += 1;
         } else {
-          // 2c. Truly missing — import via the standard ingestion pipeline.
-          if (!resolvedPageId || !isNumericMetaId(String(resolvedPageId))) {
-            leadResult.classification = 'FAILED';
-            leadResult.reason = 'Cannot resolve Meta page ID — lead cannot be auto-imported';
-            summary.failed += 1;
-          } else {
-            const imported = await createOrUpdateLeadFromMeta({
-              field: 'leadgen',
-              value: {
-                leadgen_id: metaLeadId,
-                page_id: String(resolvedPageId)
-              }
-            });
-
-            if (imported?.skipped) {
-              const isDup = isDuplicateSkipReason(imported.reason);
-              leadResult.classification = isDup ? 'SKIPPED_DUPLICATE' : 'FAILED';
-              leadResult.reason = imported.reason;
-              leadResult.leadId = imported.lead ? String(imported.lead._id) : null;
-              if (isDup) summary.duplicatesSkipped += 1;
-              else summary.failed += 1;
-            } else {
-              const newLead = imported.lead;
-              leadResult.classification = 'MISSING_FROM_FIXLO';
-              leadResult.recoveryMethod = 'META_GRAPH';
-              leadResult.leadId = String(newLead._id);
-              leadResult.inviteCode = newLead.invitationCode || null;
-              leadResult.profileIncomplete = newLead.profileIncomplete ?? leadProfileIncomplete;
-              leadResult.missingFields = resolveMissingFields(newLead, leadMissingFields);
-
-              const lastSms = Array.isArray(newLead.smsHistory) && newLead.smsHistory.length
-                ? newLead.smsHistory.filter((h) => h.direction === 'outbound').slice(-1)[0]
-                : null;
-              const lastEmail = Array.isArray(newLead.emailHistory) && newLead.emailHistory.length
-                ? newLead.emailHistory.slice(-1)[0]
-                : null;
-              leadResult.twilioSid = lastSms?.messageSid || null;
-              leadResult.twilioStatus = lastSms?.status || null;
-              leadResult.sendGridMessageId = lastEmail?.messageId || null;
-              leadResult.sendGridStatus = lastEmail?.status || null;
-              leadResult.smsFollowUpsEnabled = !!newLead.followUp?.smsEnabled;
-              leadResult.emailFollowUpsEnabled = !!newLead.followUp?.emailEnabled;
-              leadResult.nextFollowUpAt = newLead.followUp?.nextFollowUpAt || null;
-              leadResult.nextSmsFollowUpAt = newLead.followUp?.nextSmsFollowUpAt || null;
-              leadResult.nextEmailFollowUpAt = newLead.followUp?.nextEmailFollowUpAt || null;
-              summary.newlyRecovered += 1;
+          const imported = await createOrUpdateLeadFromMetaImpl({
+            field: 'leadgen',
+            value: {
+              leadgen_id: metaLeadId,
+              page_id: String(resolvedPageId)
             }
+          });
+
+          if (imported?.skipped) {
+            const isDup = isDuplicateSkipReason(imported.reason);
+            leadResult.classification = isDup ? 'SKIPPED_DUPLICATE' : 'FAILED';
+            leadResult.reason = imported.reason;
+            leadResult.leadId = imported.lead ? String(imported.lead._id) : null;
+            if (isDup) summary.duplicatesSkipped += 1;
+            else summary.failed += 1;
+          } else {
+            const newLead = imported.lead;
+            leadResult.classification = 'MISSING_FROM_FIXLO';
+            leadResult.recoveryMethod = 'META_GRAPH';
+            leadResult.leadId = String(newLead._id);
+            leadResult.inviteCode = newLead.invitationCode || null;
+            leadResult.profileIncomplete = newLead.profileIncomplete ?? leadProfileIncomplete;
+            leadResult.missingFields = resolveMissingFields(newLead, leadMissingFields);
+
+            const lastSms = Array.isArray(newLead.smsHistory) && newLead.smsHistory.length
+              ? newLead.smsHistory.filter((h) => h.direction === 'outbound').slice(-1)[0]
+              : null;
+            const lastEmail = Array.isArray(newLead.emailHistory) && newLead.emailHistory.length
+              ? newLead.emailHistory.slice(-1)[0]
+              : null;
+            leadResult.twilioSid = lastSms?.messageSid || null;
+            leadResult.twilioStatus = lastSms?.status || null;
+            leadResult.sendGridMessageId = lastEmail?.messageId || null;
+            leadResult.sendGridStatus = lastEmail?.status || null;
+            leadResult.smsFollowUpsEnabled = !!newLead.followUp?.smsEnabled;
+            leadResult.emailFollowUpsEnabled = !!newLead.followUp?.emailEnabled;
+            leadResult.nextFollowUpAt = newLead.followUp?.nextFollowUpAt || null;
+            leadResult.nextSmsFollowUpAt = newLead.followUp?.nextSmsFollowUpAt || null;
+            leadResult.nextEmailFollowUpAt = newLead.followUp?.nextEmailFollowUpAt || null;
+            summary.newlyRecovered += 1;
           }
         }
       } catch (leadErr) {
@@ -3483,13 +3891,16 @@ async function performFullMetaReconciliation({
 
     summary.completedAt = new Date();
 
-    // 3. Persist the run record.
     if (run) {
       const updateFields = {
+        formName: summary.formName,
+        pageId: summary.pageId,
         status: 'completed',
         completedAt: summary.completedAt,
         graphError: summary.graphError || null,
         totalFromMeta: summary.totalFromMeta,
+        totalConsidered: summary.totalConsidered,
+        latestLeadTimestamp: summary.latestLeadTimestamp,
         alreadyComplete: summary.alreadyComplete,
         existingIncomplete: summary.existingIncomplete,
         newlyRecovered: summary.newlyRecovered,
@@ -3501,15 +3912,13 @@ async function performFullMetaReconciliation({
       await MetaReconciliationRun.findByIdAndUpdate(run._id, updateFields);
     }
 
-    // 4. Notify admins and log if any leads were recovered.
     if (summary.newlyRecovered > 0 || summary.existingIncomplete > 0) {
       await notifyAdmins(
         'reconciliation_recovered',
         'Meta Lead Reconciliation — Leads Recovered',
-        `Reconciliation for form ${normalizedFormId}: recovered ${summary.newlyRecovered} new, completed ${summary.existingIncomplete} existing. Total from Meta: ${summary.totalFromMeta}.`,
+        `Reconciliation for form ${summary.formId}: recovered ${summary.newlyRecovered} new, completed ${summary.existingIncomplete} existing. Total from Meta: ${summary.totalFromMeta}.`,
         null
       );
-      console.log(`[META_RECONCILE] form=${normalizedFormId} total=${summary.totalFromMeta} new=${summary.newlyRecovered} completed=${summary.existingIncomplete} already_ok=${summary.alreadyComplete} unreachable=${summary.unreachable} failed=${summary.failed}`);
     }
 
     return summary;
@@ -3518,12 +3927,196 @@ async function performFullMetaReconciliation({
     summary.completedAt = new Date();
     if (run) {
       await MetaReconciliationRun.findByIdAndUpdate(run._id, {
+        formName: summary.formName,
+        pageId: summary.pageId,
         status: 'failed',
         completedAt: summary.completedAt,
         lastError: err.message
       });
     }
     throw err;
+  }
+}
+
+async function resolveMetaReconciliationForms({
+  pageId = '',
+  accessToken = '',
+  formId,
+  formIds,
+  discoverPageFormsImpl = fetchMetaPageLeadForms,
+  classifyConfiguredMetaFormImpl = classifyConfiguredMetaForm
+} = {}) {
+  const resolvedPageId = String(pageId || getDefaultPageId() || '').trim();
+  if (!resolvedPageId) {
+    throw new Error('META_PAGE_ID is required to discover Meta lead forms');
+  }
+
+  console.log('[META_FORMS] Discovery started');
+  console.log(`[META_FORMS] Page ID: ${resolvedPageId}`);
+
+  const discoveredForms = await discoverPageFormsImpl(resolvedPageId, { accessToken, pageId: resolvedPageId });
+  const activeForms = discoveredForms.filter((candidate) => candidate.active);
+  const archivedForms = discoveredForms.filter((candidate) => candidate.archived);
+  console.log(`[META_FORMS] Forms discovered: ${discoveredForms.length}`);
+  console.log(`[META_FORMS] Active forms: ${activeForms.length}`);
+  console.log(`[META_FORMS] Archived forms: ${archivedForms.length}`);
+
+  const configuredIds = getConfiguredMetaLeadFormIds({ formId, formIds });
+  const legacyConfiguredIds = configuredIds.length === 0 ? getLegacyMetaLeadFormIds() : [];
+  const staleConfiguredForms = [];
+  const selectedForms = [];
+
+  if (configuredIds.length > 0) {
+    for (const configuredId of configuredIds) {
+      const classification = await classifyConfiguredMetaFormImpl(configuredId, {
+        accessToken,
+        pageId: resolvedPageId,
+        discoveredForms
+      });
+
+      if (classification.classification === 'FORM_FOUND_ACTIVE' && classification.form) {
+        selectedForms.push(classification.form);
+        clearStaleConfiguredFormLog(configuredId);
+        continue;
+      }
+
+      const reason = classification.error || classification.form?.status || 'stale_or_inaccessible';
+      staleConfiguredForms.push({
+        formId: configuredId,
+        classification: classification.classification,
+        reason
+      });
+      logStaleConfiguredFormOnce(configuredId, classification.classification, reason);
+    }
+  } else {
+    selectedForms.push(...activeForms);
+    for (const configuredId of legacyConfiguredIds) {
+      const classification = await classifyConfiguredMetaFormImpl(configuredId, {
+        accessToken,
+        pageId: resolvedPageId,
+        discoveredForms
+      });
+      if (classification.classification === 'FORM_FOUND_ACTIVE') {
+        clearStaleConfiguredFormLog(configuredId);
+        continue;
+      }
+      const reason = classification.error || classification.form?.status || 'stale_or_inaccessible';
+      staleConfiguredForms.push({
+        formId: configuredId,
+        classification: classification.classification,
+        reason
+      });
+      logStaleConfiguredFormOnce(configuredId, classification.classification, reason);
+    }
+  }
+
+  return {
+    pageId: resolvedPageId,
+    discoveredForms,
+    activeForms,
+    archivedForms,
+    legacyConfiguredIds,
+    selectedForms: deduplicateFormsById(selectedForms),
+    staleConfiguredForms
+  };
+}
+
+/**
+ * Discover/validate the page's active Meta lead forms, fetch every available
+ * lead across valid forms, compare against MongoDB, and import/complete leads
+ * without letting one stale form block the full run.
+ */
+async function performFullMetaReconciliation({
+  formId,
+  formIds,
+  accessToken = '',
+  pageId = '',
+  triggeredBy = 'scheduled',
+  daysBack = 30,
+  discoverPageFormsImpl = fetchMetaPageLeadForms,
+  classifyConfiguredMetaFormImpl = classifyConfiguredMetaForm,
+  performSingleMetaFormReconciliationImpl = performSingleMetaFormReconciliation
+} = {}) {
+  if (_fullReconciliationRunning) {
+    console.log('[META_RECONCILE] Another reconciliation is already running — skipping');
+    return { skipped: true, reason: 'already_running' };
+  }
+  _fullReconciliationRunning = true;
+
+  try {
+    const resolved = await resolveMetaReconciliationForms({
+      pageId,
+      accessToken,
+      formId,
+      formIds,
+      discoverPageFormsImpl,
+      classifyConfiguredMetaFormImpl
+    });
+
+    const summaries = [];
+    let totalLeadsAcrossForms = 0;
+
+    for (const form of resolved.selectedForms) {
+      console.log(`[META_RECONCILE] Processing form id=${form.id} name=${form.name || ''}`);
+      try {
+        const summary = await performSingleMetaFormReconciliationImpl({
+          form,
+          accessToken,
+          pageId: resolved.pageId,
+          triggeredBy,
+          daysBack
+        });
+        totalLeadsAcrossForms += summary.totalFromMeta || 0;
+        summaries.push(summary);
+      } catch (error) {
+        const failedSummary = buildReconciliationSummary({
+          formId: form.id,
+          formName: form.name,
+          pageId: resolved.pageId,
+          triggeredBy
+        });
+        failedSummary.completedAt = new Date();
+        failedSummary.lastError = error.message;
+        failedSummary.failed = 1;
+        summaries.push(failedSummary);
+        console.error(`[META_RECONCILE] Form failed id=${form.id} error=${error.message}`);
+      }
+    }
+
+    const aggregate = {
+      pageId: resolved.pageId,
+      configuredFormIds: getConfiguredMetaLeadFormIds({ formId, formIds }),
+      discoveredForms: resolved.discoveredForms,
+      activeForms: resolved.activeForms,
+      archivedForms: resolved.archivedForms,
+      staleConfiguredForms: resolved.staleConfiguredForms,
+      processedForms: summaries,
+      totals: summaries.reduce((acc, summary) => {
+        acc.totalFromMeta += summary.totalFromMeta || 0;
+        acc.totalConsidered += summary.totalConsidered || 0;
+        acc.alreadyComplete += summary.alreadyComplete || 0;
+        acc.existingIncomplete += summary.existingIncomplete || 0;
+        acc.newlyRecovered += summary.newlyRecovered || 0;
+        acc.duplicatesSkipped += summary.duplicatesSkipped || 0;
+        acc.unreachable += summary.unreachable || 0;
+        acc.failed += summary.failed || 0;
+        return acc;
+      }, {
+        totalFromMeta: 0,
+        totalConsidered: 0,
+        alreadyComplete: 0,
+        existingIncomplete: 0,
+        newlyRecovered: 0,
+        duplicatesSkipped: 0,
+        unreachable: 0,
+        failed: 0
+      })
+    };
+
+    console.log(`[META_RECONCILE] Total leads across forms: ${totalLeadsAcrossForms}`);
+    console.log('[META_RECONCILE] Run completed');
+
+    return aggregate;
   } finally {
     _fullReconciliationRunning = false;
   }
@@ -3531,11 +4124,14 @@ async function performFullMetaReconciliation({
 
 /**
  * Return the most recent MetaReconciliationRun for the given form, plus the
- * next scheduled run time (15-minute boundary).
+ * next scheduled run time (15-minute boundary). When formId is omitted and no
+ * legacy single-form env var is configured, the latest run across all forms is
+ * returned.
  */
-async function getLastReconciliationRun(formId = FULL_RECONCILIATION_FORM_ID) {
-  const normalizedFormId = String(formId || FULL_RECONCILIATION_FORM_ID).trim();
-  const last = await MetaReconciliationRun.findOne({ formId: normalizedFormId })
+async function getLastReconciliationRun(formId = '') {
+  const normalizedFormId = String(formId || FULL_RECONCILIATION_FORM_ID || '').trim();
+  const query = normalizedFormId ? { formId: normalizedFormId } : {};
+  const last = await MetaReconciliationRun.findOne(query)
     .sort({ startedAt: -1 })
     .lean();
 
@@ -3587,6 +4183,638 @@ async function alertStaleLeads() {
   return { alerted: staleLeads.length };
 }
 
+
+// ── Repair existing leads with missing follow-up state ────────────────────────
+
+/**
+ * Idempotent repair service.
+ *
+ * Targets leads that:
+ * - have a successful immediate sms_sent or email_sent event
+ * - lack correct channel-specific next follow-up state
+ * - are not registered / converted / opted-out / sequence-complete
+ *
+ * Uses the immediate message event occurredAt as the sequence start time.
+ * Supports dry-run mode — set dryRun: true to preview without modifying.
+ *
+ * @param {object} opts
+ * @param {boolean} [opts.dryRun=false]
+ * @param {number}  [opts.limit=500]
+ * @returns {Promise<object>} repair report
+ */
+async function repairLeadFollowUps({ dryRun = false, limit = 500 } = {}) {
+  const settings = await getSettings();
+  const report = {
+    dryRun,
+    inspected: 0,
+    eligible: 0,
+    repaired: 0,
+    skipped: 0,
+    manualReview: 0,
+    skipReasons: {},
+    smsSequencesInitialized: 0,
+    emailSequencesInitialized: 0,
+    leads: []
+  };
+
+  const bumpSkip = (reason) => {
+    report.skipReasons[reason] = (report.skipReasons[reason] || 0) + 1;
+    report.skipped += 1;
+  };
+
+  // Fetch leads that have at least one successful immediate message but may
+  // be missing follow-up state.
+  const candidates = await MetaLead.find({
+    leadStatus: { $nin: ['closed'] },
+    registrationStatus: 'not_registered',
+    followUp: { $exists: true },
+    $or: [
+      // Has an immediate SMS in history
+      { smsHistory: { $elemMatch: { followUpStage: 'immediate', direction: 'outbound' } } },
+      // Has an immediate email in history
+      { emailHistory: { $elemMatch: { followUpStage: 'immediate' } } }
+    ]
+  }).limit(Math.max(1, Math.min(2000, Number(limit) || 500)));
+
+  report.inspected = candidates.length;
+
+  for (const lead of candidates) {
+    const leadSummary = {
+      leadId: String(lead._id),
+      name: `${lead.firstName || ''} ${lead.lastName || ''}`.trim() || lead.email || lead.phone || String(lead._id),
+      action: 'SKIPPED',
+      skipReason: null,
+      smsScheduled: false,
+      emailScheduled: false,
+      nextSmsFollowUpAt: null,
+      nextEmailFollowUpAt: null
+    };
+
+    try {
+      // Stop conditions
+      if (lead.smsOptOut && !lead.email) {
+        leadSummary.skipReason = 'OPTED_OUT';
+        bumpSkip('OPTED_OUT');
+        report.leads.push(leadSummary);
+        continue;
+      }
+      if (lead.followUp.status === 'stopped') {
+        leadSummary.skipReason = 'SEQUENCE_COMPLETE';
+        bumpSkip('SEQUENCE_COMPLETE');
+        report.leads.push(leadSummary);
+        continue;
+      }
+      if (lead.followUp.status === 'completed') {
+        leadSummary.skipReason = 'SEQUENCE_COMPLETE';
+        bumpSkip('SEQUENCE_COMPLETE');
+        report.leads.push(leadSummary);
+        continue;
+      }
+
+      // Determine what's missing
+      const hasSmsPhoneAvail = !!lead.phone && !lead.smsOptOut;
+      const hasEmailAvail = !!lead.email && String(lead.emailStatus || '').toLowerCase() !== 'unsubscribed';
+
+      // Check if already properly scheduled
+      const smsMissingDate = hasSmsPhoneAvail && !lead.followUp.nextSmsFollowUpAt;
+      const emailMissingDate = hasEmailAvail && !lead.followUp.nextEmailFollowUpAt;
+
+      if (!smsMissingDate && !emailMissingDate) {
+        leadSummary.skipReason = 'DATE_NOT_DUE';
+        bumpSkip('DATE_NOT_DUE');
+        report.leads.push(leadSummary);
+        continue;
+      }
+
+      report.eligible += 1;
+      leadSummary.action = dryRun ? 'DRY_RUN' : 'REPAIRED';
+
+      if (!dryRun) {
+        // Find the timestamp of the immediate message event to use as sequence start
+        let smsBaseTime = null;
+        let emailBaseTime = null;
+
+        const immediateSmsEntry = findSmsEntryForStage(lead, 'immediate');
+        const immediateEmailEntry = findEmailEntryForStage(lead, 'immediate');
+
+        if (immediateSmsEntry?.sentAt) smsBaseTime = new Date(immediateSmsEntry.sentAt);
+        if (immediateEmailEntry?.sentAt) emailBaseTime = new Date(immediateEmailEntry.sentAt);
+
+        // Fall back to followUp.initialSmsSentAt / initialEmailSentAt if stored
+        if (!smsBaseTime && lead.followUp.initialSmsSentAt) smsBaseTime = new Date(lead.followUp.initialSmsSentAt);
+        if (!emailBaseTime && lead.followUp.initialEmailSentAt) emailBaseTime = new Date(lead.followUp.initialEmailSentAt);
+
+        // Last fallback: lead.createdAt
+        if (!smsBaseTime) smsBaseTime = lead.createdAt || new Date();
+        if (!emailBaseTime) emailBaseTime = lead.createdAt || new Date();
+
+        let smsRepaired = false;
+        let emailRepaired = false;
+
+        if (smsMissingDate) {
+          const smsStep = Math.max(0, Number(lead.followUp.smsStep || 0));
+          const nextSmsAt = getNextFollowUpAt(smsBaseTime, settings.followUpTimingsHours, smsStep);
+          if (nextSmsAt) {
+            lead.followUp.smsStep = smsStep;
+            lead.followUp.smsEnabled = true;
+            lead.followUp.nextSmsFollowUpAt = nextSmsAt;
+            lead.followUp.initialSmsSentAt = lead.followUp.initialSmsSentAt || smsBaseTime;
+            smsRepaired = true;
+            leadSummary.smsScheduled = true;
+            leadSummary.nextSmsFollowUpAt = nextSmsAt;
+          }
+        } else {
+          leadSummary.nextSmsFollowUpAt = lead.followUp.nextSmsFollowUpAt;
+        }
+
+        if (emailMissingDate) {
+          const emailStep = Math.max(0, Number(lead.followUp.emailStep || 0));
+          const nextEmailAt = getNextFollowUpAt(emailBaseTime, settings.followUpTimingsHours, emailStep);
+          if (nextEmailAt) {
+            lead.followUp.emailStep = emailStep;
+            lead.followUp.emailEnabled = true;
+            lead.followUp.nextEmailFollowUpAt = nextEmailAt;
+            lead.followUp.initialEmailSentAt = lead.followUp.initialEmailSentAt || emailBaseTime;
+            emailRepaired = true;
+            leadSummary.emailScheduled = true;
+            leadSummary.nextEmailFollowUpAt = nextEmailAt;
+          }
+        } else {
+          leadSummary.nextEmailFollowUpAt = lead.followUp.nextEmailFollowUpAt;
+        }
+
+        if (smsRepaired || emailRepaired) {
+          if (lead.followUp.status !== 'active') lead.followUp.status = 'active';
+          syncLegacyFollowUpPointers(lead);
+          await lead.save();
+
+          if (smsRepaired) {
+            report.smsSequencesInitialized += 1;
+            const smsStage = getFollowUpStage(lead.followUp.smsStep) || `step${lead.followUp.smsStep}`;
+            await logEvent(lead._id, 'followup_scheduled', 'sms', 'SMS follow-up scheduled', 'Follow-up step 1 scheduled', {
+              sequenceStep: lead.followUp.smsStep + 1,
+              scheduledFor: lead.followUp.nextSmsFollowUpAt,
+              templateKey: reminderTemplateByStep(lead.followUp.smsStep),
+              source: 'repair'
+            });
+          }
+          if (emailRepaired) {
+            report.emailSequencesInitialized += 1;
+            await logEvent(lead._id, 'followup_scheduled', 'email', 'Email follow-up scheduled', 'Follow-up step 1 scheduled', {
+              sequenceStep: lead.followUp.emailStep + 1,
+              scheduledFor: lead.followUp.nextEmailFollowUpAt,
+              templateKey: reminderTemplateByStep(lead.followUp.emailStep),
+              source: 'repair'
+            });
+          }
+          report.repaired += 1;
+        } else {
+          leadSummary.action = 'SKIPPED';
+          leadSummary.skipReason = 'NO_NEXT_DATE';
+          bumpSkip('NO_NEXT_DATE');
+        }
+      } else {
+        // Dry run — just count
+        if (smsMissingDate) {
+          leadSummary.smsScheduled = true;
+          report.smsSequencesInitialized += 1;
+        }
+        if (emailMissingDate) {
+          leadSummary.emailScheduled = true;
+          report.emailSequencesInitialized += 1;
+        }
+        report.repaired += 1;
+      }
+    } catch (leadErr) {
+      leadSummary.action = 'ERROR';
+      leadSummary.skipReason = String(leadErr.message || 'unknown');
+      report.manualReview += 1;
+      console.error(`[META_REPAIR] Error lead=${lead._id} reason=${leadErr.message}`);
+    }
+
+    report.leads.push(leadSummary);
+  }
+
+  return report;
+}
+
+// ── Batch import service ──────────────────────────────────────────────────────
+
+const KNOWN_TRADE_RESPONSES = new Set([
+  'handyman', 'electrician', 'plumber', 'plumbing', 'hvac', 'roofing', 'roofer',
+  'painter', 'painting', 'carpenter', 'carpentry', 'general contractor', 'contractor',
+  'construction', 'general construction all trades', 'landscaping', 'landscaper',
+  'flooring', 'concrete', 'drywall', 'masonry', 'welding', 'locksmith',
+  'appliance repair', 'pest control', 'cleaning', 'tile', 'pool service'
+]);
+
+function isKnownTrade(tradeValue = '') {
+  const normalized = String(tradeValue || '').trim().toLowerCase();
+  if (!normalized) return false;
+  if (KNOWN_TRADE_RESPONSES.has(normalized)) return true;
+  // Allow known trades even when combined, e.g. "Roofing, HVAC"
+  return normalized.split(/[,/&+]+/).map((p) => p.trim()).some((part) => KNOWN_TRADE_RESPONSES.has(part));
+}
+
+function normalizeImportPhone(raw = '') {
+  const cleaned = String(raw || '').trim().replace(/^p:/i, '');
+  return normalizePhone(cleaned);
+}
+
+function normalizeImportMetaId(raw = '') {
+  const str = String(raw || '').trim();
+  // Strip prefixes like "l:", "f:", "ag:", "as:", "c:"
+  return str.replace(/^[a-z]+:/i, '');
+}
+
+function normalizeImportEmail(raw = '') {
+  return String(raw || '').trim().toLowerCase();
+}
+
+function normalizeImportSource(platform = '') {
+  const p = String(platform || '').trim().toLowerCase();
+  if (p.includes('insta')) return 'instagram';
+  if (p.includes('facebook') || p.includes('fb')) return 'facebook';
+  return 'meta_unknown';
+}
+
+/**
+ * Classify a single import row against existing records.
+ * Returns one of: NEW | EXISTING_COMPLETE | EXISTING_INCOMPLETE | DUPLICATE_CONTACT |
+ *                 ALREADY_MESSAGED | OPTED_OUT | REGISTERED | INVALID_CONTACT | NEEDS_MANUAL_REVIEW
+ */
+async function classifyImportRow(row = {}) {
+  const phone = normalizeImportPhone(row.phone);
+  const email = normalizeImportEmail(row.email);
+  const metaLeadId = normalizeImportMetaId(row.metaLeadId);
+
+  if (!phone && !email) return { classification: 'INVALID_CONTACT', existingLead: null };
+
+  // Search by normalized Meta lead ID, phone, and email in a single query
+  const orClauses = [];
+  if (metaLeadId) orClauses.push({ metaLeadId });
+  if (phone) orClauses.push({ phone });
+  if (email) orClauses.push({ email });
+  const existing = await MetaLead.findOne({ $or: orClauses });
+
+  if (!existing) return { classification: 'NEW', existingLead: null };
+
+  if (existing.registrationStatus !== 'not_registered') return { classification: 'REGISTERED', existingLead: existing };
+  if (existing.smsOptOut && !existing.email) return { classification: 'OPTED_OUT', existingLead: existing };
+
+  const hasImmediateSms = hasSmsAttemptForStage(existing, 'immediate');
+  const hasImmediateEmail = hasEmailAttemptForStage(existing, 'immediate');
+  const hasAnyMessage = hasImmediateSms || hasImmediateEmail;
+
+  if (hasAnyMessage) return { classification: 'ALREADY_MESSAGED', existingLead: existing };
+
+  const completeness = classifyLeadCompleteness(existing);
+  if (completeness === 'ALREADY_COMPLETE') return { classification: 'EXISTING_COMPLETE', existingLead: existing };
+  return { classification: 'EXISTING_INCOMPLETE', existingLead: existing };
+}
+
+/**
+ * Import a batch of Meta leads.
+ *
+ * Supports dryRun: true (classify + inspect without creating/messaging)
+ * and dryRun: false (full import with immediate messages and follow-up enrollment).
+ *
+ * Idempotency: repeated calls with the same importBatchId and the same lead rows
+ * will not create duplicate leads, issue duplicate invite codes, or resend messages.
+ *
+ * @param {object} opts
+ * @param {object[]} opts.leads            - array of lead rows
+ * @param {string}  [opts.importBatchId]   - unique batch identifier
+ * @param {string}  [opts.source]          - source label (e.g. 'meta_csv_manual')
+ * @param {boolean} [opts.dryRun=false]
+ * @param {boolean} [opts.sendImmediate=true]
+ * @param {boolean} [opts.initializeFollowUps=true]
+ * @param {boolean} [opts.repairExistingFollowUps=true]
+ */
+async function importBatchLeads({
+  leads = [],
+  importBatchId = '',
+  source = 'meta_csv_manual',
+  dryRun = false,
+  sendImmediate = true,
+  initializeFollowUps = true,
+  repairExistingFollowUps = true
+} = {}) {
+  const settings = await getSettings();
+  const batchId = importBatchId || `batch-${Date.now()}`;
+
+  const report = {
+    batchId,
+    dryRun,
+    totalRows: leads.length,
+    newImported: 0,
+    existingComplete: 0,
+    existingRepaired: 0,
+    duplicateContacts: 0,
+    alreadyMessaged: 0,
+    registered: 0,
+    optedOut: 0,
+    invalidContact: 0,
+    needsManualReview: 0,
+    immediateSMSSent: 0,
+    immediateEmailSent: 0,
+    smsSequencesInitialized: 0,
+    emailSequencesInitialized: 0,
+    failed: 0,
+    rows: []
+  };
+
+  // Track canonical contact keys seen within this batch to detect duplicates
+  const seenPhones = new Map();   // normalizedPhone → row index
+  const seenEmails = new Map();   // normalizedEmail → row index
+
+  for (let i = 0; i < leads.length; i++) {
+    const row = leads[i];
+    const phone = normalizeImportPhone(row.phone);
+    const email = normalizeImportEmail(row.email);
+    const metaLeadId = normalizeImportMetaId(row.metaLeadId);
+
+    const rowResult = {
+      rowIndex: i,
+      metaLeadId,
+      name: String(row.name || row.firstName || '').trim() || email || phone || `row-${i}`,
+      classification: 'NEW',
+      leadId: null,
+      inviteCode: null,
+      smsSent: false,
+      emailSent: false,
+      twilioSid: null,
+      emailMessageId: null,
+      nextSmsFollowUpAt: null,
+      nextEmailFollowUpAt: null,
+      skipReason: null,
+      error: null
+    };
+
+    try {
+      // ── Intra-batch duplicate detection ───────────────────────────────
+      if (phone && seenPhones.has(phone)) {
+        rowResult.classification = 'DUPLICATE_CONTACT';
+        rowResult.skipReason = `Duplicate phone in batch (same as row ${seenPhones.get(phone)})`;
+        report.duplicateContacts += 1;
+        report.rows.push(rowResult);
+        continue;
+      }
+      if (email && seenEmails.has(email)) {
+        rowResult.classification = 'DUPLICATE_CONTACT';
+        rowResult.skipReason = `Duplicate email in batch (same as row ${seenEmails.get(email)})`;
+        report.duplicateContacts += 1;
+        report.rows.push(rowResult);
+        continue;
+      }
+      if (phone) seenPhones.set(phone, i);
+      if (email) seenEmails.set(email, i);
+
+      // ── Classify against existing DB records ──────────────────────────
+      const { classification, existingLead } = await classifyImportRow({ phone, email, metaLeadId });
+      rowResult.classification = classification;
+
+      if (classification === 'INVALID_CONTACT') {
+        report.invalidContact += 1;
+        rowResult.skipReason = 'No valid phone or email';
+        report.rows.push(rowResult);
+        continue;
+      }
+
+      if (classification === 'REGISTERED') {
+        report.registered += 1;
+        rowResult.leadId = String(existingLead._id);
+        rowResult.skipReason = 'Already registered';
+        report.rows.push(rowResult);
+        continue;
+      }
+
+      if (classification === 'OPTED_OUT') {
+        report.optedOut += 1;
+        rowResult.leadId = String(existingLead._id);
+        rowResult.skipReason = 'Opted out';
+        report.rows.push(rowResult);
+        continue;
+      }
+
+      if (classification === 'ALREADY_MESSAGED') {
+        rowResult.leadId = String(existingLead._id);
+        report.alreadyMessaged += 1;
+        // Repair follow-up state if requested but don't resend immediate messages
+        if (repairExistingFollowUps && !dryRun) {
+          const smsMissing = !!existingLead.phone && !existingLead.smsOptOut && !existingLead.followUp.nextSmsFollowUpAt;
+          const emailMissing = !!existingLead.email && !existingLead.followUp.nextEmailFollowUpAt;
+          if (smsMissing || emailMissing) {
+            await completeExistingLead(existingLead, settings);
+            rowResult.nextSmsFollowUpAt = existingLead.followUp.nextSmsFollowUpAt || null;
+            rowResult.nextEmailFollowUpAt = existingLead.followUp.nextEmailFollowUpAt || null;
+            if (smsMissing) report.smsSequencesInitialized += 1;
+            if (emailMissing) report.emailSequencesInitialized += 1;
+            report.existingRepaired += 1;
+          }
+        } else {
+          rowResult.nextSmsFollowUpAt = existingLead.followUp.nextSmsFollowUpAt || null;
+          rowResult.nextEmailFollowUpAt = existingLead.followUp.nextEmailFollowUpAt || null;
+        }
+        const imm = findSmsEntryForStage(existingLead, 'immediate');
+        rowResult.twilioSid = imm?.messageSid || null;
+        rowResult.inviteCode = existingLead.invitationCode || null;
+        report.rows.push(rowResult);
+        continue;
+      }
+
+      if (classification === 'EXISTING_COMPLETE') {
+        rowResult.leadId = String(existingLead._id);
+        rowResult.inviteCode = existingLead.invitationCode || null;
+        rowResult.nextSmsFollowUpAt = existingLead.followUp.nextSmsFollowUpAt || null;
+        rowResult.nextEmailFollowUpAt = existingLead.followUp.nextEmailFollowUpAt || null;
+        report.existingComplete += 1;
+        report.rows.push(rowResult);
+        continue;
+      }
+
+      if (classification === 'EXISTING_INCOMPLETE') {
+        rowResult.leadId = String(existingLead._id);
+        if (!dryRun) {
+          const { smsResult, emailResult } = await completeExistingLead(existingLead, settings);
+          rowResult.inviteCode = existingLead.invitationCode || null;
+          rowResult.smsSent = smsResult.success && !smsResult.skipped;
+          rowResult.emailSent = emailResult.success && !emailResult.skipped;
+          rowResult.twilioSid = smsResult.sid || null;
+          rowResult.emailMessageId = emailResult.messageId || null;
+          rowResult.nextSmsFollowUpAt = existingLead.followUp.nextSmsFollowUpAt || null;
+          rowResult.nextEmailFollowUpAt = existingLead.followUp.nextEmailFollowUpAt || null;
+          if (rowResult.smsSent) report.immediateSMSSent += 1;
+          if (rowResult.emailSent) report.immediateEmailSent += 1;
+          report.existingRepaired += 1;
+        } else {
+          report.existingRepaired += 1;
+        }
+        report.rows.push(rowResult);
+        continue;
+      }
+
+      // ── NEW lead ──────────────────────────────────────────────────────
+      // Parse name
+      const rawName = String(row.name || row.fullName || '').trim();
+      const rawFirst = String(row.firstName || '').trim();
+      const rawLast = String(row.lastName || '').trim();
+      let firstName = rawFirst;
+      let lastName = rawLast;
+      if (!firstName && rawName) {
+        const parts = rawName.split(/\s+/).filter(Boolean);
+        firstName = parts.shift() || '';
+        lastName = parts.join(' ');
+      }
+
+      // Trade normalization
+      const rawTrade = String(row.trade || row.tradeResponse || '').trim();
+      const tradeKnown = isKnownTrade(rawTrade);
+      const profileIncomplete = !tradeKnown || !phone || !email;
+      const missingFields = [];
+      if (!tradeKnown) missingFields.push('trade');
+      if (!phone) missingFields.push('phone');
+      if (!email) missingFields.push('email');
+
+      // Multiple trades
+      const tradesArr = rawTrade
+        ? rawTrade.split(/[,/&+]+/).map((t) => t.trim()).filter(Boolean)
+        : [];
+
+      const submissionTimestamp = row.createdAt ? (parseDate(row.createdAt) || new Date()) : new Date();
+      const srcLabel = normalizeImportSource(row.platform);
+
+      const normalizedMetaLeadId = metaLeadId || `import-${batchId}-${i}`;
+      const leadUniqueId = `META-${normalizedMetaLeadId}`;
+
+      if (!dryRun) {
+        // Check for existing by leadUniqueId/metaLeadId before inserting
+        const existsByMeta = await MetaLead.findOne({
+          $or: [
+            { metaLeadId: normalizedMetaLeadId },
+            { leadUniqueId }
+          ]
+        }).lean();
+        if (existsByMeta) {
+          rowResult.classification = 'EXISTING_INCOMPLETE';
+          rowResult.leadId = String(existsByMeta._id);
+          rowResult.skipReason = 'Already exists by metaLeadId';
+          report.alreadyMessaged += 1;
+          report.rows.push(rowResult);
+          continue;
+        }
+
+        const lead = await MetaLead.create({
+          leadUniqueId,
+          metaLeadId: normalizedMetaLeadId,
+          source: srcLabel,
+          manualImport: true,
+          importBatchId: batchId,
+          firstName,
+          lastName,
+          phone,
+          email,
+          trade: rawTrade,
+          trades: tradesArr,
+          submissionTimestamp,
+          profileIncomplete,
+          missingFields,
+          leadStatus: 'in_progress',
+          campaign: {
+            campaignId: normalizeImportMetaId(row.campaignId || ''),
+            campaignName: String(row.campaignName || '').trim(),
+            adSetId: normalizeImportMetaId(row.adSetId || ''),
+            adId: normalizeImportMetaId(row.adId || ''),
+            formId: normalizeImportMetaId(row.formId || ''),
+            formName: String(row.formName || '').trim()
+          },
+          notes: String(row.notes || `Imported via batch ${batchId}`).trim(),
+          followUp: {
+            step: 0, smsStep: 0, emailStep: 0, status: 'active',
+            smsEnabled: true, emailEnabled: true,
+            lastFollowUpAt: null, nextFollowUpAt: null,
+            nextSmsFollowUpAt: null, nextEmailFollowUpAt: null
+          }
+        });
+
+        rowResult.leadId = String(lead._id);
+
+        await logEvent(lead._id, 'lead_submitted', 'admin', 'Lead imported via batch', `Batch ${batchId}`, {
+          importBatchId: batchId, metaLeadId: normalizedMetaLeadId, source: srcLabel
+        });
+
+        // Invite code
+        await createInviteForLead(lead, settings);
+        rowResult.inviteCode = lead.invitationCode;
+
+        // Immediate outreach
+        const avail = setChannelAvailabilityFlags(lead);
+        const nowSend = new Date();
+
+        let smsRes = { success: false, reason: 'missing_phone' };
+        let emailRes = { success: false, reason: 'missing_email' };
+
+        if (sendImmediate) {
+          if (avail.smsAvailable) {
+            smsRes = await sendLeadSms(lead, 'immediate', settings, { stage: 'immediate', persist: false });
+            if (smsRes.success) {
+              rowResult.smsSent = true;
+              rowResult.twilioSid = smsRes.sid;
+              report.immediateSMSSent += 1;
+            }
+          }
+          if (avail.emailAvailable) {
+            emailRes = await sendLeadEmail(lead, 'immediate', settings, { stage: 'immediate', persist: false });
+            if (emailRes.success) {
+              rowResult.emailSent = true;
+              rowResult.emailMessageId = emailRes.messageId;
+              report.immediateEmailSent += 1;
+            }
+          }
+        }
+
+        // Follow-up initialization
+        const followUpInit = initializeFollowUpForAvailableChannels(lead, settings, nowSend);
+        if (initializeFollowUps) {
+          const fuResult = await initializeMetaLeadFollowUps({
+            lead,
+            settings,
+            initialSmsSentAt: smsRes.success ? nowSend : null,
+            initialEmailSentAt: emailRes.success ? nowSend : null,
+            importBatchId: batchId,
+            source: source || 'meta_csv_manual'
+          });
+          if (fuResult.smsScheduled) report.smsSequencesInitialized += 1;
+          if (fuResult.emailScheduled) report.emailSequencesInitialized += 1;
+          rowResult.nextSmsFollowUpAt = fuResult.smsNextAt;
+          rowResult.nextEmailFollowUpAt = fuResult.emailNextAt;
+        }
+
+        await lead.save();
+        report.newImported += 1;
+      } else {
+        // Dry run
+        rowResult.classification = 'NEW';
+        report.newImported += 1;
+        if (phone) report.immediateSMSSent += 1;
+        if (email) report.immediateEmailSent += 1;
+        if (phone) report.smsSequencesInitialized += 1;
+        if (email) report.emailSequencesInitialized += 1;
+      }
+    } catch (rowErr) {
+      rowResult.error = String(rowErr.message || 'unknown');
+      rowResult.classification = 'NEEDS_MANUAL_REVIEW';
+      report.needsManualReview += 1;
+      report.failed += 1;
+      console.error(`[META_IMPORT] Error row=${i} reason=${rowErr.message}`);
+    }
+
+    report.rows.push(rowResult);
+  }
+
+  return report;
+}
+
 module.exports = {
   CANONICAL_PRO_SIGNUP_URL,
   STOP_KEYWORDS,
@@ -3594,6 +4822,8 @@ module.exports = {
   TWILIO_SID_REGEX,
   META_LEAD_STATUS_CALLBACK_PATH,
   FULL_RECONCILIATION_FORM_ID,
+  getMetaGraphApiVersion,
+  getConfiguredMetaLeadFormIds,
   template,
   getStatusCallbackUrl,
   validateTwilioSignature,
@@ -3603,7 +4833,9 @@ module.exports = {
   sendLeadSms,
   sendLeadEmail,
   initializeFollowUpForAvailableChannels,
+  initializeMetaLeadFollowUps,
   normalizeProSignupLink,
+  normalizePhone,
   getSettings,
   saveSettings,
   verifyMetaSignature,
@@ -3625,6 +4857,10 @@ module.exports = {
   recoverManualMetaLead,
   recoverPartialMetaLead,
   recoverHistoricalMetaLeadsByForm,
+  fetchMetaLeadForm,
+  fetchMetaPageLeadForms,
+  classifyConfiguredMetaForm,
+  resolveMetaReconciliationForms,
   // Durable webhook event helpers
   saveWebhookEvent,
   markWebhookEventProcessed,
@@ -3633,8 +4869,15 @@ module.exports = {
   // Full Meta reconciliation
   classifyLeadCompleteness,
   completeExistingLead,
+  performSingleMetaFormReconciliation,
   performFullMetaReconciliation,
   getLastReconciliationRun,
+  // Repair and batch import
+  repairLeadFollowUps,
+  importBatchLeads,
+  classifyImportRow,
+  normalizeImportPhone,
+  normalizeImportEmail,
   // Alerting
   alertStaleLeads,
   notifyAdmins
