@@ -72,7 +72,7 @@ async function notifyOwnerForLead(leadOrId, { stage = 'standard', amountPaidCent
   if (emailConfigured) {
     const emailResult = await ownerNotify('service_request', {
       service: lead.trade || lead.serviceType || 'Service Request',
-      homeownerName: lead.name || safeFirstName(lead.name),
+      homeownerName: safeFirstName(lead.name),
       email: lead.email || 'N/A',
       phone: lead.phone || 'N/A',
       address: lead.address || 'N/A',

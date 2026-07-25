@@ -996,7 +996,9 @@ app.post("/webhook/stripe", async (req, res) => {
           lead.paymentStatus = 'captured';
           lead.paymentCapturedAt = new Date();
           lead.stripeCheckoutSessionId = session.id;
-          lead.stripePaymentIntentId = String(session.payment_intent || lead.stripePaymentIntentId || '');
+          if (session.payment_intent) {
+            lead.stripePaymentIntentId = String(session.payment_intent);
+          }
           await lead.save();
 
           try {

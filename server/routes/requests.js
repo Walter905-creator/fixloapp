@@ -216,6 +216,9 @@ router.post('/', async (req, res) => {
       };
 
       if (leadId) {
+        if (!mongoose.Types.ObjectId.isValid(String(leadId))) {
+          return res.status(400).json({ ok: false, error: 'Invalid lead ID for payment completion' });
+        }
         savedLead = await JobRequest.findById(leadId);
         if (!savedLead) {
           return res.status(404).json({ ok: false, error: 'Lead not found for payment completion' });
@@ -236,8 +239,9 @@ router.post('/', async (req, res) => {
           });
         }
 
-        const successUrl = `${process.env.CLIENT_URL || 'https://fixloapp.com'}/request?payment=success&leadId=${savedLead._id}`;
-        const cancelUrl = `${process.env.CLIENT_URL || 'https://fixloapp.com'}/request?payment=cancelled&leadId=${savedLead._id}`;
+        const encodedLeadId = encodeURIComponent(String(savedLead._id));
+        const successUrl = `${process.env.CLIENT_URL || 'https://fixloapp.com'}/request?payment=success&leadId=${encodedLeadId}`;
+        const cancelUrl = `${process.env.CLIENT_URL || 'https://fixloapp.com'}/request?payment=cancelled&leadId=${encodedLeadId}`;
 
         const session = await stripe.checkout.sessions.create({
           mode: 'payment',
