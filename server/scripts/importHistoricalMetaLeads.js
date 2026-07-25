@@ -483,13 +483,15 @@ async function logEvent(MetaLeadEvent, leadId, eventType, channel, title, descri
  * Generate a unique invitation code and create an InviteCode document.
  * Returns the code string.
  */
+const MAX_INVITE_CODE_ATTEMPTS = 20;
+
 async function createInviteCode(InviteCode, lead, settings) {
   const chars  = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   const prefix = settings.invitationCodePrefix || 'FIXLO';
   const length = Math.min(10, Math.max(8, Number(settings.invitationCodeLength || 8)));
   const expiryDays = Number(settings.invitationCodeExpiryDays || 30);
 
-  for (let attempt = 0; attempt < 20; attempt++) {
+  for (let attempt = 0; attempt < MAX_INVITE_CODE_ATTEMPTS; attempt++) {
     const random = Array.from({ length }, () => chars[crypto.randomInt(chars.length)]).join('');
     const code   = `${prefix}-${random}`;
     const exists = await InviteCode.findOne({ code }).lean();
@@ -755,7 +757,6 @@ async function processOneLead({
     result.nextFollowUpAt = lead.followUp.nextFollowUpAt || null;
     if (!lead.historicalRecoveryCompleted && !DRY_RUN) {
       lead.historicalRecoveryCompleted = true;
-      lead.followUp.status = lead.followUp.status === 'active' ? 'active' : lead.followUp.status;
       await lead.save();
     }
     return result;
@@ -837,8 +838,8 @@ async function processOneLead({
     const sentEmailStep = nextEmailStep !== null ? nextEmailStep : Number(lead.followUp.emailStep || 0);
 
     // Advance step counters only for successful (non-skipped) sends.
-    const newSmsStep   = (smsSentOk   ? sentSmsStep   + 1 : sentSmsStep);
-    const newEmailStep = (emailSentOk ? sentEmailStep + 1 : sentEmailStep);
+    const newSmsStep   = smsSentOk   ? sentSmsStep   + 1 : sentSmsStep;
+    const newEmailStep = emailSentOk ? sentEmailStep + 1 : sentEmailStep;
 
     lead.followUp.smsStep   = newSmsStep;
     lead.followUp.emailStep = newEmailStep;
