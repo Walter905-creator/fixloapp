@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
+const mongoose = require('mongoose');
 const axios = require('axios');
 const Pro = require('../models/Pro');
 const JobRequest = require('../models/JobRequest');
@@ -429,8 +430,8 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
         if (session.metadata?.requestType === 'homeowner_estimate_fee') {
           try {
             const leadId = session.metadata?.leadId;
-            if (!leadId) {
-              console.error('❌ homeowner_estimate_fee webhook missing leadId in metadata');
+            if (!leadId || !mongoose.Types.ObjectId.isValid(String(leadId))) {
+              console.error('❌ homeowner_estimate_fee webhook missing or invalid leadId in metadata');
               break;
             }
 
