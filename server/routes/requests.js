@@ -105,9 +105,7 @@ router.post('/', async (req, res) => {
       state,
       zipCode,
       smsConsent,
-      details,
-      leadId,
-      stripeCheckoutSessionId
+      details
     } = req.body || {};
 
     // Normalize service field — accept trade, service, or serviceType
@@ -215,23 +213,13 @@ router.post('/', async (req, res) => {
         ownerEmailStatus: 'pending'
       };
 
-      if (leadId) {
-        if (!mongoose.Types.ObjectId.isValid(String(leadId))) {
-          return res.status(400).json({ ok: false, error: 'Invalid lead ID for payment completion' });
-        }
-        savedLead = await JobRequest.findById(leadId);
-        if (!savedLead) {
-          return res.status(404).json({ ok: false, error: 'Lead not found for payment completion' });
-        }
-      } else {
-        savedLead = await JobRequest.create(jobData);
-      }
+      savedLead = await JobRequest.create(jobData);
 
       // 6️⃣ LOG CRITICAL EVENTS
       console.log('💾 Job saved:', requestId, '| ID:', savedLead._id);
       if (isDev) console.log(`[REQUESTS] ✓ DB save    | JobRequest _id=${savedLead._id}`);
 
-      if (requiresEstimateFee && !stripeCheckoutSessionId) {
+      if (requiresEstimateFee) {
         if (!stripe) {
           return res.status(503).json({
             ok: false,

@@ -27,7 +27,7 @@ async function initializeWalterPro() {
 
     if (!ownerQuery) {
       console.error('[OWNER_PRO_SETUP] Missing owner identifiers. Configure FIXLO_OWNER_PRO_ID and/or FIXLO_OWNER_EMAIL and/or FIXLO_OWNER_PHONE.');
-      console.error('[OWNER_PRO_SETUP] One-time admin operation: set owner env vars in Render, then restart the backend.');
+      console.error('[OWNER_PRO_SETUP] One-time admin operation: set owner env vars in your deployment environment, then restart the backend.');
       return null;
     }
 

@@ -199,7 +199,6 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
         serviceType: formData.serviceType === 'Other' ? formData.otherServiceType : formData.serviceType,
         fullName: formData.name,
         phone: normalizedPhone,
-        email: '',
         address: formData.address,
         city: formData.city,
         state: formData.state,
