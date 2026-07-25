@@ -10,8 +10,7 @@ const {
   reconcileLeadRegistrations,
   performFullMetaReconciliation,
   retryUnprocessedWebhookEvents,
-  alertStaleLeads,
-  FULL_RECONCILIATION_FORM_ID
+  alertStaleLeads
 } = require('./metaLeadAutomationService');
 
 /**
@@ -185,16 +184,14 @@ function startScheduledTasks() {
   });
 
   // Task: Full Meta → Fixlo lead reconciliation (every 15 minutes).
-  // Fetches all leads from the Meta Graph API for the configured form and
-  // imports any that are missing or incomplete in production MongoDB.
+  // Discovers/validates active Meta lead forms for the configured page and
+  // imports any leads that are missing or incomplete in production MongoDB.
   const metaFullReconcileTask = cron.schedule('*/15 * * * *', async () => {
     try {
-      const formId = FULL_RECONCILIATION_FORM_ID;
-      if (!formId) return; // safety guard — do nothing if no form configured
-      const result = await performFullMetaReconciliation({ formId, triggeredBy: 'scheduled' });
+      const result = await performFullMetaReconciliation({ triggeredBy: 'scheduled' });
       if (result.skipped) return;
-      if ((result.newlyRecovered || 0) > 0 || (result.existingIncomplete || 0) > 0) {
-        console.log(`[META_FULL_RECONCILE] form=${formId} new=${result.newlyRecovered} completed=${result.existingIncomplete} ok=${result.alreadyComplete} total=${result.totalFromMeta}`);
+      if ((result.totals?.newlyRecovered || 0) > 0 || (result.totals?.existingIncomplete || 0) > 0) {
+        console.log(`[META_FULL_RECONCILE] forms=${result.processedForms?.length || 0} new=${result.totals.newlyRecovered} completed=${result.totals.existingIncomplete} ok=${result.totals.alreadyComplete} total=${result.totals.totalFromMeta}`);
       }
     } catch (error) {
       console.error(`[META_FULL_RECONCILE] Job failed: ${error.message}`);

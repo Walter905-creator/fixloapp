@@ -5,7 +5,6 @@ const requireAuth = require('../middleware/requireAuth');
 const requireAdmin = require('../middleware/requireAdmin');
 const {
   CANONICAL_PRO_SIGNUP_URL,
-  FULL_RECONCILIATION_FORM_ID,
   getStatusCallbackUrl,
   getSettings,
   saveSettings,
@@ -29,7 +28,9 @@ const {
   performFullMetaReconciliation,
   getLastReconciliationRun,
   diagnoseMetaAccess,
-  notifyAdmins
+  notifyAdmins,
+  repairLeadFollowUps,
+  importBatchLeads
 } = require('../services/metaLeadAutomationService');
 
 const router = express.Router();
@@ -232,10 +233,18 @@ adminRouter.post('/jobs/reconcile/run', adminMutationRateLimit, async (_req, res
 // incomplete.  Idempotent and safe to trigger manually.
 adminRouter.post('/jobs/meta-reconcile/run', adminMutationRateLimit, async (req, res) => {
   try {
-    const formId = String(req.body?.formId || FULL_RECONCILIATION_FORM_ID).trim();
+    const formId = String(req.body?.formId || '').trim();
+    const formIds = Array.isArray(req.body?.formIds)
+      ? req.body.formIds
+      : String(req.body?.formIds || '').trim();
     const rawDaysBack = req.body?.daysBack !== undefined ? Number(req.body.daysBack) : 30;
     const daysBack = Number.isFinite(rawDaysBack) && rawDaysBack >= 0 ? Math.floor(rawDaysBack) : 30;
-    const result = await performFullMetaReconciliation({ formId, daysBack, triggeredBy: 'admin' });
+    const result = await performFullMetaReconciliation({
+      formId,
+      formIds,
+      daysBack,
+      triggeredBy: 'admin'
+    });
     return res.json({ ok: true, result });
   } catch (error) {
     return res.status(500).json({ ok: false, error: error.message });
@@ -246,7 +255,7 @@ adminRouter.post('/jobs/meta-reconcile/run', adminMutationRateLimit, async (req,
 // Returns the most recent full reconciliation run and the next scheduled time.
 adminRouter.get('/reconciliation/last', async (req, res) => {
   try {
-    const formId = String(req.query?.formId || FULL_RECONCILIATION_FORM_ID).trim();
+    const formId = String(req.query?.formId || '').trim();
     const data = await getLastReconciliationRun(formId);
     return res.json({ ok: true, ...data });
   } catch (error) {
@@ -341,6 +350,19 @@ adminRouter.get('/meta-access-diagnostic', async (req, res) => {
   }
 });
 
+// POST /api/admin/meta-leads/followups/repair
+// Idempotent repair of leads with successful immediate messages but missing follow-up state.
+adminRouter.post('/followups/repair', adminMutationRateLimit, async (req, res) => {
+  try {
+    const dryRun = req.body?.dryRun ?? true;  // default true for safety
+    const limit = Number(req.body?.limit || 500);
+    const report = await repairLeadFollowUps({ dryRun, limit });
+    return res.json({ ok: true, report });
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
 // GET /api/admin/meta-leads/reconciliation-status
 // Alias for the most recent reconciliation run + next scheduled time.
 // Must be registered BEFORE /:id.
@@ -368,6 +390,42 @@ adminRouter.get('/runs', async (req, res) => {
       .select('-results') // omit large per-lead array for list view
       .lean();
     return res.json({ ok: true, formId, runs });
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+// POST /api/admin/meta-leads/import
+// Batch import of manually provided Meta leads with deduplication, immediate
+// outreach, and follow-up enrollment.  Supports two-phase execution:
+//   Phase A: { dryRun: true, sendImmediate: false }
+//   Phase B: { dryRun: false, sendImmediate: true }
+adminRouter.post('/import', adminMutationRateLimit, async (req, res) => {
+  try {
+    const {
+      leads,
+      importBatchId,
+      source = 'meta_csv_manual',
+      dryRun = true,
+      sendImmediate = false,
+      initializeFollowUps = true,
+      repairExistingFollowUps = true
+    } = req.body || {};
+
+    if (!Array.isArray(leads) || !leads.length) {
+      return res.status(400).json({ ok: false, error: 'leads array is required' });
+    }
+
+    const report = await importBatchLeads({
+      leads,
+      importBatchId,
+      source,
+      dryRun,
+      sendImmediate,
+      initializeFollowUps,
+      repairExistingFollowUps
+    });
+    return res.json({ ok: true, report });
   } catch (error) {
     return res.status(500).json({ ok: false, error: error.message });
   }
@@ -414,4 +472,3 @@ adminRouter.post('/:id/actions/:action', requireValidObjectId, adminMutationRate
 router.use('/api/admin/meta-leads', adminRouter);
 
 module.exports = router;
-

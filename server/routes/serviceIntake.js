@@ -6,9 +6,9 @@ const Invoice = require('../models/Invoice');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const { normalizeE164, isUSPhoneNumber } = require('../utils/twilio');
-const { sendOwnerNotification } = require('../utils/smsSender');
+const { notifyOwnerForLead } = require('../services/ownerLeadNotificationService');
 const { routeLead } = require('../services/leadAssignmentService');
-const { getPriorityConfig, getOwnerPhone } = require('../config/priorityRouting');
+const { getPriorityConfig } = require('../config/priorityRouting');
 const { HOMEOWNER_REQUEST_PRICE, HOMEOWNER_REQUEST_PRICE_CENTS } = require('../config/pricing');
 
 /**
@@ -247,12 +247,7 @@ router.post('/submit', upload.array('photos', 5), async (req, res) => {
     if (isUSPhoneNumber(phone)) {
       try {
         console.log(`📢 Sending owner notification for USA lead`);
-        const ownerResult = await sendOwnerNotification(getOwnerPhone(), jobRequest);
-        if (ownerResult.success) {
-          console.log(`✅ Owner notification sent successfully (SID: ${ownerResult.messageId})`);
-        } else {
-          console.log(`⚠️ Owner notification skipped: ${ownerResult.reason || ownerResult.error}`);
-        }
+        await notifyOwnerForLead(jobRequest, { stage: 'standard', amountPaidCents: 0 });
       } catch (ownerErr) {
         // Don't fail lead processing if owner notification fails
         console.error('❌ Owner notification error:', ownerErr.message);

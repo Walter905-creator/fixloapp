@@ -221,10 +221,15 @@ const _TEMPLATES = {
         ['Homeowner Name',    p.homeownerName],
         ['Email',             p.email],
         ['Phone',             p.phone],
+        ['Address',           p.address || 'N/A'],
         ['City',              p.city],
         ['State',             p.state],
+        ['Project Summary',   _truncateWithIndicator(p.projectSummary || 'N/A', 1200)],
+        ['Payment Status',    p.paymentStatus || 'N/A'],
+        ['Amount Paid',       p.amountPaid || 'N/A'],
         ['Requested Date',    p.requestedDate || new Date().toISOString()],
-        ['Lead ID',           p.leadId]
+        ['Lead ID',           p.leadId],
+        ['Admin Dashboard',   p.adminDashboardUrl || 'N/A']
       ])
     };
   },
@@ -351,7 +356,9 @@ async function _sendEmail(subject, html) {
   };
 
   const result = await sgMail.send(msg);
-  return result;
+  const response = Array.isArray(result) ? result[0] : result;
+  const providerId = response?.headers?.['x-message-id'] || null;
+  return { success: true, providerId };
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -387,9 +394,15 @@ async function notify(eventType, payload = {}) {
   // ── Send email (with one retry) ─────────────────────────────────────────
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
-      await _sendEmail(template.subject, template.html);
+      const result = await _sendEmail(template.subject, template.html);
+      if (result?.disabled) {
+        return { success: false, skipped: true, reason: 'owner_email_not_configured' };
+      }
       console.log(`[OwnerNotify] ✅ Email sent — event: ${eventType} (attempt ${attempt})`);
-      break; // success — stop retry loop
+      return {
+        success: true,
+        providerId: result?.providerId || null
+      };
     } catch (sendErr) {
       if (attempt === 1) {
         console.warn(
@@ -399,6 +412,7 @@ async function notify(eventType, payload = {}) {
         console.error(
           `[OwnerNotify] ❌ Email failed after retry — event: ${eventType} | error: ${sendErr.message}`
         );
+        return { success: false, error: sendErr.message };
       }
     }
   }
@@ -413,6 +427,8 @@ async function notify(eventType, payload = {}) {
         `[OwnerNotify] ❌ Channel "${channel.name}" failed — event: ${eventType} | error: ${channelErr.message}`
       );
     }
+
+    return { success: false, error: 'unknown_send_failure' };
   }
 }
 

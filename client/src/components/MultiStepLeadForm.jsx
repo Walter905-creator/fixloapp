@@ -230,6 +230,11 @@ export default function MultiStepLeadForm({
         throw new Error(data.error || data.message || 'We could not submit your request.');
       }
 
+      if (data.requiresPayment && data?.data?.checkoutUrl) {
+        window.location.assign(data.data.checkoutUrl);
+        return;
+      }
+
       trackMetaPixelEvent('Lead', {
         content_name: 'Homeowner Funnel Request',
         content_category: draft.serviceType
