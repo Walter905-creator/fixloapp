@@ -4,6 +4,7 @@ const requireAuth = require('../middleware/requireAuth');
 const requireAdmin = require('../middleware/requireAdmin');
 const {
   CANONICAL_PRO_SIGNUP_URL,
+  FULL_RECONCILIATION_FORM_ID,
   getStatusCallbackUrl,
   getSettings,
   saveSettings,
@@ -19,6 +20,7 @@ const {
   auditMetaLeadChannelCoverage,
   getLeadDetails,
   computeDashboardMetrics,
+  buildMetaDataAccessWarning,
   performManualAction,
   recoverHistoricalMetaLeadsByForm,
   saveWebhookEvent,
@@ -26,6 +28,7 @@ const {
   markWebhookEventFailed,
   performFullMetaReconciliation,
   getLastReconciliationRun,
+  getMetaLeadFormDiagnostics,
   notifyAdmins,
   repairLeadFollowUps,
   importBatchLeads
@@ -161,6 +164,10 @@ const adminRouter = express.Router();
 adminRouter.use(requireAuth);
 adminRouter.use(requireAdmin);
 
+function resolveConfiguredFormId(candidate, settings) {
+  return String(candidate || settings?.targetFormId || FULL_RECONCILIATION_FORM_ID || '').trim();
+}
+
 // GET /api/admin/meta-leads/settings
 adminRouter.get('/settings', async (_req, res) => {
   try {
@@ -185,7 +192,12 @@ adminRouter.post('/settings', adminMutationRateLimit, async (req, res) => {
 adminRouter.get('/dashboard', async (_req, res) => {
   try {
     const [metrics, settings] = await Promise.all([computeDashboardMetrics(), getSettings()]);
-    return res.json({ ok: true, metrics, settings });
+    return res.json({
+      ok: true,
+      metrics,
+      settings,
+      metaConnectionWarning: buildMetaDataAccessWarning(settings)
+    });
   } catch (error) {
     return res.status(500).json({ ok: false, error: error.message });
   }
@@ -217,7 +229,8 @@ adminRouter.post('/jobs/reconcile/run', adminMutationRateLimit, async (_req, res
 // incomplete.  Idempotent and safe to trigger manually.
 adminRouter.post('/jobs/meta-reconcile/run', adminMutationRateLimit, async (req, res) => {
   try {
-    const formId = String(req.body?.formId || '').trim();
+    const settings = await getSettings();
+    const formId = resolveConfiguredFormId(req.body?.formId, settings);
     const formIds = Array.isArray(req.body?.formIds)
       ? req.body.formIds
       : String(req.body?.formIds || '').trim();
@@ -239,9 +252,26 @@ adminRouter.post('/jobs/meta-reconcile/run', adminMutationRateLimit, async (req,
 // Returns the most recent full reconciliation run and the next scheduled time.
 adminRouter.get('/reconciliation/last', async (req, res) => {
   try {
-    const formId = String(req.query?.formId || '').trim();
+    const settings = await getSettings();
+    const formId = resolveConfiguredFormId(req.query?.formId, settings);
     const data = await getLastReconciliationRun(formId);
     return res.json({ ok: true, ...data });
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+// GET /api/admin/meta-leads/meta/forms
+// Returns accessible forms for the configured page token and classifies the target form.
+adminRouter.get('/meta/forms', async (req, res) => {
+  try {
+    const settings = await getSettings();
+    const diagnostics = await getMetaLeadFormDiagnostics({
+      formId: resolveConfiguredFormId(req.query?.formId, settings),
+      pageId: String(req.query?.pageId || '').trim(),
+      settings
+    });
+    return res.json({ ok: true, ...diagnostics });
   } catch (error) {
     return res.status(500).json({ ok: false, error: error.message });
   }

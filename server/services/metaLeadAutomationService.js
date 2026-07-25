@@ -16,6 +16,10 @@ const { sendOwnerNotification } = require('../utils/smsSender');
 const STOP_KEYWORDS = new Set(['STOP', 'STOPALL', 'UNSUBSCRIBE', 'CANCEL', 'END']);
 const START_KEYWORDS = new Set(['START', 'YES', 'UNSTOP']);
 const CANONICAL_PRO_SIGNUP_URL = 'https://fixloapp.com/pros';
+const META_GRAPH_API_VERSION = process.env.META_GRAPH_API_VERSION || 'v20.0';
+const DEFAULT_META_DATA_ACCESS_WARNING_DAYS = 14;
+const FULL_RECONCILIATION_FORM_ID =
+  process.env.META_LEAD_FORM_ID || '1913273286015217';
 
 /** Regex for a valid Twilio Message SID. Exported so route/retry code can reuse it. */
 const TWILIO_SID_REGEX = /^SM[a-fA-F0-9]{32}$/;
@@ -197,15 +201,92 @@ function isNumericMetaId(value) {
   return typeof value === 'string' && /^\d{5,40}$/.test(value);
 }
 
+function buildMetaGraphUrl(path) {
+  return `https://graph.facebook.com/${META_GRAPH_API_VERSION}/${path}`;
+}
+
+function isArchivedMetaFormStatus(status = '') {
+  return ['ARCHIVED', 'DELETED', 'INACTIVE'].includes(String(status || '').trim().toUpperCase());
+}
+
+function getMetaGraphErrorMessage(error) {
+  return String(error?.response?.data?.error?.message || error?.message || 'Meta Graph API error');
+}
+
+function isUnsupportedMetaEndpointError(error) {
+  return /unsupported get request/i.test(getMetaGraphErrorMessage(error));
+}
+
+function isMetaAccessBlockedError(error) {
+  return /(permission|permissions error|not authorized|access token|requires .* permission|cannot access|missing Meta page access token)/i
+    .test(getMetaGraphErrorMessage(error));
+}
+
+function normalizeMetaLeadAutomationSettings(settings = {}) {
+  const normalized = { ...settings };
+  normalized.signupLink = CANONICAL_PRO_SIGNUP_URL;
+  const targetFormId = String(normalized.targetFormId || '').trim();
+  normalized.targetFormId = isNumericMetaId(targetFormId)
+    ? targetFormId
+    : '';
+  const expiresAt = parseDate(normalized.dataAccessExpiresAt);
+  normalized.dataAccessExpiresAt = expiresAt ? expiresAt.toISOString() : null;
+  const warningDays = Number(normalized.dataAccessWarningDays || DEFAULT_META_DATA_ACCESS_WARNING_DAYS);
+  normalized.dataAccessWarningDays = Number.isFinite(warningDays) && warningDays >= 1
+    ? Math.floor(warningDays)
+    : DEFAULT_META_DATA_ACCESS_WARNING_DAYS;
+  return normalized;
+}
+
+function buildMetaDataAccessWarning(settings = {}) {
+  const expiresAt = parseDate(settings.dataAccessExpiresAt);
+  if (!expiresAt) return null;
+  const warningDays = Number(settings.dataAccessWarningDays || DEFAULT_META_DATA_ACCESS_WARNING_DAYS);
+  const msRemaining = expiresAt.getTime() - Date.now();
+  const daysRemaining = Math.ceil(msRemaining / MS_PER_DAY);
+  const renewMessage = 'Renew the Meta connection before reconciliation stops.';
+  if (msRemaining <= 0) {
+    return {
+      status: 'expired',
+      severity: 'error',
+      expiresAt: expiresAt.toISOString(),
+      daysRemaining,
+      warningDays,
+      message: `Meta data access has expired. ${renewMessage}`
+    };
+  }
+  if (msRemaining <= warningDays * MS_PER_DAY) {
+    return {
+      status: 'expiring_soon',
+      severity: 'warning',
+      expiresAt: expiresAt.toISOString(),
+      daysRemaining,
+      warningDays,
+      message: `Meta data access expires in ${daysRemaining} day(s). ${renewMessage}`
+    };
+  }
+  return {
+    status: 'healthy',
+    severity: 'info',
+    expiresAt: expiresAt.toISOString(),
+    daysRemaining,
+    warningDays,
+    message: `Meta data access expires in ${daysRemaining} day(s).`
+  };
+}
+
 function buildDefaults() {
   return {
     enabled: true,
+    targetFormId: FULL_RECONCILIATION_FORM_ID,
     invitationCodePrefix: 'FIXLO',
     invitationCodeLength: 8,
     invitationCodeExpiryDays: 30,
     signupLink: CANONICAL_PRO_SIGNUP_URL,
     supportEmail: process.env.SENDGRID_REPLY_TO_EMAIL || 'support@fixloapp.com',
     supportPhone: process.env.SUPPORT_PHONE || '',
+    dataAccessExpiresAt: null,
+    dataAccessWarningDays: DEFAULT_META_DATA_ACCESS_WARNING_DAYS,
     followUpTimingsHours: FOLLOW_UP_SCHEDULE_HOURS,
     automaticReminders: true,
     ownerNotifications: {
@@ -236,7 +317,7 @@ async function getSettings() {
   const defaults = buildDefaults();
   const settings = await AdminSettings.findOne({ _singleton: 'admin' }).lean();
   const saved = settings?.metaLeadAutomation || {};
-  const merged = {
+  const merged = normalizeMetaLeadAutomationSettings({
     ...defaults,
     ...saved,
     ownerNotifications: { ...defaults.ownerNotifications, ...(saved.ownerNotifications || {}) },
@@ -245,21 +326,19 @@ async function getSettings() {
     followUpTimingsHours: Array.isArray(saved.followUpTimingsHours) && saved.followUpTimingsHours.length === 4
       ? saved.followUpTimingsHours.map((n) => Number(n))
       : defaults.followUpTimingsHours
-  };
-  merged.signupLink = CANONICAL_PRO_SIGNUP_URL;
+  });
   return merged;
 }
 
 async function saveSettings(nextSettings = {}) {
   const current = await getSettings();
-  const merged = {
+  const merged = normalizeMetaLeadAutomationSettings({
     ...current,
     ...nextSettings,
     ownerNotifications: { ...current.ownerNotifications, ...(nextSettings.ownerNotifications || {}) },
     smsTemplates: { ...current.smsTemplates, ...(nextSettings.smsTemplates || {}) },
     emailTemplates: { ...current.emailTemplates, ...(nextSettings.emailTemplates || {}) }
-  };
-  merged.signupLink = CANONICAL_PRO_SIGNUP_URL;
+  });
 
   await AdminSettings.findOneAndUpdate(
     { _singleton: 'admin' },
@@ -1344,6 +1423,104 @@ async function classifyConfiguredMetaForm(formId, deps = {}) {
       error: sanitizedError
     };
   }
+}
+
+async function getMetaLeadFormDiagnostics({
+  formId = '',
+  pageId = '',
+  accessToken = '',
+  pageSize = 100,
+  settings = null
+} = {}) {
+  const activeSettings = settings || await getSettings();
+  const resolvedPageId = String(pageId || getDefaultPageId() || '').trim();
+  const resolvedFormId = String(formId || activeSettings.targetFormId || FULL_RECONCILIATION_FORM_ID || '').trim();
+  const mapDiagnosticForm = (form = {}) => ({
+    id: String(form.id || '').trim(),
+    name: String(form.name || '').trim(),
+    status: String(form.status || '').trim().toUpperCase(),
+    createdTime: form.createdTime || form.created_time || null,
+    pageId: String(form.pageId || form.page_id || '').trim()
+  });
+
+  const diagnostics = {
+    graphApiVersion: getMetaGraphApiVersion(),
+    pageId: resolvedPageId || null,
+    targetFormId: resolvedFormId || null,
+    classification: null,
+    warning: buildMetaDataAccessWarning(activeSettings),
+    pageFormsError: null,
+    accessibleForms: [],
+    targetForm: null,
+    directFormLookup: {
+      attempted: false,
+      ok: false,
+      error: null,
+      form: null
+    }
+  };
+
+  try {
+    diagnostics.accessibleForms = (await fetchMetaPageLeadForms(resolvedPageId, {
+      accessToken,
+      pageSize
+    })).map(mapDiagnosticForm);
+  } catch (error) {
+    diagnostics.pageFormsError = getMetaGraphErrorMessage(error);
+    diagnostics.classification = isUnsupportedMetaEndpointError(error)
+      ? 'FORM_ENDPOINT_NOT_SUPPORTED'
+      : 'FORM_ACCESS_BLOCKED_FOR_ANOTHER_REASON';
+    return diagnostics;
+  }
+
+  if (!resolvedFormId) {
+    return diagnostics;
+  }
+
+  const targetForm = diagnostics.accessibleForms.find((form) => form.id === resolvedFormId) || null;
+  if (targetForm) {
+    diagnostics.targetForm = targetForm;
+    diagnostics.classification = isArchivedMetaFormStatus(targetForm.status) ? 'FORM_ARCHIVED' : 'FORM_FOUND';
+  }
+
+  diagnostics.directFormLookup.attempted = true;
+  try {
+    const form = await fetchMetaLeadForm(resolvedFormId, {
+      accessToken: accessToken || getPageToken(resolvedPageId) || getAnyMetaAccessToken(),
+      axiosInstance: axios
+    });
+    const directForm = mapDiagnosticForm(form);
+    diagnostics.directFormLookup.ok = true;
+    diagnostics.directFormLookup.form = directForm;
+
+    if (!diagnostics.targetForm && directForm.id) {
+      diagnostics.targetForm = directForm;
+      if (directForm.pageId && directForm.pageId !== resolvedPageId) {
+        diagnostics.classification = 'FORM_BELONGS_TO_DIFFERENT_PAGE';
+      } else {
+        diagnostics.classification = isArchivedMetaFormStatus(directForm.status)
+          ? 'FORM_ARCHIVED'
+          : 'FORM_FOUND';
+      }
+    }
+  } catch (error) {
+    diagnostics.directFormLookup.error = getMetaGraphErrorMessage(error);
+    if (!diagnostics.classification) {
+      if (isMetaAccessBlockedError(error)) {
+        diagnostics.classification = 'FORM_ACCESS_BLOCKED_FOR_ANOTHER_REASON';
+      } else if (isUnsupportedMetaEndpointError(error) && !diagnostics.accessibleForms.length) {
+        diagnostics.classification = 'FORM_ENDPOINT_NOT_SUPPORTED';
+      } else {
+        diagnostics.classification = 'FORM_NOT_FOUND';
+      }
+    }
+  }
+
+  if (!diagnostics.classification) {
+    diagnostics.classification = diagnostics.targetForm ? 'FORM_FOUND' : 'FORM_NOT_FOUND';
+  }
+
+  return diagnostics;
 }
 
 function matchesHistoricalTarget(target = {}, metaLeadData = {}) {
@@ -3381,10 +3558,6 @@ async function completeExistingLead(lead, settings) {
 let _fullReconciliationRunning = false;
 const _loggedStaleConfiguredForms = new Map();
 
-/** Legacy single-form env var kept for backward-compatible reads/admin defaults. */
-const FULL_RECONCILIATION_FORM_ID =
-  process.env.META_LEAD_FORM_ID || '';
-
 /** Maximum number of individual lead results stored in a MetaReconciliationRun document. */
 const MAX_STORED_RESULTS = 200;
 /** Milliseconds per day — used for date-range calculations. */
@@ -4677,6 +4850,8 @@ module.exports = {
   auditMetaLeadChannelCoverage,
   getLeadDetails,
   computeDashboardMetrics,
+  buildMetaDataAccessWarning,
+  getMetaLeadFormDiagnostics,
   performManualAction,
   importManualLead,
   recoverManualMetaLead,
