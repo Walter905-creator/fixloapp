@@ -245,7 +245,9 @@ router.post('/', async (req, res) => {
       coordinates: coords
     });
     const requiresEstimateFee = eligibility.eligible && CHARLOTTE_ESTIMATE_FEE_ENABLED;
+    const serviceRequestFeeDollars = Number((CHARLOTTE_ESTIMATE_FEE_AMOUNT_CENTS / 100).toFixed(0));
 
+    let verifiedCheckoutSessionId = '';
     if (requiresEstimateFee) {
       if (!stripe) {
         return res.status(503).json({
@@ -258,7 +260,7 @@ router.post('/', async (req, res) => {
       if (!sessionId) {
         return res.status(402).json({
           ok: false,
-          error: 'A verified $75 Service Request Fee payment is required before submission.'
+          error: `A verified $${serviceRequestFeeDollars} Service Request Fee payment is required before submission.`
         });
       }
 
@@ -269,7 +271,7 @@ router.post('/', async (req, res) => {
       if (existingPaidLead) {
         return res.status(409).json({
           ok: false,
-          error: 'This payment session has already been used for a submitted request.'
+          error: 'This payment session has already been used for a submitted request. Please submit a new request or contact support if this seems incorrect.'
         });
       }
 
@@ -291,9 +293,11 @@ router.post('/', async (req, res) => {
       if (!paid || requestType !== 'homeowner_service_request_fee' || !correctAmount || !correctCurrency) {
         return res.status(402).json({
           ok: false,
-          error: 'Payment verification failed. Please complete the $75 Service Request Fee to continue.'
+          error: `Payment verification failed. Please complete the $${serviceRequestFeeDollars} Service Request Fee to continue.`
         });
       }
+
+      verifiedCheckoutSessionId = sessionId;
     }
 
     // ---------- Save Job ----------
@@ -326,6 +330,9 @@ router.post('/', async (req, res) => {
         estimateFeeRequired: requiresEstimateFee,
         estimateFeeAmountCents: requiresEstimateFee ? CHARLOTTE_ESTIMATE_FEE_AMOUNT_CENTS : 0,
         estimateFeeCurrency: 'usd',
+        stripeCheckoutSessionId: verifiedCheckoutSessionId || undefined,
+        paymentStatus: requiresEstimateFee ? 'captured' : 'none',
+        paymentCapturedAt: requiresEstimateFee ? new Date() : undefined,
         ownerSmsStatus: 'pending',
         ownerEmailStatus: 'pending'
       };
@@ -335,13 +342,6 @@ router.post('/', async (req, res) => {
       // 6️⃣ LOG CRITICAL EVENTS
       console.log('💾 Job saved:', requestId, '| ID:', savedLead._id);
       if (isDev) console.log(`[REQUESTS] ✓ DB save    | JobRequest _id=${savedLead._id}`);
-
-      if (requiresEstimateFee) {
-        savedLead.stripeCheckoutSessionId = String(stripeCheckoutSessionId || '').trim();
-        savedLead.paymentStatus = 'captured';
-        savedLead.paymentCapturedAt = new Date();
-        await savedLead.save();
-      }
 
       // Send homeowner confirmation SMS
       if (smsConsent) {

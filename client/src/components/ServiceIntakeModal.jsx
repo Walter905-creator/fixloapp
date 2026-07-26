@@ -221,7 +221,23 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
       throw new Error(result?.error || 'Unable to start Service Request Fee checkout');
     }
 
-    window.sessionStorage.setItem(SERVICE_REQUEST_DRAFT_KEY, JSON.stringify(formData));
+    const checkoutDraft = {
+      serviceType: formData.serviceType,
+      otherServiceType: formData.otherServiceType,
+      description: formData.description,
+      address: formData.address,
+      city: formData.city,
+      state: formData.state,
+      zip: formData.zip,
+      urgency: formData.urgency,
+      termsAccepted: formData.termsAccepted,
+      smsConsent: formData.smsConsent
+    };
+    try {
+      window.sessionStorage.setItem(SERVICE_REQUEST_DRAFT_KEY, JSON.stringify(checkoutDraft));
+    } catch (storageError) {
+      console.warn('Unable to save service request draft before checkout:', storageError);
+    }
     window.location.assign(result.data.checkoutUrl);
   };
 
