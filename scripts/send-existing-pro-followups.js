@@ -29,7 +29,13 @@ function pad(str, len) {
 function isValidEmail(email) {
   const value = String(email || '').trim();
   if (!value) return false;
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  if (value.length > 254) return false;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return false;
+  if (value.includes('..')) return false;
+  const [localPart, domainPart] = value.split('@');
+  if (!localPart || !domainPart) return false;
+  if (domainPart.startsWith('.') || domainPart.endsWith('.')) return false;
+  return true;
 }
 
 function hasSuccessfulHistory(history = []) {
@@ -61,7 +67,15 @@ async function main() {
     process.exit(1);
   }
 
-  const dbName = mongoUri.split('/').pop().split('?')[0];
+  const dbName = (() => {
+    try {
+      const parsed = new URL(mongoUri);
+      const name = parsed.pathname.replace(/^\/+/, '').split('/')[0];
+      return name || 'unknown';
+    } catch {
+      return 'unknown';
+    }
+  })();
 
   section('FIXLO — SEND EXISTING PRO FOLLOW-UPS');
   console.log(`Database: ${dbName}`);
@@ -84,9 +98,9 @@ async function main() {
   const includeNonManual = String(process.env.INCLUDE_NON_MANUAL || '').toLowerCase() === 'true';
   const query = includeNonManual ? {} : { manualImport: true };
 
-  const allLeads = await MetaLead.find(query).sort({ createdAt: -1 }).limit(Number(process.env.FOLLOWUP_LIMIT || 1000));
+  const selectedLeads = await MetaLead.find(query).sort({ createdAt: -1 }).limit(Number(process.env.FOLLOWUP_LIMIT || 1000));
 
-  if (!allLeads.length) {
+  if (!selectedLeads.length) {
     section('NO PRO LEADS FOUND');
     console.log(`Query: ${JSON.stringify(query)}`);
     await mongoose.disconnect();
@@ -145,17 +159,17 @@ async function main() {
 
   sub('PRO LEAD STATISTICS');
 
-  const withPhone = allLeads.filter((l) => Boolean(normalizePhone(l.phone)));
-  const withEmail = allLeads.filter((l) => isValidEmail(l.email));
+  const withPhone = selectedLeads.filter((l) => Boolean(normalizePhone(l.phone)));
+  const withEmail = selectedLeads.filter((l) => isValidEmail(l.email));
 
-  const smsEligibleCount = allLeads.filter(
+  const smsEligibleCount = selectedLeads.filter(
     (l) => isSmsAvailable(l) && isDueOrUninitialized(l, 'sms') && Number(l.followUp?.smsStep || 0) < STAGE_KEYS.length
   ).length;
-  const emailEligibleCount = allLeads.filter(
+  const emailEligibleCount = selectedLeads.filter(
     (l) => isEmailAvailable(l) && isDueOrUninitialized(l, 'email') && Number(l.followUp?.emailStep || 0) < STAGE_KEYS.length
   ).length;
 
-  console.log(`Total Pro leads found: ${allLeads.length}`);
+  console.log(`Total Pro leads found: ${selectedLeads.length}`);
   console.log(`Total with phone numbers: ${withPhone.length}`);
   console.log(`Total with email addresses: ${withEmail.length}`);
   console.log(`Total eligible for SMS follow-ups: ${smsEligibleCount}`);
@@ -164,7 +178,7 @@ async function main() {
   const eligible = [];
   const skipped = [];
 
-  for (const lead of allLeads) {
+  for (const lead of selectedLeads) {
     const reasons = getSkipReasons(lead);
 
     const smsDue = isSmsAvailable(lead) && isDueOrUninitialized(lead, 'sms') && Number(lead.followUp?.smsStep || 0) < STAGE_KEYS.length;
@@ -193,7 +207,7 @@ async function main() {
 
   for (const lead of eligible) {
     let changed = false;
-    if (!lead.followUp || typeof lead.followUp !== 'object') {
+    if (!lead.followUp || Array.isArray(lead.followUp) || typeof lead.followUp !== 'object') {
       lead.followUp = {};
       changed = true;
     }
@@ -243,6 +257,7 @@ async function main() {
     const nextDates = [lead.followUp.nextSmsFollowUpAt, lead.followUp.nextEmailFollowUpAt]
       .filter(Boolean)
       .map((d) => new Date(d))
+      .filter((d) => !Number.isNaN(d.getTime()))
       .sort((a, b) => a - b);
     const nextUnified = nextDates[0] || null;
 
@@ -263,7 +278,7 @@ async function main() {
 
   console.log(`Scheduling fields repaired: ${repaired}`);
 
-  const beforeMap = new Map(
+  const preProcessingState = new Map(
     eligible.map((l) => [String(l._id), {
       smsStep: Number(l.followUp?.smsStep || 0),
       emailStep: Number(l.followUp?.emailStep || 0),
@@ -275,8 +290,8 @@ async function main() {
   section('RUNNING SCHEDULER FOLLOW-UP PIPELINE');
   const cycleResult = await processFollowUpCycle();
 
-  const finalDocs = await MetaLead.find({ _id: { $in: allLeads.map((l) => l._id) } }).lean();
-  const finalById = new Map(finalDocs.map((l) => [String(l._id), l]));
+  const leadsAfterProcessing = await MetaLead.find({ _id: { $in: selectedLeads.map((l) => l._id) } }).lean();
+  const finalById = new Map(leadsAfterProcessing.map((l) => [String(l._id), l]));
 
   let smsSent = 0;
   let emailsSent = 0;
@@ -284,7 +299,7 @@ async function main() {
 
   const leadRows = [];
 
-  for (const lead of allLeads) {
+  for (const lead of selectedLeads) {
     const id = String(lead._id);
     const final = finalById.get(id) || lead;
     const skippedEntry = skipped.find((s) => String(s.lead._id) === id);
@@ -297,7 +312,7 @@ async function main() {
       smsStatus = 'skipped';
       emailStatus = 'skipped';
     } else {
-      const before = beforeMap.get(id) || { smsStep: 0, emailStep: 0, smsCount: 0, emailCount: 0 };
+      const before = preProcessingState.get(id) || { smsStep: 0, emailStep: 0, smsCount: 0, emailCount: 0 };
       const afterSmsStep = Number(final.followUp?.smsStep || 0);
       const afterEmailStep = Number(final.followUp?.emailStep || 0);
       const afterSmsCount = (final.smsHistory || []).length;
@@ -316,7 +331,7 @@ async function main() {
         skippedAfter += 1;
         if (!skipReason) {
           const reasons = getSkipReasons(final);
-          skipReason = reasons.length ? reasons.join(' | ') : 'scheduler did not send in this cycle';
+          skipReason = reasons.length ? reasons.join(' | ') : 'not sent in this cycle';
         }
       }
     }
@@ -358,7 +373,7 @@ async function main() {
   }
 
   section('FINAL SUMMARY');
-  console.log(`Existing Pro leads found: ${allLeads.length}`);
+  console.log(`Existing Pro leads found: ${selectedLeads.length}`);
   console.log(`Eligible: ${eligible.length}`);
   console.log(`SMS sent: ${smsSent}`);
   console.log(`Emails sent: ${emailsSent}`);
