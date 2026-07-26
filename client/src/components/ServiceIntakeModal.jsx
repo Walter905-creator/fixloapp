@@ -111,7 +111,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
       // Both Charlotte (eligible) and non-Charlotte paths require the terms checkbox.
       // For Charlotte users the button is also disabled until checked; this validation
       // prevents navigating forward via the footer Next button.
-      if (!formData.termsAccepted && !estimateFee.eligible) {
+      if (!formData.termsAccepted) {
         newErrors.termsAccepted = 'You must accept the terms to continue';
       }
     }
@@ -691,10 +691,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
               </button>
 
               <p className="text-xs text-center text-slate-500">
-                This is a one-time service request fee. No work will begin until you approve the estimate. Materials, if needed, will be listed separately in the contractor's final quote.
-              </p>
-              <p className="text-xs text-center text-slate-500">
-                Secure checkout powered by Stripe. Your card information is never stored on our servers.
+                This is a one-time service request fee. No work will begin until you approve the estimate. Materials, if needed, will be listed separately in the contractor's final quote. Secure checkout powered by Stripe. Your card information is never stored on our servers.
               </p>
             </div>
           );
