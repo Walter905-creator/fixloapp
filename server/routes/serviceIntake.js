@@ -10,6 +10,10 @@ const { notifyOwnerForLead } = require('../services/ownerLeadNotificationService
 const { routeLead } = require('../services/leadAssignmentService');
 const { getPriorityConfig } = require('../config/priorityRouting');
 const { HOMEOWNER_REQUEST_PRICE, HOMEOWNER_REQUEST_PRICE_CENTS } = require('../config/pricing');
+const {
+  CHARLOTTE_ESTIMATE_FEE_ENABLED,
+  evaluateCharlotteEstimateFeeEligibility
+} = require('../config/charlotteEstimateFee');
 
 /**
  * Validate E.164 phone format
@@ -145,6 +149,29 @@ router.post('/submit', upload.array('photos', 5), async (req, res) => {
         success: false,
         message: 'City and state are required'
       });
+    }
+
+    // ---------- Charlotte payment gate ----------
+    // Charlotte-area requests must go through the $75 Stripe checkout flow.
+    // Direct submissions to this endpoint without a verified payment are rejected.
+    if (CHARLOTTE_ESTIMATE_FEE_ENABLED) {
+      try {
+        const eligibility = await evaluateCharlotteEstimateFeeEligibility({
+          address, city, state, zip
+        });
+        if (eligibility.eligible) {
+          return res.status(402).json({
+            success: false,
+            requiresPayment: true,
+            message:
+              'Charlotte-area service requests require a $75 Service Request Fee. ' +
+              'Please use the service request form at /request to complete checkout first.'
+          });
+        }
+      } catch (geoErr) {
+        // Non-fatal: if eligibility check fails, allow the request through
+        console.warn('⚠️ Charlotte eligibility check failed in service-intake:', geoErr.message);
+      }
     }
 
     // Validate description length

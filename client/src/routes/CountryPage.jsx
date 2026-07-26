@@ -247,7 +247,7 @@ export default function CountryPage() {
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <a
-              href="/services"
+              href="/request"
               className="px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition-colors"
             >
               Find a Pro

@@ -176,7 +176,7 @@ export default function AboutPage() {
           Fixlo is here to help you succeed.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link to="/services" className="btn-primary">
+          <Link to="/request" className="btn-primary">
             Find a Professional
           </Link>
           <Link to="/join" className="btn-ghost">
