@@ -7,6 +7,7 @@ const Pro = require('../models/Pro');
 const JobRequest = require('../models/JobRequest');
 const Referral = require('../models/Referral');
 const EarlyAccessSpots = require('../models/EarlyAccessSpots');
+const { HOMEOWNER_REQUEST_PRICE_CENTS } = require('../config/pricing');
 const { applyReferralFreeMonth, hasExistingReward } = require('../services/applyReferralFreeMonth');
 const { sendSms } = require('../utils/twilio');
 const { notify: ownerNotify } = require('../services/ownerNotificationService');
@@ -165,14 +166,113 @@ router.post('/create-setup-intent', async (req, res) => {
   }
 });
 
-// Homeowner quote requests are free — this endpoint is kept for backwards compatibility
-// but no longer creates a Stripe checkout session
+// Create checkout session for homeowner request fee
 router.post('/homeowner-checkout', async (req, res) => {
-  return res.json({
-    success: true,
-    free: true,
-    message: 'Homeowner quote requests are completely free. No payment required.'
-  });
+  try {
+    if (!stripe) {
+      return res.status(500).json({
+        success: false,
+        message: 'Stripe is not configured on the server.'
+      });
+    }
+
+    if (!HOMEOWNER_REQUEST_PRICE_CENTS || HOMEOWNER_REQUEST_PRICE_CENTS <= 0) {
+      return res.status(500).json({
+        success: false,
+        message: 'Homeowner request fee is not configured.'
+      });
+    }
+
+    const clientUrl = process.env.YOUR_DOMAIN || process.env.CLIENT_URL || 'https://www.fixloapp.com';
+    const { returnPath } = req.body || {};
+    const safePath = typeof returnPath === 'string' && returnPath.startsWith('/') ? returnPath : '/request';
+    const returnUrl = new URL(safePath, clientUrl);
+    const cancelUrl = new URL(safePath, clientUrl);
+
+    returnUrl.searchParams.set('checkout', 'success');
+    returnUrl.searchParams.set('session_id', '{CHECKOUT_SESSION_ID}');
+    returnUrl.searchParams.set('payment_status', 'success');
+
+    cancelUrl.searchParams.set('checkout', 'cancel');
+    cancelUrl.searchParams.set('payment_status', 'cancelled');
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: 'Fixlo Service Request Fee',
+              description: 'One-time service request review and matching fee'
+            },
+            unit_amount: HOMEOWNER_REQUEST_PRICE_CENTS
+          },
+          quantity: 1
+        }
+      ],
+      success_url: returnUrl.toString(),
+      cancel_url: cancelUrl.toString(),
+      metadata: {
+        kind: 'homeowner_request_fee',
+        amountCents: String(HOMEOWNER_REQUEST_PRICE_CENTS),
+        source: 'request_flow'
+      }
+    });
+
+    return res.json({
+      success: true,
+      sessionId: session.id,
+      sessionUrl: session.url
+    });
+  } catch (error) {
+    console.error('❌ Error creating homeowner checkout session:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Unable to create secure payment session.'
+    });
+  }
+});
+
+router.get('/homeowner-checkout/verify', async (req, res) => {
+  try {
+    if (!stripe) {
+      return res.status(500).json({
+        verified: false,
+        message: 'Stripe is not configured on the server.'
+      });
+    }
+
+    const sessionId = String(req.query.session_id || '').trim();
+    if (!sessionId) {
+      return res.status(400).json({
+        verified: false,
+        message: 'Missing session_id'
+      });
+    }
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const verified =
+      session.mode === 'payment' &&
+      session.payment_status === 'paid' &&
+      session.amount_total === HOMEOWNER_REQUEST_PRICE_CENTS &&
+      session.metadata?.kind === 'homeowner_request_fee';
+
+    return res.json({
+      verified,
+      sessionId,
+      paymentStatus: session.payment_status,
+      amountTotal: session.amount_total,
+      currency: session.currency
+    });
+  } catch (error) {
+    console.error('❌ Error verifying homeowner checkout session:', error.message);
+    return res.status(500).json({
+      verified: false,
+      message: 'Unable to verify payment session.'
+    });
+  }
 });
 
 // Create checkout session for subscription with 30-day free trial
