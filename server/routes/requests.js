@@ -134,18 +134,34 @@ const createCharlotteCheckoutSession = async (req, res) => {
       address,
       city,
       state,
-      zipCode
+      zipCode,
+      coordinates
     } = req.body || {};
+
+    console.log('[create-checkout] Received payload:', {
+      address: address || '(empty)',
+      city: city || '(empty)',
+      state: state || '(empty)',
+      zip: zipCode || '(empty)',
+      coordinates: coordinates || null
+    });
 
     const eligibility = await evaluateCharlotteEstimateFeeEligibility({
       address,
       city,
       state,
-      zip: zipCode
+      zip: zipCode,
+      coordinates
     });
+
+    console.log('[create-checkout] Eligibility result:', eligibility);
 
     const requiresEstimateFee = eligibility.eligible && CHARLOTTE_ESTIMATE_FEE_ENABLED;
     if (!requiresEstimateFee) {
+      console.warn('[create-checkout] Rejected — eligible:', eligibility.eligible,
+        '| CHARLOTTE_ESTIMATE_FEE_ENABLED:', CHARLOTTE_ESTIMATE_FEE_ENABLED,
+        '| reason:', eligibility.reason,
+        '| distanceMiles:', eligibility.distanceMiles ?? 'n/a');
       return res.status(400).json({
         ok: false,
         error: 'This request is not in the Charlotte service area, so the $75 Service Request Fee checkout is not required.'
