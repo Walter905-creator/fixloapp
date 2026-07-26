@@ -697,6 +697,35 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
 
             {errors.submit && <p className="text-red-600 text-sm">{errors.submit}</p>}
 
+            {estimateFee.checked && estimateFee.eligible && (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5 space-y-3">
+                <h4 className="text-base sm:text-lg font-semibold text-slate-900">
+                  What&apos;s Included in Your $75 Service Request Fee?
+                </h4>
+                <ul className="space-y-2 text-sm text-slate-700">
+                  <li className="flex items-start">
+                    <span className="mr-2 font-semibold">•</span>
+                    <span>Professional project estimate</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2 font-semibold">•</span>
+                    <span>Matching with verified local contractors</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2 font-semibold">•</span>
+                    <span>Priority review of your request</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2 font-semibold">•</span>
+                    <span>A contractor will contact you within 24 hours</span>
+                  </li>
+                </ul>
+                <p className="text-xs sm:text-sm font-medium text-slate-600">
+                  One-time fee. No hidden charges.
+                </p>
+              </div>
+            )}
+
             <button
               type="button"
               disabled={isSubmitting}
@@ -710,7 +739,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
               {isSubmitting
                 ? 'Submitting...'
                 : (estimateFee.checked && estimateFee.eligible && !paymentSessionId
-                  ? 'Continue to Secure Payment'
+                  ? 'Continue to Payment'
                   : 'Request Service')}
             </button>
           </div>
