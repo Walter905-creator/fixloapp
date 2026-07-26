@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { API_BASE } from '../utils/config';
 import { normalizeUSPhone } from '../utils/phoneUtils';
 import { trackMetaPixelEvent } from '../utils/metaPixel';
@@ -25,9 +25,18 @@ const URGENCY_OPTIONS = [
   'Flexible'
 ];
 
-export default function ServiceIntakeModal({ open, onClose, defaultCity, defaultService, customHeading, paymentSessionId: initialPaymentSessionId = '' }) {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState({
+export default function ServiceIntakeModal({
+  open,
+  onClose,
+  defaultCity,
+  defaultService,
+  customHeading,
+  paymentSessionId: initialPaymentSessionId = '',
+  restoredFormData = null,
+  restoredPaidSessionId = '',
+  paymentReturnStatus = null
+}) {
+  const baseFormData = {
     serviceType: defaultService ? defaultService.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '',
     otherServiceType: '',
     description: '',
@@ -41,12 +50,18 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
     phone: '',
     termsAccepted: false,
     smsConsent: false
+  };
+  const [currentStep, setCurrentStep] = useState(() => {
+    if (paymentReturnStatus === 'success' && restoredPaidSessionId) return 7;
+    if (paymentReturnStatus === 'cancelled') return 6;
+    return 1;
   });
+  const [formData, setFormData] = useState(() => ({ ...baseFormData, ...(restoredFormData || {}) }));
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [estimateFee, setEstimateFee] = useState({ checked: false, eligible: false, amountCents: 0 });
-  const [paymentSessionId, setPaymentSessionId] = useState(initialPaymentSessionId || '');
+  const [paymentSessionId, setPaymentSessionId] = useState(restoredPaidSessionId || initialPaymentSessionId || '');
 
   const totalSteps = 7;
 
@@ -121,6 +136,21 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
     }
   };
 
+  const handleContinue = async () => {
+    if (!validateStep(currentStep)) return;
+    if (currentStep === 6 && estimateFee.checked && estimateFee.eligible && !paymentSessionId) {
+      setIsSubmitting(true);
+      try {
+        await startCharlotteCheckout();
+      } catch (error) {
+        setErrors({ submit: error.message || 'Unable to start secure payment.' });
+        setIsSubmitting(false);
+      }
+      return;
+    }
+    nextStep();
+  };
+
   const prevStep = () => {
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
@@ -148,27 +178,30 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
     /^\d{5}$/.test(String(formData.zip || '').trim())
   );
 
-  React.useEffect(() => {
-    if (initialPaymentSessionId) {
-      setPaymentSessionId(initialPaymentSessionId);
+  useEffect(() => {
+    if (restoredFormData && typeof restoredFormData === 'object') {
+      setFormData((prev) => ({ ...prev, ...restoredFormData }));
     }
-  }, [initialPaymentSessionId]);
+  }, [restoredFormData]);
 
-  React.useEffect(() => {
-    if (!initialPaymentSessionId) return;
-    try {
-      const rawDraft = window.sessionStorage.getItem(SERVICE_REQUEST_DRAFT_KEY);
-      if (!rawDraft) return;
-      const draft = JSON.parse(rawDraft);
-      if (draft && typeof draft === 'object') {
-        setFormData((prev) => ({ ...prev, ...draft }));
-      }
-    } catch (error) {
-      console.warn('Unable to restore service request draft:', error);
+  useEffect(() => {
+    const session = restoredPaidSessionId || initialPaymentSessionId || '';
+    if (session) {
+      setPaymentSessionId(session);
     }
-  }, [initialPaymentSessionId]);
+  }, [initialPaymentSessionId, restoredPaidSessionId]);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    if (paymentReturnStatus === 'success' && (restoredPaidSessionId || initialPaymentSessionId)) {
+      setCurrentStep(7);
+      return;
+    }
+    if (paymentReturnStatus === 'cancelled') {
+      setCurrentStep(6);
+    }
+  }, [paymentReturnStatus, restoredPaidSessionId, initialPaymentSessionId]);
+
+  useEffect(() => {
     let cancelled = false;
     const run = async () => {
       if (!canCheckEstimateFee) {
@@ -205,14 +238,18 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
   }, [canCheckEstimateFee, formData.address, formData.city, formData.state, formData.zip]);
 
   const startCharlotteCheckout = async () => {
-    const response = await csrfFetch(`${API_URL}/api/requests/checkout-session`, {
+    const response = await csrfFetch(`${API_URL}/api/requests/create-checkout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        serviceType: formData.serviceType === 'Other' ? formData.otherServiceType : formData.serviceType,
+        details: formData.description,
         address: formData.address,
         city: formData.city,
         state: formData.state,
-        zipCode: formData.zip
+        zipCode: formData.zip,
+        urgency: formData.urgency,
+        smsConsent: formData.smsConsent || false
       })
     });
 
@@ -265,11 +302,6 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
         details: formData.description || '',
         stripeCheckoutSessionId: paymentSessionId || undefined
       };
-
-      if (estimateFee.checked && estimateFee.eligible && !paymentSessionId) {
-        await startCharlotteCheckout();
-        return;
-      }
 
       const res = await csrfFetch(`${API_URL}/api/requests`, {
         method: 'POST',
@@ -540,42 +572,27 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
       case 6:
         return (
           <div className="space-y-4">
-            <h3 className="text-xl font-bold text-slate-900">Review & Terms</h3>
+            <h3 className="text-xl font-bold text-slate-900">Review & Payment</h3>
             <div className="bg-emerald-50 p-6 rounded-lg space-y-3 text-slate-800 border border-emerald-200">
               {estimateFee.checked && estimateFee.eligible ? (
-                <div className="rounded-lg border border-emerald-300 bg-white p-4 space-y-2">
-                  <p className="text-sm font-semibold text-slate-900">Service Request Fee</p>
-                  <p className="text-2xl font-bold text-slate-900">${(estimateFee.amountCents / 100).toFixed(0)}</p>
-                  <p className="text-sm text-slate-700 font-medium">Your $75 Service Request Fee includes:</p>
-                </div>
-              ) : (
-                <p className="font-semibold text-lg text-emerald-800">✓ Your service request has no upfront fee.</p>
-              )}
-              <ul className="space-y-2 text-sm">
-                {estimateFee.checked && estimateFee.eligible ? (
-                  <>
+                <div className="rounded-lg border border-emerald-300 bg-white p-4 space-y-3">
+                  <p className="font-semibold text-lg text-emerald-800">✓ Your $75 Service Request Fee includes:</p>
+                  <ul className="space-y-2 text-sm">
                     <li className="flex items-start">
                       <span className="font-semibold mr-2">•</span>
-                      <span>Professional review of your project</span>
+                      <span>Professional project estimate from a verified local professional</span>
                     </li>
                     <li className="flex items-start">
                       <span className="font-semibold mr-2">•</span>
-                      <span>Matching with qualified local professionals</span>
+                      <span>Priority review and processing of your request</span>
                     </li>
                     <li className="flex items-start">
                       <span className="font-semibold mr-2">•</span>
-                      <span>A professional estimate for your project</span>
+                      <span>Matching with a qualified local professional</span>
                     </li>
                     <li className="flex items-start">
                       <span className="font-semibold mr-2">•</span>
-                      <span>A contractor will contact you within 24 hours or less</span>
-                    </li>
-                  </>
-                ) : (
-                  <>
-                    <li className="flex items-start">
-                      <span className="font-semibold mr-2">•</span>
-                      <span>Get matched with verified local professionals</span>
+                      <span>A professional will contact you within 24 hours or less</span>
                     </li>
                     <li className="flex items-start">
                       <span className="font-semibold mr-2">•</span>
@@ -587,11 +604,34 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
                     </li>
                     <li className="flex items-start">
                       <span className="font-semibold mr-2">•</span>
-                      <span>Materials (if needed) will be itemized in the final quote</span>
+                      <span>Materials, if needed, will be itemized separately in the final quote</span>
                     </li>
-                  </>
-                )}
-              </ul>
+                  </ul>
+                  <p className="text-base font-semibold text-slate-900">Service Request Fee: $75.00</p>
+                  <p className="text-sm text-slate-700">
+                    This is a one-time fee for processing your request, arranging a professional estimate, and connecting you with a qualified local professional. It is not payment for the repair or construction work.
+                  </p>
+                </div>
+              ) : (
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-start">
+                    <span className="font-semibold mr-2">•</span>
+                    <span>Matching with qualified local professionals</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="font-semibold mr-2">•</span>
+                    <span>You will receive a detailed quote before any work begins</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="font-semibold mr-2">•</span>
+                    <span>No work will start without your approval</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="font-semibold mr-2">•</span>
+                    <span>Materials, if needed, will be itemized separately in the final quote</span>
+                  </li>
+                </ul>
+              )}
             </div>
             
             <label className="flex items-start space-x-3 cursor-pointer">
@@ -602,7 +642,9 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
                 className="mt-1 h-5 w-5 text-brand border-slate-300 rounded focus:ring-brand"
               />
               <span className="text-slate-700">
-                I understand and agree to the terms for this service request.
+                {estimateFee.checked && estimateFee.eligible
+                  ? 'I understand that a $75 Service Request Fee is required before my request can be submitted.'
+                  : 'I understand and agree to the terms for this service request.'}
               </span>
             </label>
             {errors.termsAccepted && <p className="text-red-600 text-sm">{errors.termsAccepted}</p>}
@@ -738,9 +780,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
             >
               {isSubmitting
                 ? 'Submitting...'
-                : (estimateFee.checked && estimateFee.eligible && !paymentSessionId
-                  ? 'Continue to Payment'
-                  : 'Request Service')}
+                : 'Request Service'}
             </button>
           </div>
         );
@@ -805,10 +845,13 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
             
             {currentStep < totalSteps && (
               <button
-                onClick={nextStep}
-                className="btn-primary"
+                onClick={handleContinue}
+                disabled={isSubmitting}
+                className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {'Next →'}
+                {currentStep === 6 && estimateFee.checked && estimateFee.eligible && !paymentSessionId
+                  ? 'Continue to Secure Payment'
+                  : 'Next →'}
               </button>
             )}
           </div>

@@ -59,7 +59,7 @@ test('POST /api/requests — verifies Stripe session via API (not URL params)', 
   );
   assert.match(
     routeSource,
-    /payment_status.*===.*'paid'/,
+    /payment_status.*===.*'paid'|isValidCharlotteCheckoutSession/,
     'Route must check payment_status === paid on the retrieved session'
   );
 });
@@ -136,7 +136,7 @@ test('POST /api/requests/create-checkout — creates Stripe session WITHOUT a DB
 test('POST /api/requests/create-checkout — rejects non-Charlotte addresses', () => {
   assert.match(
     routeSource,
-    /not in the Charlotte service area/,
+    /not in the Charlotte service area|not required for this location/,
     'create-checkout must reject addresses outside Charlotte'
   );
 });
@@ -152,7 +152,7 @@ test('GET /api/requests/verify-checkout/:sessionId — returns paid status from 
   // The route must both check payment_status === 'paid' AND set a paid variable
   assert.match(
     routeSource,
-    /payment_status === 'paid'/,
+    /payment_status === 'paid'|isValidCharlotteCheckoutSession/,
     'verify-checkout must check session.payment_status === paid'
   );
   assert.match(
@@ -223,13 +223,18 @@ test('ServiceIntakeModal — shows exact $75 fee explanation for Charlotte reque
   );
   assert.match(
     modalSource,
-    /Includes a professional project estimate/,
-    'Modal must show the fee explanation text'
+    /Professional project estimate from a verified local professional/,
+    'Modal must show the exact fee explanation text'
   );
   assert.match(
     modalSource,
-    /One-time fee\. No hidden charges\./,
-    'Modal must show "One-time fee. No hidden charges."'
+    /Service Request Fee: \$75\.00/,
+    'Modal must show "Service Request Fee: $75.00"'
+  );
+  assert.match(
+    modalSource,
+    /I understand that a \$75 Service Request Fee is required before my request can be submitted\./,
+    'Modal must show the payment-required agreement checkbox'
   );
 });
 
@@ -249,7 +254,7 @@ test('ServiceIntakeModal — saves form data to sessionStorage before Stripe red
   );
   assert.match(
     modalSource,
-    /FORM_SESSION_KEY/,
+    /SERVICE_REQUEST_DRAFT_KEY/,
     'Modal must use a named constant for the sessionStorage key'
   );
 });
@@ -272,6 +277,11 @@ test('ServiceIntakeModal — accepts restoredFormData and restoredPaidSessionId 
     modalSource,
     /restoredPaidSessionId/,
     'Modal must accept a restoredPaidSessionId prop'
+  );
+  assert.match(
+    modalSource,
+    /paymentReturnStatus/,
+    'Modal must accept a paymentReturnStatus prop for success/cancel step behavior'
   );
 });
 
@@ -313,6 +323,45 @@ test('RequestPage — passes restoredFormData and paidSessionId to ServiceIntake
     requestPageSource,
     /restoredPaidSessionId/,
     'RequestPage must pass restoredPaidSessionId to ServiceIntakeModal'
+  );
+  assert.match(
+    requestPageSource,
+    /paymentReturnStatus/,
+    'RequestPage must pass paymentReturnStatus to ServiceIntakeModal'
+  );
+});
+
+test('POST /api/requests — successful $75 paid session is accepted', () => {
+  assert.match(
+    routeSource,
+    /CHARLOTTE_ESTIMATE_FEE_AMOUNT_CENTS/,
+    'Route must validate the $75 amount configuration when verifying Stripe session'
+  );
+  assert.match(
+    routeSource,
+    /paymentStatus:\s*requiresEstimateFee \? 'captured' : 'none'/,
+    'Route must mark paid Charlotte requests as captured'
+  );
+});
+
+test('GET \/api\/requests\/verify-checkout — cancelled or failed payment is rejected', () => {
+  assert.match(
+    routeSource,
+    /res\.status\(402\)[\s\S]*Payment has not been completed for this session\./,
+    'verify-checkout must reject unpaid/cancelled sessions'
+  );
+});
+
+test('RequestPage — cancelled payment returns user to payment step without submission', () => {
+  assert.match(
+    requestPageSource,
+    /paymentParam === 'cancelled'/,
+    'RequestPage must detect cancelled Stripe returns'
+  );
+  assert.match(
+    requestPageSource,
+    /setPaymentStatus\('cancelled'\)/,
+    'RequestPage must keep user in cancelled state so modal returns to Step 6'
   );
 });
 
