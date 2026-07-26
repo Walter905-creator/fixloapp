@@ -1,7 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import ServiceIntakeModal from '../components/ServiceIntakeModal';
 import HelmetSEO from '../seo/HelmetSEO';
+import { API_BASE } from '../utils/config';
+
+const API_URL = API_BASE;
+const FORM_SESSION_KEY = 'fixlo_pending_service_request';
+// Must match PendingCheckout TTL (2 hours)
+const PENDING_CHECKOUT_TTL_MS = 2 * 60 * 60 * 1000;
 
 /**
  * RequestPage - Full-page service request form for ad campaigns
@@ -9,14 +15,15 @@ import HelmetSEO from '../seo/HelmetSEO';
  * Supports query parameters:
  * - city: Pre-fills the city field (e.g., charlotte-nc)
  * - service: Pre-fills the service type (e.g., plumbing)
- * - payment: 'success' or 'cancelled' — returned by Stripe after estimate-fee checkout
+ * - payment: 'success' or 'cancelled' — returned by Stripe after checkout
+ * - session_id: Stripe Checkout Session ID returned on success
  *
  * Examples:
  * - /request
  * - /request?city=charlotte-nc
  * - /request?city=charlotte-nc&service=plumbing
- * - /request?payment=success&leadId=abc123
- * - /request?payment=cancelled&leadId=abc123
+ * - /request?payment=success&session_id=cs_test_xxx
+ * - /request?payment=cancelled
  */
 export default function RequestPage() {
   const [searchParams] = useSearchParams();
@@ -24,25 +31,66 @@ export default function RequestPage() {
   const [service, setService] = useState('');
   const [heading, setHeading] = useState('Home Service Request');
   const [paymentStatus, setPaymentStatus] = useState(null); // 'success' | 'cancelled' | null
+  const [paymentVerified, setPaymentVerified] = useState(false);
+  const [verifyError, setVerifyError] = useState('');
+  const [restoredFormData, setRestoredFormData] = useState(null);
+  const [paidSessionId, setPaidSessionId] = useState(null);
+
+  const verifyAndRestore = useCallback(async (sessionId) => {
+    setPaymentStatus('verifying');
+    try {
+      const res = await fetch(`${API_URL}/api/requests/verify-checkout/${encodeURIComponent(sessionId)}`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok || !data.paid) {
+        setVerifyError('Payment could not be verified. Please try again or contact support.');
+        setPaymentStatus('cancelled');
+        return;
+      }
+
+      // Restore form data from sessionStorage
+      let restored = null;
+      try {
+        const raw = sessionStorage.getItem(FORM_SESSION_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          // Keep entries saved less than PENDING_CHECKOUT_TTL_MS ago; discard stale ones
+          if (Date.now() - (parsed.savedAt || 0) < PENDING_CHECKOUT_TTL_MS) {
+            restored = parsed;
+          }
+        }
+      } catch (_) {}
+
+      setPaidSessionId(sessionId);
+      setRestoredFormData(restored || {});
+      setPaymentVerified(true);
+      setPaymentStatus('success');
+    } catch (err) {
+      setVerifyError('Unable to verify payment. Please contact support.');
+      setPaymentStatus('cancelled');
+    }
+  }, []);
 
   useEffect(() => {
-    // Handle Stripe payment return
     const paymentParam = searchParams.get('payment');
-    if (paymentParam === 'success' || paymentParam === 'cancelled') {
-      setPaymentStatus(paymentParam);
-      return; // Show payment result screen instead of the form
+    const sessionIdParam = searchParams.get('session_id');
+
+    if (paymentParam === 'success' && sessionIdParam) {
+      verifyAndRestore(sessionIdParam);
+      return;
     }
 
-    // Extract and process query parameters
+    if (paymentParam === 'cancelled') {
+      setPaymentStatus('cancelled');
+      return;
+    }
+
+    // Normal page load — read city/service params
     const cityParam = searchParams.get('city');
     const serviceParam = searchParams.get('service');
 
     if (cityParam) {
-      // Extract city name without state suffix (e.g., "charlotte-nc" -> "charlotte")
       const cityName = cityParam.split('-')[0];
       const formattedCity = cityName.charAt(0).toUpperCase() + cityName.slice(1);
-
-      // Pass just the city name to the modal
       setCity(cityName);
       setHeading(`${formattedCity} Home Service Request`);
     }
@@ -50,35 +98,56 @@ export default function RequestPage() {
     if (serviceParam) {
       setService(serviceParam);
     }
-  }, [searchParams]);
+  }, [searchParams, verifyAndRestore]);
 
-  // Page never closes the modal - it's the main content
   const handleClose = () => {
-    // No-op: This is a dedicated page, not a modal overlay
+    // No-op: dedicated page
   };
 
-  if (paymentStatus === 'success') {
+  if (paymentStatus === 'verifying') {
+    return (
+      <>
+        <HelmetSEO title="Verifying Payment" canonicalPathname="/request" />
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center py-8">
+          <div className="bg-white rounded-2xl shadow-lg p-10 max-w-md w-full text-center">
+            <div className="text-4xl mb-4 animate-spin">⏳</div>
+            <h1 className="text-xl font-bold text-slate-900 mb-2">Verifying your payment…</h1>
+            <p className="text-slate-600">Please wait while we confirm your payment with Stripe.</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (paymentStatus === 'success' && paymentVerified) {
     return (
       <>
         <HelmetSEO
-          title="Request Confirmed"
-          description="Your estimate fee payment was received. A professional will be in touch shortly."
+          title="Complete Your Request"
+          description="Your payment was confirmed. Please review your request details below."
           canonicalPathname="/request"
         />
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center py-8">
-          <div className="bg-white rounded-2xl shadow-lg p-10 max-w-md w-full text-center">
-            <div className="text-5xl mb-4">✅</div>
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">Payment Received!</h1>
-            <p className="text-slate-600 mb-6">
-              Your estimate fee has been processed and your service request is confirmed.
-              A verified professional will reach out to you shortly.
-            </p>
-            <a
-              href="/"
-              className="inline-block bg-brand text-white font-semibold px-6 py-3 rounded-xl hover:opacity-90 transition"
-            >
-              Back to Home
-            </a>
+        <div className="min-h-screen bg-slate-50 py-8">
+          <div className="container-xl max-w-2xl">
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-6 flex items-center gap-3">
+              <span className="text-2xl">✅</span>
+              <div>
+                <p className="font-semibold text-emerald-800">Payment confirmed!</p>
+                <p className="text-sm text-emerald-700">
+                  Your $75 Service Request Fee has been processed. Please review your information below and submit.
+                </p>
+              </div>
+            </div>
+            <ServiceIntakeModal
+              key="post-payment"
+              open={true}
+              onClose={handleClose}
+              defaultCity={city}
+              defaultService={service}
+              customHeading="Complete Your Service Request"
+              restoredFormData={restoredFormData}
+              restoredPaidSessionId={paidSessionId}
+            />
           </div>
         </div>
       </>
@@ -97,9 +166,11 @@ export default function RequestPage() {
           <div className="bg-white rounded-2xl shadow-lg p-10 max-w-md w-full text-center">
             <div className="text-5xl mb-4">❌</div>
             <h1 className="text-2xl font-bold text-slate-900 mb-2">Payment Cancelled</h1>
+            {verifyError && (
+              <p className="text-red-600 text-sm mb-4">{verifyError}</p>
+            )}
             <p className="text-slate-600 mb-6">
-              Your payment was not completed. No charge was made. You can submit a new
-              request at any time.
+              Your payment was not completed. No charge was made. You can submit a new request at any time.
             </p>
             <a
               href="/request"
@@ -121,7 +192,6 @@ export default function RequestPage() {
         canonicalPathname="/request"
       />
 
-      {/* Full-page wrapper with custom heading */}
       <div className="min-h-screen bg-slate-50 py-8">
         <div className="container-xl">
           <ServiceIntakeModal

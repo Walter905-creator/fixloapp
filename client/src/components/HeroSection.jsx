@@ -48,7 +48,7 @@ export default function HeroSection({ headingTag = "h2" }) {
             </div>
             <div className="mt-8 flex flex-col sm:flex-row items-center sm:items-start gap-4">
               <button
-                onClick={() => navigate("/for-homeowners")}
+                onClick={() => navigate("/request")}
                 className="w-full sm:w-auto text-white font-semibold text-lg px-10 py-4 rounded-full shadow-lg transition-colors"
                 style={{ backgroundColor: "#2ecc71" }}
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#27ae60")}

@@ -560,7 +560,7 @@ export default function HomeownerDashboard() {
 
       <section className="flex flex-wrap gap-3">
         <button type="button" onClick={() => navigate('/request')} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white">Request New Service</button>
-        <button type="button" onClick={() => navigate('/pros')} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700">Find a Pro</button>
+        <button type="button" onClick={() => navigate('/request')} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700">Find a Pro</button>
         <button type="button" onClick={() => setActiveTab('My Projects')} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700">View All Projects</button>
       </section>
     </div>

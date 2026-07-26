@@ -19,7 +19,7 @@ export default function AIHomeExpertHero() {
   };
 
   const handleFindPro = () => {
-    navigate('/services');
+    navigate('/request');
   };
 
   return (
