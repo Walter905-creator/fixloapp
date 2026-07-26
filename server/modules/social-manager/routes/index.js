@@ -10,6 +10,7 @@ const adminService = require('../admin');
 const postingService = require('../posting');
 const dailyPoster = require('../scheduler/dailyPoster');
 const adminAuth = require('../../../middleware/adminAuth');
+const requirePermission = require('../../../middleware/requirePermission');
 
 /**
  * Social Media Manager API Routes
@@ -448,6 +449,8 @@ router.get('/force-status', async (req, res) => {
 // ==================== ADMIN AUTHENTICATION REQUIRED ====================
 // All routes below this point require admin authentication
 router.use(adminAuth);
+// Review admin: social_media_manager permission required.
+router.use(requirePermission('social_media_manager'));
 
 /**
  * GET /api/social/platforms

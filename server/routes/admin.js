@@ -4,6 +4,7 @@ const router = express.Router();
 const Pro = require("../models/Pro");
 const requireAuth = require("../middleware/requireAuth");
 const requireAdmin = require("../middleware/requireAdmin");
+const requirePermission = require("../middleware/requirePermission");
 const fs = require('fs');
 const path = require('path');
 const { sendOwnerNotification } = require('../utils/smsSender');
@@ -13,6 +14,9 @@ const { getPriorityConfig } = require('../config/priorityRouting');
 // Protect all admin routes with JWT + admin role
 router.use(requireAuth);
 router.use(requireAdmin);
+// Review admin accounts must not access general administration routes
+// (pro management, SMS tests, payouts, data-retention, etc.).
+router.use(requirePermission('full_admin'));
 
 // ✅ Send a test Charlotte owner-notification SMS
 router.post("/test-charlotte-sms", async (req, res) => {

@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const rateLimit = require('express-rate-limit');
 const requireAuth = require('../middleware/requireAuth');
 const requireAdmin = require('../middleware/requireAdmin');
+const requirePermission = require('../middleware/requirePermission');
+const { shouldMaskPii, maskPii } = require('../utils/maskPii');
 const {
   CANONICAL_PRO_SIGNUP_URL,
   FULL_RECONCILIATION_FORM_ID,
@@ -165,6 +167,8 @@ router.post('/webhook/sendgrid/meta-leads/events', webhookRateLimit, express.jso
 const adminRouter = express.Router();
 adminRouter.use(requireAuth);
 adminRouter.use(requireAdmin);
+// Review admin: meta_integration permission required for all admin meta-lead routes.
+adminRouter.use(requirePermission('meta_integration'));
 
 // Middleware: reject any :id that is not a valid MongoDB ObjectId so that
 // literal path segments (e.g. "auth-diagnostic") that were not caught by a
@@ -297,6 +301,9 @@ adminRouter.get('/meta/forms', async (req, res) => {
 adminRouter.get('/', async (req, res) => {
   try {
     const data = await listLeads(req.query || {});
+    if (shouldMaskPii(req) && data && Array.isArray(data.leads)) {
+      data.leads = maskPii(data.leads);
+    }
     return res.json({ ok: true, ...data });
   } catch (error) {
     return res.status(500).json({ ok: false, error: error.message });
@@ -465,8 +472,11 @@ adminRouter.post('/import', adminMutationRateLimit, async (req, res) => {
 // Validates that :id is a legal MongoDB ObjectId before forwarding to Mongoose.
 adminRouter.get('/:id', requireValidObjectId, async (req, res) => {
   try {
-    const data = await getLeadDetails(req.params.id);
+    let data = await getLeadDetails(req.params.id);
     if (!data) return res.status(404).json({ ok: false, error: 'Lead not found' });
+    if (shouldMaskPii(req)) {
+      data = maskPii(data);
+    }
     return res.json({ ok: true, ...data });
   } catch (error) {
     return res.status(500).json({ ok: false, error: error.message });
