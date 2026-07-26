@@ -5,6 +5,7 @@ import { trackMetaPixelEvent } from '../utils/metaPixel';
 import { csrfFetch, getCsrfToken } from '../utils/csrf';
 
 const API_URL = API_BASE;
+const SERVICE_REQUEST_DRAFT_KEY = 'fixlo_service_request_draft';
 
 const SERVICE_TYPES = [
   'General Repairs',
@@ -24,7 +25,7 @@ const URGENCY_OPTIONS = [
   'Flexible'
 ];
 
-export default function ServiceIntakeModal({ open, onClose, defaultCity, defaultService, customHeading }) {
+export default function ServiceIntakeModal({ open, onClose, defaultCity, defaultService, customHeading, paymentSessionId: initialPaymentSessionId = '' }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     serviceType: defaultService ? defaultService.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '',
@@ -45,6 +46,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [estimateFee, setEstimateFee] = useState({ checked: false, eligible: false, amountCents: 0 });
+  const [paymentSessionId, setPaymentSessionId] = useState(initialPaymentSessionId || '');
 
   const totalSteps = 7;
 
@@ -147,6 +149,26 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
   );
 
   React.useEffect(() => {
+    if (initialPaymentSessionId) {
+      setPaymentSessionId(initialPaymentSessionId);
+    }
+  }, [initialPaymentSessionId]);
+
+  React.useEffect(() => {
+    if (!initialPaymentSessionId) return;
+    try {
+      const rawDraft = window.sessionStorage.getItem(SERVICE_REQUEST_DRAFT_KEY);
+      if (!rawDraft) return;
+      const draft = JSON.parse(rawDraft);
+      if (draft && typeof draft === 'object') {
+        setFormData((prev) => ({ ...prev, ...draft }));
+      }
+    } catch (error) {
+      console.warn('Unable to restore service request draft:', error);
+    }
+  }, [initialPaymentSessionId]);
+
+  React.useEffect(() => {
     let cancelled = false;
     const run = async () => {
       if (!canCheckEstimateFee) {
@@ -182,8 +204,28 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
     return () => { cancelled = true; };
   }, [canCheckEstimateFee, formData.address, formData.city, formData.state, formData.zip]);
 
+  const startCharlotteCheckout = async () => {
+    const response = await csrfFetch(`${API_URL}/api/requests/checkout-session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        zipCode: formData.zip
+      })
+    });
+
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result?.ok || !result?.data?.checkoutUrl) {
+      throw new Error(result?.error || 'Unable to start Service Request Fee checkout');
+    }
+
+    window.sessionStorage.setItem(SERVICE_REQUEST_DRAFT_KEY, JSON.stringify(formData));
+    window.location.assign(result.data.checkoutUrl);
+  };
+
   const handleSubmitRequest = async () => {
-    // Free quote submission — no payment required
     setIsSubmitting(true);
     setErrors({});
 
@@ -204,8 +246,14 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
         state: formData.state,
         zipCode: formData.zip,
         smsConsent: formData.smsConsent || false,
-        details: formData.description || ''
+        details: formData.description || '',
+        stripeCheckoutSessionId: paymentSessionId || undefined
       };
+
+      if (estimateFee.checked && estimateFee.eligible && !paymentSessionId) {
+        await startCharlotteCheckout();
+        return;
+      }
 
       const res = await csrfFetch(`${API_URL}/api/requests`, {
         method: 'POST',
@@ -223,11 +271,6 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
         throw new Error(responseData.error || 'Request was not created properly');
       }
 
-      if (responseData.requiresPayment && responseData?.data?.checkoutUrl) {
-        window.location.assign(responseData.data.checkoutUrl);
-        return;
-      }
-
       // Track Meta Pixel Lead event
       trackMetaPixelEvent('Lead', {
         content_name: 'Service Request',
@@ -236,6 +279,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
 
       setSubmitSuccess(true);
       setCurrentStep(totalSteps);
+      window.sessionStorage.removeItem(SERVICE_REQUEST_DRAFT_KEY);
 
     } catch (err) {
       console.error('❌ Submission error:', err);
@@ -483,30 +527,54 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
             <h3 className="text-xl font-bold text-slate-900">Estimate & Terms</h3>
             <div className="bg-emerald-50 p-6 rounded-lg space-y-3 text-slate-800 border border-emerald-200">
               {estimateFee.checked && estimateFee.eligible ? (
-                <div className="rounded-lg border border-emerald-300 bg-white p-4">
-                  <p className="text-sm font-semibold text-slate-900">Estimate Fee</p>
+                <div className="rounded-lg border border-emerald-300 bg-white p-4 space-y-2">
+                  <p className="text-sm font-semibold text-slate-900">Service Request Fee</p>
                   <p className="text-2xl font-bold text-slate-900">${(estimateFee.amountCents / 100).toFixed(0)}</p>
+                  <p className="text-sm text-slate-700 font-medium">Your $75 Service Request Fee includes:</p>
                 </div>
               ) : (
                 <p className="font-semibold text-lg text-emerald-800">✓ Your estimate request has no upfront fee.</p>
               )}
               <ul className="space-y-2 text-sm">
-                <li className="flex items-start">
-                  <span className="font-semibold mr-2">•</span>
-                  <span>Get matched with verified local professionals for free</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="font-semibold mr-2">•</span>
-                  <span>You will receive a detailed quote before any work begins</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="font-semibold mr-2">•</span>
-                  <span>No work will start without your approval</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="font-semibold mr-2">•</span>
-                  <span>Materials (if needed) will be itemized in the final quote</span>
-                </li>
+                {estimateFee.checked && estimateFee.eligible ? (
+                  <>
+                    <li className="flex items-start">
+                      <span className="font-semibold mr-2">•</span>
+                      <span>Professional review of your project</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-semibold mr-2">•</span>
+                      <span>Matching with qualified local professionals</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-semibold mr-2">•</span>
+                      <span>A professional estimate for your project</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-semibold mr-2">•</span>
+                      <span>A contractor will contact you within 24 hours or less</span>
+                    </li>
+                  </>
+                ) : (
+                  <>
+                    <li className="flex items-start">
+                      <span className="font-semibold mr-2">•</span>
+                      <span>Get matched with verified local professionals for free</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-semibold mr-2">•</span>
+                      <span>You will receive a detailed quote before any work begins</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-semibold mr-2">•</span>
+                      <span>No work will start without your approval</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-semibold mr-2">•</span>
+                      <span>Materials (if needed) will be itemized in the final quote</span>
+                    </li>
+                  </>
+                )}
               </ul>
             </div>
             
@@ -534,14 +602,14 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-slate-900">Free Quote Request Submitted! 🎉</h3>
+              <h3 className="text-2xl font-bold text-slate-900">Service Request Submitted! 🎉</h3>
               <div className="bg-green-50 p-4 rounded-lg space-y-2 text-sm text-slate-800">
-                <p className="font-semibold text-green-800">✓ Free quote request created</p>
+                <p className="font-semibold text-green-800">✓ Service request created</p>
                 <p className="font-semibold text-green-800">✓ Verified professionals notified</p>
                 <p className="text-green-700">Request received successfully</p>
               </div>
               <p className="text-slate-700 font-medium">
-                Your free quote request has been submitted successfully. A professional will contact you soon.
+                Your service request has been submitted successfully. A professional will contact you soon.
               </p>
               <p className="text-slate-700 font-medium">
                 📞 Expect a call or text shortly to discuss your project.
@@ -561,7 +629,11 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
             <h3 className="text-xl font-bold text-slate-900">Contact Information</h3>
             <div className="bg-emerald-50 p-3 rounded-lg text-sm text-emerald-800 border border-emerald-200">
               {estimateFee.checked && estimateFee.eligible ? (
-                <strong>Estimate Fee</strong>
+                <strong>
+                  {paymentSessionId
+                    ? 'Service Request Fee paid. Complete your submission below.'
+                    : 'A $75 Service Request Fee is required before submission.'}
+                </strong>
               ) : (
                 <strong>Estimate Request</strong>
               )}
@@ -619,7 +691,11 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
               }}
               className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? 'Submitting...' : 'Request Service'}
+              {isSubmitting
+                ? 'Submitting...'
+                : (estimateFee.checked && estimateFee.eligible && !paymentSessionId
+                  ? 'Continue to Secure Payment'
+                  : 'Request Service')}
             </button>
           </div>
         );

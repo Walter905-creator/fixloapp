@@ -90,6 +90,72 @@ router.post('/estimate-fee', async (req, res) => {
   }
 });
 
+router.post('/checkout-session', async (req, res) => {
+  try {
+    const { address, city, state, zipCode } = req.body || {};
+
+    const eligibility = await evaluateCharlotteEstimateFeeEligibility({
+      address,
+      city,
+      state,
+      zip: zipCode
+    });
+
+    const requiresEstimateFee = eligibility.eligible && CHARLOTTE_ESTIMATE_FEE_ENABLED;
+    if (!requiresEstimateFee) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Service Request Fee is not required for this location'
+      });
+    }
+
+    if (!stripe) {
+      return res.status(503).json({
+        ok: false,
+        error: 'Service Request Fee payments are temporarily unavailable'
+      });
+    }
+
+    const clientUrl = process.env.CLIENT_URL || 'https://fixloapp.com';
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            unit_amount: CHARLOTTE_ESTIMATE_FEE_AMOUNT_CENTS,
+            product_data: {
+              name: 'Service Request Fee'
+            }
+          },
+          quantity: 1
+        }
+      ],
+      success_url: `${clientUrl}/request?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${clientUrl}/request?payment=cancelled`,
+      metadata: {
+        requestType: 'homeowner_service_request_fee',
+        city: String(city || ''),
+        state: String(state || ''),
+        zipCode: String(zipCode || '')
+      }
+    });
+
+    return res.status(200).json({
+      ok: true,
+      data: {
+        checkoutUrl: session.url,
+        sessionId: session.id,
+        estimateFeeAmountCents: CHARLOTTE_ESTIMATE_FEE_AMOUNT_CENTS
+      }
+    });
+  } catch (error) {
+    console.error('❌ Checkout session creation error:', error.message);
+    return res.status(500).json({ ok: false, error: 'Unable to create checkout session' });
+  }
+});
+
 router.post('/', async (req, res) => {
   const isDev = process.env.NODE_ENV !== 'production';
   if (isDev) console.log(`[REQUESTS] ► Incoming  | POST /api/requests`);
@@ -104,6 +170,7 @@ router.post('/', async (req, res) => {
       city,
       state,
       zipCode,
+      stripeCheckoutSessionId,
       smsConsent,
       details
     } = req.body || {};
@@ -179,6 +246,56 @@ router.post('/', async (req, res) => {
     });
     const requiresEstimateFee = eligibility.eligible && CHARLOTTE_ESTIMATE_FEE_ENABLED;
 
+    if (requiresEstimateFee) {
+      if (!stripe) {
+        return res.status(503).json({
+          ok: false,
+          error: 'Service Request Fee payments are temporarily unavailable'
+        });
+      }
+
+      const sessionId = String(stripeCheckoutSessionId || '').trim();
+      if (!sessionId) {
+        return res.status(402).json({
+          ok: false,
+          error: 'A verified $75 Service Request Fee payment is required before submission.'
+        });
+      }
+
+      const existingPaidLead = await JobRequest.findOne({
+        stripeCheckoutSessionId: sessionId,
+        paymentStatus: 'captured'
+      }).select('_id');
+      if (existingPaidLead) {
+        return res.status(409).json({
+          ok: false,
+          error: 'This payment session has already been used for a submitted request.'
+        });
+      }
+
+      let checkoutSession;
+      try {
+        checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
+      } catch (sessionError) {
+        return res.status(400).json({
+          ok: false,
+          error: 'Invalid payment session. Please complete payment again.'
+        });
+      }
+
+      const paid = checkoutSession?.payment_status === 'paid';
+      const requestType = checkoutSession?.metadata?.requestType;
+      const correctAmount = Number(checkoutSession?.amount_total || 0) === CHARLOTTE_ESTIMATE_FEE_AMOUNT_CENTS;
+      const correctCurrency = String(checkoutSession?.currency || '').toLowerCase() === 'usd';
+
+      if (!paid || requestType !== 'homeowner_service_request_fee' || !correctAmount || !correctCurrency) {
+        return res.status(402).json({
+          ok: false,
+          error: 'Payment verification failed. Please complete the $75 Service Request Fee to continue.'
+        });
+      }
+    }
+
     // ---------- Save Job ----------
 
     let savedLead = null;
@@ -220,56 +337,10 @@ router.post('/', async (req, res) => {
       if (isDev) console.log(`[REQUESTS] ✓ DB save    | JobRequest _id=${savedLead._id}`);
 
       if (requiresEstimateFee) {
-        if (!stripe) {
-          return res.status(503).json({
-            ok: false,
-            error: 'Estimate fee payments are temporarily unavailable'
-          });
-        }
-
-        const encodedLeadId = encodeURIComponent(String(savedLead._id));
-        const successUrl = `${process.env.CLIENT_URL || 'https://fixloapp.com'}/request?payment=success&leadId=${encodedLeadId}`;
-        const cancelUrl = `${process.env.CLIENT_URL || 'https://fixloapp.com'}/request?payment=cancelled&leadId=${encodedLeadId}`;
-
-        const session = await stripe.checkout.sessions.create({
-          mode: 'payment',
-          payment_method_types: ['card'],
-          line_items: [
-            {
-              price_data: {
-                currency: 'usd',
-                unit_amount: CHARLOTTE_ESTIMATE_FEE_AMOUNT_CENTS,
-                product_data: {
-                  name: 'Estimate Fee'
-                }
-              },
-              quantity: 1
-            }
-          ],
-          success_url: successUrl,
-          cancel_url: cancelUrl,
-          metadata: {
-            requestType: 'homeowner_estimate_fee',
-            leadId: String(savedLead._id),
-            requestId: requestId
-          }
-        });
-
-        savedLead.stripeCheckoutSessionId = session.id;
-        savedLead.paymentStatus = 'authorized';
+        savedLead.stripeCheckoutSessionId = String(stripeCheckoutSessionId || '').trim();
+        savedLead.paymentStatus = 'captured';
+        savedLead.paymentCapturedAt = new Date();
         await savedLead.save();
-
-        return res.status(202).json({
-          ok: true,
-          success: true,
-          requiresPayment: true,
-          requestId,
-          data: {
-            leadId: savedLead._id,
-            checkoutUrl: session.url,
-            estimateFeeAmountCents: CHARLOTTE_ESTIMATE_FEE_AMOUNT_CENTS
-          }
-        });
       }
 
       // Send homeowner confirmation SMS
@@ -292,6 +363,11 @@ router.post('/', async (req, res) => {
           stage: 'standard',
           amountPaidCents: 0
         });
+      } else if (savedLead.estimateFeeRequired && isUSPhoneNumber(phone)) {
+        await notifyOwnerForLead(savedLead, {
+          stage: 'paid',
+          amountPaidCents: savedLead.estimateFeeAmountCents || 0
+        });
       }
     } else {
       if (isDev) console.log(`[REQUESTS] ⚠ DB save    | MongoDB not connected (readyState=${mongoose.connection.readyState}), skipping save`);
@@ -299,16 +375,13 @@ router.post('/', async (req, res) => {
 
     // ---------- Notify Pros ----------
 
-    if (savedLead && !savedLead.estimateFeeRequired) {
+    if (savedLead) {
       try {
         await routeLead(savedLead._id);
       } catch (routingError) {
         console.error('❌ Requests lead routing failed:', routingError.message);
       }
     }
-
-    // ---------- Response ----------
-    // Homeowner quote requests are completely free — no payment required
 
     if (isDev) console.log(`[REQUESTS] ◄ Response   | 201 ok=true requestId=${requestId}`);
     return res.status(201).json({
