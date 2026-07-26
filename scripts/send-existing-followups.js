@@ -94,9 +94,13 @@ async function main() {
 
   // ── Step 1: Load ALL leads ───────────────────────────────────────────────────
   const MONGO_QUERY = {};
-  console.log(`\nMongo query: MetaLead.find(${JSON.stringify(MONGO_QUERY)})`);
+  console.log(`\nMongo query: MetaLead.find(${JSON.stringify(MONGO_QUERY)}) (limit ${LEAD_LIMIT})`);
+  console.log('  Override limit: FOLLOWUP_LIMIT=<n> node scripts/send-existing-followups.js\n');
 
-  const allLeads = await MetaLead.find(MONGO_QUERY).sort({ createdAt: -1 }).limit(1000);
+  // Use FOLLOWUP_LIMIT env var to override, or omit limit entirely for full scan.
+  // Default is 10 000 which covers any realistic production collection size.
+  const LEAD_LIMIT = Number(process.env.FOLLOWUP_LIMIT || 10000);
+  const allLeads = await MetaLead.find(MONGO_QUERY).sort({ createdAt: -1 }).limit(LEAD_LIMIT);
 
   if (allLeads.length === 0) {
     section('NO LEADS FOUND');
@@ -269,6 +273,12 @@ async function main() {
 
   for (const lead of eligible) {
     let changed = false;
+
+    // Guard: followUp is defined in the schema with default:{}, but ensure it's
+    // initialised as an object before accessing any nested fields.
+    if (!lead.followUp || typeof lead.followUp !== 'object') {
+      lead.followUp = {};
+    }
 
     // 1. Ensure the sequence status is active (not null / undefined)
     if (lead.followUp.status !== 'active' && lead.followUp.status !== 'paused') {
