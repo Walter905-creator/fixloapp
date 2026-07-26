@@ -322,7 +322,7 @@ export default function AdminJobsPage() {
       const response = await fetch(`${API_BASE}/api/admin/homeowners/${selectedJob._id}/send-initial-followup`, {
         method: 'POST',
         headers: {
-          'Authorization': `******
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
