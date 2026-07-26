@@ -157,7 +157,7 @@ export default function ServiceRequestScreen({ navigation }) {
       const mockPaymentToken = 'applepay_mock_' + Date.now();
       const mockTransactionId = 'txn_dev_' + Date.now();
 
-      console.log('🍎 [DEV] Mock Apple Pay token generated (not a real payment):', { mockPaymentToken, mockTransactionId });
+      console.info('🍎 [DEV] Mock Apple Pay token generated (not a real payment):', { mockPaymentToken, mockTransactionId });
 
       // Attach Apple Pay authorization to request
       const apiUrl = buildApiUrl(API_ENDPOINTS.REQUESTS_APPLE_PAY(requestId));
@@ -169,7 +169,7 @@ export default function ServiceRequestScreen({ navigation }) {
         headers: { 'Content-Type': 'application/json' },
       });
 
-      console.log('✅ [DEV] Mock Apple Pay authorization attached to request');
+      console.info('✅ [DEV] Mock Apple Pay authorization attached to request');
       return { success: true, paymentToken: mockPaymentToken };
 
     } catch (error) {

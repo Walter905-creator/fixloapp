@@ -128,22 +128,31 @@ test('mobile ServiceRequestScreen does not use mock Apple Pay tokens in producti
   );
   const mobileSource = fs.readFileSync(mobileScreen, 'utf8');
 
-  // The mock token must only be generated inside a __DEV__ guard
+  // The mock token must only be generated inside a __DEV__ guard.
+  // Use a regex to confirm __DEV__ appears in a conditional context (if statement),
+  // not merely in a comment.
   assert.match(
     mobileSource,
-    /__DEV__/,
-    'Mobile ServiceRequestScreen must gate mock Apple Pay behind __DEV__ check'
+    /if\s*\(\s*!?\s*__DEV__\s*\)/,
+    'Mobile ServiceRequestScreen must gate mock Apple Pay behind an if(__DEV__) check'
   );
 
-  // Confirm applepay_mock_ is preceded by a __DEV__ guard somewhere in the file
-  const devGuardIdx  = mobileSource.indexOf('__DEV__');
-  const mockTokenIdx = mobileSource.indexOf("'applepay_mock_'");
+  // Confirm applepay_mock_ is used somewhere in the file (the guard wraps it)
+  assert.match(
+    mobileSource,
+    /'applepay_mock_'/,
+    'applepay_mock_ token reference not found in ServiceRequestScreen'
+  );
 
-  assert.notStrictEqual(devGuardIdx,  -1, '__DEV__ guard not found in ServiceRequestScreen');
-  assert.notStrictEqual(mockTokenIdx, -1, 'applepay_mock_ token not found in ServiceRequestScreen');
+  // The __DEV__ guard must appear before the mock token assignment
+  const devGuardMatch  = /if\s*\(\s*!?\s*__DEV__\s*\)/.exec(mobileSource);
+  const mockTokenMatch = /'applepay_mock_'/.exec(mobileSource);
+
+  assert.ok(devGuardMatch,  '__DEV__ guard not found in ServiceRequestScreen');
+  assert.ok(mockTokenMatch, 'applepay_mock_ token not found in ServiceRequestScreen');
   assert.ok(
-    devGuardIdx < mockTokenIdx,
-    `__DEV__ guard (pos ${devGuardIdx}) must appear before applepay_mock_ usage (pos ${mockTokenIdx})`
+    devGuardMatch.index < mockTokenMatch.index,
+    `__DEV__ guard (pos ${devGuardMatch.index}) must appear before applepay_mock_ usage (pos ${mockTokenMatch.index})`
   );
 });
 
