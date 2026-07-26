@@ -227,6 +227,30 @@ const JobRequestSchema = new mongoose.Schema({
   smsOptOutAt: {
     type: Date
   },
+  emailOptOut: {
+    type: Boolean,
+    default: false
+  },
+  emailOptOutAt: {
+    type: Date
+  },
+  // Initial follow-up tracking
+  initialFollowUpSent: {
+    type: Boolean,
+    default: false
+  },
+  initialFollowUpSentAt: {
+    type: Date
+  },
+  followUpHistory: [
+    {
+      followUpType: { type: String, trim: true },
+      sentAt: { type: Date },
+      smsSent: { type: Boolean, default: false },
+      emailSent: { type: Boolean, default: false },
+      triggeredBy: { type: String, trim: true }
+    }
+  ],
   pricingAcceptance: {
     type: Boolean,
     default: false

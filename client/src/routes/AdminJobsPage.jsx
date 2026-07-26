@@ -309,6 +309,44 @@ export default function AdminJobsPage() {
     }
   };
 
+  const handleSendInitialFollowUp = async () => {
+    if (selectedJob.initialFollowUpSent) {
+      alert('Initial follow-up has already been sent for this lead.');
+      return;
+    }
+    if (!confirm('Send the initial follow-up SMS and email to this homeowner lead?')) return;
+
+    try {
+      setActionLoading(true);
+      const token = localStorage.getItem('fixlo_token');
+      const response = await fetch(`${API_BASE}/api/admin/homeowners/${selectedJob._id}/send-initial-followup`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `******
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send initial follow-up');
+      }
+
+      const parts = [];
+      if (data.smsSent) parts.push('SMS sent');
+      if (data.emailSent) parts.push('Email sent');
+      if (data.smsError) parts.push(`SMS error: ${data.smsError}`);
+      if (data.emailError) parts.push(`Email error: ${data.emailError}`);
+      alert(`Initial follow-up sent!\n${parts.join('\n')}`);
+      viewJobDetails(selectedJob._id);
+    } catch (err) {
+      alert('Failed to send initial follow-up: ' + err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const getStatusColor = (status) => {
     const colors = {
       'pending': 'bg-yellow-100 text-yellow-800',
@@ -700,6 +738,27 @@ export default function AdminJobsPage() {
                       Generate Invoice
                     </button>
                   )}
+
+                  {/* Initial Follow-Up */}
+                  <div className="w-full border-t border-gray-200 pt-4 mt-2">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3">📬 Outreach</h4>
+                    <button
+                      onClick={handleSendInitialFollowUp}
+                      disabled={actionLoading || selectedJob.initialFollowUpSent}
+                      className={`px-4 py-2 rounded text-white ${
+                        selectedJob.initialFollowUpSent
+                          ? 'bg-gray-400 cursor-not-allowed'
+                          : 'bg-teal-600 hover:bg-teal-700 disabled:bg-gray-400'
+                      }`}
+                    >
+                      {selectedJob.initialFollowUpSent ? '✓ Initial Follow-Up Sent' : 'Send Initial Follow-Up'}
+                    </button>
+                    {selectedJob.initialFollowUpSent && selectedJob.initialFollowUpSentAt && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Sent on {new Date(selectedJob.initialFollowUpSentAt).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

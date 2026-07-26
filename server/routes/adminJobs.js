@@ -9,6 +9,7 @@ const smsService = require('../services/smsService');
 const { sendNotificationWithFallback } = require('../services/emailService');
 const { logPaymentAction, logAdminAction } = require('../services/auditLogger');
 const { recordLeadEvent, refreshProPerformanceScore } = require('../services/leadTrackingService');
+const { sendInitialFollowUp } = require('../services/homeownerFollowUpService');
 
 // Protect all routes with admin authentication
 router.use(requireAuth);
@@ -805,6 +806,57 @@ router.get('/audit-logs', async (req, res) => {
       error: 'Failed to fetch audit logs',
       message: error.message 
     });
+  }
+});
+
+// POST /api/admin/homeowners/:leadId/send-initial-followup
+// Send the standard Fixlo initial follow-up SMS and email to a homeowner lead.
+router.post('/homeowners/:leadId/send-initial-followup', async (req, res) => {
+  try {
+    const mongoose = require('mongoose');
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ error: 'Database not connected' });
+    }
+
+    const { leadId } = req.params;
+    const lead = await JobRequest.findById(leadId);
+
+    if (!lead) {
+      return res.status(404).json({ error: 'Lead not found' });
+    }
+
+    // Prevent duplicate sends
+    if (lead.initialFollowUpSent) {
+      return res.status(409).json({
+        error: 'Initial follow-up already sent',
+        sentAt: lead.initialFollowUpSentAt
+      });
+    }
+
+    // Verify lead has at least one contactable channel that is not opted out
+    const canSendSms = lead.phone && !lead.smsOptOut;
+    const canSendEmail = lead.email && !lead.emailOptOut;
+    if (!canSendSms && !canSendEmail) {
+      return res.status(422).json({
+        error: 'Lead has opted out of both SMS and email, or has no contact information'
+      });
+    }
+
+    const triggeredBy = req.user?.email || req.user?._id?.toString() || 'admin';
+    const result = await sendInitialFollowUp(lead, { triggeredBy });
+
+    console.log(`✅ [admin] Initial follow-up sent for lead ${leadId} by ${triggeredBy}`);
+
+    return res.json({
+      success: true,
+      smsSent: result.smsSent,
+      emailSent: result.emailSent,
+      ...(result.smsError && { smsError: result.smsError }),
+      ...(result.emailError && { emailError: result.emailError })
+    });
+  } catch (err) {
+    console.error('❌ /admin/homeowners/:leadId/send-initial-followup error:', err.message);
+    return res.status(500).json({ error: 'Failed to send initial follow-up' });
   }
 });
 
