@@ -78,8 +78,11 @@ function maskValue(value) {
   if (value === null || value === undefined) return value;
   const str = String(value);
   if (str.includes('@')) {
-    // email: r****@fixloapp.com → r****@***.***
-    const [local, domain] = str.split('@');
+    // email: user@example.com → u****@e******.***
+    // Use indexOf to safely handle the (technically invalid) case of multiple '@'.
+    const atIdx = str.indexOf('@');
+    const local = str.slice(0, atIdx);
+    const domain = str.slice(atIdx + 1);
     return local.charAt(0) + '****@' + (domain ? domain.replace(/[^.]/g, '*') : '***');
   }
   // phone or other: keep first 3 chars and mask the rest

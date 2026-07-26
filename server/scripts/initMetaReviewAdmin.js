@@ -26,7 +26,7 @@ async function initMetaReviewAdmin() {
 
   // Guard: require a non-empty password.
   const rawPassword = process.env.META_REVIEW_PASSWORD;
-  if (!rawPassword || rawPassword.trim() === '') {
+  if (!rawPassword?.trim()) {
     console.error(
       '[META_REVIEW] ❌ META_REVIEW_PASSWORD is not set or empty. ' +
       'Review admin account will NOT be created. ' +

@@ -472,10 +472,12 @@ adminRouter.post('/import', adminMutationRateLimit, async (req, res) => {
 // Validates that :id is a legal MongoDB ObjectId before forwarding to Mongoose.
 adminRouter.get('/:id', requireValidObjectId, async (req, res) => {
   try {
-    const data = await getLeadDetails(req.params.id);
+    let data = await getLeadDetails(req.params.id);
     if (!data) return res.status(404).json({ ok: false, error: 'Lead not found' });
-    const responseData = shouldMaskPii(req) ? { ok: true, ...maskPii(data) } : { ok: true, ...data };
-    return res.json(responseData);
+    if (shouldMaskPii(req)) {
+      data = maskPii(data);
+    }
+    return res.json({ ok: true, ...data });
   } catch (error) {
     return res.status(500).json({ ok: false, error: error.message });
   }
