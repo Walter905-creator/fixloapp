@@ -165,7 +165,7 @@ router.post('/submit', upload.array('photos', 5), async (req, res) => {
             requiresPayment: true,
             message:
               'Charlotte-area service requests require a $75 Service Request Fee. ' +
-              'Please use the service request form at /request to complete checkout first.'
+              `Please use the service request form at ${process.env.CLIENT_URL || 'https://fixloapp.com'}/request to complete checkout first.`
           });
         }
       } catch (geoErr) {

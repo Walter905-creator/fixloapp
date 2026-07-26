@@ -16,6 +16,13 @@ const {
   evaluateCharlotteEstimateFeeEligibility
 } = require('../config/charlotteEstimateFee');
 
+// ---------- Constants ----------
+
+// Stripe Checkout Session IDs are prefixed 'cs_' followed by ~200 alphanumeric chars.
+// 300 chars provides a generous upper bound while guarding against excessively large inputs.
+const MAX_STRIPE_SESSION_ID_LENGTH = 300;
+const PAYMENT_STATUS_CAPTURED = 'captured';
+
 // ---------- Helpers ----------
 
 function isValidE164(phone) {
@@ -219,7 +226,7 @@ router.post('/create-checkout', async (req, res) => {
 router.get('/verify-checkout/:sessionId', async (req, res) => {
   try {
     const { sessionId } = req.params;
-    if (!sessionId || typeof sessionId !== 'string' || sessionId.length > 300) {
+    if (!sessionId || typeof sessionId !== 'string' || sessionId.length > MAX_STRIPE_SESSION_ID_LENGTH) {
       return res.status(400).json({ ok: false, error: 'Invalid session ID' });
     }
 
@@ -376,9 +383,7 @@ router.post('/', async (req, res) => {
 
       // Guard against session reuse — check PendingCheckout consumed flag
       if (mongoose.connection.readyState === 1) {
-        const pending = await PendingCheckout.findOne({
-          stripeCheckoutSessionId: stripeCheckoutSessionId
-        });
+        const pending = await PendingCheckout.findOne({ stripeCheckoutSessionId });
 
         if (pending && pending.consumed) {
           if (isDev) console.log(`[REQUESTS] ✗ Payment    | session ${stripeCheckoutSessionId} already consumed`);
@@ -437,7 +442,7 @@ router.post('/', async (req, res) => {
         // Record the verified Stripe session if payment was required
         ...(verifiedSessionId && {
           stripeCheckoutSessionId: verifiedSessionId,
-          paymentStatus: 'captured',
+          paymentStatus: PAYMENT_STATUS_CAPTURED,
           paymentCapturedAt: new Date()
         })
       };

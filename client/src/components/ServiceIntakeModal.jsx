@@ -108,7 +108,8 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
     }
 
     if (step === 6) {
-      // For Charlotte (eligible fee), terms are accepted by paying via Stripe.
+      // For Charlotte (eligible fee), terms are accepted by completing the Stripe checkout.
+      // The $75 fee explanation shown in step 6 serves as the terms disclosure for Charlotte users.
       // Only require the terms checkbox for non-Charlotte requests.
       if (!estimateFee.eligible && !formData.termsAccepted) {
         newErrors.termsAccepted = 'You must accept the terms to continue';
@@ -647,6 +648,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
                 type="button"
                 disabled={isSubmitting}
                 onClick={handleProceedToPayment}
+                aria-label="Pay $75 service request fee via Stripe secure checkout"
                 className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Preparing checkout...' : 'Pay $75 and Submit Request →'}

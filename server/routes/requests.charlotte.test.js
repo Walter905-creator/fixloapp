@@ -92,9 +92,10 @@ test('POST /api/requests — marks PendingCheckout as consumed after creating Jo
 });
 
 test('POST /api/requests — records paymentStatus: captured on Charlotte JobRequest', () => {
+  // The value may be a string literal or a named constant (PAYMENT_STATUS_CAPTURED = 'captured')
   assert.match(
     routeSource,
-    /paymentStatus.*'captured'/,
+    /PAYMENT_STATUS_CAPTURED\s*=\s*'captured'|paymentStatus.*'captured'|paymentStatus.*PAYMENT_STATUS_CAPTURED/,
     'JobRequest must be saved with paymentStatus: captured for Charlotte paid requests'
   );
   assert.match(

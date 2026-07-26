@@ -6,6 +6,8 @@ import { API_BASE } from '../utils/config';
 
 const API_URL = API_BASE;
 const FORM_SESSION_KEY = 'fixlo_pending_service_request';
+// Must match PendingCheckout TTL (2 hours)
+const PENDING_CHECKOUT_TTL_MS = 2 * 60 * 60 * 1000;
 
 /**
  * RequestPage - Full-page service request form for ad campaigns
@@ -51,8 +53,8 @@ export default function RequestPage() {
         const raw = sessionStorage.getItem(FORM_SESSION_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
-          // Discard stale entries older than 2 hours
-          if (Date.now() - (parsed.savedAt || 0) < 7200000) {
+          // Keep entries saved less than PENDING_CHECKOUT_TTL_MS ago; discard stale ones
+          if (Date.now() - (parsed.savedAt || 0) < PENDING_CHECKOUT_TTL_MS) {
             restored = parsed;
           }
         }
