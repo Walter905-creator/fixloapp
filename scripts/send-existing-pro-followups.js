@@ -9,6 +9,14 @@ const mongoose = require('mongoose');
 const LINE = '─'.repeat(100);
 const DLINE = '═'.repeat(100);
 const STAGE_KEYS = ['24h', '72h', '7d', '14d'];
+const HARD_SKIP_REASONS = new Set([
+  'already registered',
+  'membership active',
+  'stopped',
+  'paused',
+  'follow-up completed',
+  'duplicate'
+]);
 
 function section(title) {
   console.log(`\n${DLINE}`);
@@ -72,7 +80,8 @@ async function main() {
       const parsed = new URL(mongoUri);
       const name = parsed.pathname.replace(/^\/+/, '').split('/')[0];
       return name || 'unknown';
-    } catch {
+    } catch (error) {
+      console.warn(`[WARN] Could not parse MongoDB database name from URI (${error.message})`);
       return 'unknown';
     }
   })();
@@ -98,7 +107,11 @@ async function main() {
   const includeNonManual = String(process.env.INCLUDE_NON_MANUAL || '').toLowerCase() === 'true';
   const query = includeNonManual ? {} : { manualImport: true };
 
-  const selectedLeads = await MetaLead.find(query).sort({ createdAt: -1 }).limit(Number(process.env.FOLLOWUP_LIMIT || 1000));
+  const requestedLimit = Number(process.env.FOLLOWUP_LIMIT || 1000);
+  const safeLimit = Number.isFinite(requestedLimit)
+    ? Math.max(1, Math.min(Math.floor(requestedLimit), 5000))
+    : 1000;
+  const selectedLeads = await MetaLead.find(query).sort({ createdAt: -1 }).limit(safeLimit);
 
   if (!selectedLeads.length) {
     section('NO PRO LEADS FOUND');
@@ -184,7 +197,7 @@ async function main() {
     const smsDue = isSmsAvailable(lead) && isDueOrUninitialized(lead, 'sms') && Number(lead.followUp?.smsStep || 0) < STAGE_KEYS.length;
     const emailDue = isEmailAvailable(lead) && isDueOrUninitialized(lead, 'email') && Number(lead.followUp?.emailStep || 0) < STAGE_KEYS.length;
 
-    const hardSkip = reasons.some((r) => ['already registered', 'membership active', 'stopped', 'paused', 'follow-up completed', 'duplicate'].includes(r));
+    const hardSkip = reasons.some((r) => HARD_SKIP_REASONS.has(r));
     if (hardSkip || (!smsDue && !emailDue)) {
       skipped.push({ lead, reasons: hardSkip ? reasons : [...new Set([...reasons, 'not due'])] });
       continue;
@@ -382,6 +395,8 @@ async function main() {
 
   console.log('\nRun command:');
   console.log('node scripts/send-existing-pro-followups.js');
+  console.log('FOLLOWUP_LIMIT=500 node scripts/send-existing-pro-followups.js');
+  console.log('INCLUDE_NON_MANUAL=true node scripts/send-existing-pro-followups.js');
 
   await mongoose.disconnect();
 }
