@@ -7,6 +7,8 @@ import { csrfFetch, getCsrfToken } from '../utils/csrf';
 const API_URL = API_BASE;
 const SERVICE_REQUEST_DRAFT_KEY = 'fixlo_service_request_draft';
 
+const normalizeLocationValue = (value = '') => value.trim().toLowerCase();
+
 const SERVICE_TYPES = [
   'General Repairs',
   'Electrical',
@@ -62,6 +64,10 @@ export default function ServiceIntakeModal({
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [estimateFee, setEstimateFee] = useState({ checked: false, eligible: false, amountCents: 0 });
   const [paymentSessionId, setPaymentSessionId] = useState(restoredPaidSessionId || initialPaymentSessionId || '');
+
+  const isCharlotteRequest =
+    normalizeLocationValue(formData.city) === 'charlotte' &&
+    ['nc', 'north carolina'].includes(normalizeLocationValue(formData.state));
 
   const totalSteps = 7;
 
@@ -138,7 +144,7 @@ export default function ServiceIntakeModal({
 
   const handleContinue = async () => {
     if (!validateStep(currentStep)) return;
-    if (currentStep === 6 && estimateFee.checked && estimateFee.eligible && !paymentSessionId) {
+    if (currentStep === 6 && isCharlotteRequest && !paymentSessionId) {
       setIsSubmitting(true);
       try {
         await startCharlotteCheckout();
@@ -236,6 +242,17 @@ export default function ServiceIntakeModal({
     run();
     return () => { cancelled = true; };
   }, [canCheckEstimateFee, formData.address, formData.city, formData.state, formData.zip]);
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      console.log('[ServiceIntakeModal] Payment eligibility', {
+        city: formData.city,
+        state: formData.state,
+        isCharlotteRequest
+      });
+    }
+  }, [formData.city, formData.state, isCharlotteRequest]);
 
   const startCharlotteCheckout = async () => {
     const response = await csrfFetch(`${API_URL}/api/requests/create-checkout`, {
@@ -572,10 +589,12 @@ export default function ServiceIntakeModal({
       case 6:
         return (
           <div className="space-y-4">
-            <h3 className="text-xl font-bold text-slate-900">Review & Payment</h3>
-            <div className="bg-emerald-50 p-6 rounded-lg space-y-3 text-slate-800 border border-emerald-200">
-              {estimateFee.checked && estimateFee.eligible ? (
-                <div className="rounded-lg border border-emerald-300 bg-white p-4 space-y-3">
+            <h3 className="text-xl font-bold text-slate-900">Review &amp; Payment</h3>
+
+            {isCharlotteRequest ? (
+              <>
+                {/* $75 fee breakdown */}
+                <div className="bg-emerald-50 p-6 rounded-lg space-y-3 text-slate-800 border border-emerald-200">
                   <p className="font-semibold text-lg text-emerald-800">✓ Your $75 Service Request Fee includes:</p>
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-start">
@@ -607,47 +626,78 @@ export default function ServiceIntakeModal({
                       <span>Materials, if needed, will be itemized separately in the final quote</span>
                     </li>
                   </ul>
-                  <p className="text-base font-semibold text-slate-900">Service Request Fee: $75.00</p>
-                  <p className="text-sm text-slate-700">
-                    This is a one-time fee for processing your request, arranging a professional estimate, and connecting you with a qualified local professional. It is not payment for the repair or construction work.
-                  </p>
                 </div>
-              ) : (
-                <ul className="space-y-2 text-sm">
-                  <li className="flex items-start">
-                    <span className="font-semibold mr-2">•</span>
-                    <span>Matching with qualified local professionals</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="font-semibold mr-2">•</span>
-                    <span>You will receive a detailed quote before any work begins</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="font-semibold mr-2">•</span>
-                    <span>No work will start without your approval</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="font-semibold mr-2">•</span>
-                    <span>Materials, if needed, will be itemized separately in the final quote</span>
-                  </li>
-                </ul>
-              )}
-            </div>
-            
-            <label className="flex items-start space-x-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.termsAccepted}
-                onChange={(e) => handleInputChange('termsAccepted', e.target.checked)}
-                className="mt-1 h-5 w-5 text-brand border-slate-300 rounded focus:ring-brand"
-              />
-              <span className="text-slate-700">
-                {estimateFee.checked && estimateFee.eligible
-                  ? 'I understand that a $75 Service Request Fee is required before my request can be submitted.'
-                  : 'I understand and agree to the terms for this service request.'}
-              </span>
-            </label>
-            {errors.termsAccepted && <p className="text-red-600 text-sm">{errors.termsAccepted}</p>}
+
+                {/* Price card */}
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-5 text-center space-y-1">
+                  <p className="text-sm font-medium text-slate-600 uppercase tracking-wide">Service Request Fee</p>
+                  <p className="text-4xl font-bold text-slate-900">$75.00</p>
+                  <p className="text-sm text-slate-500">One-time payment</p>
+                </div>
+
+                {/* Explanation */}
+                <p className="text-sm text-slate-700">
+                  This one-time fee covers processing your request, arranging a professional estimate, and connecting you
+                  with a qualified local professional. It is not payment for the repair, construction work, labor, or
+                  materials.
+                </p>
+
+                {/* Payment agreement checkbox */}
+                <label className="flex items-start space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.termsAccepted}
+                    onChange={(e) => handleInputChange('termsAccepted', e.target.checked)}
+                    className="mt-1 h-5 w-5 text-brand border-slate-300 rounded focus:ring-brand"
+                  />
+                  <span className="text-slate-700">
+                    I understand that a $75 Service Request Fee is required before my request can be submitted.
+                  </span>
+                </label>
+                {errors.termsAccepted && <p className="text-red-600 text-sm">{errors.termsAccepted}</p>}
+
+                {errors.submit && <p className="text-red-600 text-sm">{errors.submit}</p>}
+              </>
+            ) : (
+              <>
+                {/* Generic non-payment branch */}
+                <div className="bg-emerald-50 p-6 rounded-lg space-y-3 text-slate-800 border border-emerald-200">
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-start">
+                      <span className="font-semibold mr-2">•</span>
+                      <span>Matching with qualified local professionals</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-semibold mr-2">•</span>
+                      <span>You will receive a detailed quote before any work begins</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-semibold mr-2">•</span>
+                      <span>No work will start without your approval</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-semibold mr-2">•</span>
+                      <span>Materials, if needed, will be itemized separately in the final quote</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <label className="flex items-start space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.termsAccepted}
+                    onChange={(e) => handleInputChange('termsAccepted', e.target.checked)}
+                    className="mt-1 h-5 w-5 text-brand border-slate-300 rounded focus:ring-brand"
+                  />
+                  <span className="text-slate-700">
+                    I understand and agree to the terms for this service request.
+                  </span>
+                </label>
+                {errors.termsAccepted && <p className="text-red-600 text-sm">{errors.termsAccepted}</p>}
+
+                {errors.submit && <p className="text-red-600 text-sm">{errors.submit}</p>}
+              </>
+            )}
           </div>
         );
 
@@ -686,7 +736,7 @@ export default function ServiceIntakeModal({
           <div className="space-y-4">
             <h3 className="text-xl font-bold text-slate-900">Contact Information</h3>
             <div className="bg-emerald-50 p-3 rounded-lg text-sm text-emerald-800 border border-emerald-200">
-              {estimateFee.checked && estimateFee.eligible ? (
+              {isCharlotteRequest ? (
                 <strong>
                   {paymentSessionId
                     ? 'Service Request Fee paid. Complete your submission below.'
@@ -739,7 +789,7 @@ export default function ServiceIntakeModal({
 
             {errors.submit && <p className="text-red-600 text-sm">{errors.submit}</p>}
 
-            {estimateFee.checked && estimateFee.eligible && (
+            {isCharlotteRequest && (
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5 space-y-3">
                 <h4 className="text-base sm:text-lg font-semibold text-slate-900">
                   What&apos;s Included in Your $75 Service Request Fee?
@@ -846,10 +896,13 @@ export default function ServiceIntakeModal({
             {currentStep < totalSteps && (
               <button
                 onClick={handleContinue}
-                disabled={isSubmitting}
+                disabled={
+                  isSubmitting ||
+                  (currentStep === 6 && isCharlotteRequest && !formData.termsAccepted)
+                }
                 className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {currentStep === 6 && estimateFee.checked && estimateFee.eligible && !paymentSessionId
+                {currentStep === 6 && isCharlotteRequest && !paymentSessionId
                   ? 'Continue to Secure Payment'
                   : 'Next →'}
               </button>
