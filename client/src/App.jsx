@@ -360,7 +360,7 @@ export default function App(){
           <div>
             <h3 className="font-semibold text-slate-900 mb-3">For Homeowners</h3>
             <ul className="space-y-2 text-sm text-slate-700">
-              <li><a href="/for-homeowners" className="hover:text-brand">Find a Pro</a></li>
+              <li><a href="/request" className="hover:text-brand">Find a Pro</a></li>
               <li><a href="/request" className="hover:text-brand">Request a Service</a></li>
               <li><a href="/services" className="hover:text-brand">Browse Services</a></li>
               <li><a href="/my-jobs" className="hover:text-brand">My Jobs</a></li>

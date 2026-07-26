@@ -46,8 +46,8 @@ export default function AboutPage() {
             <p className="text-slate-700">
               We connect you with verified, background-checked professionals for all your home service needs. 
               Whether you need emergency plumbing, electrical work, HVAC repair, cleaning, landscaping, or any 
-              other home service, Fixlo makes it easy to find qualified contractors in your area. Get a free quote 
-              from verified local professionals — no upfront fees, no obligations.
+              other home service, Fixlo makes it easy to find qualified contractors in your area. Submit a request 
+              and receive a detailed quote from verified local professionals before any work begins.
             </p>
           </div>
           
@@ -80,7 +80,7 @@ export default function AboutPage() {
             <div className="text-4xl mb-3">💰</div>
             <h3 className="text-lg font-semibold mb-2 text-emerald-700">Fair & Transparent</h3>
             <p className="text-sm text-slate-700">
-            No hidden fees. Free quotes for homeowners. One flat rate for professionals. We believe in honest, transparent pricing.
+            Transparent pricing for homeowners and professionals. One flat rate for professionals. We believe in honest, transparent pricing.
             </p>
           </div>
           
@@ -176,7 +176,7 @@ export default function AboutPage() {
           Fixlo is here to help you succeed.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link to="/services" className="btn-primary">
+          <Link to="/request" className="btn-primary">
             Find a Professional
           </Link>
           <Link to="/join" className="btn-ghost">

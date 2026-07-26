@@ -81,7 +81,7 @@ export default function HowItWorksPage(){
         </div>
         
         <div className="mt-8 text-center">
-          <Link to="/services" className="btn-primary inline-block">
+          <Link to="/request" className="btn-primary inline-block">
             Get Started – Find a Pro
           </Link>
         </div>
@@ -187,7 +187,7 @@ export default function HowItWorksPage(){
           Join thousands of homeowners and professionals who trust Fixlo for their home service needs.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link to="/services" className="btn-primary">
+          <Link to="/request" className="btn-primary">
             Find a Professional
           </Link>
           <Link to="/join" className="btn-ghost">

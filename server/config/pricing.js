@@ -3,13 +3,13 @@
  * Defines pricing strategies and conversion rates for different countries
  */
 
-// Homeowner request/matching fee — free (no upfront cost)
-const HOMEOWNER_REQUEST_PRICE = 0;
-const HOMEOWNER_REQUEST_PRICE_CENTS = 0;
+// Homeowner request/matching fee
+const HOMEOWNER_REQUEST_PRICE = 75;
+const HOMEOWNER_REQUEST_PRICE_CENTS = 7500;
 
 // Base pricing in USD (US market)
 const BASE_PRICING = {
-  // Homeowner request / matching fee — free, no upfront cost
+  // Homeowner request / matching fee
   homeownerRequest: HOMEOWNER_REQUEST_PRICE,
 
   // Backward-compatible alias for legacy early-access consumers

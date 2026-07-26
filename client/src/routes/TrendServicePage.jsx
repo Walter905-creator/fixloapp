@@ -60,11 +60,11 @@ function generateFAQ({ trend, service, city, isSpanish }) {
     },
     {
       question: `How much does ${serviceName} cost in ${cityName}?`,
-      answer: `Pricing varies based on the specific work needed. Submit a free quote request and get matched with verified ${serviceName.toLowerCase()} professionals in ${cityName}. No upfront fees — compare rates from multiple pros to find the best value for your project.`
+      answer: `Pricing varies based on the specific work needed. Submit a request and get matched with verified ${serviceName.toLowerCase()} professionals in ${cityName}. Compare rates from multiple pros to find the best value for your project.`
     },
     {
       question: `How does Fixlo pricing work for homeowners in ${cityName}?`,
-      answer: `Homeowner quote requests are completely free on Fixlo. There are no upfront fees or obligations. Get matched with trusted local professionals in ${cityName} and across the United States — receive a detailed quote before any work begins.`
+      answer: `Submit a service request and get matched with trusted local professionals in ${cityName} and across the United States. You will receive a detailed quote before any work begins, and no work starts without your approval.`
     }
   ];
 
@@ -275,13 +275,13 @@ export default function TrendServicePage() {
             Ready to Book {trendName} {serviceName} in {cityName}?
           </h2>
           <p className="mb-4 text-slate-100">
-            Connect with verified professionals in minutes. Free quote — no upfront fees.
+            Connect with verified professionals in minutes. Submit a request and receive a detailed quote before any work begins.
           </p>
           <Link 
             to={`/services/${serviceSlug}/${citySlug}`}
             className="inline-block px-6 py-3 bg-white text-brand font-semibold rounded-lg hover:bg-slate-100 transition"
           >
-            Get Free Quote
+            Request a Quote
           </Link>
         </div>
 
