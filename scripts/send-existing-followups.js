@@ -64,7 +64,6 @@ async function main() {
   section('FIXLO — SEND EXISTING FOLLOW-UPS');
   console.log(`Collection:   MetaLead`);
   console.log(`Database:     ${dbName}`);
-  console.log(`Mongo URI DB: ${dbName}`);
   console.log(`Run time:     ${new Date().toISOString()}`);
 
   // ── Connect ─────────────────────────────────────────────────────────────────
@@ -94,12 +93,11 @@ async function main() {
 
   // ── Step 1: Load ALL leads ───────────────────────────────────────────────────
   const MONGO_QUERY = {};
+
+  // Use FOLLOWUP_LIMIT env var to override. Default covers any realistic production collection.
+  const LEAD_LIMIT = Number(process.env.FOLLOWUP_LIMIT || 10000);
   console.log(`\nMongo query: MetaLead.find(${JSON.stringify(MONGO_QUERY)}) (limit ${LEAD_LIMIT})`);
   console.log('  Override limit: FOLLOWUP_LIMIT=<n> node scripts/send-existing-followups.js\n');
-
-  // Use FOLLOWUP_LIMIT env var to override, or omit limit entirely for full scan.
-  // Default is 10 000 which covers any realistic production collection size.
-  const LEAD_LIMIT = Number(process.env.FOLLOWUP_LIMIT || 10000);
   const allLeads = await MetaLead.find(MONGO_QUERY).sort({ createdAt: -1 }).limit(LEAD_LIMIT);
 
   if (allLeads.length === 0) {
@@ -274,8 +272,8 @@ async function main() {
   for (const lead of eligible) {
     let changed = false;
 
-    // Guard: followUp is defined in the schema with default:{}, but ensure it's
-    // initialised as an object before accessing any nested fields.
+    // Guard: the schema defines followUp with default:{} but the value can be
+    // missing on documents created before the field was added to the schema.
     if (!lead.followUp || typeof lead.followUp !== 'object') {
       lead.followUp = {};
     }
@@ -480,9 +478,14 @@ function printSkippedDetail(skippedLeads) {
 
   for (const { lead, reasons } of skippedLeads) {
     const name = `${lead.firstName || ''} ${lead.lastName || ''}`.trim() || lead.email || String(lead._id);
-    console.log(
-      `${String(lead._id).slice(0, 27).padEnd(28)} ${name.slice(0, 23).padEnd(24)} ${String(lead.phone || '—').slice(0, 16).padEnd(17)} ${String(lead.email || '—').slice(0, 31).padEnd(32)} ${reasons.join(' | ')}`
-    );
+    const cols = [
+      String(lead._id).slice(0, 27).padEnd(28),
+      name.slice(0, 23).padEnd(24),
+      String(lead.phone || '—').slice(0, 16).padEnd(17),
+      String(lead.email || '—').slice(0, 31).padEnd(32),
+      reasons.join(' | ')
+    ];
+    console.log(cols.join(' '));
   }
 }
 
