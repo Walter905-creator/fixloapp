@@ -4,6 +4,7 @@ const JobRequest = require('../models/JobRequest');
 const Pro = require('../models/Pro');
 const LeadAssignment = require('../models/LeadAssignment');
 const requireAuth = require('../middleware/requireAuth');
+const requirePermission = require('../middleware/requirePermission');
 const smsService = require('../services/smsService');
 const { sendNotificationWithFallback } = require('../services/emailService');
 const { logPaymentAction, logAdminAction } = require('../services/auditLogger');
@@ -27,6 +28,8 @@ router.use((req, res, next) => {
   }
   next();
 });
+// Review admin accounts must not access job management routes (financial data / PII).
+router.use(requirePermission('full_admin'));
 
 // GET /api/admin/jobs - List all jobs with filters
 router.get('/jobs', async (req, res) => {

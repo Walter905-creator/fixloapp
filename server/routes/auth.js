@@ -12,6 +12,7 @@ const { requireDatabase } = require('../config/database');
 const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
 const { sendPasswordResetEmail } = require('../utils/email');
 const { notify: ownerNotify } = require('../services/ownerNotificationService');
+const ReviewAdmin = require('../models/ReviewAdmin');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@fixloapp.com';
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH; // store hash, not raw
@@ -36,9 +37,58 @@ router.post("/login", async (req, res) => {
     return res.status(400).json({ error: "Email and password are required" });
   }
 
+  const normalizedEmail = email.toLowerCase();
+
+  // ── Meta App Review admin login ─────────────────────────────────────────────
+  // Handled separately: credentials are stored in the database and the JWT
+  // carries a scoped `permissions` array instead of full admin access.
+  if (normalizedEmail === ReviewAdmin.REVIEW_EMAIL) {
+    if (process.env.META_REVIEW_MODE !== 'true') {
+      // Do not reveal that this email exists when review mode is off.
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ error: "Service temporarily unavailable" });
+    }
+
+    const reviewAdmin = await ReviewAdmin.findOne({ email: normalizedEmail, isActive: true });
+    if (!reviewAdmin) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    const isValidPassword = await bcrypt.compare(password, reviewAdmin.passwordHash);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    const token = sign({
+      role: 'admin',
+      email: normalizedEmail,
+      isAdmin: true,
+      isReviewAdmin: true,
+      permissions: reviewAdmin.permissions,
+    });
+
+    console.log(`🔐 Meta review admin login: ${normalizedEmail}`);
+
+    return res.json({
+      success: true,
+      token,
+      admin: {
+        email: normalizedEmail,
+        role: 'admin',
+        isAdmin: true,
+        isReviewAdmin: true,
+        permissions: reviewAdmin.permissions,
+      },
+    });
+  }
+  // ── End Meta App Review admin login ─────────────────────────────────────────
+
   // Check if email matches admin or owner email
-  const isAdminEmail = email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
-  const isOwnerEmail = email.toLowerCase() === OWNER_EMAIL.toLowerCase();
+  const isAdminEmail = normalizedEmail === ADMIN_EMAIL.toLowerCase();
+  const isOwnerEmail = normalizedEmail === OWNER_EMAIL.toLowerCase();
   
   if (!isAdminEmail && !isOwnerEmail) {
     return res.status(401).json({ error: "Invalid credentials" });
@@ -64,7 +114,7 @@ router.post("/login", async (req, res) => {
     return res.status(401).json({ error: "Invalid credentials" });
   }
 
-  const token = sign({ role: 'admin', email: email.toLowerCase(), isAdmin: true });
+  const token = sign({ role: 'admin', email: normalizedEmail, isAdmin: true });
   
   if (process.env.NODE_ENV !== 'production') {
     console.log(`🔐 Admin login successful: ${email}`);
@@ -74,7 +124,7 @@ router.post("/login", async (req, res) => {
     success: true,
     token,
     admin: {
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       role: "admin",
       isAdmin: true
     }

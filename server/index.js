@@ -1136,6 +1136,14 @@ async function start() {
         console.warn("⚠️ Walter Pro initialization skipped:", e?.message || e);
       }
 
+      // Initialize Meta App Review admin account (only when META_REVIEW_MODE=true)
+      try {
+        const { initMetaReviewAdmin } = require('./scripts/initMetaReviewAdmin');
+        await initMetaReviewAdmin();
+      } catch (e) {
+        console.warn("⚠️ Meta review admin initialization skipped:", e?.message || e);
+      }
+
       // Start scheduled tasks for operational safeguards
       // IMPORTANT: Only start after successful DB connection
       try {

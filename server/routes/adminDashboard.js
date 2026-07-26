@@ -3,6 +3,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const requireAuth = require('../middleware/requireAuth');
 const requireAdmin = require('../middleware/requireAdmin');
+const requirePermission = require('../middleware/requirePermission');
 const Pro = require('../models/Pro');
 const JobRequest = require('../models/JobRequest');
 const LeadAssignment = require('../models/LeadAssignment');
@@ -42,6 +43,8 @@ function isTwilioSidValid(sid) {
 // ── Auth guard ────────────────────────────────────────────────────────────────
 router.use(requireAuth);
 router.use(requireAdmin);
+// Review admin: dashboard permission required for all routes in this router.
+router.use(requirePermission('dashboard'));
 
 // ── Helper: safe DB check ─────────────────────────────────────────────────────
 function isDbConnected() {
