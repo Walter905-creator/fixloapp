@@ -540,7 +540,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
       case 6:
         return (
           <div className="space-y-4">
-            <h3 className="text-xl font-bold text-slate-900">Estimate & Terms</h3>
+            <h3 className="text-xl font-bold text-slate-900">Review & Terms</h3>
             <div className="bg-emerald-50 p-6 rounded-lg space-y-3 text-slate-800 border border-emerald-200">
               {estimateFee.checked && estimateFee.eligible ? (
                 <div className="rounded-lg border border-emerald-300 bg-white p-4 space-y-2">
@@ -549,7 +549,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
                   <p className="text-sm text-slate-700 font-medium">Your $75 Service Request Fee includes:</p>
                 </div>
               ) : (
-                <p className="font-semibold text-lg text-emerald-800">✓ Your estimate request has no upfront fee.</p>
+                <p className="font-semibold text-lg text-emerald-800">✓ Your service request has no upfront fee.</p>
               )}
               <ul className="space-y-2 text-sm">
                 {estimateFee.checked && estimateFee.eligible ? (
@@ -575,7 +575,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
                   <>
                     <li className="flex items-start">
                       <span className="font-semibold mr-2">•</span>
-                      <span>Get matched with verified local professionals for free</span>
+                      <span>Get matched with verified local professionals</span>
                     </li>
                     <li className="flex items-start">
                       <span className="font-semibold mr-2">•</span>
@@ -602,7 +602,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
                 className="mt-1 h-5 w-5 text-brand border-slate-300 rounded focus:ring-brand"
               />
               <span className="text-slate-700">
-                I understand and agree to the terms for this estimate request.
+                I understand and agree to the terms for this service request.
               </span>
             </label>
             {errors.termsAccepted && <p className="text-red-600 text-sm">{errors.termsAccepted}</p>}
