@@ -116,7 +116,7 @@ test('POST /api/requests/create-checkout — creates Stripe session WITHOUT a DB
   );
   assert.match(
     routeSource,
-    /PendingCheckout\.create/,
+    /PendingCheckout\.create|PendingCheckout\.findOneAndUpdate/,
     'create-checkout must save form data to PendingCheckout'
   );
   // Must NOT call JobRequest.create inside create-checkout
@@ -262,8 +262,8 @@ test('ServiceIntakeModal — saves form data to sessionStorage before Stripe red
 test('ServiceIntakeModal — includes stripeCheckoutSessionId in final POST /api/requests', () => {
   assert.match(
     modalSource,
-    /stripeCheckoutSessionId.*paidSessionId|paidSessionId.*stripeCheckoutSessionId/s,
-    'Modal must include stripeCheckoutSessionId (from paidSessionId) in the final request payload'
+    /stripeCheckoutSessionId.*paymentSessionId|paymentSessionId.*stripeCheckoutSessionId/s,
+    'Modal must include stripeCheckoutSessionId (from verified payment session) in the final request payload'
   );
 });
 
