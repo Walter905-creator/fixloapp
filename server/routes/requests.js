@@ -4,7 +4,6 @@ const mongoose = require('mongoose');
 
 // Models & utils
 const JobRequest = require('../models/JobRequest');
-const PendingCheckout = require('../models/PendingCheckout');
 const { geocodeAddress } = require('../utils/geocoding');
 const { isUSPhoneNumber } = require('../utils/twilio');
 const { sendHomeownerConfirmation } = require('../utils/smsSender');
@@ -15,13 +14,6 @@ const {
   CHARLOTTE_ESTIMATE_FEE_AMOUNT_CENTS,
   evaluateCharlotteEstimateFeeEligibility
 } = require('../config/charlotteEstimateFee');
-
-// ---------- Constants ----------
-
-// Stripe Checkout Session IDs are prefixed 'cs_' followed by ~200 alphanumeric chars.
-// 300 chars provides a generous upper bound while guarding against excessively large inputs.
-const MAX_STRIPE_SESSION_ID_LENGTH = 300;
-const PAYMENT_STATUS_CAPTURED = 'captured';
 
 // ---------- Helpers ----------
 
@@ -73,7 +65,7 @@ if (process.env.STRIPE_SECRET_KEY) {
   );
 }
 
-// ---------- Charlotte payment fee endpoints ----------
+// ---------- POST /api/requests ----------
 
 router.post('/estimate-fee', async (req, res) => {
   try {
@@ -98,68 +90,33 @@ router.post('/estimate-fee', async (req, res) => {
   }
 });
 
-/**
- * POST /api/requests/create-checkout
- *
- * Creates a Stripe Checkout session for the $75 Charlotte Service Request Fee
- * WITHOUT writing a JobRequest to the database first.  The homeowner's form
- * data is saved in a temporary PendingCheckout document that expires in 2 h.
- *
- * On success the frontend redirects the browser to the returned checkoutUrl.
- * After Stripe redirects back to /request?payment=success&session_id=…, the
- * frontend calls POST /api/requests (below) with the session_id, which verifies
- * the payment and creates the real JobRequest.
- */
-router.post('/create-checkout', async (req, res) => {
-  const isDev = process.env.NODE_ENV !== 'production';
+router.post('/checkout-session', async (req, res) => {
   try {
-    const {
-      serviceType,
-      fullName,
-      phone,
-      email,
+    const { address, city, state, zipCode } = req.body || {};
+
+    const eligibility = await evaluateCharlotteEstimateFeeEligibility({
       address,
       city,
       state,
-      zipCode,
-      smsConsent,
-      details,
-      urgency
-    } = req.body || {};
-
-    if (!serviceType || !fullName || !phone || !address || !city || !state) {
-      return res.status(400).json({ ok: false, error: 'Missing required fields for checkout' });
-    }
-
-    const normalizedPhone = normalizeUSPhone(String(phone));
-    if (!normalizedPhone || !isValidE164(normalizedPhone)) {
-      return res.status(400).json({ ok: false, error: 'Invalid phone number' });
-    }
-
-    // Verify the address is actually in Charlotte (within 30 miles)
-    const eligibility = await evaluateCharlotteEstimateFeeEligibility({
-      address, city, state, zip: zipCode
+      zip: zipCode
     });
 
-    if (!eligibility.eligible || !CHARLOTTE_ESTIMATE_FEE_ENABLED) {
+    const requiresEstimateFee = eligibility.eligible && CHARLOTTE_ESTIMATE_FEE_ENABLED;
+    if (!requiresEstimateFee) {
       return res.status(400).json({
         ok: false,
-        error: 'This address is not in the Charlotte service area. No payment required.'
+        error: 'Service Request Fee is not required for this location'
       });
     }
 
     if (!stripe) {
-      return res.status(503).json({ ok: false, error: 'Payment system temporarily unavailable' });
-    }
-
-    if (mongoose.connection.readyState !== 1) {
-      return res.status(503).json({ ok: false, error: 'Database unavailable' });
+      return res.status(503).json({
+        ok: false,
+        error: 'Service Request Fee payments are temporarily unavailable'
+      });
     }
 
     const clientUrl = process.env.CLIENT_URL || 'https://fixloapp.com';
-    const successUrl = `${clientUrl}/request?payment=success&session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl  = `${clientUrl}/request?payment=cancelled`;
-
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       payment_method_types: ['card'],
@@ -169,82 +126,35 @@ router.post('/create-checkout', async (req, res) => {
             currency: 'usd',
             unit_amount: CHARLOTTE_ESTIMATE_FEE_AMOUNT_CENTS,
             product_data: {
-              name: '$75 Service Request Fee',
-              description:
-                'Includes a professional project estimate and matching with a qualified local professional who will contact you within 24 hours. One-time fee. No hidden charges.'
+              name: 'Service Request Fee'
             }
           },
           quantity: 1
         }
       ],
-      success_url: successUrl,
-      cancel_url: cancelUrl,
+      success_url: `${clientUrl}/request?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${clientUrl}/request?payment=cancelled`,
       metadata: {
         requestType: 'homeowner_service_request_fee',
-        // No leadId yet — the JobRequest is created AFTER payment is verified
-        createdAt: new Date().toISOString()
+        city: String(city || ''),
+        state: String(state || ''),
+        zipCode: String(zipCode || '')
       }
     });
 
-    // Persist form data temporarily (TTL 2 h)
-    await PendingCheckout.create({
-      stripeCheckoutSessionId: session.id,
-      formData: {
-        serviceType: String(serviceType).trim(),
-        fullName:    String(fullName).trim(),
-        phone:       normalizedPhone,
-        email:       email ? String(email).trim().toLowerCase() : undefined,
-        address:     String(address).trim(),
-        city:        String(city).trim(),
-        state:       String(state).trim(),
-        zipCode:     String(zipCode || '').trim(),
-        details:     String(details || '').trim(),
-        urgency:     String(urgency || 'Flexible').trim(),
-        smsConsent:  Boolean(smsConsent)
-      }
-    });
-
-    if (isDev) console.log(`[REQUESTS] ✓ create-checkout | session=${session.id} phone=${normalizedPhone}`);
-
-    return res.json({
+    return res.status(200).json({
       ok: true,
-      checkoutUrl: session.url,
-      sessionId: session.id
+      data: {
+        checkoutUrl: session.url,
+        sessionId: session.id,
+        estimateFeeAmountCents: CHARLOTTE_ESTIMATE_FEE_AMOUNT_CENTS
+      }
     });
-  } catch (err) {
-    console.error('❌ create-checkout error:', err.message);
+  } catch (error) {
+    console.error('❌ Checkout session creation error:', error.message);
     return res.status(500).json({ ok: false, error: 'Unable to create checkout session' });
   }
 });
-
-/**
- * GET /api/requests/verify-checkout/:sessionId
- *
- * Verifies that a Stripe Checkout session has been paid.
- * Returns { ok, paid } — does NOT accept or reject the request itself.
- */
-router.get('/verify-checkout/:sessionId', async (req, res) => {
-  try {
-    const { sessionId } = req.params;
-    if (!sessionId || typeof sessionId !== 'string' || sessionId.length > MAX_STRIPE_SESSION_ID_LENGTH) {
-      return res.status(400).json({ ok: false, error: 'Invalid session ID' });
-    }
-
-    if (!stripe) {
-      return res.status(503).json({ ok: false, error: 'Payment system temporarily unavailable' });
-    }
-
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
-    const paid = session.payment_status === 'paid';
-
-    return res.json({ ok: true, paid, paymentStatus: session.payment_status });
-  } catch (err) {
-    console.error('❌ verify-checkout error:', err.message);
-    return res.status(500).json({ ok: false, error: 'Unable to verify checkout session' });
-  }
-});
-
-// ---------- POST /api/requests ----------
 
 router.post('/', async (req, res) => {
   const isDev = process.env.NODE_ENV !== 'production';
@@ -260,10 +170,9 @@ router.post('/', async (req, res) => {
       city,
       state,
       zipCode,
+      stripeCheckoutSessionId,
       smsConsent,
-      details,
-      // Optional: provided when returning from Stripe Checkout
-      stripeCheckoutSessionId
+      details
     } = req.body || {};
 
     // Normalize service field — accept trade, service, or serviceType
@@ -314,6 +223,7 @@ router.post('/', async (req, res) => {
     const geocodeSource = buildAddressString({ address, city, state, zipCode }) || `${city}, ${state}`;
     let formattedAddress = geocodeSource;
 
+    // 5️⃣ GUARD GEOCODING (DO NOT BREAK FLOW)
     let coords = null;
     try {
       if (typeof geocodeAddress === 'function') {
@@ -335,78 +245,59 @@ router.post('/', async (req, res) => {
       coordinates: coords
     });
     const requiresEstimateFee = eligibility.eligible && CHARLOTTE_ESTIMATE_FEE_ENABLED;
+    const serviceRequestFeeDollars = Number((CHARLOTTE_ESTIMATE_FEE_AMOUNT_CENTS / 100).toFixed(0));
 
-    // ---------- Charlotte payment gate ----------
-    // Charlotte requests MUST include a verified Stripe Checkout session.
-    // We verify the session directly via the Stripe API — we do NOT trust
-    // query parameters or frontend-supplied payment state.
-
-    let verifiedSessionId = null;
-
+    let verifiedCheckoutSessionId = '';
     if (requiresEstimateFee) {
-      if (!stripeCheckoutSessionId || typeof stripeCheckoutSessionId !== 'string') {
-        if (isDev) console.log(`[REQUESTS] ✗ Payment    | Charlotte request missing stripeCheckoutSessionId`);
-        return res.status(402).json({
-          ok: false,
-          requiresPayment: true,
-          error:
-            'A $75 Service Request Fee is required for Charlotte-area requests. ' +
-            'Please complete checkout before submitting.'
-        });
-      }
-
       if (!stripe) {
-        return res.status(503).json({ ok: false, error: 'Payment system temporarily unavailable' });
+        return res.status(503).json({
+          ok: false,
+          error: 'Service Request Fee payments are temporarily unavailable'
+        });
       }
 
-      // Verify session with Stripe — do not trust the frontend
-      let stripeSession;
+      const sessionId = String(stripeCheckoutSessionId || '').trim();
+      if (!sessionId) {
+        return res.status(402).json({
+          ok: false,
+          error: `A verified $${serviceRequestFeeDollars} Service Request Fee payment is required before submission.`
+        });
+      }
+
+      const existingPaidLead = await JobRequest.findOne({
+        stripeCheckoutSessionId: sessionId,
+        paymentStatus: 'captured'
+      }).select('_id');
+      if (existingPaidLead) {
+        return res.status(409).json({
+          ok: false,
+          error: 'This payment session has already been used for a submitted request. Please submit a new request or contact support if this seems incorrect.'
+        });
+      }
+
+      let checkoutSession;
       try {
-        stripeSession = await stripe.checkout.sessions.retrieve(stripeCheckoutSessionId);
-      } catch (stripeErr) {
-        console.error('❌ Stripe session retrieval error:', stripeErr.message);
-        return res.status(402).json({
+        checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
+      } catch (sessionError) {
+        return res.status(400).json({
           ok: false,
-          requiresPayment: true,
-          error: 'Unable to verify payment. Please try again.'
+          error: 'Invalid payment session. Please complete payment again.'
         });
       }
 
-      if (stripeSession.payment_status !== 'paid') {
-        if (isDev) console.log(`[REQUESTS] ✗ Payment    | session ${stripeCheckoutSessionId} status=${stripeSession.payment_status}`);
+      const paid = checkoutSession?.payment_status === 'paid';
+      const requestType = checkoutSession?.metadata?.requestType;
+      const correctAmount = Number(checkoutSession?.amount_total || 0) === CHARLOTTE_ESTIMATE_FEE_AMOUNT_CENTS;
+      const correctCurrency = String(checkoutSession?.currency || '').toLowerCase() === 'usd';
+
+      if (!paid || requestType !== 'homeowner_service_request_fee' || !correctAmount || !correctCurrency) {
         return res.status(402).json({
           ok: false,
-          requiresPayment: true,
-          error: 'Payment has not been completed. Please complete checkout first.'
+          error: `Payment verification failed. Please complete the $${serviceRequestFeeDollars} Service Request Fee to continue.`
         });
       }
 
-      // Guard against session reuse — check PendingCheckout consumed flag
-      if (mongoose.connection.readyState === 1) {
-        const pending = await PendingCheckout.findOne({ stripeCheckoutSessionId });
-
-        if (pending && pending.consumed) {
-          if (isDev) console.log(`[REQUESTS] ✗ Payment    | session ${stripeCheckoutSessionId} already consumed`);
-          return res.status(409).json({
-            ok: false,
-            error: 'This payment session has already been used. Please start a new request.'
-          });
-        }
-
-        // Also check if a JobRequest with this session ID already exists (double-submission guard)
-        const existing = await JobRequest.findOne({ stripeCheckoutSessionId });
-        if (existing) {
-          if (isDev) console.log(`[REQUESTS] ✗ Payment    | duplicate JobRequest for session ${stripeCheckoutSessionId}`);
-          return res.status(409).json({
-            ok: false,
-            error: 'A request with this payment session already exists.',
-            requestId: existing.requestId
-          });
-        }
-      }
-
-      verifiedSessionId = stripeCheckoutSessionId;
-      if (isDev) console.log(`[REQUESTS] ✓ Payment    | session ${verifiedSessionId} verified paid`);
+      verifiedCheckoutSessionId = sessionId;
     }
 
     // ---------- Save Job ----------
@@ -415,8 +306,10 @@ router.post('/', async (req, res) => {
 
     if (mongoose.connection.readyState === 1) {
       if (isDev) console.log(`[REQUESTS] ► DB save    | Saving JobRequest to database`);
+      // Log new service request for debugging
       console.log('New Fixlo service request:', { service: rawService, city, phone: normalizedPhone });
 
+      // Save job (phone-first, no email required)
       const jobData = {
         requestId,
         name: fullName.trim(),
@@ -437,33 +330,18 @@ router.post('/', async (req, res) => {
         estimateFeeRequired: requiresEstimateFee,
         estimateFeeAmountCents: requiresEstimateFee ? CHARLOTTE_ESTIMATE_FEE_AMOUNT_CENTS : 0,
         estimateFeeCurrency: 'usd',
+        stripeCheckoutSessionId: verifiedCheckoutSessionId || undefined,
+        paymentStatus: requiresEstimateFee ? 'captured' : 'none',
+        paymentCapturedAt: requiresEstimateFee ? new Date() : undefined,
         ownerSmsStatus: 'pending',
-        ownerEmailStatus: 'pending',
-        // Record the verified Stripe session if payment was required
-        ...(verifiedSessionId && {
-          stripeCheckoutSessionId: verifiedSessionId,
-          paymentStatus: PAYMENT_STATUS_CAPTURED,
-          paymentCapturedAt: new Date()
-        })
+        ownerEmailStatus: 'pending'
       };
 
       savedLead = await JobRequest.create(jobData);
 
+      // 6️⃣ LOG CRITICAL EVENTS
       console.log('💾 Job saved:', requestId, '| ID:', savedLead._id);
       if (isDev) console.log(`[REQUESTS] ✓ DB save    | JobRequest _id=${savedLead._id}`);
-
-      // Mark the PendingCheckout as consumed to prevent reuse
-      if (verifiedSessionId) {
-        try {
-          await PendingCheckout.updateOne(
-            { stripeCheckoutSessionId: verifiedSessionId },
-            { $set: { consumed: true } }
-          );
-        } catch (consumeErr) {
-          // Non-fatal — idempotency is also protected by the JobRequest unique check
-          console.warn('⚠️ Failed to mark PendingCheckout as consumed:', consumeErr.message);
-        }
-      }
 
       // Send homeowner confirmation SMS
       if (smsConsent) {
@@ -479,16 +357,17 @@ router.post('/', async (req, res) => {
         }
       }
 
-      // Owner admin notification
-      if (isUSPhoneNumber(phone)) {
-        try {
-          await notifyOwnerForLead(savedLead, {
-            stage: requiresEstimateFee ? 'paid' : 'standard',
-            amountPaidCents: requiresEstimateFee ? CHARLOTTE_ESTIMATE_FEE_AMOUNT_CENTS : 0
-          });
-        } catch (notifyErr) {
-          console.error('❌ Owner notification error:', notifyErr.message);
-        }
+      // Owner admin notification for all successfully-created requests
+      if (!savedLead.estimateFeeRequired && isUSPhoneNumber(phone)) {
+        await notifyOwnerForLead(savedLead, {
+          stage: 'standard',
+          amountPaidCents: 0
+        });
+      } else if (savedLead.estimateFeeRequired && isUSPhoneNumber(phone)) {
+        await notifyOwnerForLead(savedLead, {
+          stage: 'paid',
+          amountPaidCents: savedLead.estimateFeeAmountCents || 0
+        });
       }
     } else {
       if (isDev) console.log(`[REQUESTS] ⚠ DB save    | MongoDB not connected (readyState=${mongoose.connection.readyState}), skipping save`);
@@ -504,15 +383,13 @@ router.post('/', async (req, res) => {
       }
     }
 
-    // ---------- Response ----------
-
     if (isDev) console.log(`[REQUESTS] ◄ Response   | 201 ok=true requestId=${requestId}`);
     return res.status(201).json({
       ok: true,
       success: true,
       requestId,
-      message: requiresEstimateFee
-        ? 'Your service request has been submitted successfully. A verified professional will contact you within 24 hours.'
+      message: savedLead?.estimateFeeRequired
+        ? 'Your request has been received and will be routed after payment confirmation.'
         : 'Your free quote request has been submitted successfully. A professional will contact you soon.',
       data: {
         leadId: savedLead?._id || null

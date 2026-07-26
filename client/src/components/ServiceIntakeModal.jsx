@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { API_BASE } from '../utils/config';
 import { normalizeUSPhone } from '../utils/phoneUtils';
 import { trackMetaPixelEvent } from '../utils/metaPixel';
 import { csrfFetch, getCsrfToken } from '../utils/csrf';
 
 const API_URL = API_BASE;
-
-const FORM_SESSION_KEY = 'fixlo_pending_service_request';
+const SERVICE_REQUEST_DRAFT_KEY = 'fixlo_service_request_draft';
 
 const SERVICE_TYPES = [
   'General Repairs',
@@ -26,7 +25,7 @@ const URGENCY_OPTIONS = [
   'Flexible'
 ];
 
-export default function ServiceIntakeModal({ open, onClose, defaultCity, defaultService, customHeading, restoredFormData, restoredPaidSessionId }) {
+export default function ServiceIntakeModal({ open, onClose, defaultCity, defaultService, customHeading, paymentSessionId: initialPaymentSessionId = '' }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     serviceType: defaultService ? defaultService.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '',
@@ -47,23 +46,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [estimateFee, setEstimateFee] = useState({ checked: false, eligible: false, amountCents: 0 });
-  // Session ID from a completed Stripe checkout (payment=success flow)
-  const [paidSessionId, setPaidSessionId] = useState(restoredPaidSessionId || null);
-
-  // If a parent passes restored form data (after returning from Stripe), populate it
-  useEffect(() => {
-    if (restoredFormData) {
-      setFormData(prev => ({ ...prev, ...restoredFormData }));
-      // Jump to step 7 (contact info) so user completes the request
-      setCurrentStep(7);
-    }
-  }, [restoredFormData]);
-
-  useEffect(() => {
-    if (restoredPaidSessionId) {
-      setPaidSessionId(restoredPaidSessionId);
-    }
-  }, [restoredPaidSessionId]);
+  const [paymentSessionId, setPaymentSessionId] = useState(initialPaymentSessionId || '');
 
   const totalSteps = 7;
 
@@ -108,9 +91,6 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
     }
 
     if (step === 6) {
-      // Both Charlotte (eligible) and non-Charlotte paths require the terms checkbox.
-      // For Charlotte users the button is also disabled until checked; this validation
-      // prevents navigating forward via the footer Next button.
       if (!formData.termsAccepted) {
         newErrors.termsAccepted = 'You must accept the terms to continue';
       }
@@ -169,6 +149,26 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
   );
 
   React.useEffect(() => {
+    if (initialPaymentSessionId) {
+      setPaymentSessionId(initialPaymentSessionId);
+    }
+  }, [initialPaymentSessionId]);
+
+  React.useEffect(() => {
+    if (!initialPaymentSessionId) return;
+    try {
+      const rawDraft = window.sessionStorage.getItem(SERVICE_REQUEST_DRAFT_KEY);
+      if (!rawDraft) return;
+      const draft = JSON.parse(rawDraft);
+      if (draft && typeof draft === 'object') {
+        setFormData((prev) => ({ ...prev, ...draft }));
+      }
+    } catch (error) {
+      console.warn('Unable to restore service request draft:', error);
+    }
+  }, [initialPaymentSessionId]);
+
+  React.useEffect(() => {
     let cancelled = false;
     const run = async () => {
       if (!canCheckEstimateFee) {
@@ -204,6 +204,43 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
     return () => { cancelled = true; };
   }, [canCheckEstimateFee, formData.address, formData.city, formData.state, formData.zip]);
 
+  const startCharlotteCheckout = async () => {
+    const response = await csrfFetch(`${API_URL}/api/requests/checkout-session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        zipCode: formData.zip
+      })
+    });
+
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result?.ok || !result?.data?.checkoutUrl) {
+      throw new Error(result?.error || 'Unable to start Service Request Fee checkout');
+    }
+
+    const checkoutDraft = {
+      serviceType: formData.serviceType,
+      otherServiceType: formData.otherServiceType,
+      description: formData.description,
+      address: formData.address,
+      city: formData.city,
+      state: formData.state,
+      zip: formData.zip,
+      urgency: formData.urgency,
+      termsAccepted: formData.termsAccepted,
+      smsConsent: formData.smsConsent
+    };
+    try {
+      window.sessionStorage.setItem(SERVICE_REQUEST_DRAFT_KEY, JSON.stringify(checkoutDraft));
+    } catch (storageError) {
+      console.warn('Unable to save service request draft before checkout:', storageError);
+    }
+    window.location.assign(result.data.checkoutUrl);
+  };
+
   const handleSubmitRequest = async () => {
     setIsSubmitting(true);
     setErrors({});
@@ -226,9 +263,13 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
         zipCode: formData.zip,
         smsConsent: formData.smsConsent || false,
         details: formData.description || '',
-        // Include verified Stripe session ID when returning from checkout
-        ...(paidSessionId && { stripeCheckoutSessionId: paidSessionId })
+        stripeCheckoutSessionId: paymentSessionId || undefined
       };
+
+      if (estimateFee.checked && estimateFee.eligible && !paymentSessionId) {
+        await startCharlotteCheckout();
+        return;
+      }
 
       const res = await csrfFetch(`${API_URL}/api/requests`, {
         method: 'POST',
@@ -236,18 +277,15 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
         body: JSON.stringify(payload)
       });
 
-      const responseData = await res.json().catch(() => ({}));
-
       if (!res.ok) {
-        throw new Error(responseData.error || 'Failed to submit request');
+        const errorText = await res.text();
+        throw new Error(errorText || 'Failed to submit request');
       }
 
+      const responseData = await res.json();
       if (!responseData.requestId && !responseData.ok) {
         throw new Error(responseData.error || 'Request was not created properly');
       }
-
-      // Clear any saved form state from sessionStorage
-      try { sessionStorage.removeItem(FORM_SESSION_KEY); } catch (_) {}
 
       // Track Meta Pixel Lead event
       trackMetaPixelEvent('Lead', {
@@ -257,88 +295,12 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
 
       setSubmitSuccess(true);
       setCurrentStep(totalSteps);
+      window.sessionStorage.removeItem(SERVICE_REQUEST_DRAFT_KEY);
 
     } catch (err) {
       console.error('❌ Submission error:', err);
       setErrors({ submit: err.message });
     } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  /**
-   * Initiates Stripe checkout for Charlotte $75 fee.
-   * Saves current form state to sessionStorage so it can be restored
-   * after the user returns from Stripe.
-   */
-  const handleProceedToPayment = async () => {
-    setIsSubmitting(true);
-    setErrors({});
-
-    // Validate contact info before redirecting to Stripe
-    const contactErrors = {};
-    if (!formData.name) contactErrors.name = 'Name is required';
-    if (!formData.phone) {
-      contactErrors.phone = 'Phone number is required';
-    } else if (!normalizeUSPhone(formData.phone)) {
-      contactErrors.phone = 'Please enter a valid 10-digit U.S. phone number';
-    }
-    if (Object.keys(contactErrors).length > 0) {
-      setErrors(contactErrors);
-      setIsSubmitting(false);
-      return;
-    }
-
-    try {
-      const normalizedPhone = normalizeUSPhone(formData.phone);
-
-      const res = await csrfFetch(`${API_URL}/api/requests/create-checkout`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          serviceType: formData.serviceType === 'Other' ? formData.otherServiceType : formData.serviceType,
-          fullName: formData.name,
-          phone: normalizedPhone,
-          address: formData.address,
-          city: formData.city,
-          state: formData.state,
-          zipCode: formData.zip,
-          details: formData.description || '',
-          urgency: formData.urgency,
-          smsConsent: formData.smsConsent || false
-        })
-      });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok || !data.ok) {
-        throw new Error(data.error || 'Unable to start checkout. Please try again.');
-      }
-
-      // Persist form data so it can be restored after Stripe redirect
-      try {
-        sessionStorage.setItem(FORM_SESSION_KEY, JSON.stringify({
-          serviceType: formData.serviceType,
-          otherServiceType: formData.otherServiceType,
-          description: formData.description,
-          address: formData.address,
-          city: formData.city,
-          state: formData.state,
-          zip: formData.zip,
-          urgency: formData.urgency,
-          name: formData.name,
-          phone: formData.phone,
-          smsConsent: formData.smsConsent,
-          savedAt: Date.now()
-        }));
-      } catch (_) {}
-
-      // Redirect to Stripe Checkout
-      window.location.assign(data.checkoutUrl);
-
-    } catch (err) {
-      console.error('❌ Checkout initiation error:', err);
-      setErrors({ submit: err.message });
       setIsSubmitting(false);
     }
   };
@@ -576,145 +538,62 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
         );
 
       case 6:
-        // Show a loading state while the eligibility check is in flight so Charlotte
-        // users never accidentally land on the non-payment branch.
-        if (!estimateFee.checked) {
-          return (
-            <div className="space-y-5 text-center py-10">
-              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-brand border-r-transparent" />
-              <p className="text-slate-600">Checking your service area…</p>
-            </div>
-          );
-        }
-
-        // Charlotte / eligible addresses: $75 Service Request Fee flow → Stripe Checkout.
-        if (estimateFee.eligible) {
-          return (
-            <div className="space-y-5">
-              <h3 className="text-xl font-bold text-slate-900">Review &amp; Payment</h3>
-
-              {/* Fee explanation (approved text) */}
-              <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-5 space-y-3">
-                <p className="font-semibold text-slate-900">Your $75 Service Request Fee Includes:</p>
-                <ul className="space-y-2 text-sm text-slate-700">
-                  <li>• Professional project estimate from verified local professionals</li>
-                  <li>• Priority review of your project</li>
-                  <li>• Matching with the most qualified local professional</li>
-                  <li>• A professional will contact you within 24 hours or less</li>
-                  <li>• You&apos;ll receive a detailed quote before any work begins</li>
-                  <li>• No work will begin without your approval</li>
-                  <li>• Materials (if needed) will be itemized separately in the contractor&apos;s final quote</li>
-                </ul>
-
-                <p className="text-base font-bold text-slate-900">Service Request Fee: $75</p>
-                <p className="text-sm text-slate-700">
-                  This one-time fee covers the review and processing of your request, the preparation of a professional estimate, and matching you with a qualified local professional. It is not a payment for the repair or construction work itself.
-                </p>
-              </div>
-
-              {/* Contact info collected here so it can be saved before Stripe redirect */}
-              <div className="space-y-3">
-                <h4 className="font-semibold text-slate-800">Your contact information</h4>
-                <input
-                  type="text"
-                  placeholder="Full Name"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  className="input w-full"
-                  required
-                />
-                {errors.name && <p className="text-red-600 text-sm">{errors.name}</p>}
-
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">+1</span>
-                  <input
-                    type="tel"
-                    placeholder="(555) 123-4567"
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    className="input w-full pl-10"
-                    required
-                  />
-                </div>
-                {errors.phone && <p className="text-red-600 text-sm">{errors.phone}</p>}
-
-                <div className="bg-blue-50 p-3 rounded-lg">
-                  <label className="flex items-start space-x-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.smsConsent}
-                      onChange={(e) => handleInputChange('smsConsent', e.target.checked)}
-                      className="mt-1 h-5 w-5 text-brand border-slate-300 rounded focus:ring-brand"
-                    />
-                    <div className="text-sm text-slate-700">
-                      <p className="font-semibold mb-1">Receive SMS updates (optional)</p>
-                      <p className="text-slate-600 text-xs">
-                        Get text notifications when your professional is assigned. Reply STOP to opt out.
-                      </p>
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              {/* Required fee acknowledgement */}
-              <label className="flex items-start space-x-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.termsAccepted}
-                  onChange={(e) => handleInputChange('termsAccepted', e.target.checked)}
-                  className="mt-1 h-5 w-5 text-brand border-slate-300 rounded focus:ring-brand"
-                />
-                <span className="text-slate-700 text-sm">
-                  I understand that a $75 Service Request Fee is required before my request can be submitted.
-                </span>
-              </label>
-              {errors.termsAccepted && <p className="text-red-600 text-sm">{errors.termsAccepted}</p>}
-
-              {errors.submit && <p className="text-red-600 text-sm">{errors.submit}</p>}
-
-              <button
-                type="button"
-                disabled={isSubmitting || !formData.termsAccepted}
-                onClick={handleProceedToPayment}
-                aria-label="Pay $75 service request fee via Stripe secure checkout"
-                className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? 'Preparing checkout...' : 'Continue to Secure Payment'}
-              </button>
-
-              <p className="text-xs text-center text-slate-500">
-                This is a one-time service request fee. No work will begin until you approve the estimate. Materials, if needed, will be listed separately in the contractor's final quote. Secure checkout powered by Stripe. Your card information is never stored on our servers.
-              </p>
-            </div>
-          );
-        }
-
-        // All other areas: standard terms step (no paid flow).
         return (
           <div className="space-y-4">
-            <h3 className="text-xl font-bold text-slate-900">Review & Terms</h3>
+            <h3 className="text-xl font-bold text-slate-900">Estimate & Terms</h3>
             <div className="bg-emerald-50 p-6 rounded-lg space-y-3 text-slate-800 border border-emerald-200">
-              <p className="font-semibold text-lg text-emerald-800">✓ Your service request includes:</p>
+              {estimateFee.checked && estimateFee.eligible ? (
+                <div className="rounded-lg border border-emerald-300 bg-white p-4 space-y-2">
+                  <p className="text-sm font-semibold text-slate-900">Service Request Fee</p>
+                  <p className="text-2xl font-bold text-slate-900">${(estimateFee.amountCents / 100).toFixed(0)}</p>
+                  <p className="text-sm text-slate-700 font-medium">Your $75 Service Request Fee includes:</p>
+                </div>
+              ) : (
+                <p className="font-semibold text-lg text-emerald-800">✓ Your estimate request has no upfront fee.</p>
+              )}
               <ul className="space-y-2 text-sm">
-                <li className="flex items-start">
-                  <span className="font-semibold mr-2">•</span>
-                  <span>Professional project estimate from verified local professionals</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="font-semibold mr-2">•</span>
-                  <span>You will receive a detailed quote before any work begins</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="font-semibold mr-2">•</span>
-                  <span>No work will start without your approval</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="font-semibold mr-2">•</span>
-                  <span>Materials (if needed) will be itemized in the final quote</span>
-                </li>
+                {estimateFee.checked && estimateFee.eligible ? (
+                  <>
+                    <li className="flex items-start">
+                      <span className="font-semibold mr-2">•</span>
+                      <span>Professional review of your project</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-semibold mr-2">•</span>
+                      <span>Matching with qualified local professionals</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-semibold mr-2">•</span>
+                      <span>A professional estimate for your project</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-semibold mr-2">•</span>
+                      <span>A contractor will contact you within 24 hours or less</span>
+                    </li>
+                  </>
+                ) : (
+                  <>
+                    <li className="flex items-start">
+                      <span className="font-semibold mr-2">•</span>
+                      <span>Get matched with verified local professionals for free</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-semibold mr-2">•</span>
+                      <span>You will receive a detailed quote before any work begins</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-semibold mr-2">•</span>
+                      <span>No work will start without your approval</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-semibold mr-2">•</span>
+                      <span>Materials (if needed) will be itemized in the final quote</span>
+                    </li>
+                  </>
+                )}
               </ul>
             </div>
-
+            
             <label className="flex items-start space-x-3 cursor-pointer">
               <input
                 type="checkbox"
@@ -723,7 +602,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
                 className="mt-1 h-5 w-5 text-brand border-slate-300 rounded focus:ring-brand"
               />
               <span className="text-slate-700">
-                I understand and agree to the terms for this service request.
+                I understand and agree to the terms for this estimate request.
               </span>
             </label>
             {errors.termsAccepted && <p className="text-red-600 text-sm">{errors.termsAccepted}</p>}
@@ -739,19 +618,14 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-slate-900">
-                {paidSessionId ? 'Service Request Submitted! 🎉' : 'Service Request Submitted! 🎉'}
-              </h3>
+              <h3 className="text-2xl font-bold text-slate-900">Service Request Submitted! 🎉</h3>
               <div className="bg-green-50 p-4 rounded-lg space-y-2 text-sm text-slate-800">
-                <p className="font-semibold text-green-800">✓ Request created</p>
+                <p className="font-semibold text-green-800">✓ Service request created</p>
                 <p className="font-semibold text-green-800">✓ Verified professionals notified</p>
-                {paidSessionId && <p className="font-semibold text-green-800">✓ Payment confirmed</p>}
                 <p className="text-green-700">Request received successfully</p>
               </div>
               <p className="text-slate-700 font-medium">
-                {paidSessionId
-                  ? 'Your service request has been submitted. A qualified local professional will contact you within 24 hours.'
-                  : 'Your service request has been submitted successfully. A professional will contact you soon.'}
+                Your service request has been submitted successfully. A professional will contact you soon.
               </p>
               <p className="text-slate-700 font-medium">
                 📞 Expect a call or text shortly to discuss your project.
@@ -770,7 +644,15 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
           <div className="space-y-4">
             <h3 className="text-xl font-bold text-slate-900">Contact Information</h3>
             <div className="bg-emerald-50 p-3 rounded-lg text-sm text-emerald-800 border border-emerald-200">
-              <strong>Estimate Request</strong>
+              {estimateFee.checked && estimateFee.eligible ? (
+                <strong>
+                  {paymentSessionId
+                    ? 'Service Request Fee paid. Complete your submission below.'
+                    : 'A $75 Service Request Fee is required before submission.'}
+                </strong>
+              ) : (
+                <strong>Estimate Request</strong>
+              )}
             </div>
             <input
               type="text"
@@ -781,7 +663,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
               required
             />
             {errors.name && <p className="text-red-600 text-sm">{errors.name}</p>}
-
+            
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">+1</span>
               <input
@@ -794,7 +676,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
               />
             </div>
             {errors.phone && <p className="text-red-600 text-sm">{errors.phone}</p>}
-
+            
             {/* SMS Consent */}
             <div className="bg-blue-50 p-4 rounded-lg space-y-3">
               <label className="flex items-start space-x-3 cursor-pointer">
@@ -815,6 +697,35 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
 
             {errors.submit && <p className="text-red-600 text-sm">{errors.submit}</p>}
 
+            {estimateFee.checked && estimateFee.eligible && (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5 space-y-3">
+                <h4 className="text-base sm:text-lg font-semibold text-slate-900">
+                  What&apos;s Included in Your $75 Service Request Fee?
+                </h4>
+                <ul className="space-y-2 text-sm text-slate-700">
+                  <li className="flex items-start">
+                    <span className="mr-2 font-semibold">•</span>
+                    <span>Professional project estimate</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2 font-semibold">•</span>
+                    <span>Matching with verified local contractors</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2 font-semibold">•</span>
+                    <span>Priority review of your request</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2 font-semibold">•</span>
+                    <span>A contractor will contact you within 24 hours</span>
+                  </li>
+                </ul>
+                <p className="text-xs sm:text-sm font-medium text-slate-600">
+                  One-time fee. No hidden charges.
+                </p>
+              </div>
+            )}
+
             <button
               type="button"
               disabled={isSubmitting}
@@ -825,7 +736,11 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
               }}
               className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? 'Submitting...' : 'Request Service'}
+              {isSubmitting
+                ? 'Submitting...'
+                : (estimateFee.checked && estimateFee.eligible && !paymentSessionId
+                  ? 'Continue to Payment'
+                  : 'Request Service')}
             </button>
           </div>
         );
