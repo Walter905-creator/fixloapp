@@ -591,33 +591,25 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
         if (estimateFee.eligible) {
           return (
             <div className="space-y-5">
-              <h3 className="text-xl font-bold text-slate-900">$75 Service Request Fee</h3>
+              <h3 className="text-xl font-bold text-slate-900">Review &amp; Payment</h3>
 
               {/* Fee explanation (approved text) */}
               <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-5 space-y-3">
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl font-extrabold text-emerald-700">$75</span>
-                  <p className="font-semibold text-slate-900">Service Request Fee</p>
-                </div>
-                <p className="font-semibold text-slate-800">Your $75 Service Request Fee includes:</p>
+                <p className="font-semibold text-slate-900">Your $75 Service Request Fee Includes:</p>
                 <ul className="space-y-2 text-sm text-slate-700">
-                  <li className="flex items-start">
-                    <span className="mr-2">•</span>
-                    <span>Professional project estimate</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="mr-2">•</span>
-                    <span>Matching with verified local professionals</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="mr-2">•</span>
-                    <span>Priority review of your request</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="mr-2">•</span>
-                    <span>A qualified professional will contact you within 24 hours</span>
-                  </li>
+                  <li>• Professional project estimate from verified local professionals</li>
+                  <li>• Priority review of your project</li>
+                  <li>• Matching with the most qualified local professional</li>
+                  <li>• A professional will contact you within 24 hours or less</li>
+                  <li>• You&apos;ll receive a detailed quote before any work begins</li>
+                  <li>• No work will begin without your approval</li>
+                  <li>• Materials (if needed) will be itemized separately in the contractor&apos;s final quote</li>
                 </ul>
+
+                <p className="text-base font-bold text-slate-900">Service Request Fee: $75</p>
+                <p className="text-sm text-slate-700">
+                  This one-time fee covers the review and processing of your request, the preparation of a professional estimate, and matching you with a qualified local professional. It is not a payment for the repair or construction work itself.
+                </p>
               </div>
 
               {/* Contact info collected here so it can be saved before Stripe redirect */}
@@ -673,7 +665,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
                   className="mt-1 h-5 w-5 text-brand border-slate-300 rounded focus:ring-brand"
                 />
                 <span className="text-slate-700 text-sm">
-                  I understand that a $75 Service Request Fee is required before my request is submitted and that no work will begin without my approval.
+                  I understand that a $75 Service Request Fee is required before my request can be submitted.
                 </span>
               </label>
               {errors.termsAccepted && <p className="text-red-600 text-sm">{errors.termsAccepted}</p>}
@@ -687,7 +679,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
                 aria-label="Pay $75 service request fee via Stripe secure checkout"
                 className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? 'Preparing checkout...' : 'Pay $75 and Submit Request →'}
+                {isSubmitting ? 'Preparing checkout...' : 'Continue to Secure Payment'}
               </button>
 
               <p className="text-xs text-center text-slate-500">
