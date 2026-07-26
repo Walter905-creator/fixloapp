@@ -856,7 +856,7 @@ router.post('/homeowners/:leadId/send-initial-followup', async (req, res) => {
     });
   } catch (err) {
     console.error('❌ /admin/homeowners/:leadId/send-initial-followup error:', err.message);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Failed to send initial follow-up' });
   }
 });
 

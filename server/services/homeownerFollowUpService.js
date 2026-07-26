@@ -85,7 +85,7 @@ async function sendInitialFollowUp(lead, options = {}) {
     throw err;
   }
 
-  const firstName = (lead.name || '').split(' ')[0] || lead.name || 'there';
+  const firstName = (lead.name || '').trim().split(' ')[0] || 'there';
 
   let smsSent = false;
   let emailSent = false;
@@ -125,11 +125,14 @@ async function sendInitialFollowUp(lead, options = {}) {
   }
 
   // ── Persist result ────────────────────────────────────────────────────────────
-  lead.initialFollowUpSent = true;
-  lead.initialFollowUpSentAt = new Date();
+  // Only mark as sent when at least one delivery channel succeeded
+  if (smsSent || emailSent) {
+    lead.initialFollowUpSent = true;
+    lead.initialFollowUpSentAt = new Date();
+  }
   lead.followUpHistory = lead.followUpHistory || [];
   lead.followUpHistory.push({
-    type: 'initial',
+    followUpType: 'initial',
     sentAt: new Date(),
     smsSent,
     emailSent,

@@ -244,7 +244,7 @@ const JobRequestSchema = new mongoose.Schema({
   },
   followUpHistory: [
     {
-      type: { type: String, trim: true },
+      followUpType: { type: String, trim: true },
       sentAt: { type: Date },
       smsSent: { type: Boolean, default: false },
       emailSent: { type: Boolean, default: false },
