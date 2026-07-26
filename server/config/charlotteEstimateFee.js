@@ -1,4 +1,4 @@
-const { geocodeAddress } = require('../utils/geocoding');
+const geocodingService = require('../utils/geocoding');
 
 const CHARLOTTE_ESTIMATE_FEE_ENABLED = String(process.env.CHARLOTTE_ESTIMATE_FEE_ENABLED || 'true').toLowerCase() === 'true';
 const CHARLOTTE_ESTIMATE_FEE_AMOUNT_CENTS = Number(process.env.CHARLOTTE_ESTIMATE_FEE_AMOUNT_CENTS || 7500);
@@ -44,15 +44,20 @@ async function evaluateCharlotteEstimateFeeEligibility({ address, city, state, z
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
     const query = buildLocationQuery({ address, city, state, zip });
     if (!query) {
+      console.warn('[Charlotte] evaluateCharlotteEstimateFeeEligibility: insufficient address', { address, city, state, zip });
       return { eligible: false, reason: 'insufficient_address', amountCents: 0 };
     }
 
+    console.log('[Charlotte] Geocoding query:', query);
     try {
-      const geo = await geocodeAddress(query);
-      lat = Number(geo?.lat);
-      lng = Number(geo?.lng);
-      normalizedAddress = String(geo?.formatted || query);
+      // geocodingService.geocodeLocation returns { coordinates: [lng, lat], address, confidence, ... }
+      const geo = await geocodingService.geocodeLocation(query);
+      lat = Number(geo?.coordinates?.[1]);
+      lng = Number(geo?.coordinates?.[0]);
+      normalizedAddress = String(geo?.address || query);
+      console.log('[Charlotte] Geocode result:', { lat, lng, normalizedAddress, confidence: geo?.confidence });
     } catch (error) {
+      console.error('[Charlotte] Geocoding error:', error.message, { query });
       return {
         eligible: false,
         reason: 'geocode_failed',
@@ -63,6 +68,7 @@ async function evaluateCharlotteEstimateFeeEligibility({ address, city, state, z
   }
 
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    console.warn('[Charlotte] Invalid coordinates after geocoding', { lat, lng });
     return { eligible: false, reason: 'invalid_coordinates', amountCents: 0 };
   }
 
@@ -74,7 +80,7 @@ async function evaluateCharlotteEstimateFeeEligibility({ address, city, state, z
   );
 
   const eligible = miles <= CHARLOTTE_SERVICE_RADIUS_MILES;
-  return {
+  const result = {
     eligible,
     reason: eligible ? 'in_radius' : 'outside_radius',
     amountCents: eligible ? CHARLOTTE_ESTIMATE_FEE_AMOUNT_CENTS : 0,
@@ -82,6 +88,8 @@ async function evaluateCharlotteEstimateFeeEligibility({ address, city, state, z
     location: { lat, lng },
     normalizedAddress
   };
+  console.log('[Charlotte] Eligibility result:', result);
+  return result;
 }
 
 module.exports = {
