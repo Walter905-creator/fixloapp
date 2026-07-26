@@ -145,8 +145,9 @@ async function main() {
    * measured from baseTime (initialSentAt or createdAt).
    */
   function computeNextAt(baseTime, step) {
+    if (!baseTime || step < 0 || step >= FOLLOW_UP_TIMINGS.length) return null;
     const hourOffset = FOLLOW_UP_TIMINGS[step];
-    if (hourOffset === undefined || !baseTime) return null;
+    if (hourOffset === undefined) return null;
     return new Date(new Date(baseTime).getTime() + hourOffset * 60 * 60 * 1000);
   }
 
@@ -300,28 +301,36 @@ async function main() {
     // 3. Compute nextSmsFollowUpAt if missing
     if (smsAvail && !lead.followUp.nextSmsFollowUpAt) {
       const smsStep = Math.max(0, Number(lead.followUp.smsStep || 0));
-      const base = lead.followUp.initialSmsSentAt || lead.createdAt || new Date();
-      const nextAt = computeNextAt(base, smsStep);
-      if (nextAt) {
-        lead.followUp.smsStep = smsStep;
-        lead.followUp.smsEnabled = true;
-        lead.followUp.nextSmsFollowUpAt = nextAt;
-        if (!lead.followUp.initialSmsSentAt) lead.followUp.initialSmsSentAt = base;
-        changed = true;
+      const base = lead.followUp.initialSmsSentAt || lead.createdAt;
+      if (!base) {
+        console.log(`  ⚠  ${lead._id}: no createdAt — skipping SMS date repair`);
+      } else {
+        const nextAt = computeNextAt(base, smsStep);
+        if (nextAt) {
+          lead.followUp.smsStep = smsStep;
+          lead.followUp.smsEnabled = true;
+          lead.followUp.nextSmsFollowUpAt = nextAt;
+          if (!lead.followUp.initialSmsSentAt) lead.followUp.initialSmsSentAt = base;
+          changed = true;
+        }
       }
     }
 
     // 4. Compute nextEmailFollowUpAt if missing
     if (emailAvail && !lead.followUp.nextEmailFollowUpAt) {
       const emailStep = Math.max(0, Number(lead.followUp.emailStep || 0));
-      const base = lead.followUp.initialEmailSentAt || lead.createdAt || new Date();
-      const nextAt = computeNextAt(base, emailStep);
-      if (nextAt) {
-        lead.followUp.emailStep = emailStep;
-        lead.followUp.emailEnabled = true;
-        lead.followUp.nextEmailFollowUpAt = nextAt;
-        if (!lead.followUp.initialEmailSentAt) lead.followUp.initialEmailSentAt = base;
-        changed = true;
+      const base = lead.followUp.initialEmailSentAt || lead.createdAt;
+      if (!base) {
+        console.log(`  ⚠  ${lead._id}: no createdAt — skipping email date repair`);
+      } else {
+        const nextAt = computeNextAt(base, emailStep);
+        if (nextAt) {
+          lead.followUp.emailStep = emailStep;
+          lead.followUp.emailEnabled = true;
+          lead.followUp.nextEmailFollowUpAt = nextAt;
+          if (!lead.followUp.initialEmailSentAt) lead.followUp.initialEmailSentAt = base;
+          changed = true;
+        }
       }
     }
 
@@ -335,7 +344,11 @@ async function main() {
       .sort((a, b) => a - b);
 
     const computedNext = candidateDates[0] || null;
-    if (String(lead.followUp.nextFollowUpAt) !== String(computedNext)) {
+    const currentNextMs = lead.followUp.nextFollowUpAt
+      ? new Date(lead.followUp.nextFollowUpAt).getTime()
+      : null;
+    const computedNextMs = computedNext ? computedNext.getTime() : null;
+    if (currentNextMs !== computedNextMs) {
       lead.followUp.nextFollowUpAt = computedNext;
       changed = true;
     }
@@ -405,7 +418,7 @@ async function main() {
     const phone = f.phone || '—';
     const email = f.email || '—';
 
-    const smsHistory = (f.smsHistory || []).filter(h => h.direction === 'outbound');
+    const smsHistory = (f.smsHistory || []).filter(h => h && h.direction === 'outbound');
     const emailHistory = f.emailHistory || [];
     const lastSms = smsHistory.slice().reverse()[0] || null;
     const lastEmail = emailHistory.slice().reverse()[0] || null;
