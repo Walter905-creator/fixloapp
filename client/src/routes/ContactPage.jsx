@@ -81,7 +81,7 @@ export default function ContactPage(){
               <div>
                 <h3 className="font-semibold text-slate-900 mb-2">How much does it cost to use Fixlo?</h3>
                 <p className="text-sm text-slate-700">
-                  Homeowner quote requests are completely free — no upfront fees, no obligations. Get matched with verified local professionals and receive a detailed quote before any work begins. For professionals, we offer a flat monthly subscription with no per-lead fees.
+                  Submit a service request and get matched with verified local professionals who will provide a detailed quote before any work begins. No work starts without your approval. For professionals, we offer a flat monthly subscription with no per-lead fees.
                 </p>
               </div>
               
