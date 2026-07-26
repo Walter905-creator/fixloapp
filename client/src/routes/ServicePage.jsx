@@ -278,11 +278,11 @@ export default function ServicePage({ legacy = false }){
           <p className="text-slate-700 mt-6">
             {IS_HOLIDAY_SEASON ? (
               <>
-                <strong>Get your home ready for the holidays!</strong> Fill out the form below to get a free quote from trusted {serviceName.toLowerCase()} professionals in {cityName}. No upfront fees, no obligations.
+                <strong>Get your home ready for the holidays!</strong> Fill out the form below to connect with trusted {serviceName.toLowerCase()} professionals in {cityName}. A qualified professional will contact you to discuss your project.
                 <span className="italic text-slate-600"> ¡Haz que tu casa esté lista para Navidad – reserva ahora!</span>
               </>
             ) : (
-              <>Ready to get started? Fill out the form below to get a free quote from trusted {serviceName.toLowerCase()} professionals in {cityName}. No upfront fees, no obligations — completely free to request.</>
+              <>Ready to get started? Fill out the form below to connect with trusted {serviceName.toLowerCase()} professionals in {cityName}. A qualified professional will contact you to discuss your project and provide a detailed quote before any work begins.</>
             )}
           </p>
         </div>

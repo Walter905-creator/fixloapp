@@ -108,10 +108,10 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
     }
 
     if (step === 6) {
-      // For Charlotte (eligible fee), terms are accepted by completing the Stripe checkout.
-      // The $75 fee explanation shown in step 6 serves as the terms disclosure for Charlotte users.
-      // Only require the terms checkbox for non-Charlotte requests.
-      if (!estimateFee.eligible && !formData.termsAccepted) {
+      // Both Charlotte (eligible) and non-Charlotte paths require the terms checkbox.
+      // For Charlotte users the button is also disabled until checked; this validation
+      // prevents navigating forward via the footer Next button.
+      if (!formData.termsAccepted && !estimateFee.eligible) {
         newErrors.termsAccepted = 'You must accept the terms to continue';
       }
     }
@@ -576,26 +576,48 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
         );
 
       case 6:
-        // Charlotte users: show $75 Service Request Fee explanation and collect contact info
-        // before redirecting to Stripe. Non-Charlotte: show standard terms.
-        if (estimateFee.checked && estimateFee.eligible) {
+        // Show a loading state while the eligibility check is in flight so Charlotte
+        // users never accidentally land on the non-payment branch.
+        if (!estimateFee.checked) {
+          return (
+            <div className="space-y-5 text-center py-10">
+              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-brand border-r-transparent" />
+              <p className="text-slate-600">Checking your service area…</p>
+            </div>
+          );
+        }
+
+        // Charlotte / eligible addresses: $75 Service Request Fee flow → Stripe Checkout.
+        if (estimateFee.eligible) {
           return (
             <div className="space-y-5">
               <h3 className="text-xl font-bold text-slate-900">$75 Service Request Fee</h3>
 
-              {/* Fee explanation (exact required text) */}
+              {/* Fee explanation (approved text) */}
               <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-5 space-y-3">
                 <div className="flex items-center gap-3">
                   <span className="text-3xl font-extrabold text-emerald-700">$75</span>
-                  <div>
-                    <p className="font-semibold text-slate-900">Service Request Fee</p>
-                    <p className="text-xs text-slate-500">One-time fee. No hidden charges.</p>
-                  </div>
+                  <p className="font-semibold text-slate-900">Service Request Fee</p>
                 </div>
-                <p className="text-sm text-slate-700">
-                  Includes a professional project estimate and matching with a qualified local
-                  professional who will contact you within 24 hours.
-                </p>
+                <p className="font-semibold text-slate-800">Your $75 Service Request Fee includes:</p>
+                <ul className="space-y-2 text-sm text-slate-700">
+                  <li className="flex items-start">
+                    <span className="mr-2">•</span>
+                    <span>Professional project estimate</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2">•</span>
+                    <span>Matching with verified local professionals</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2">•</span>
+                    <span>Priority review of your request</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2">•</span>
+                    <span>A qualified professional will contact you within 24 hours</span>
+                  </li>
+                </ul>
               </div>
 
               {/* Contact info collected here so it can be saved before Stripe redirect */}
@@ -642,11 +664,25 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
                 </div>
               </div>
 
+              {/* Required fee acknowledgement */}
+              <label className="flex items-start space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.termsAccepted}
+                  onChange={(e) => handleInputChange('termsAccepted', e.target.checked)}
+                  className="mt-1 h-5 w-5 text-brand border-slate-300 rounded focus:ring-brand"
+                />
+                <span className="text-slate-700 text-sm">
+                  I understand that a $75 Service Request Fee is required before my request is submitted and that no work will begin without my approval.
+                </span>
+              </label>
+              {errors.termsAccepted && <p className="text-red-600 text-sm">{errors.termsAccepted}</p>}
+
               {errors.submit && <p className="text-red-600 text-sm">{errors.submit}</p>}
 
               <button
                 type="button"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !formData.termsAccepted}
                 onClick={handleProceedToPayment}
                 aria-label="Pay $75 service request fee via Stripe secure checkout"
                 className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -655,22 +691,25 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
               </button>
 
               <p className="text-xs text-center text-slate-500">
+                This is a one-time service request fee. No work will begin until you approve the estimate. Materials, if needed, will be listed separately in the contractor's final quote.
+              </p>
+              <p className="text-xs text-center text-slate-500">
                 Secure checkout powered by Stripe. Your card information is never stored on our servers.
               </p>
             </div>
           );
         }
 
-        // Non-Charlotte: standard terms step
+        // All other areas: standard terms step (no paid flow).
         return (
           <div className="space-y-4">
-            <h3 className="text-xl font-bold text-slate-900">Estimate & Terms</h3>
+            <h3 className="text-xl font-bold text-slate-900">Review & Terms</h3>
             <div className="bg-emerald-50 p-6 rounded-lg space-y-3 text-slate-800 border border-emerald-200">
-              <p className="font-semibold text-lg text-emerald-800">✓ Your estimate request has no upfront fee.</p>
+              <p className="font-semibold text-lg text-emerald-800">✓ Your service request includes:</p>
               <ul className="space-y-2 text-sm">
                 <li className="flex items-start">
                   <span className="font-semibold mr-2">•</span>
-                  <span>Get matched with verified local professionals for free</span>
+                  <span>Professional project estimate from verified local professionals</span>
                 </li>
                 <li className="flex items-start">
                   <span className="font-semibold mr-2">•</span>
@@ -695,7 +734,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
                 className="mt-1 h-5 w-5 text-brand border-slate-300 rounded focus:ring-brand"
               />
               <span className="text-slate-700">
-                I understand and agree to the terms for this estimate request.
+                I understand and agree to the terms for this service request.
               </span>
             </label>
             {errors.termsAccepted && <p className="text-red-600 text-sm">{errors.termsAccepted}</p>}
@@ -712,7 +751,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
                 </svg>
               </div>
               <h3 className="text-2xl font-bold text-slate-900">
-                {paidSessionId ? 'Service Request Submitted! 🎉' : 'Free Quote Request Submitted! 🎉'}
+                {paidSessionId ? 'Service Request Submitted! 🎉' : 'Service Request Submitted! 🎉'}
               </h3>
               <div className="bg-green-50 p-4 rounded-lg space-y-2 text-sm text-slate-800">
                 <p className="font-semibold text-green-800">✓ Request created</p>
@@ -723,7 +762,7 @@ export default function ServiceIntakeModal({ open, onClose, defaultCity, default
               <p className="text-slate-700 font-medium">
                 {paidSessionId
                   ? 'Your service request has been submitted. A qualified local professional will contact you within 24 hours.'
-                  : 'Your free quote request has been submitted successfully. A professional will contact you soon.'}
+                  : 'Your service request has been submitted successfully. A professional will contact you soon.'}
               </p>
               <p className="text-slate-700 font-medium">
                 📞 Expect a call or text shortly to discuss your project.

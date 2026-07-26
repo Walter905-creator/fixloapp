@@ -239,7 +239,7 @@ export function generateCompetitorFAQ(competitorId) {
     },
     {
       question: `How much does Fixlo cost for homeowners?`,
-      answer: `Homeowner quote requests on Fixlo are completely free — no upfront fees, no membership fees, no hidden charges. Submit a free request and get connected with trusted local professionals. You only pay for the actual work once you've reviewed and accepted a quote.`
+      answer: `Homeowner service request fees on Fixlo vary by service area. Submit a request and get connected with trusted local professionals. You will receive a detailed quote before any work begins — no work starts without your approval.`
     },
     {
       question: `Does Fixlo do background checks on professionals?`,
