@@ -126,32 +126,38 @@ export default function ServiceRequestScreen({ navigation }) {
   const authorizeApplePayment = async (requestId) => {
     console.log('🍎 Initiating Apple Pay authorization for:', requestId);
 
-    // TODO: Implement actual Apple Pay integration
-    // For now, we'll simulate the authorization
-    // In production, this would use expo-apple-pay or similar library
+    // ⚠️ DEVELOPMENT ONLY — mock Apple Pay is disabled in production.
+    // Real Apple Pay integration requires expo-apple-pay or a native module
+    // with a production merchant identifier and actual payment processing.
+    if (!__DEV__) {
+      throw new Error(
+        'Apple Pay is not yet available in production. Please use the website to complete payment.'
+      );
+    }
+
+    // TODO: Implement actual Apple Pay integration for production.
+    // In production this would use expo-apple-pay or similar library:
+    // const { paymentToken, transactionId } = await ApplePay.requestPayment({
+    //   merchantIdentifier: 'merchant.com.fixloapp',
+    //   merchantCapabilities: ['3DS', 'debit', 'credit'],
+    //   supportedNetworks: ['visa', 'mastercard', 'amex', 'discover'],
+    //   countryCode: 'US',
+    //   currencyCode: 'USD',
+    //   paymentSummaryItems: [{
+    //     label: 'Fixlo Service Request Fee',
+    //     amount: '75.00'
+    //   }]
+    // });
 
     try {
-      // Simulate Apple Pay sheet
+      // Development only: simulate Apple Pay sheet delay
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // In real implementation, this would be:
-      // const { paymentToken, transactionId } = await ApplePay.requestPayment({
-      //   merchantIdentifier: 'merchant.com.fixloapp',
-      //   merchantCapabilities: ['3DS', 'debit', 'credit'],
-      //   supportedNetworks: ['visa', 'mastercard', 'amex', 'discover'],
-      //   countryCode: 'US',
-      //   currencyCode: 'USD',
-      //   paymentSummaryItems: [{
-      //     label: 'Fixlo Visit Fee Authorization',
-      //     amount: '150.00'
-      //   }]
-      // });
-
-      // For development: simulate successful authorization
+      // Development only: use mock tokens (NOT valid for production payment)
       const mockPaymentToken = 'applepay_mock_' + Date.now();
-      const mockTransactionId = 'txn_' + Date.now();
+      const mockTransactionId = 'txn_dev_' + Date.now();
 
-      console.log('🍎 Apple Pay authorized:', { mockPaymentToken, mockTransactionId });
+      console.log('🍎 [DEV] Mock Apple Pay token generated (not a real payment):', { mockPaymentToken, mockTransactionId });
 
       // Attach Apple Pay authorization to request
       const apiUrl = buildApiUrl(API_ENDPOINTS.REQUESTS_APPLE_PAY(requestId));
@@ -163,7 +169,7 @@ export default function ServiceRequestScreen({ navigation }) {
         headers: { 'Content-Type': 'application/json' },
       });
 
-      console.log('✅ Apple Pay authorization attached to request');
+      console.log('✅ [DEV] Mock Apple Pay authorization attached to request');
       return { success: true, paymentToken: mockPaymentToken };
 
     } catch (error) {

@@ -351,6 +351,20 @@ preflight("/api/requests");
 preflight("/api/invite-codes/validate");
 preflight("/api/*", "POST, OPTIONS, GET, PUT, DELETE, HEAD");
 
+// ----------------------- CSRF Token Endpoint -----------------------
+// IMPORTANT: Must be registered BEFORE any broad app.use("/api", router)
+// mounts that carry global requireUser middleware (messages, notifications,
+// calendar, documents).  Those routers apply requireUser to every request
+// that enters them, which returns 401 for unauthenticated GET /api/csrf-token
+// before the endpoint below can respond.
+//
+// GET /api/csrf-token is a public, unauthenticated endpoint — no login needed.
+// It is a GET (safe/idempotent), so csurf does not require a token to access it.
+// GET /api/csrf-token → { csrfToken: "..." }
+app.get('/api/csrf-token', (req, res) => {
+  return res.json({ csrfToken: req.csrfToken() });
+});
+
 // ----------------------- Routes -----------------------
 // Note: Cloudinary signing route is required for Pro photo uploads
 app.use("/api/cloudinary", require("./routes/cloudinary")); // POST /api/cloudinary/sign
@@ -886,15 +900,6 @@ app.post("/api/signup/pro", async (req, res) => {
       .status(500)
       .json({ success: false, message: err.message || "Server error" });
   }
-});
-
-// ----------------------- CSRF Token Endpoint -----------------------
-// Issues a CSRF token so that browser-based clients can include it as
-// the `x-csrf-token` (or `_csrf` body field) in subsequent state-changing
-// requests.  Call this endpoint first from your SPA/form before any POST.
-// GET /api/csrf-token → { csrfToken: "..." }
-app.get('/api/csrf-token', (req, res) => {
-  return res.json({ csrfToken: req.csrfToken() });
 });
 
 // ----------------------- Health & Meta -----------------------
