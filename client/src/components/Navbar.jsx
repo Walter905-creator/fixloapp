@@ -9,7 +9,7 @@ const mainItems = [
   { to: '/how-it-works', label: 'How It Works' },
   { to: '/services', label: 'Services' },
   { to: '/about', label: 'About Us' },
-  { to: '/blog', label: 'Blog' }
+  { to: '/contact', label: 'Contact' }
 ];
 
 const loginGroups = [
