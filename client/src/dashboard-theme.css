@@ -1,0 +1,222 @@
+/* Fixlo dashboard presentation layer.
+   Scoped to dashboard routes so public pages and business logic remain unchanged. */
+body.fixlo-dashboard-theme {
+  background: #f5f4ef;
+  color: #161616;
+}
+
+body.fixlo-dashboard-theme #root {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top right, rgba(251, 191, 36, 0.12), transparent 28rem),
+    #f5f4ef;
+}
+
+body.fixlo-dashboard-theme header {
+  border-bottom-color: rgba(251, 191, 36, 0.28) !important;
+  background: #080808 !important;
+  color: #fff !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.16);
+}
+
+body.fixlo-dashboard-theme header a,
+body.fixlo-dashboard-theme header button {
+  color: rgba(255, 255, 255, 0.82) !important;
+}
+
+body.fixlo-dashboard-theme header a:hover,
+body.fixlo-dashboard-theme header button:hover {
+  color: #fbbf24 !important;
+}
+
+body.fixlo-dashboard-theme main,
+body.fixlo-dashboard-theme .container-xl {
+  position: relative;
+}
+
+body.fixlo-dashboard-theme h1 {
+  color: #111 !important;
+  letter-spacing: -0.035em;
+}
+
+body.fixlo-dashboard-theme h1::after {
+  content: '';
+  display: block;
+  width: 4.25rem;
+  height: 0.28rem;
+  margin-top: 0.65rem;
+  border-radius: 999px;
+  background: #fbbf24;
+}
+
+body.fixlo-dashboard-theme h2,
+body.fixlo-dashboard-theme h3 {
+  letter-spacing: -0.02em;
+}
+
+/* Dashboard cards and panels */
+body.fixlo-dashboard-theme .card,
+body.fixlo-dashboard-theme [class*='bg-white'][class*='rounded'],
+body.fixlo-dashboard-theme [class*='bg-slate-50'][class*='rounded'],
+body.fixlo-dashboard-theme [class*='bg-gray-50'][class*='rounded'] {
+  border-color: #e7e1d2 !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 12px 34px rgba(25, 21, 12, 0.07) !important;
+}
+
+body.fixlo-dashboard-theme .card:hover,
+body.fixlo-dashboard-theme a[class*='rounded'][class*='border']:hover {
+  border-color: rgba(245, 158, 11, 0.58) !important;
+  box-shadow: 0 18px 42px rgba(25, 21, 12, 0.12) !important;
+  transform: translateY(-2px);
+}
+
+body.fixlo-dashboard-theme .card,
+body.fixlo-dashboard-theme a[class*='rounded'][class*='border'],
+body.fixlo-dashboard-theme button {
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease, background-color 180ms ease, color 180ms ease;
+}
+
+/* Primary actions */
+body.fixlo-dashboard-theme .btn-primary,
+body.fixlo-dashboard-theme button[class*='bg-blue-'],
+body.fixlo-dashboard-theme button[class*='bg-emerald-'],
+body.fixlo-dashboard-theme button[class*='bg-green-'],
+body.fixlo-dashboard-theme a[class*='bg-blue-'],
+body.fixlo-dashboard-theme a[class*='bg-emerald-'],
+body.fixlo-dashboard-theme a[class*='bg-green-'] {
+  border-color: #fbbf24 !important;
+  background: #fbbf24 !important;
+  color: #111 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 8px 20px rgba(245, 158, 11, 0.22) !important;
+}
+
+body.fixlo-dashboard-theme .btn-primary:hover,
+body.fixlo-dashboard-theme button[class*='bg-blue-']:hover,
+body.fixlo-dashboard-theme button[class*='bg-emerald-']:hover,
+body.fixlo-dashboard-theme button[class*='bg-green-']:hover,
+body.fixlo-dashboard-theme a[class*='bg-blue-']:hover,
+body.fixlo-dashboard-theme a[class*='bg-emerald-']:hover,
+body.fixlo-dashboard-theme a[class*='bg-green-']:hover {
+  background: #f59e0b !important;
+  color: #000 !important;
+}
+
+body.fixlo-dashboard-theme button[class*='border'],
+body.fixlo-dashboard-theme a[class*='border'] {
+  border-radius: 0.8rem !important;
+}
+
+/* Metrics */
+body.fixlo-dashboard-theme [class*='text-2xl'][class*='font-bold'],
+body.fixlo-dashboard-theme [class*='text-3xl'][class*='font-bold'],
+body.fixlo-dashboard-theme [class*='text-4xl'][class*='font-bold'] {
+  color: #111 !important;
+}
+
+body.fixlo-dashboard-theme [class*='text-xs'][class*='text-gray-'],
+body.fixlo-dashboard-theme [class*='text-sm'][class*='text-gray-'],
+body.fixlo-dashboard-theme [class*='text-slate-500'],
+body.fixlo-dashboard-theme [class*='text-slate-600'] {
+  color: #6b6458 !important;
+}
+
+/* Tables */
+body.fixlo-dashboard-theme table {
+  overflow: hidden;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid #e7e1d2;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 12px 34px rgba(25, 21, 12, 0.06);
+}
+
+body.fixlo-dashboard-theme thead,
+body.fixlo-dashboard-theme thead tr,
+body.fixlo-dashboard-theme th {
+  background: #111 !important;
+  color: #fbbf24 !important;
+}
+
+body.fixlo-dashboard-theme th {
+  border-color: #2a2a2a !important;
+  font-size: 0.72rem;
+  font-weight: 800 !important;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+body.fixlo-dashboard-theme td {
+  border-color: #eee9dd !important;
+}
+
+body.fixlo-dashboard-theme tbody tr:hover td {
+  background: #fffbeb !important;
+}
+
+/* Inputs and filters */
+body.fixlo-dashboard-theme input,
+body.fixlo-dashboard-theme select,
+body.fixlo-dashboard-theme textarea {
+  border-color: #ddd5c2 !important;
+  border-radius: 0.75rem !important;
+  background: #fff !important;
+  color: #171717 !important;
+}
+
+body.fixlo-dashboard-theme input:focus,
+body.fixlo-dashboard-theme select:focus,
+body.fixlo-dashboard-theme textarea:focus {
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18) !important;
+  outline: none !important;
+}
+
+/* Tabs, badges and secondary navigation */
+body.fixlo-dashboard-theme [class*='bg-slate-900'],
+body.fixlo-dashboard-theme [class*='bg-gray-900'] {
+  background: #111 !important;
+}
+
+body.fixlo-dashboard-theme [class*='text-blue-600'],
+body.fixlo-dashboard-theme [class*='text-blue-700'],
+body.fixlo-dashboard-theme [class*='text-indigo-700'],
+body.fixlo-dashboard-theme [class*='text-purple-700'],
+body.fixlo-dashboard-theme [class*='text-emerald-600'],
+body.fixlo-dashboard-theme [class*='text-green-700'] {
+  color: #a16207 !important;
+}
+
+body.fixlo-dashboard-theme [class*='bg-blue-50'],
+body.fixlo-dashboard-theme [class*='bg-indigo-50'],
+body.fixlo-dashboard-theme [class*='bg-green-50'],
+body.fixlo-dashboard-theme [class*='bg-emerald-50'],
+body.fixlo-dashboard-theme [class*='bg-sky-50'],
+body.fixlo-dashboard-theme [class*='bg-cyan-'] {
+  background: #fffbeb !important;
+}
+
+body.fixlo-dashboard-theme [class*='border-blue-'],
+body.fixlo-dashboard-theme [class*='border-green-'],
+body.fixlo-dashboard-theme [class*='border-emerald-'],
+body.fixlo-dashboard-theme [class*='border-indigo-'] {
+  border-color: #f6d675 !important;
+}
+
+/* Mobile density and horizontal tables */
+@media (max-width: 767px) {
+  body.fixlo-dashboard-theme .container-xl {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  body.fixlo-dashboard-theme h1 {
+    font-size: 1.65rem !important;
+  }
+
+  body.fixlo-dashboard-theme table {
+    font-size: 0.82rem;
+  }
+}
