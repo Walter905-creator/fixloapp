@@ -1,31 +1,29 @@
 // client/scripts/generate-sitemap.mjs
 import fs from "fs";
 import path from "path";
+import { PRO_CITIES, PRO_TRADES } from "../src/seo/proSeoData.js";
 
 const PUBLIC_DIR = path.join(process.cwd(), "public");
-const SITE = "https://www.fixloapp.com"; // canonical origin (no trailing slash)
-const TODAY = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+const SITE = "https://www.fixloapp.com";
+const TODAY = new Date().toISOString().slice(0, 10);
 
-// 1) Static pages
 const STATIC_PATHS = [
-  "/", "/pricing", "/services", "/terms"
+  "/", "/pricing", "/services", "/terms", "/pros", "/pros/signup"
 ];
 
-// 2) Services (top-level)
 const SERVICES = [
-  "plumbing","electrical","carpentry","painting","hvac",
-  "roofing","landscaping","house-cleaning","junk-removal"
+  "plumbing", "electrical", "carpentry", "painting", "hvac",
+  "roofing", "landscaping", "house-cleaning", "junk-removal", "handyman"
 ];
 
-// 3) Cities (example starter list — extend/replace from your data source)
 const CITIES = [
-  "miami-fl", "new-york-ny", "los-angeles-ca", "chicago-il", "houston-tx", "phoenix-az"
+  "charlotte-nc", "raleigh-nc", "greensboro-nc", "atlanta-ga",
+  "miami-fl", "orlando-fl", "tampa-fl", "los-angeles-ca",
+  "chicago-il", "houston-tx", "dallas-tx", "phoenix-az"
 ];
 
-// Build full URL
-const url = (p) => `${SITE}${p.startsWith("/") ? "" : "/"}${p}`.replace(/\/+$/,""); // no trailing slash
+const url = (p) => `${SITE}${p.startsWith("/") ? "" : "/"}${p}`.replace(/\/+$/, "");
 
-// Compose url entries
 function makeURLEntry(loc, priority = "0.60", changefreq = "weekly") {
   return (
 `  <url>
@@ -37,22 +35,23 @@ function makeURLEntry(loc, priority = "0.60", changefreq = "weekly") {
   );
 }
 
-// Generate the full list
 function generateURLs() {
   const urls = new Set();
 
-  // static
-  STATIC_PATHS.forEach(p => urls.add(makeURLEntry(url(p), "0.80", "weekly")));
+  STATIC_PATHS.forEach((p) => urls.add(makeURLEntry(url(p), "0.80", "weekly")));
 
-  // service hubs
-  SERVICES.forEach(svc => urls.add(makeURLEntry(url(`/services/${svc}`), "0.80", "weekly")));
-
-  // service + city pages
-  SERVICES.forEach(svc => {
-    CITIES.forEach(city => {
-      urls.add(makeURLEntry(url(`/services/${svc}/${city}`), "0.60", "weekly"));
+  SERVICES.forEach((service) => {
+    urls.add(makeURLEntry(url(`/services/${service}`), "0.80", "weekly"));
+    CITIES.forEach((city) => {
+      urls.add(makeURLEntry(url(`/services/${service}/${city}`), "0.60", "weekly"));
     });
   });
+
+  for (const tradeSlug of Object.keys(PRO_TRADES)) {
+    for (const citySlug of Object.keys(PRO_CITIES)) {
+      urls.add(makeURLEntry(url(`/${tradeSlug}-jobs/${citySlug}`), "0.72", "weekly"));
+    }
+  }
 
   return Array.from(urls);
 }
@@ -74,7 +73,7 @@ ${urlEntries.join("\n")}
 
 function writeIndexedSitemaps(urlEntries) {
   fs.mkdirSync(PUBLIC_DIR, { recursive: true });
-  const chunkSize = 45000; // leave buffer below 50k
+  const chunkSize = 45000;
   const parts = [];
 
   for (let i = 0; i < urlEntries.length; i += chunkSize) {
@@ -94,12 +93,11 @@ ${chunk.join("\n")}
     console.info(`[sitemap] Wrote part ${parts.length} with ${chunk.length} URLs → ${fname}`);
   }
 
-  // Write index
   const indexXml =
 `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${parts.map(p => `  <sitemap>
-    <loc>${SITE}/${p}</loc>
+${parts.map((part) => `  <sitemap>
+    <loc>${SITE}/${part}</loc>
     <lastmod>${TODAY}</lastmod>
   </sitemap>`).join("\n")}
 </sitemapindex>
