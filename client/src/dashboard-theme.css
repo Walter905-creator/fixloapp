@@ -54,7 +54,6 @@ body.fixlo-dashboard-theme h3 {
   letter-spacing: -0.02em;
 }
 
-/* Dashboard cards and panels */
 body.fixlo-dashboard-theme .card,
 body.fixlo-dashboard-theme [class*='bg-white'][class*='rounded'],
 body.fixlo-dashboard-theme [class*='bg-slate-50'][class*='rounded'],
@@ -77,7 +76,6 @@ body.fixlo-dashboard-theme button {
   transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease, background-color 180ms ease, color 180ms ease;
 }
 
-/* Primary actions */
 body.fixlo-dashboard-theme .btn-primary,
 body.fixlo-dashboard-theme button[class*='bg-blue-'],
 body.fixlo-dashboard-theme button[class*='bg-emerald-'],
@@ -108,7 +106,6 @@ body.fixlo-dashboard-theme a[class*='border'] {
   border-radius: 0.8rem !important;
 }
 
-/* Metrics */
 body.fixlo-dashboard-theme [class*='text-2xl'][class*='font-bold'],
 body.fixlo-dashboard-theme [class*='text-3xl'][class*='font-bold'],
 body.fixlo-dashboard-theme [class*='text-4xl'][class*='font-bold'] {
@@ -122,7 +119,6 @@ body.fixlo-dashboard-theme [class*='text-slate-600'] {
   color: #6b6458 !important;
 }
 
-/* Tables */
 body.fixlo-dashboard-theme table {
   overflow: hidden;
   border-collapse: separate;
@@ -156,7 +152,6 @@ body.fixlo-dashboard-theme tbody tr:hover td {
   background: #fffbeb !important;
 }
 
-/* Inputs and filters */
 body.fixlo-dashboard-theme input,
 body.fixlo-dashboard-theme select,
 body.fixlo-dashboard-theme textarea {
@@ -174,7 +169,6 @@ body.fixlo-dashboard-theme textarea:focus {
   outline: none !important;
 }
 
-/* Tabs, badges and secondary navigation */
 body.fixlo-dashboard-theme [class*='bg-slate-900'],
 body.fixlo-dashboard-theme [class*='bg-gray-900'] {
   background: #111 !important;
@@ -205,7 +199,6 @@ body.fixlo-dashboard-theme [class*='border-indigo-'] {
   border-color: #f6d675 !important;
 }
 
-/* Mobile density and horizontal tables */
 @media (max-width: 767px) {
   body.fixlo-dashboard-theme .container-xl {
     padding-left: 1rem !important;
@@ -218,5 +211,25 @@ body.fixlo-dashboard-theme [class*='border-indigo-'] {
 
   body.fixlo-dashboard-theme table {
     font-size: 0.82rem;
+  }
+
+  /* Mobile menu links use white cards, so force readable dark text. */
+  body.fixlo-dashboard-theme header .fixed nav a:not([class*='bg-slate-900']),
+  body.fixlo-dashboard-theme header .fixed nav button:not([class*='bg-slate-900']) {
+    color: #171717 !important;
+  }
+
+  body.fixlo-dashboard-theme header .fixed nav a:hover,
+  body.fixlo-dashboard-theme header .fixed nav button:hover {
+    color: #92400e !important;
+  }
+
+  body.fixlo-dashboard-theme header .fixed nav p {
+    color: #fbbf24 !important;
+  }
+
+  body.fixlo-dashboard-theme header .fixed nav a[class*='bg-slate-900'],
+  body.fixlo-dashboard-theme header .fixed nav button[class*='bg-slate-900'] {
+    color: #fff !important;
   }
 }
