@@ -3,11 +3,12 @@
   "version": "1.7.0",
   "type": "module",
   "scripts": {
-    "prebuild": "node scripts/fix-admin-jobs-syntax.mjs && node scripts/fetch-images.mjs",
+    "prebuild": "node scripts/fix-admin-jobs-syntax.mjs && node scripts/fetch-images.mjs && node scripts/generate-pro-seo-pages.mjs",
     "build": "npm run prebuild && vite build",
     "dev": "vite",
     "preview": "vite preview",
     "generate:sitemap": "node scripts/generate-sitemap.mjs",
+    "generate:pro-seo": "node scripts/generate-pro-seo-pages.mjs",
     "cap:sync": "npx cap sync",
     "cap:open:ios": "npx cap open ios",
     "cap:open:android": "npx cap open android"
