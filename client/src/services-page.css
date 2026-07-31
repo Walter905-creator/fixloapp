@@ -1,0 +1,95 @@
+/* Scoped presentation for the public services directory. */
+.fixlo-services-page {
+  min-height: 100vh;
+  padding-bottom: 6.5rem;
+  background:
+    radial-gradient(circle at top right, rgba(251, 191, 36, 0.12), transparent 28rem),
+    #f7f5ef;
+  color: #171717;
+}
+
+.fixlo-services-page .services-hero {
+  overflow: hidden;
+  border: 1px solid rgba(251, 191, 36, 0.28);
+  border-radius: 1.5rem;
+  background: #0a0a0a;
+  color: #fff;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.16);
+}
+
+.fixlo-services-page .services-hero h1,
+.fixlo-services-page .services-hero p {
+  color: #fff !important;
+}
+
+.fixlo-services-page .services-gold {
+  color: #fbbf24 !important;
+}
+
+.fixlo-services-page .services-trust {
+  border: 1px solid #eadfbd;
+  background: #fff;
+  box-shadow: 0 12px 34px rgba(25, 21, 12, 0.07);
+}
+
+.fixlo-services-page .services-card {
+  border: 1px solid #e6dfcf;
+  border-radius: 1.15rem;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(25, 21, 12, 0.06);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.fixlo-services-page .services-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(245, 158, 11, 0.58);
+  box-shadow: 0 18px 40px rgba(25, 21, 12, 0.11);
+}
+
+.fixlo-services-page .services-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.9rem;
+  border: 1px solid #fbbf24;
+  border-radius: 0.85rem;
+  padding: 0.75rem 1.2rem;
+  background: #fbbf24;
+  color: #111 !important;
+  font-weight: 800;
+  box-shadow: 0 8px 20px rgba(245, 158, 11, 0.2);
+  transition: background-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.fixlo-services-page .services-button:hover {
+  transform: translateY(-1px);
+  background: #f59e0b;
+  box-shadow: 0 10px 24px rgba(245, 158, 11, 0.3);
+}
+
+.fixlo-services-page .services-city-link {
+  color: #a16207 !important;
+  font-weight: 700;
+}
+
+.fixlo-services-page .services-city-link:hover {
+  color: #111 !important;
+}
+
+@media (max-width: 767px) {
+  .fixlo-services-page {
+    padding-bottom: 7.5rem;
+  }
+
+  .fixlo-services-page .services-hero {
+    border-radius: 1.1rem;
+  }
+
+  .fixlo-services-page .services-card {
+    padding: 1.35rem !important;
+  }
+
+  .fixlo-services-page .services-button {
+    width: 100%;
+  }
+}
