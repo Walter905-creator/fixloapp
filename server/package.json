@@ -8,8 +8,8 @@
     "npm": ">=8.0.0"
   },
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
+    "start": "node -r ./services/proFollowUpAutoRepair.js index.js",
+    "dev": "nodemon -r ./services/proFollowUpAutoRepair.js index.js",
     "test": "node --test --test-force-exit services/metaLeadAutomationService.statusCallback.test.js",
     "reset-early-access": "node scripts/reset-early-access.js",
     "seo-agent:daily": "node seo-agent/daily.js",
