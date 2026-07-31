@@ -3,7 +3,7 @@
   "version": "1.7.0",
   "type": "module",
   "scripts": {
-    "prebuild": "node scripts/fetch-images.mjs",
+    "prebuild": "node scripts/fix-admin-jobs-syntax.mjs && node scripts/fetch-images.mjs",
     "build": "npm run prebuild && vite build",
     "dev": "vite",
     "preview": "vite preview",
@@ -13,7 +13,7 @@
     "cap:open:android": "npx cap open android"
   },
   "engines": {
-    "node": "20.x"
+    "node": "24.x"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.3",
