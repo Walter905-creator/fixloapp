@@ -4,10 +4,12 @@ import { useAuth } from '../context/AuthContext';
 import logoUrl from '../assets/fixlo-logo.png';
 
 const mainItems = [
-  { to: '/', label: 'Home' },
-  { to: '/services', label: 'Services' },
+  { to: '/', label: 'For Homeowners' },
   { to: '/pros', label: 'For Pros' },
-  { to: '/recruiter', label: 'For Recruiters' }
+  { to: '/how-it-works', label: 'How It Works' },
+  { to: '/services', label: 'Services' },
+  { to: '/about', label: 'About Us' },
+  { to: '/contact', label: 'Contact' }
 ];
 
 const loginGroups = [
@@ -53,18 +55,19 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
-      <div className="container-xl flex items-center justify-between py-3">
-        <Link to="/" className="flex items-center gap-2">
-          <img src={logoUrl} alt="Fixlo logo" className="h-8 w-auto rounded-md" />
+    <header className="sticky top-0 z-50 border-b border-amber-400/20 bg-black text-white shadow-xl">
+      <div className="container-xl flex min-h-[84px] items-center justify-between gap-5 py-3">
+        <Link to="/" className="flex shrink-0 items-center">
+          <img src={logoUrl} alt="Fixlo logo" className="h-14 w-auto object-contain" />
         </Link>
 
-        <nav className="hidden md:flex items-center gap-3">
+        <nav className="hidden items-center gap-1 lg:flex">
           {mainItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
-              className={({ isActive }) => `px-3 py-1 rounded-lg text-sm font-semibold hover:text-brand ${isActive ? 'text-brand' : 'text-slate-700'}`}
+              end={item.to === '/'}
+              className={({ isActive }) => `relative rounded-md px-3 py-3 text-sm font-semibold transition hover:text-amber-400 ${isActive ? 'text-white after:absolute after:bottom-1 after:left-3 after:right-3 after:h-0.5 after:bg-amber-400' : 'text-white/85'}`}
             >
               {item.label}
             </NavLink>
@@ -75,60 +78,63 @@ export default function Navbar() {
             onMouseEnter={() => setLoginOpen(true)}
             onMouseLeave={() => setLoginOpen(false)}
             onFocus={() => setLoginOpen(true)}
-            onBlur={(e) => {
-              if (!e.currentTarget.contains(e.relatedTarget)) {
-                setLoginOpen(false);
-              }
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget)) setLoginOpen(false);
             }}
           >
             <button
-              className="px-3 py-1 rounded-lg text-sm font-semibold text-slate-700 hover:text-brand"
+              className="rounded-md px-3 py-3 text-sm font-semibold text-white/85 transition hover:text-amber-400"
               aria-haspopup="menu"
               aria-expanded={loginOpen}
-              onClick={() => setLoginOpen((prev) => !prev)}
+              onClick={() => setLoginOpen((previous) => !previous)}
             >
               Login
             </button>
-            <div className={`absolute right-0 top-full mt-1 w-52 rounded-xl border border-slate-200 bg-white shadow-lg transition ${loginOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-              {loginGroups.map((group, gi) => (
+            <div className={`absolute right-0 top-full mt-1 w-56 rounded-xl border border-amber-400/20 bg-black p-2 shadow-2xl transition ${loginOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}>
+              {loginGroups.map((group, groupIndex) => (
                 <div key={group.heading}>
-                  {gi > 0 && <div className="mx-3 border-t border-slate-100" />}
-                  <p className="px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">{group.heading}</p>
+                  {groupIndex > 0 && <div className="mx-2 border-t border-white/10" />}
+                  <p className="px-3 pb-1 pt-2 text-xs font-bold uppercase tracking-wider text-amber-400">{group.heading}</p>
                   {group.items.map((item) => (
                     <Link
                       key={item.to}
                       to={item.to}
                       onClick={() => setLoginOpen(false)}
-                      className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                      className="block rounded-lg px-3 py-2 text-sm text-white/85 hover:bg-white/10 hover:text-white"
                     >
                       {item.label}
                     </Link>
                   ))}
                 </div>
               ))}
-              <div className="h-1" />
             </div>
           </div>
 
           {isPro && (
             <>
-              <NavLink to="/pros/dashboard" className="px-3 py-1 rounded-lg text-sm font-semibold text-slate-700 hover:text-brand">Dashboard</NavLink>
-              <button onClick={handleLogout} className="px-3 py-1 rounded-lg text-sm font-semibold text-slate-700 hover:text-brand">Logout</button>
+              <NavLink to="/pros/dashboard" className="rounded-md px-3 py-3 text-sm font-semibold text-white/85 hover:text-amber-400">Dashboard</NavLink>
+              <button onClick={handleLogout} className="rounded-md px-3 py-3 text-sm font-semibold text-white/85 hover:text-amber-400">Logout</button>
             </>
           )}
 
-          {/* Fixlo Dashboard button — visible only to admin users */}
           {isAdmin && (
             <>
-              <NavLink to="/dashboard" className="px-3 py-1 rounded-lg text-sm font-semibold bg-slate-900 text-white hover:bg-slate-700 transition-colors">Fixlo Dashboard</NavLink>
-              <NavLink to="/admin" className="px-3 py-1 rounded-lg text-sm font-semibold text-slate-700 hover:text-brand">Admin</NavLink>
-              <button onClick={handleLogout} className="px-3 py-1 rounded-lg text-sm font-semibold text-slate-700 hover:text-brand">Logout</button>
+              <NavLink to="/dashboard" className="rounded-md bg-white/10 px-3 py-3 text-sm font-semibold text-white hover:bg-white/20">Fixlo Dashboard</NavLink>
+              <NavLink to="/admin" className="rounded-md px-3 py-3 text-sm font-semibold text-white/85 hover:text-amber-400">Admin</NavLink>
+              <button onClick={handleLogout} className="rounded-md px-3 py-3 text-sm font-semibold text-white/85 hover:text-amber-400">Logout</button>
             </>
           )}
+
+          <button
+            onClick={() => navigate('/request')}
+            className="ml-2 rounded-xl bg-amber-400 px-6 py-3 text-sm font-black text-black shadow-lg transition hover:bg-amber-300"
+          >
+            Request a Service
+          </button>
         </nav>
 
         <button
-          className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg border border-slate-200 hover:bg-slate-50 transition"
+          className="flex h-11 w-11 items-center justify-center rounded-lg border border-amber-400/40 text-xl text-amber-400 transition hover:bg-white/10 lg:hidden"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle menu"
         >
@@ -137,30 +143,40 @@ export default function Navbar() {
       </div>
 
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 top-[57px] z-40 bg-white border-t border-slate-200 overflow-y-auto">
-          <nav className="container-xl py-4 flex flex-col gap-2">
+        <div className="fixed inset-0 top-[84px] z-40 overflow-y-auto border-t border-white/10 bg-black lg:hidden">
+          <nav className="container-xl flex flex-col gap-2 py-5">
             {mainItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
+                end={item.to === '/'}
                 onClick={() => setMobileMenuOpen(false)}
-                className={({ isActive }) => `px-4 py-3 rounded-lg text-base font-semibold hover:bg-slate-50 transition ${isActive ? 'text-brand bg-brand/10' : 'text-slate-700'}`}
+                className={({ isActive }) => `rounded-lg px-4 py-3 text-base font-bold transition ${isActive ? 'bg-amber-400 text-black' : 'text-white hover:bg-white/10'}`}
               >
                 {item.label}
               </NavLink>
             ))}
 
-            <div className="pt-3 mt-2 border-t border-slate-200">
-              {loginGroups.map((group, gi) => (
-                <div key={group.heading}>
-                  {gi > 0 && <div className="mx-4 border-t border-slate-100 my-1" />}
-                  <p className="px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">{group.heading}</p>
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                navigate('/request');
+              }}
+              className="mt-2 rounded-xl bg-amber-400 px-5 py-4 text-base font-black text-black"
+            >
+              Request a Service
+            </button>
+
+            <div className="mt-3 border-t border-white/10 pt-3">
+              {loginGroups.map((group) => (
+                <div key={group.heading} className="mb-2">
+                  <p className="px-4 pb-1 pt-2 text-xs font-bold uppercase tracking-wider text-amber-400">{group.heading}</p>
                   {group.items.map((item) => (
                     <Link
                       key={item.to}
                       to={item.to}
                       onClick={() => setMobileMenuOpen(false)}
-                      className="block px-4 py-3 rounded-lg text-base font-semibold text-slate-700 hover:bg-slate-50"
+                      className="block rounded-lg px-4 py-3 text-base font-semibold text-white/85 hover:bg-white/10"
                     >
                       {item.label}
                     </Link>
@@ -171,17 +187,16 @@ export default function Navbar() {
 
             {isPro && (
               <>
-                <NavLink to="/pros/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-lg text-base font-semibold text-slate-700 hover:bg-slate-50">Dashboard</NavLink>
-                <button onClick={handleLogout} className="px-4 py-3 rounded-lg text-base font-semibold text-slate-700 hover:bg-slate-50 text-left">Logout</button>
+                <NavLink to="/pros/dashboard" onClick={() => setMobileMenuOpen(false)} className="rounded-lg px-4 py-3 text-base font-semibold text-white hover:bg-white/10">Dashboard</NavLink>
+                <button onClick={handleLogout} className="rounded-lg px-4 py-3 text-left text-base font-semibold text-white hover:bg-white/10">Logout</button>
               </>
             )}
 
-            {/* Fixlo Dashboard — admin only (mobile) */}
             {isAdmin && (
               <>
-                <NavLink to="/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-lg text-base font-semibold bg-slate-900 text-white hover:bg-slate-700">Fixlo Dashboard</NavLink>
-                <NavLink to="/admin" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-lg text-base font-semibold text-slate-700 hover:bg-slate-50">Admin</NavLink>
-                <button onClick={handleLogout} className="px-4 py-3 rounded-lg text-base font-semibold text-slate-700 hover:bg-slate-50 text-left">Logout</button>
+                <NavLink to="/dashboard" onClick={() => setMobileMenuOpen(false)} className="rounded-lg bg-white/10 px-4 py-3 text-base font-semibold text-white">Fixlo Dashboard</NavLink>
+                <NavLink to="/admin" onClick={() => setMobileMenuOpen(false)} className="rounded-lg px-4 py-3 text-base font-semibold text-white hover:bg-white/10">Admin</NavLink>
+                <button onClick={handleLogout} className="rounded-lg px-4 py-3 text-left text-base font-semibold text-white hover:bg-white/10">Logout</button>
               </>
             )}
           </nav>
