@@ -1,0 +1,1 @@
+This marker documents that proFollowUpAutoRepair is loaded from database.js so Render's `node index.js` start command initializes the worker without replacing server/index.js.
