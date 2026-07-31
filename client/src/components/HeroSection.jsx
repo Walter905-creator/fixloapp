@@ -72,6 +72,13 @@ export default function HeroSection({ headingTag = 'h2' }) {
             >
               Request a Service <span aria-hidden="true" className="text-3xl leading-none">→</span>
             </button>
+            <button
+              onClick={() => navigate('/request?mode=handyman')}
+              className="mt-3 flex w-full items-center justify-center gap-3 rounded-xl border-2 border-black bg-black px-6 py-4 text-lg font-black text-white transition hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-amber-300/40"
+            >
+              Get a Handyman <span aria-hidden="true">🔨</span>
+            </button>
+            <p className="mt-3 text-xs font-semibold text-slate-500">$120/hour labor + materials. First hour reserved through Stripe.</p>
             <p className="mt-4 text-sm text-slate-600">▣ &nbsp; Secure. Private. Easy.</p>
           </div>
         </div>
