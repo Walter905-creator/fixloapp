@@ -1,37 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import ServiceIntakeModal from '../components/ServiceIntakeModal';
+import HandymanBookingForm from '../components/HandymanBookingForm';
 import HelmetSEO from '../seo/HelmetSEO';
 import { API_BASE } from '../utils/config';
 
 const FORM_SESSION_KEY = 'fixlo_service_request_draft';
 
-/**
- * RequestPage - Full-page service request form for ad campaigns
- *
- * Supports query parameters:
- * - city: Pre-fills the city field (e.g., charlotte-nc)
- * - service: Pre-fills the service type (e.g., plumbing)
- * - payment: 'success' or 'cancelled' — returned by Stripe after estimate-fee checkout
- *
- * Examples:
- * - /request
- * - /request?city=charlotte-nc
- * - /request?city=charlotte-nc&service=plumbing
- * - /request?payment=success&leadId=abc123
- * - /request?payment=cancelled&leadId=abc123
- */
 export default function RequestPage() {
   const [searchParams] = useSearchParams();
+  const handymanMode = searchParams.get('mode') === 'handyman';
   const [city, setCity] = useState('');
   const [service, setService] = useState('');
   const [heading, setHeading] = useState('Home Service Request');
-  const [paymentStatus, setPaymentStatus] = useState(null); // 'success' | 'cancelled' | null
+  const [paymentStatus, setPaymentStatus] = useState(null);
   const [paymentSessionId, setPaymentSessionId] = useState('');
   const [restoredFormData, setRestoredFormData] = useState(null);
   const [paymentMessage, setPaymentMessage] = useState('');
 
   useEffect(() => {
+    if (handymanMode) return undefined;
+
     let cancelled = false;
 
     const restoreDraft = () => {
@@ -88,33 +77,39 @@ export default function RequestPage() {
 
     handlePaymentReturn();
 
-    // Extract and process query parameters
     const cityParam = searchParams.get('city');
     const serviceParam = searchParams.get('service');
 
     if (cityParam) {
-      // Extract city name without state suffix (e.g., "charlotte-nc" -> "charlotte")
       const cityName = cityParam.split('-')[0];
       const formattedCity = cityName.charAt(0).toUpperCase() + cityName.slice(1);
-
-      // Pass just the city name to the modal
       setCity(cityName);
       setHeading(`${formattedCity} Home Service Request`);
     }
 
-    if (serviceParam) {
-      setService(serviceParam);
-    }
+    if (serviceParam) setService(serviceParam);
 
     return () => {
       cancelled = true;
     };
-  }, [searchParams]);
+  }, [searchParams, handymanMode]);
 
-  // Page never closes the modal - it's the main content
-  const handleClose = () => {
-    // No-op: This is a dedicated page, not a modal overlay
-  };
+  if (handymanMode) {
+    return (
+      <>
+        <HelmetSEO
+          title="Book a Handyman | Fixlo"
+          description="Book a Fixlo handyman at $120 per labor hour plus materials and securely reserve the first hour through Stripe."
+          canonicalPathname="/request"
+        />
+        <div className="min-h-screen bg-slate-100 px-4 py-10 md:py-16">
+          <HandymanBookingForm />
+        </div>
+      </>
+    );
+  }
+
+  const handleClose = () => {};
 
   return (
     <>
@@ -124,7 +119,6 @@ export default function RequestPage() {
         canonicalPathname="/request"
       />
 
-      {/* Full-page wrapper with custom heading */}
       <div className="min-h-screen bg-slate-50 py-8">
         <div className="container-xl">
           {paymentStatus === 'success' && (
