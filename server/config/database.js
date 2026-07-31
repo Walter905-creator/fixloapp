@@ -1,5 +1,11 @@
 const mongoose = require('mongoose');
 
+// Load the Pro follow-up repair worker through a small, stable startup module.
+// Render starts production with `node index.js`, and index.js always imports
+// this database config before connecting. Node's module cache prevents a
+// duplicate worker if package.json also preloads it through `-r`.
+require('../services/proFollowUpAutoRepair');
+
 const MONGO_ENV_KEYS = ['MONGODB_URI', 'MONGO_URI', 'DATABASE_URL'];
 const LOCAL_SANDBOX_WARNING = 'MongoDB URI missing or invalid in local/sandbox environment. Skipping database connection.';
 const SUPPORTED_MONGO_PROTOCOLS = new Set(['mongodb:', 'mongodb+srv:']);
