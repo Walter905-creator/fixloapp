@@ -11,6 +11,8 @@ const mongoose = require('mongoose');
 const STAGE_COUNT = 4;
 let repairRunning = false;
 
+console.log('[PRO_FOLLOWUP_REPAIR] Worker initialized');
+
 function validEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
 }
@@ -40,8 +42,6 @@ async function repairMissingProFollowUpSchedules() {
 
     const timings = settings.followUpTimingsHours || [24, 72, 168, 336];
 
-    // Include manually imported leads even when followUp/status fields were
-    // never initialized. Hard-stop only genuinely completed or closed leads.
     const leads = await MetaLead.find({
       registrationStatus: { $in: ['not_registered', null, ''] },
       leadStatus: { $nin: ['closed', 'registered', 'subscribed'] },
