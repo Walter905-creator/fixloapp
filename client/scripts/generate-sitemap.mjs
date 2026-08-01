@@ -2,24 +2,14 @@
 import fs from "fs";
 import path from "path";
 import { PRO_CITIES, PRO_TRADES } from "../src/seo/proSeoData.js";
+import { HOMEOWNER_SERVICES } from "../src/seo/homeownerSeoData.js";
 
 const PUBLIC_DIR = path.join(process.cwd(), "public");
 const SITE = "https://www.fixloapp.com";
 const TODAY = new Date().toISOString().slice(0, 10);
 
 const STATIC_PATHS = [
-  "/", "/pricing", "/services", "/terms", "/pros", "/pros/signup"
-];
-
-const SERVICES = [
-  "plumbing", "electrical", "carpentry", "painting", "hvac",
-  "roofing", "landscaping", "house-cleaning", "junk-removal", "handyman"
-];
-
-const CITIES = [
-  "charlotte-nc", "raleigh-nc", "greensboro-nc", "atlanta-ga",
-  "miami-fl", "orlando-fl", "tampa-fl", "los-angeles-ca",
-  "chicago-il", "houston-tx", "dallas-tx", "phoenix-az"
+  "/", "/pricing", "/services", "/terms", "/pros", "/pros/signup", "/request"
 ];
 
 const url = (p) => `${SITE}${p.startsWith("/") ? "" : "/"}${p}`.replace(/\/+$/, "");
@@ -40,12 +30,12 @@ function generateURLs() {
 
   STATIC_PATHS.forEach((p) => urls.add(makeURLEntry(url(p), "0.80", "weekly")));
 
-  SERVICES.forEach((service) => {
-    urls.add(makeURLEntry(url(`/services/${service}`), "0.80", "weekly"));
-    CITIES.forEach((city) => {
-      urls.add(makeURLEntry(url(`/services/${service}/${city}`), "0.60", "weekly"));
-    });
-  });
+  for (const serviceSlug of Object.keys(HOMEOWNER_SERVICES)) {
+    urls.add(makeURLEntry(url(`/services/${serviceSlug}`), "0.84", "weekly"));
+    for (const citySlug of Object.keys(PRO_CITIES)) {
+      urls.add(makeURLEntry(url(`/services/${serviceSlug}/${citySlug}`), "0.76", "weekly"));
+    }
+  }
 
   for (const tradeSlug of Object.keys(PRO_TRADES)) {
     for (const citySlug of Object.keys(PRO_CITIES)) {
