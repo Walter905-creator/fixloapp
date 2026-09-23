@@ -7,6 +7,7 @@ const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const { normalizeE164, isUSPhoneNumber } = require('../utils/twilio');
 const { notifyOwnerForLead } = require('../services/ownerLeadNotificationService');
+const { sendInvoiceEmail } = require('../services/emailService');
 const { routeLead } = require('../services/leadAssignmentService');
 const { getPriorityConfig } = require('../config/priorityRouting');
 const { HOMEOWNER_REQUEST_PRICE, HOMEOWNER_REQUEST_PRICE_CENTS } = require('../config/pricing');
@@ -407,9 +408,9 @@ router.post('/clock-out/:jobId', async (req, res) => {
     const clockOutTime = new Date();
     const hoursWorked = (clockOutTime - job.clockInTime) / (1000 * 60 * 60);
     
-    // Enforce 2-hour minimum
-    const billableHours = Math.max(hoursWorked, 2);
-    const laborCost = billableHours * 150;
+    // Handyman billing uses a one-hour minimum at $75/hour.
+    const billableHours = Math.max(hoursWorked, 1);
+    const laborCost = billableHours * 75;
 
     // Calculate materials cost
     let materialsCost = 0;
@@ -419,9 +420,9 @@ router.post('/clock-out/:jobId', async (req, res) => {
       materialsCost = materials.reduce((sum, item) => sum + (item.cost || 0), 0);
     }
 
-    // Determine if visit fee is waived
-    const visitFeeWaived = jobApproved === true || jobApproved === 'true';
-    const visitFee = visitFeeWaived ? 0 : 150;
+    // Homeowner quote requests have no visit fee.
+    const visitFeeWaived = true;
+    const visitFee = 0;
 
     // Calculate total
     const subtotal = laborCost + materialsCost + visitFee;
@@ -455,7 +456,7 @@ router.post('/clock-out/:jobId', async (req, res) => {
       try {
         // Create and immediately confirm payment (off_session: true, confirm: true)
         const paymentIntent = await stripe.paymentIntents.create({
-          amount: Math.round(totalCost * 100), // Convert to cents
+          amount: Math.round(Math.max(totalCost - Number(job.prepaidAmount || 0), 0) * 100), // First-hour payment is credited
           currency: 'usd',
           customer: job.stripeCustomerId,
           payment_method: job.stripePaymentMethodId,
@@ -503,16 +504,18 @@ router.post('/clock-out/:jobId', async (req, res) => {
       serviceAddress: job.address,
       serviceType: job.trade,
       laborHours: billableHours,
-      laborRate: 150,
+      laborRate: 75,
       laborCost: laborCost,
       materials: materialsArray,
       materialsCost: materialsCost,
-      visitFee: 150,
+      visitFee: 0,
       visitFeeWaived: visitFeeWaived,
       subtotal: subtotal,
       tax: 0,
       taxRate: 0,
       total: totalCost,
+      prepaidAmount: Number(job.prepaidAmount || 0),
+      amountChargedAtCompletion: Math.max(totalCost - Number(job.prepaidAmount || 0), 0),
       stripeChargeId: chargeId,
       paidAt: chargeId ? new Date() : null,
       status: chargeId ? 'paid' : 'sent'
@@ -525,7 +528,15 @@ router.post('/clock-out/:jobId', async (req, res) => {
 
     console.log(`✅ Invoice created: ${invoice.invoiceNumber} for job ${jobId}`);
 
-    // TODO: Send invoice email to customer
+    if (job.email) {
+      try {
+        await sendInvoiceEmail(job.email, invoice, job);
+        job.invoiceEmailSentAt = new Date();
+        await job.save();
+      } catch (emailError) {
+        console.error('⚠️ Invoice email failed:', emailError.message);
+      }
+    }
 
     res.json({
       success: true,
