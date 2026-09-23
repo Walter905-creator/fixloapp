@@ -94,6 +94,8 @@ export default function HomeownerDashboard() {
   const [settingsSuccess, setSettingsSuccess] = useState('');
   const [actionError, setActionError] = useState('');
   const [activeReviewJob, setActiveReviewJob] = useState(null);
+  const [bookingLoadingId, setBookingLoadingId] = useState('');
+  const [bookingMessage, setBookingMessage] = useState('');
 
   const authFetch = useCallback(async (path, options = {}) => {
     const token = getToken();
@@ -133,6 +135,31 @@ export default function HomeownerDashboard() {
       }
     }
   }, [authFetch]);
+
+  const startBookingConfirmation = async (project) => {
+    const jobId = project?.id || project?._id;
+    if (!jobId) return;
+    setBookingLoadingId(jobId);
+    setBookingMessage('');
+    setActionError('');
+    try {
+      const data = await authFetch(`/api/dashboard/homeowner/jobs/${jobId}/confirm-booking`, {
+        method: 'POST',
+        body: JSON.stringify({})
+      });
+      if (data?.alreadyConfirmed) {
+        setBookingMessage('Booking already confirmed. Your pro can clock in.');
+        await loadDashboard(true);
+        return;
+      }
+      if (!data?.checkoutUrl) throw new Error('Stripe checkout URL was not returned.');
+      window.location.assign(data.checkoutUrl);
+    } catch (error) {
+      setActionError(error.message);
+    } finally {
+      setBookingLoadingId('');
+    }
+  };
 
   const loadNotifications = useCallback(async () => {
     setNotificationsState((prev) => ({ ...prev, loading: true, error: '' }));
@@ -226,6 +253,43 @@ export default function HomeownerDashboard() {
     }
     loadDashboard();
   }, [loadDashboard, navigate]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const booking = params.get('booking');
+    const jobId = params.get('job_id');
+    const sessionId = params.get('session_id');
+
+    if (booking === 'cancelled') {
+      setBookingMessage('Booking confirmation was cancelled. No charge was made.');
+      window.history.replaceState({}, '', window.location.pathname);
+      return;
+    }
+
+    if (booking !== 'success' || !jobId || !sessionId) return;
+
+    let cancelled = false;
+    const verify = async () => {
+      setBookingLoadingId(jobId);
+      try {
+        const result = await authFetch(`/api/dashboard/homeowner/jobs/${jobId}/confirm-booking/verify`, {
+          method: 'POST',
+          body: JSON.stringify({ sessionId })
+        });
+        if (!cancelled && result?.confirmed) {
+          setBookingMessage('Booking confirmed. Your payment method is secured and your pro can now clock in.');
+          await loadDashboard(true);
+          window.history.replaceState({}, '', window.location.pathname);
+        }
+      } catch (error) {
+        if (!cancelled) setActionError(error.message);
+      } finally {
+        if (!cancelled) setBookingLoadingId('');
+      }
+    };
+    verify();
+    return () => { cancelled = true; };
+  }, [authFetch, loadDashboard]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -654,6 +718,29 @@ export default function HomeownerDashboard() {
                 <p><span className="font-semibold text-slate-900">Assigned pro:</span> {selectedProject.assignedProName || selectedProject.assignedPro?.name || selectedProject.proName || 'Pending assignment'}</p>
                 {selectedProject.assignedTo?.phone ? <p><span className="font-semibold text-slate-900">Phone:</span> {selectedProject.assignedTo.phone}</p> : null}
               </div>
+              {!selectedProject.clockInTime && (selectedProject.assignedTo || selectedProject.assignedProId) ? (
+                selectedProject.paymentAuthConsent && selectedProject.stripePaymentMethodId ? (
+                  <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                    <p className="font-semibold text-emerald-800">Booking confirmed</p>
+                    <p className="mt-1 text-sm text-emerald-700">Payment method secured. Your pro can clock in when work begins.</p>
+                  </div>
+                ) : (
+                  <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                    <p className="font-semibold text-slate-900">Confirm booking before work starts</p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      Add a payment method securely with Stripe. You will not be charged now. Labor is $75/hour, and approved labor/materials are charged automatically when the pro clocks out.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => startBookingConfirmation(selectedProject)}
+                      disabled={bookingLoadingId === (selectedProject.id || selectedProject._id)}
+                      className="mt-3 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"
+                    >
+                      {bookingLoadingId === (selectedProject.id || selectedProject._id) ? 'Opening secure checkout...' : 'Confirm Booking & Add Payment Method'}
+                    </button>
+                  </div>
+                )
+              ) : null}
               {selectedProject.clockInTime ? (
                 <div className="mt-4">
                   <LiveWorkTimer
@@ -1018,6 +1105,7 @@ export default function HomeownerDashboard() {
             </header>
 
             {actionError ? <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{actionError}</div> : null}
+            {bookingMessage ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{bookingMessage}</div> : null}
             {tabContent[activeTab]}
           </main>
         </div>
