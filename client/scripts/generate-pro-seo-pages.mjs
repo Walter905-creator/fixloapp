@@ -120,7 +120,7 @@ function renderPage(tradeSlug, trade, citySlug, city) {
         <div class="eyebrow">Fixlo for independent professionals</div>
         <h1>Get more ${escapeHtml(trade.label.toLowerCase())} opportunities in ${escapeHtml(location)}</h1>
         <p>Connect with homeowners looking for dependable ${escapeHtml(trade.plural)}. Choose opportunities that match your trade, schedule, and service area.</p>
-        <div class="card" style="margin-top:22px"><strong>3 months free for new Fixlo Pros.</strong><br/>No credit card required to start.</div>
+        <div class="card" style="margin-top:22px"><strong>3 months free for new Fixlo Pros.</strong><br/>No credit card required to start. We’ll ask you to add a payment method 15 days before the free period ends.</div>
         <div class="actions"><a class="button primary" href="/pros#pro-signup-form">Start 3 Months Free</a><a class="button secondary" href="/pros">See how Fixlo works</a></div>
         <div class="fine">Independent professionals choose which opportunities to pursue. Lead availability varies by market and trade.</div>
         ${tradeSlug === "handyman" ? `<div class="links" style="margin-top:16px"><a href="/handyman-leads">Handyman leads</a><a href="/get-more-handyman-jobs">Get more handyman jobs</a><a href="/jobs-for-handymen">Jobs for handymen</a><a href="/contractor-leads">Contractor leads</a></div>` : `<div class="links" style="margin-top:16px"><a href="/contractor-leads">Contractor leads</a><a href="/home-service-leads">Home service leads</a></div>`}
