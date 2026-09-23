@@ -614,7 +614,7 @@ router.get('/pro', async (req, res) => {
     }
 
     const pro = await Pro.findById(requester.id)
-      .select('name role email phone subscriptionStatus subscriptionType subscriptionActive subscriptionPlan subscriptionPrice backgroundCheckStatus verificationStatus notificationSettings smsConsent stripeCustomerId stripeSubscriptionId subscriptionEndDate freeAccessUntil trialReminder15DaySentAt trialPaymentMethodAddedAt')
+      .select('name role email phone subscriptionStatus subscriptionType subscriptionActive subscriptionPlan subscriptionPrice backgroundCheckStatus verificationStatus notificationSettings smsConsent stripeCustomerId stripeSubscriptionId subscriptionEndDate freeAccessUntil trialReminder15DaySentAt trialPaymentMethodAddedAt inviteCodeUsed')
       .lean();
     if (!pro) return res.status(404).json({ error: 'Pro not found' });
 
@@ -689,6 +689,7 @@ router.get('/pro', async (req, res) => {
       || pro.subscriptionType
       || 'inactive';
 
+    const now = new Date();
     const trialEndsAt = pro.freeAccessUntil || null;
     const trialDaysRemaining = trialEndsAt
       ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - now.getTime()) / (24 * 60 * 60 * 1000)))
