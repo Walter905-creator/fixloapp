@@ -587,11 +587,11 @@ router.post('/signup/pro', requireDatabase, async (req, res) => {
     }
     const hashed = await bcrypt.hash(password, 12);
 
-    // Every new contractor gets a 30-day free trial automatically.
-    // If a valid invite code is provided, its duration replaces the default 30 days.
+    // Every new contractor gets a 3-month free trial automatically.
+    // If a valid invite code is provided, its duration replaces the default 3 months.
     const freeAccessUntil = inviteDoc
       ? InviteCode.calcFreeAccessUntil(inviteDoc.membershipDuration || '12months')
-      : InviteCode.calcFreeAccessUntil('30days');
+      : InviteCode.calcFreeAccessUntil('90days');
 
     const pro = await Pro.create({
       name: name.trim(),

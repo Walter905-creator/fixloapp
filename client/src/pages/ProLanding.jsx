@@ -197,7 +197,7 @@ function ProSignupForm() {
       </label>
 
       <button type="submit" disabled={loading} className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-emerald-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-emerald-400 disabled:opacity-60">
-        {loading ? 'Creating account…' : 'Join Fixlo Today'}
+        {loading ? 'Creating account…' : 'Start My 3 Free Months'}
       </button>
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-300">
@@ -213,7 +213,7 @@ export default function ProLanding() {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
     name: 'Get More Local Jobs With Fixlo',
-    description: 'Grow your business with verified local leads and sign up as a Fixlo pro.',
+    description: 'Grow your business with verified local leads. Get your first 3 months free — no credit card required to start. Create a Fixlo Pro account with 3 months free and no credit card required to start.',
     url: 'https://www.fixloapp.com/pros',
     mainEntity: {
       '@type': 'Offer',
@@ -230,7 +230,7 @@ export default function ProLanding() {
     <>
       <HelmetSEO
         title="Get More Local Jobs With Fixlo | Fixlo Pro"
-        description="Grow your home service business with local homeowner opportunities. Join Fixlo Pro to receive matching leads, manage jobs, and choose work that fits your trade and service area."
+        description="Grow your home service business with local homeowner opportunities. Create a Fixlo Pro account with 3 months free, no credit card required to start, and receive matching leads in your service area."
         canonicalPathname="/pros"
         structuredData={structuredData}
       />
@@ -240,15 +240,15 @@ export default function ProLanding() {
       <ExitIntentModal
         enabled
         title="Keep local jobs coming in"
-        description={isJulyPromoActive() ? `${JULY_PROMO.subHeadLine || 'Join before July 31 and save 50% on your first month.'} Regular price resumes automatically after July 31.` : 'Start your Fixlo pro account now and secure your access before today\'s campaigns end.'}
+        description="Create your Fixlo Pro account today and get your first 3 months free. No credit card is required to start."
         ctaHref="#pro-signup-form"
         ctaLabel="Join Fixlo Today"
       />
       <StickyMobileCTA
         enabled
         href="#pro-signup-form"
-        label="Join Fixlo Today"
-        sublabel={isJulyPromoActive() ? `50% Off — ${JULY_PROMO.promoPriceFormatted}/month` : undefined}
+        label="Start 3 Months Free"
+        sublabel="No credit card required today"
       />
 
       <section className="bg-slate-950 text-white">
