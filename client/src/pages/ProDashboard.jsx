@@ -71,6 +71,12 @@ export default function ProDashboard() {
   const [selectedConversationId, setSelectedConversationId] = useState('');
   const [draftMessage, setDraftMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [billingError, setBillingError] = useState('');
+
+  useEffect(() => {
+    if (searchParams.get('tab') === 'Billing') setActiveTab('Billing');
+  }, [searchParams]);
 
   const authFetch = useCallback(async (path, options = {}) => {
     const token = localStorage.getItem('fixlo_token') || '';
@@ -539,6 +545,23 @@ export default function ProDashboard() {
     </section>
   );
 
+  const startTrialBillingSetup = async () => {
+    setBillingLoading(true);
+    setBillingError('');
+    try {
+      const result = await authFetch('/api/stripe/pro-trial-checkout', {
+        method: 'POST',
+        body: JSON.stringify({})
+      });
+      if (!result?.sessionUrl) throw new Error('Secure billing setup is unavailable.');
+      window.location.assign(result.sessionUrl);
+    } catch (error) {
+      setBillingError(error.message || 'Unable to start billing setup.');
+    } finally {
+      setBillingLoading(false);
+    }
+  };
+
   const renderBilling = () => (
     <section className="dashboard-grid chart-grid">
       <CopyLinkCard
@@ -550,7 +573,30 @@ export default function ProDashboard() {
         <div className="dashboard-card-header"><h3>Subscription</h3></div>
         <div className="mt-4 space-y-2 text-sm text-slate-700">
           <p><span className="font-semibold text-slate-900">Status:</span> {data?.billing?.subscriptionStatus || 'N/A'}</p>
-          <p><span className="font-semibold text-slate-900">Plan:</span> {data?.billing?.plan || data?.billing?.subscriptionPlan || 'N/A'}</p>
+          <p><span className="font-semibold text-slate-900">Plan:</span> {data?.billing?.subscriptionPlan || 'Fixlo Pro'}</p>
+          <p><span className="font-semibold text-slate-900">Price after free period:</span> ${Number(data?.billing?.monthlyPrice || 59.99).toFixed(2)}/month</p>
+          {data?.billing?.freeAccessUntil ? (
+            <p><span className="font-semibold text-slate-900">Free period ends:</span> {new Date(data.billing.freeAccessUntil).toLocaleDateString()} ({data?.billing?.trialDaysRemaining ?? 0} days remaining)</p>
+          ) : null}
+          {data?.billing?.paymentMethodAdded ? (
+            <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
+              Payment method ready. You will not be charged before the free period ends.
+            </div>
+          ) : data?.billing?.paymentMethodRequired ? (
+            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+              <p className="font-semibold text-amber-900">Your free period ends soon.</p>
+              <p className="mt-1 text-amber-800">Add a payment method to continue Fixlo Pro after the free period. No charge will be made before it ends.</p>
+              <button
+                type="button"
+                onClick={startTrialBillingSetup}
+                disabled={billingLoading}
+                className="dashboard-btn mt-3"
+              >
+                {billingLoading ? 'Opening secure billing…' : 'Add Payment Method'}
+              </button>
+              {billingError ? <p className="mt-2 text-sm text-red-600">{billingError}</p> : null}
+            </div>
+          ) : null}
         </div>
       </div>
     </section>
