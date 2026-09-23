@@ -150,6 +150,123 @@ async function sendJobEmailNotification(email, eventType, data = {}) {
   return sendEmail(email, template.subject, template.html);
 }
 
+
+function money(value) {
+  return '
+ * Tries SMS first, falls back to email if SMS fails
+ * @param {object} job - Job object with phone and email
+ * @param {string} eventType - Type of event
+ * @param {object} data - Additional data for templates
+ * @returns {Promise<object>} - Notification result
+ */
+async function sendNotificationWithFallback(job, eventType, data = {}) {
+  const { sendJobNotification } = require('./smsService');
+  
+  const result = {
+    sms: { sent: false },
+    email: { sent: false },
+    method: null
+  };
+
+  // Try SMS first if phone and consent available
+  if (job.phone && job.smsConsent && !job.smsOptOut) {
+    try {
+      const smsResult = await sendJobNotification(
+        job.phone,
+        eventType,
+        data,
+        job.smsConsent,
+        job.smsOptOut
+      );
+      
+      if (!smsResult.disabled) {
+        result.sms = { sent: true, ...smsResult };
+        result.method = 'sms';
+        console.log(`✅ SMS notification sent successfully for ${eventType}`);
+        return result;
+      }
+    } catch (smsError) {
+      console.error(`❌ SMS failed for ${eventType}:`, smsError.message);
+      result.sms = { sent: false, error: smsError.message };
+      
+      // Log SMS failure
+      await logNotificationFailure({
+        notificationType: 'sms',
+        recipientId: job._id?.toString(),
+        recipientEmail: job.email,
+        errorMessage: smsError.message,
+        metadata: { eventType, phone: job.phone }
+      });
+    }
+  }
+
+  // Fallback to email if SMS failed or unavailable
+  if (job.email) {
+    try {
+      console.log(`📧 Falling back to email notification for ${eventType}`);
+      const emailResult = await sendJobEmailNotification(job.email, eventType, data);
+      
+      if (!emailResult.disabled) {
+        result.email = { sent: true, ...emailResult };
+        result.method = 'email_fallback';
+        console.log(`✅ Email fallback successful for ${eventType}`);
+        return result;
+      }
+    } catch (emailError) {
+      console.error(`❌ Email fallback also failed for ${eventType}:`, emailError.message);
+      result.email = { sent: false, error: emailError.message };
+    }
+  }
+
+  // Both methods failed
+  console.error(`❌ All notification methods failed for ${eventType}`);
+  result.method = 'failed';
+  return result;
+}
+
+module.exports = {
+  sendEmail,
+  sendJobEmailNotification,
+  sendInvoiceEmail,
+  sendNotificationWithFallback
+};
+ + Number(value || 0).toFixed(2);
+}
+
+async function sendInvoiceEmail(email, invoice, job) {
+  if (!email) return { disabled: true, reason: 'No email address' };
+
+  const materials = Array.isArray(invoice.materials) && invoice.materials.length
+    ? invoice.materials.map((item) =>
+        `<tr><td style="padding:6px 0;">${item.description || 'Material'}</td><td style="padding:6px 0;text-align:right;">${money(item.cost)}</td></tr>`
+      ).join('')
+    : '<tr><td style="padding:6px 0;">Materials</td><td style="padding:6px 0;text-align:right;">$0.00</td></tr>';
+
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;color:#111827;">
+      <h2 style="margin-bottom:4px;">Fixlo Invoice ${invoice.invoiceNumber || ''}</h2>
+      <p style="margin-top:0;color:#6b7280;">Your service is complete. Here is your detailed receipt.</p>
+      <table style="width:100%;border-collapse:collapse;margin:20px 0;">
+        <tr><td style="padding:6px 0;"><strong>Service</strong></td><td style="padding:6px 0;text-align:right;">${job.trade || invoice.serviceType || 'Home service'}</td></tr>
+        <tr><td style="padding:6px 0;"><strong>Clock in</strong></td><td style="padding:6px 0;text-align:right;">${job.clockInTime ? new Date(job.clockInTime).toLocaleString('en-US') : '—'}</td></tr>
+        <tr><td style="padding:6px 0;"><strong>Clock out</strong></td><td style="padding:6px 0;text-align:right;">${job.clockOutTime ? new Date(job.clockOutTime).toLocaleString('en-US') : '—'}</td></tr>
+        <tr><td style="padding:6px 0;"><strong>Hours</strong></td><td style="padding:6px 0;text-align:right;">${Number(invoice.laborHours || 0).toFixed(2)}</td></tr>
+        <tr><td style="padding:6px 0;"><strong>Hourly rate</strong></td><td style="padding:6px 0;text-align:right;">${money(invoice.laborRate)}/hr</td></tr>
+        <tr><td style="padding:6px 0;"><strong>Labor</strong></td><td style="padding:6px 0;text-align:right;">${money(invoice.laborCost)}</td></tr>
+        ${materials}
+        <tr><td style="padding:10px 0;border-top:1px solid #e5e7eb;"><strong>First-hour payment / credit</strong></td><td style="padding:10px 0;border-top:1px solid #e5e7eb;text-align:right;">-${money(invoice.prepaidAmount)}</td></tr>
+        <tr><td style="padding:6px 0;"><strong>Charged at clock-out</strong></td><td style="padding:6px 0;text-align:right;">${money(invoice.amountChargedAtCompletion)}</td></tr>
+        <tr><td style="padding:12px 0;border-top:2px solid #111827;font-size:18px;"><strong>Total service amount</strong></td><td style="padding:12px 0;border-top:2px solid #111827;text-align:right;font-size:18px;"><strong>${money(invoice.total)}</strong></td></tr>
+      </table>
+      <p><strong>Payment status:</strong> ${invoice.status === 'paid' ? 'Paid' : 'Payment pending'}</p>
+      <p>If you have questions, contact <a href="mailto:support@fixloapp.com">support@fixloapp.com</a>.</p>
+      <p>Thank you for choosing Fixlo.</p>
+    </div>
+  `;
+
+  return sendEmail(email, `Fixlo receipt — ${invoice.invoiceNumber || 'completed service'}`, html);
+}
+
 /**
  * Send notification with email fallback
  * Tries SMS first, falls back to email if SMS fails
