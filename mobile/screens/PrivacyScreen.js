@@ -94,7 +94,7 @@ export default function PrivacyScreen({ navigation }) {
             • Inactive Accounts: Data may be retained for up to 7 years{'\n'}
             • Financial Records: Retained as required by law{'\n\n'}
             You may request deletion of your personal information by contacting us at 
-            pro4u.improvements@gmail.com. We will respond within 30 days.
+            support@fixloapp.com. We will respond within 30 days.
           </Text>
         </View>
 
@@ -126,14 +126,14 @@ export default function PrivacyScreen({ navigation }) {
             • Object to or restrict certain data processing{'\n'}
             • Data portability{'\n'}
             • Withdraw consent for communications{'\n\n'}
-            Contact us at pro4u.improvements@gmail.com to exercise your rights.
+            Contact us at support@fixloapp.com to exercise your rights.
           </Text>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>10. Contact</Text>
           <Text style={styles.text}>
-            Questions about this Privacy Policy? Contact pro4u.improvements@gmail.com
+            Questions about this Privacy Policy? Contact support@fixloapp.com
           </Text>
         </View>
       </ScrollView>
