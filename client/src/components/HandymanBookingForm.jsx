@@ -149,12 +149,12 @@ export default function HandymanBookingForm() {
 
         <div className="rounded-2xl border border-amber-300 bg-amber-50 p-5 md:col-span-2">
           <p className="text-xl font-black text-black">$75 per labor hour + materials</p>
-          <p className="mt-2 text-sm text-slate-700">Stripe checkout charges $75 to reserve and cover the first labor hour. Additional time is billed at $75 per hour. Materials and approved purchases are additional. Scheduling is confirmed after payment and availability review.</p>
+          <p className="mt-2 text-sm text-slate-700">Stripe checkout charges $75 to reserve and cover the first labor hour. Additional time is billed at $75 per hour. Materials and approved purchases are additional. When the pro clocks out, any remaining approved labor and materials will be automatically charged to the same card and a detailed invoice will be emailed to you.</p>
         </div>
 
         <label className="flex items-start gap-3 text-sm text-slate-700 md:col-span-2">
           <input required type="checkbox" name="pricingAccepted" checked={form.pricingAccepted} onChange={update} className="mt-1" />
-          <span>I understand and accept the $75 hourly labor rate, the first-hour Stripe charge, and that materials and additional labor are charged separately.</span>
+          <span>I understand and accept the $75 hourly labor rate and first-hour Stripe charge. I authorize Fixlo to securely save this payment method and automatically charge any remaining approved labor and materials when the pro clocks out, then email me a detailed receipt.</span>
         </label>
         <label className="flex items-start gap-3 text-sm text-slate-700 md:col-span-2">
           <input type="checkbox" name="smsConsent" checked={form.smsConsent} onChange={update} className="mt-1" />
