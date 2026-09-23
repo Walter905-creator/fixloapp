@@ -35,11 +35,19 @@ function renderPage(serviceSlug, service, citySlug, city) {
     : `/request?service=${encodeURIComponent(serviceSlug)}&city=${encodeURIComponent(citySlug)}`;
   const requestLabel = isHandyman ? 'Book a $75/Hour Handyman' : 'Request Service';
   const title = isHandyman
-    ? `Handyman in ${location} | $75/Hour Direct Booking | Fixlo`
-    : `${service.label} in ${location} | Request Service with Fixlo`;
+    ? `Handyman in ${location} | $75/Hour Local Handyman | Fixlo`
+    : serviceSlug === 'drywall'
+      ? `Drywall Repair in ${location} | Local Drywall Help | Fixlo`
+      : serviceSlug === 'door-repair'
+        ? `Door Repair in ${location} | Local Door Repair Help | Fixlo`
+        : `${service.label} in ${location} | Request Service with Fixlo`;
   const description = isHandyman
-    ? `Need a handyman in ${location}? Fixlo direct handyman booking uses a $75 labor rate per hour plus materials, with secure checkout, live work-time tracking, and a detailed invoice.`
-    : `Need ${service.label.toLowerCase()} in ${location}? Submit your project through Fixlo and connect with local professionals for estimates, repairs, installations, and home improvements.`;
+    ? `Looking for a handyman near you in ${location}? Fixlo direct handyman booking uses a $75 labor rate per hour plus materials, with secure checkout, live work-time tracking, and a detailed invoice.`
+    : serviceSlug === 'drywall'
+      ? `Need drywall repair near you in ${location}? Request help for holes, cracks, damaged drywall, texture matching, and installation through Fixlo.`
+      : serviceSlug === 'door-repair'
+        ? `Need door repair near you in ${location}? Request help for sticking doors, damaged frames, hardware, alignment, replacement, and installation through Fixlo.`
+        : `Need ${service.label.toLowerCase()} in ${location}? Submit your project through Fixlo and connect with local professionals for estimates, repairs, installations, and home improvements.`;
   const faq = renderFaq(service, city);
   const relatedServices = Object.entries(HOMEOWNER_SERVICES)
     .filter(([slug]) => slug !== serviceSlug)
@@ -119,8 +127,12 @@ function renderPage(serviceSlug, service, citySlug, city) {
         <div class="actions"><a class="button primary" href="${requestHref}">${escapeHtml(requestLabel)}</a><a class="button secondary" href="/services/${serviceSlug}">Learn about this service</a></div>
         <div class="fine">Availability, pricing, licensing, and project terms vary by professional and location.</div>
         ${isHandyman
-          ? '<div class="links" style="margin-top:16px"><a href="/handyman-75-per-hour">$75/hour handyman pricing</a><a href="/book-a-handyman-online">Book a handyman online</a><a href="/free-home-service-quote">Get a free home service quote</a></div>'
-          : '<div class="links" style="margin-top:16px"><a href="/free-home-service-quote">Get a free home service quote</a></div>'}
+          ? '<div class="links" style="margin-top:16px"><a href="/handyman-near-me">Handyman near me</a><a href="/same-day-handyman">Same-day handyman</a><a href="/small-home-repairs-near-me">Small home repairs near me</a><a href="/free-handyman-estimate">Free handyman estimate</a><a href="/handyman-75-per-hour">$75/hour handyman pricing</a><a href="/book-a-handyman-online">Book a handyman online</a></div>'
+          : serviceSlug === 'drywall'
+            ? '<div class="links" style="margin-top:16px"><a href="/small-home-repairs-near-me">Small home repairs near me</a><a href="/free-home-service-quote">Get a free home service quote</a></div>'
+            : serviceSlug === 'door-repair'
+              ? '<div class="links" style="margin-top:16px"><a href="/small-home-repairs-near-me">Small home repairs near me</a><a href="/free-handyman-estimate">Free handyman estimate</a></div>'
+              : '<div class="links" style="margin-top:16px"><a href="/free-home-service-quote">Get a free home service quote</a></div>'}
       </div>
       <aside class="card"><div class="eyebrow">Common requests</div><ul>${service.tasks.map((task) => `<li>${escapeHtml(task)}</li>`).join('')}</ul></aside>
     </section>
