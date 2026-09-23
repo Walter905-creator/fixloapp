@@ -99,7 +99,7 @@ export default function RequestPage() {
       <>
         <HelmetSEO
           title="Book a Handyman | Fixlo"
-          description="Book a Fixlo handyman at $120 per labor hour plus materials and securely reserve the first hour through Stripe."
+          description="Book a Fixlo handyman at $75 per labor hour plus materials and securely reserve the first hour through Stripe."
           canonicalPathname="/request"
         />
         <div className="min-h-screen bg-slate-100 px-4 py-10 md:py-16">
