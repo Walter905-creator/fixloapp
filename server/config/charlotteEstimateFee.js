@@ -1,6 +1,6 @@
 const geocodingService = require('../utils/geocoding');
 
-const CHARLOTTE_ESTIMATE_FEE_ENABLED = String(process.env.CHARLOTTE_ESTIMATE_FEE_ENABLED || 'true').toLowerCase() === 'true';
+const CHARLOTTE_ESTIMATE_FEE_ENABLED = false; // Homeowner quote requests are free nationwide.
 const CHARLOTTE_ESTIMATE_FEE_AMOUNT_CENTS = Number(process.env.CHARLOTTE_ESTIMATE_FEE_AMOUNT_CENTS || 7500);
 const CHARLOTTE_SERVICE_RADIUS_MILES = Number(process.env.CHARLOTTE_SERVICE_RADIUS_MILES || 30);
 const CHARLOTTE_SERVICE_CENTER_LAT = Number(process.env.CHARLOTTE_SERVICE_CENTER_LAT || 35.2271);
