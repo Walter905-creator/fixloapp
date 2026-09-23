@@ -78,7 +78,7 @@ export default function HeroSection({ headingTag = 'h2' }) {
             >
               Get a Handyman <span aria-hidden="true">🔨</span>
             </button>
-            <p className="mt-3 text-xs font-semibold text-slate-500">$120/hour labor + materials. First hour reserved through Stripe.</p>
+            <p className="mt-3 text-xs font-semibold text-slate-500">$75/hour labor + materials. First hour reserved through Stripe.</p>
             <p className="mt-4 text-sm text-slate-600">▣ &nbsp; Secure. Private. Easy.</p>
           </div>
         </div>
