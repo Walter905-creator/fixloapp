@@ -49,7 +49,7 @@ export default function HomeownerLanding() {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
     name: 'Find Trusted Local Professionals Near You',
-    description: 'Get up to 3 quotes from verified professionals with Fixlo.',
+    description: 'Create a free Fixlo homeowner account and connect with verified local professionals for home-service requests.',
     url: 'https://www.fixloapp.com/homeowners',
     mainEntity: {
       '@type': 'Service',
@@ -67,7 +67,7 @@ export default function HomeownerLanding() {
     <>
       <HelmetSEO
         title="Find Trusted Local Professionals Near You | Fixlo"
-        description="Get up to 3 quotes from verified professionals with Fixlo. Request plumbing, electrical, HVAC, cleaning, junk removal, landscaping, carpentry, and remodeling help in minutes."
+        description="Create a free Fixlo homeowner account and request plumbing, electrical, HVAC, cleaning, junk removal, landscaping, carpentry, remodeling, and other local home services."
         canonicalPathname="/homeowners"
         structuredData={structuredData}
       />
@@ -91,8 +91,11 @@ export default function HomeownerLanding() {
               Find Trusted Local Professionals Near You
             </h1>
             <p className="mt-5 max-w-2xl text-lg text-slate-200 md:text-xl">
-              Get up to 3 quotes from verified professionals.
+              Create your free Fixlo homeowner account and connect with verified local professionals.
             </p>
+            <a href="/signup/homeowner" className="mt-6 inline-flex rounded-full bg-emerald-500 px-6 py-3 text-sm font-bold text-white transition hover:bg-emerald-400">
+              Create My Free Account
+            </a>
             <div className="mt-8 flex flex-wrap gap-3">
               {TRUST_BADGES.map((badge) => (
                 <span key={badge} className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white">
