@@ -2,9 +2,9 @@ export const HOMEOWNER_SERVICES = {
   handyman: {
     label: 'Handyman Services',
     singular: 'handyman',
-    intro: 'Get help with repairs, installations, maintenance, and small home improvement projects.',
+    intro: 'Book handyman help for repairs, installations, maintenance, and small home improvement projects. Direct Fixlo handyman bookings use a $75 labor rate per hour plus materials, with live time tracking and a detailed invoice after completion.',
     tasks: ['general home repairs', 'door repair and installation', 'drywall patching', 'fixture installation', 'trim and carpentry work'],
-    questions: ['How much does a handyman cost?', 'What types of jobs can a handyman do?', 'How quickly can I request service?']
+    questions: ['How much does a handyman cost?', 'Can I book a handyman online?', 'Can I track the handyman work time?']
   },
   remodeling: {
     label: 'Home Remodeling',
