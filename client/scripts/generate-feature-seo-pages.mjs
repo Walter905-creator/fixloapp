@@ -90,6 +90,118 @@ const PAGES = [
       ['What is the hourly rate?', 'Direct handyman bookings use a $75 labor rate per hour plus materials.'],
       ['Do I receive a receipt?', 'Yes. After completion, the system can email a detailed invoice showing labor time, materials, credits, and the final total.']
     ]
+  },
+  {
+    slug: 'handyman-near-me',
+    title: 'Handyman Near Me | Find Local Handyman Help with Fixlo',
+    description: 'Looking for a handyman near you? Use Fixlo to request local handyman help for repairs, installations, drywall, doors, fixtures, carpentry, and small home projects.',
+    eyebrow: 'Local handyman help',
+    h1: 'Find a Handyman Near You',
+    lead: 'Fixlo helps homeowners connect with handyman professionals for everyday repairs and small home projects. Share your location and project details to start a local request or use direct handyman booking where available.',
+    cta: '/request?mode=handyman',
+    ctaLabel: 'Find a Handyman Near Me',
+    secondary: '/free-home-service-quote',
+    secondaryLabel: 'Get a Free Quote',
+    bullets: [
+      'Local handyman requests based on your service address',
+      'Repairs, installations, drywall, doors, fixtures, and more',
+      '$75/hour direct handyman labor where direct booking is available',
+      'Live work-time tracking and detailed completion receipt'
+    ],
+    sections: [
+      ['What can a local handyman help with?', 'Common handyman projects include minor home repairs, drywall patches, door adjustments, fixture installation, mounting, trim work, carpentry repairs, and general maintenance.'],
+      ['How Fixlo uses your location', 'Your service address helps Fixlo connect the request with professionals who serve your area. Availability depends on the professionals active near the property.'],
+      ['Direct booking or free quote', 'If you know you need a handyman, use direct booking where available. If you want to compare the project first, submit a free home service quote request.']
+    ],
+    faqs: [
+      ['How do I find a handyman near me?', 'Enter your service address and project details in Fixlo so the request can be connected with professionals serving your area.'],
+      ['What kinds of small jobs can I request?', 'You can request many common home repair and installation projects, including drywall, doors, fixtures, trim, mounting, and minor carpentry.'],
+      ['Can I request a free estimate first?', 'Yes. Fixlo also offers a free home service quote request if you want to describe the project before confirming a booking.']
+    ]
+  },
+  {
+    slug: 'same-day-handyman',
+    title: 'Same-Day Handyman Service | Request Fast Home Repair Help | Fixlo',
+    description: 'Need same-day handyman help? Submit your project to Fixlo for urgent minor home repairs, installations, doors, drywall, fixtures, and maintenance. Availability varies by local pros.',
+    eyebrow: 'Urgent home repair help',
+    h1: 'Request Same-Day Handyman Service',
+    lead: 'For repairs that cannot wait, submit the project details and preferred timing through Fixlo. Same-day availability depends on local professionals and the type of work requested.',
+    cta: '/request?mode=handyman',
+    ctaLabel: 'Request a Handyman',
+    secondary: '/free-home-service-quote',
+    secondaryLabel: 'Get a Free Quote',
+    bullets: [
+      'Request urgent handyman help online',
+      'Add photos and details before the visit',
+      'Local availability shown through the service workflow',
+      '$75/hour direct handyman labor where available'
+    ],
+    sections: [
+      ['When to request same-day handyman help', 'Same-day requests can be useful for minor repairs, damaged doors, loose fixtures, drywall damage, mounting issues, and other non-emergency home problems that need prompt attention.'],
+      ['Availability is local', 'Same-day service is not guaranteed. Availability depends on the project, service area, timing, and professionals who can accept the job.'],
+      ['For emergencies', 'Fixlo is intended for home-service work. For dangerous electrical, gas, fire, flooding, or life-safety emergencies, contact the appropriate emergency service or utility provider.']
+    ],
+    faqs: [
+      ['Does Fixlo guarantee same-day handyman service?', 'No. You can request same-day service, but availability depends on local professionals and the project.'],
+      ['Can I upload photos for an urgent repair?', 'Yes. Photos and a clear description can help a professional understand the work before arriving.'],
+      ['How much is direct handyman labor?', 'Where direct handyman booking is available, labor is $75 per hour plus materials.']
+    ]
+  },
+  {
+    slug: 'small-home-repairs-near-me',
+    title: 'Small Home Repairs Near Me | Local Handyman Help | Fixlo',
+    description: 'Find help for small home repairs near you with Fixlo. Request drywall patches, door repairs, fixtures, mounting, trim, minor carpentry, and general home maintenance.',
+    eyebrow: 'Small home repairs',
+    h1: 'Help with Small Home Repairs Near You',
+    lead: 'Fixlo makes it easier to request help for the small repairs that pile up around the house. Describe the job once, add photos, and connect with professionals serving your area.',
+    cta: '/request',
+    ctaLabel: 'Request a Free Quote',
+    secondary: '/request?mode=handyman',
+    secondaryLabel: 'Book a Handyman',
+    bullets: [
+      'Drywall patches and minor wall repairs',
+      'Door, trim, hardware, and fixture repairs',
+      'Mounting, assembly, and minor carpentry',
+      'General maintenance and punch-list projects'
+    ],
+    sections: [
+      ['Bundle several small repairs', 'If you have multiple small tasks, describe them together and include photos. A clear punch list helps a professional understand the scope before the visit.'],
+      ['Free quote request', 'You can submit a home service quote request for free and provide the project details without paying a request fee.'],
+      ['Direct handyman booking', 'For supported direct handyman bookings, Fixlo uses a $75 hourly labor rate plus materials and tracks the active visit from clock-in to clock-out.']
+    ],
+    faqs: [
+      ['What counts as a small home repair?', 'Examples include drywall patches, sticking doors, loose hardware, trim repairs, fixture replacement, mounting, and other minor maintenance tasks.'],
+      ['Can I request several repairs at once?', 'Yes. Include each task in the project description so the professional can review the full punch list.'],
+      ['Is the quote request free?', 'Yes. Submitting a Fixlo home service quote request is free.']
+    ]
+  },
+  {
+    slug: 'free-handyman-estimate',
+    title: 'Free Handyman Estimate | Request a Handyman Quote with Fixlo',
+    description: 'Request a free handyman estimate with Fixlo. Describe your repair or installation project, add photos and timing, and connect with local professionals without a quote request fee.',
+    eyebrow: 'Free handyman estimate',
+    h1: 'Request a Free Handyman Estimate',
+    lead: 'Not ready to book immediately? Submit your handyman project as a free quote request. Add photos, measurements, location, and timing so a professional can understand what you need.',
+    cta: '/request?service=handyman',
+    ctaLabel: 'Get a Free Handyman Quote',
+    secondary: '/request?mode=handyman',
+    secondaryLabel: 'Book a Handyman Now',
+    bullets: [
+      'No fee to submit the quote request',
+      'Add photos, measurements, and repair details',
+      'Request help for one task or a punch list',
+      'Confirm a booking only when you are ready'
+    ],
+    sections: [
+      ['Free quote request versus direct booking', 'A free quote request lets you describe the work without paying a request fee. Direct handyman booking is for homeowners ready to reserve service at the published hourly labor rate where available.'],
+      ['Details that help with an estimate', 'Photos, dimensions, material preferences, access notes, and a clear list of tasks can make the initial conversation more useful.'],
+      ['Confirm the job securely', 'If the quote turns into a booked project, Fixlo can securely collect a payment method before work begins and use the clock-in/clock-out record for final billing.']
+    ],
+    faqs: [
+      ['Is the handyman estimate request really free?', 'Yes. Fixlo does not charge a fee to submit the home service quote request.'],
+      ['Do I have to book after requesting an estimate?', 'No. A quote request does not obligate you to confirm a job.'],
+      ['Can I switch to direct handyman booking?', 'Yes. If direct handyman booking is available for your project, you can use the direct booking flow at the published hourly labor rate.']
+    ]
   }
 ];
 
