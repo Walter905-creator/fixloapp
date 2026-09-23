@@ -12,7 +12,7 @@ import {
 
 export default function ContactScreen({ navigation }) {
   const handleEmail = () => {
-    Linking.openURL('mailto:pro4u.improvements@gmail.com').catch(() => {
+    Linking.openURL('mailto:support@fixloapp.com').catch(() => {
       Alert.alert('Error', 'Unable to open email app');
     });
   };
@@ -34,7 +34,7 @@ export default function ContactScreen({ navigation }) {
             style={styles.contactButton}
             onPress={handleEmail}
           >
-            <Text style={styles.email}>pro4u.improvements@gmail.com</Text>
+            <Text style={styles.email}>support@fixloapp.com</Text>
           </TouchableOpacity>
           <Text style={styles.responseTime}>Response within 1 business day</Text>
         </View>

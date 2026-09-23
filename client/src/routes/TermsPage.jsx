@@ -36,7 +36,7 @@ export default function TermsPage(){
         <h2 className="text-lg font-semibold">10. Governing Law</h2>
         <p>These Terms are governed by the laws of the state where Fixlo is headquartered, without regard to conflict of law principles.</p>
         <h2 className="text-lg font-semibold">11. Contact</h2>
-        <p>Questions? Email <a href="mailto:pro4u.improvements@gmail.com">pro4u.improvements@gmail.com</a>.</p>
+        <p>Questions? Email <a href="mailto:support@fixloapp.com">support@fixloapp.com</a>.</p>
       </div>
     </div>
   </>);

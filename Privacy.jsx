@@ -123,7 +123,7 @@ export default function Privacy() {
       </ul>
       <p>
         You may request deletion of your personal information by contacting us at 
-        <a href="mailto:pro4u.improvements@gmail.com">pro4u.improvements@gmail.com</a>. We will respond within 30 days.
+        <a href="mailto:support@fixloapp.com">support@fixloapp.com</a>. We will respond within 30 days.
       </p>
 
       <h2>7. Security Measures</h2>
@@ -161,7 +161,7 @@ export default function Privacy() {
         <li><strong>Withdraw Consent:</strong> Withdraw previously given consent</li>
       </ul>
       <p>
-        To exercise these rights, contact us at <a href="mailto:pro4u.improvements@gmail.com">pro4u.improvements@gmail.com</a>.
+        To exercise these rights, contact us at <a href="mailto:support@fixloapp.com">support@fixloapp.com</a>.
       </p>
 
       <h2>10. International Data Transfers</h2>
@@ -212,7 +212,7 @@ export default function Privacy() {
         If you have questions about this Privacy Policy or our privacy practices, please contact us at:
       </p>
       <p>
-        Email: <a href="mailto:pro4u.improvements@gmail.com">pro4u.improvements@gmail.com</a><br />
+        Email: <a href="mailto:support@fixloapp.com">support@fixloapp.com</a><br />
         We will respond to privacy-related inquiries within 30 days.
       </p>
     </main>
