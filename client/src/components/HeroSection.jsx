@@ -83,7 +83,7 @@ export default function HeroSection({ headingTag = 'h2' }) {
               onClick={() => navigate('/request')}
               className="mt-3 flex w-full items-center justify-center gap-3 rounded-xl border-2 border-amber-400 bg-white px-6 py-4 text-lg font-black text-black transition hover:bg-amber-50 focus:outline-none focus:ring-4 focus:ring-amber-300/40"
             >
-              Get a Quote <span aria-hidden="true">📝</span>
+              Get a Free Quote <span aria-hidden="true">📝</span>
             </button>
             <p className="mt-4 text-sm text-slate-600">▣ &nbsp; Secure. Private. Easy.</p>
           </div>
