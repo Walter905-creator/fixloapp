@@ -120,13 +120,17 @@ export default function HomeownerDashboard() {
     return response.status === 204 ? null : response.json().catch(() => null);
   }, []);
 
-  const loadDashboard = useCallback(async () => {
-    setDashboardState((prev) => ({ ...prev, loading: true, error: '' }));
+  const loadDashboard = useCallback(async (silent = false) => {
+    if (!silent) {
+      setDashboardState((prev) => ({ ...prev, loading: true, error: '' }));
+    }
     try {
       const data = await authFetch('/api/dashboard/homeowner');
       setDashboardState({ loading: false, error: '', data });
     } catch (error) {
-      setDashboardState({ loading: false, error: error.message, data: null });
+      if (!silent) {
+        setDashboardState({ loading: false, error: error.message, data: null });
+      }
     }
   }, [authFetch]);
 
@@ -225,7 +229,7 @@ export default function HomeownerDashboard() {
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      loadDashboard();
+      loadDashboard(true);
     }, 15000);
     return () => window.clearInterval(timer);
   }, [loadDashboard]);
