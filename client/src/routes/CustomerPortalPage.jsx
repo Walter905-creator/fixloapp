@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import HelmetSEO from '../seo/HelmetSEO';
+import LiveWorkTimer from '../components/LiveWorkTimer';
 import { API_BASE } from '../utils/config';
 
 // ─── Icons (inline SVG helpers) ────────────────────────────────────────────────
@@ -269,6 +270,11 @@ function JobModal({ job, invoice, onClose, onDownloadInvoice }) {
                 {job.clockInTime && <div className="flex justify-between text-sm"><span className="text-slate-500">Started</span><span className="font-medium">{new Date(job.clockInTime).toLocaleString()}</span></div>}
                 {job.clockOutTime && <div className="flex justify-between text-sm"><span className="text-slate-500">Completed</span><span className="font-medium">{new Date(job.clockOutTime).toLocaleString()}</span></div>}
                 {job.totalHours > 0 && <div className="flex justify-between text-sm"><span className="text-slate-500">Duration</span><span className="font-medium">{job.totalHours} hours</span></div>}
+                {job.clockInTime && (
+                  <div className="mt-3">
+                    <LiveWorkTimer clockInTime={job.clockInTime} clockOutTime={job.clockOutTime} hourlyRate={job.hourlyRate || 75} />
+                  </div>
+                )}
               </div>
             </div>
           )}
