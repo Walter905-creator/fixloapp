@@ -754,8 +754,11 @@ export default function HomeownerDashboard() {
                 <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm">
                   <p className="font-semibold text-slate-900">Invoice {selectedProject.invoiceId}</p>
                   <p className="mt-1 text-slate-600">
-                    {'Total: 
-            <ProjectTimeline events={selectedProject.timeline || selectedProject.events || []} />
+                    {'Total: $' + Number(selectedProject.invoiceTotal || selectedProject.total || 0).toFixed(2)}
+                  </p>
+                </div>
+              ) : null}
+              <ProjectTimeline events={selectedProject.timeline || selectedProject.events || []} />
           </>
         ) : (
           <EmptyState title="Select a project" message="Choose a project to view the full timeline." />
