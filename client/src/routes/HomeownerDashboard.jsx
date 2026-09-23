@@ -12,6 +12,7 @@ import EmptyState from '../components/dashboard/EmptyState';
 import StatusBadge from '../components/dashboard/StatusBadge';
 import LoadingState from '../components/dashboard/LoadingState';
 import ErrorState from '../components/dashboard/ErrorState';
+import LiveWorkTimer from '../components/LiveWorkTimer';
 import '../styles/dashboard.css';
 
 const TABS = [
@@ -221,6 +222,13 @@ export default function HomeownerDashboard() {
     }
     loadDashboard();
   }, [loadDashboard, navigate]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      loadDashboard();
+    }, 15000);
+    return () => window.clearInterval(timer);
+  }, [loadDashboard]);
 
   useEffect(() => {
     if (activeTab === 'Notifications' && !notificationsState.loaded) loadNotifications();
@@ -515,6 +523,16 @@ export default function HomeownerDashboard() {
                   </div>
                   <StatusBadge status={project.status || 'pending'} />
                 </div>
+                {project.clockInTime ? (
+                  <div className="mt-3">
+                    <LiveWorkTimer
+                      clockInTime={project.clockInTime}
+                      clockOutTime={project.clockOutTime}
+                      hourlyRate={project.hourlyRate || 75}
+                      compact
+                    />
+                  </div>
+                ) : null}
               </button>
             )) : <EmptyState title="No active projects" message="Request your first service to get started." />}
           </div>
@@ -599,7 +617,7 @@ export default function HomeownerDashboard() {
                     <h3 className="text-lg font-bold text-slate-900">{project.trade || project.title || 'Project'}</h3>
                     <p className="mt-1 text-sm text-slate-500">Created {project.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'recently'}</p>
                     <p className="mt-3 text-sm text-slate-600">{project.description?.slice(0, 140) || 'No project description available yet.'}</p>
-                    <p className="mt-3 text-sm text-slate-500">Assigned pro: <span className="font-medium text-slate-700">{project.assignedPro?.name || project.proName || 'Not assigned yet'}</span></p>
+                    <p className="mt-3 text-sm text-slate-500">Assigned pro: <span className="font-medium text-slate-700">{project.assignedProName || project.assignedPro?.name || project.proName || 'Not assigned yet'}</span></p>
                   </div>
                   <StatusBadge status={project.status || 'pending'} />
                 </div>
@@ -629,9 +647,402 @@ export default function HomeownerDashboard() {
               <div className="mt-4 space-y-3 text-sm text-slate-600">
                 <p>{selectedProject.description || 'No description provided.'}</p>
                 <p><span className="font-semibold text-slate-900">Created:</span> {selectedProject.createdAt ? new Date(selectedProject.createdAt).toLocaleString() : '—'}</p>
-                <p><span className="font-semibold text-slate-900">Assigned pro:</span> {selectedProject.assignedPro?.name || selectedProject.proName || 'Pending assignment'}</p>
-                {selectedProject.assignedPro?.phone ? <p><span className="font-semibold text-slate-900">Phone:</span> {selectedProject.assignedPro.phone}</p> : null}
+                <p><span className="font-semibold text-slate-900">Assigned pro:</span> {selectedProject.assignedProName || selectedProject.assignedPro?.name || selectedProject.proName || 'Pending assignment'}</p>
+                {selectedProject.assignedTo?.phone ? <p><span className="font-semibold text-slate-900">Phone:</span> {selectedProject.assignedTo.phone}</p> : null}
               </div>
+              {selectedProject.clockInTime ? (
+                <div className="mt-4">
+                  <LiveWorkTimer
+                    clockInTime={selectedProject.clockInTime}
+                    clockOutTime={selectedProject.clockOutTime}
+                    hourlyRate={selectedProject.hourlyRate || 75}
+                  />
+                </div>
+              ) : null}
+              {selectedProject.invoiceId ? (
+                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm">
+                  <p className="font-semibold text-slate-900">Invoice {selectedProject.invoiceId}</p>
+                  <p className="mt-1 text-slate-600">
+                    {'Total: 
+            <ProjectTimeline events={selectedProject.timeline || selectedProject.events || []} />
+          </>
+        ) : (
+          <EmptyState title="Select a project" message="Choose a project to view the full timeline." />
+        )}
+      </aside>
+    </div>
+  );
+
+  const renderAppointments = () => (
+    <div className="space-y-6">
+      {appointmentsState.error && !appointmentsState.data.length ? (
+        <ErrorState message={appointmentsState.error} onRetry={loadAppointments} />
+      ) : (
+        <CalendarView
+          appointments={upcomingAppointments}
+          loading={appointmentsState.loading}
+          onCreateAppointment={() => navigate('/request?intent=schedule')}
+        />
+      )}
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-bold text-slate-900">Upcoming appointments</h3>
+          <button type="button" onClick={() => navigate('/request?intent=schedule')} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">Schedule Appointment</button>
+        </div>
+        <div className="mt-4 space-y-3">
+          {upcomingAppointments.length ? upcomingAppointments.map((appointment) => (
+            <div key={appointment.id || appointment._id} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-semibold text-slate-900">{appointment.title || appointment.type || 'Appointment'}</p>
+                  <p className="mt-1 text-sm text-slate-500">{formatMessageTime(appointment.scheduledAt)}</p>
+                </div>
+                <StatusBadge status={appointment.status || 'scheduled'} />
+              </div>
+            </div>
+          )) : <EmptyState title="No appointments scheduled" message="Use the calendar above to schedule one." />}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderMessages = () => (
+    <section className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-bold text-slate-900">Conversations</h3>
+        </div>
+        {conversationsState.loading ? (
+          <LoadingState message="Loading conversations..." />
+        ) : conversationsState.error ? (
+          <ErrorState message={conversationsState.error} onRetry={loadConversations} />
+        ) : conversationsState.data.length ? (
+          <div className="mt-4 grid gap-2">
+            {conversationsState.data.map((conversation) => (
+              <button
+                key={conversation._id}
+                type="button"
+                onClick={() => setSelectedConversationId(conversation._id)}
+                className={`rounded-2xl border px-4 py-3 text-left ${selectedConversationId === conversation._id ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 hover:border-slate-300'}`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-slate-900">{conversation.otherUser?.name || 'Conversation'}</p>
+                    <p className="mt-1 text-sm text-slate-500">{conversation.lastMessage?.text || conversation.lastMessage?.message || 'No messages yet'}</p>
+                  </div>
+                  {conversation.unreadCount ? <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-xs font-bold text-white">{conversation.unreadCount}</span> : null}
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="No conversations yet" message="When a pro messages you, it will appear here." />
+        )}
+      </div>
+
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h3 className="text-lg font-bold text-slate-900">{selectedConversation?.otherUser?.name || 'Message thread'}</h3>
+        {messagesState.loading ? (
+          <LoadingState message="Loading messages..." />
+        ) : messagesState.error ? (
+          <ErrorState message={messagesState.error} onRetry={() => loadMessages(selectedConversationId)} />
+        ) : selectedConversationId ? (
+          <>
+            <div className="mt-4 grid max-h-[440px] gap-3 overflow-y-auto">
+              {messagesState.data.length ? messagesState.data.map((message) => {
+                const mine = message.senderId === homeowner.id || message.senderId === homeowner._id || message.senderId === user?._id;
+                return (
+                  <div key={message._id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${mine ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-800'}`}>
+                      <p>{message.text || message.message}</p>
+                      <p className={`mt-1 text-[11px] ${mine ? 'text-emerald-100' : 'text-slate-400'}`}>{formatMessageTime(message.createdAt)}</p>
+                    </div>
+                  </div>
+                );
+              }) : <EmptyState title="No messages yet" message="Say hello to start the conversation." />}
+            </div>
+            <form onSubmit={handleSendMessage} className="mt-4 flex gap-3">
+              <input
+                value={messageDraft}
+                onChange={(event) => setMessageDraft(event.target.value)}
+                className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100"
+                placeholder="Type your message..."
+              />
+              <button type="submit" disabled={sendingMessage || !messageDraft.trim()} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
+                {sendingMessage ? 'Sending...' : 'Send'}
+              </button>
+            </form>
+          </>
+        ) : (
+          <EmptyState title="Select a conversation" message="Choose a conversation to see your messages." />
+        )}
+      </div>
+    </section>
+  );
+
+  const renderNotifications = () => (
+    notificationsState.error && !notificationsState.data.length ? (
+      <ErrorState message={notificationsState.error} onRetry={loadNotifications} />
+    ) : (
+      <NotificationCenter
+        expanded
+        notifications={notifications}
+        unreadCount={unreadNotifications}
+        onMarkRead={handleMarkRead}
+        onMarkAllRead={handleMarkAllRead}
+        loading={notificationsState.loading}
+      />
+    )
+  );
+
+  const renderDocuments = () => (
+    documentsState.error && !documentsState.data.length ? (
+      <ErrorState message={documentsState.error} onRetry={loadDocuments} />
+    ) : (
+      <DocumentCenter
+        documents={documents}
+        loading={documentsState.loading}
+        onUpload={handleDocumentUpload}
+        onDelete={handleDocumentDelete}
+        onPreview={(document) => {
+          const url = document.url || document.secureUrl || document.secure_url;
+          if (url) window.open(url, '_blank', 'noopener,noreferrer');
+        }}
+      />
+    )
+  );
+
+  const renderReviews = () => (
+    <div className="space-y-6">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h3 className="text-lg font-bold text-slate-900">Pending reviews</h3>
+        <div className="mt-4 space-y-3">
+          {pendingReviews.length ? pendingReviews.map((reviewItem) => (
+            <div key={reviewItem.id || reviewItem._id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <div>
+                <p className="font-semibold text-slate-900">{reviewItem.trade || reviewItem.title || 'Completed job'}</p>
+                <p className="mt-1 text-sm text-slate-500">Completed by {reviewItem.assignedPro?.name || reviewItem.proName || 'your pro'}</p>
+              </div>
+              <button type="button" onClick={() => setActiveReviewJob(reviewItem)} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">
+                Leave Review
+              </button>
+            </div>
+          )) : <EmptyState title="No pending reviews" message="You are all caught up." />}
+        </div>
+      </div>
+
+      {activeReviewJob ? (
+        <ReviewForm
+          proId={activeReviewJob.assignedPro?._id || activeReviewJob.proId}
+          jobId={activeReviewJob._id || activeReviewJob.id}
+          proName={activeReviewJob.assignedPro?.name || activeReviewJob.proName}
+          onSubmit={handleReviewSubmit}
+          onCancel={() => setActiveReviewJob(null)}
+        />
+      ) : null}
+
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h3 className="text-lg font-bold text-slate-900">Past reviews</h3>
+        <div className="mt-4 space-y-3">
+          {submittedReviews.length ? submittedReviews.map((review) => (
+            <div key={review.id || review._id} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-semibold text-slate-900">{review.proName || review.professionalName || 'Professional review'}</p>
+                  <p className="mt-1 text-sm text-slate-500">{review.review || review.comment || 'No written review.'}</p>
+                </div>
+                <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">{review.rating || review.overallRating || 0}/5</span>
+              </div>
+            </div>
+          )) : <EmptyState title="No reviews submitted yet" message="Completed jobs ready for feedback will appear above." />}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderProfile = () => (
+    <form onSubmit={handleProfileSave} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="border-b border-slate-100 pb-4">
+        <h3 className="text-lg font-bold text-slate-900">Profile</h3>
+      </div>
+      <div className="mt-5 grid gap-4 md:grid-cols-2">
+        {[
+          ['name', 'Name'],
+          ['email', 'Email'],
+          ['phone', 'Phone']
+        ].map(([key, label]) => (
+          <div key={key}>
+            <label className="block text-sm font-semibold text-slate-700">{label}</label>
+            <input
+              type={key === 'email' ? 'email' : 'text'}
+              value={profileForm[key]}
+              onChange={(event) => setProfileForm((current) => ({ ...current, [key]: event.target.value }))}
+              className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100"
+            />
+          </div>
+        ))}
+        <div>
+          <label className="block text-sm font-semibold text-slate-700">Current password</label>
+          <input
+            type="password"
+            value={profileForm.password}
+            onChange={(event) => setProfileForm((current) => ({ ...current, password: event.target.value }))}
+            className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-semibold text-slate-700">New password</label>
+          <input
+            type="password"
+            value={profileForm.newPassword}
+            onChange={(event) => setProfileForm((current) => ({ ...current, newPassword: event.target.value }))}
+            className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100"
+          />
+        </div>
+      </div>
+      <label className="mt-4 inline-flex items-center gap-2 text-sm text-slate-700">
+        <input
+          type="checkbox"
+          checked={profileForm.smsNotifications}
+          onChange={(event) => setProfileForm((current) => ({ ...current, smsNotifications: event.target.checked }))}
+          className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+        />
+        Enable SMS notifications
+      </label>
+      {profileSuccess ? <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{profileSuccess}</div> : null}
+      <div className="mt-5 flex justify-end">
+        <button type="submit" disabled={savingProfile} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
+          {savingProfile ? 'Saving...' : 'Save Profile'}
+        </button>
+      </div>
+    </form>
+  );
+
+  const renderSettings = () => (
+    <form onSubmit={handleSettingsSave} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="border-b border-slate-100 pb-4">
+        <h3 className="text-lg font-bold text-slate-900">Settings</h3>
+      </div>
+      <div className="mt-5 space-y-4">
+        <label className="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700">
+          <span>Email notifications</span>
+          <input
+            type="checkbox"
+            checked={settingsForm.emailNotifications}
+            onChange={(event) => setSettingsForm((current) => ({ ...current, emailNotifications: event.target.checked }))}
+            className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+          />
+        </label>
+        <label className="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700">
+          <span>SMS notifications</span>
+          <input
+            type="checkbox"
+            checked={settingsForm.smsNotifications}
+            onChange={(event) => setSettingsForm((current) => ({ ...current, smsNotifications: event.target.checked }))}
+            className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+          />
+        </label>
+      </div>
+      {settingsSuccess ? <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{settingsSuccess}</div> : null}
+      <div className="mt-6 flex flex-wrap justify-between gap-3">
+        <button type="button" onClick={handleDeleteAccount} className="rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-600">
+          Delete Account
+        </button>
+        <button type="submit" disabled={savingSettings} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
+          {savingSettings ? 'Saving...' : 'Save Settings'}
+        </button>
+      </div>
+    </form>
+  );
+
+  const tabContent = {
+    Overview: renderOverview(),
+    'My Projects': renderProjects(),
+    Appointments: renderAppointments(),
+    Messages: renderMessages(),
+    Notifications: renderNotifications(),
+    Documents: renderDocuments(),
+    Reviews: renderReviews(),
+    Profile: renderProfile(),
+    Settings: renderSettings()
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 pb-24 lg:pb-8">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
+          <aside className="hidden rounded-3xl bg-slate-900 p-5 text-slate-100 shadow-xl lg:block">
+            <div className="mb-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-300">Fixlo</p>
+              <h1 className="mt-2 text-2xl font-extrabold">Homeowner</h1>
+              <p className="mt-1 text-sm text-slate-300">{homeowner.name || homeowner.email || 'Dashboard'}</p>
+            </div>
+            <nav className="grid gap-2">
+              {TABS.map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setActiveTab(tab)}
+                  className={`rounded-2xl px-4 py-3 text-left text-sm font-semibold transition ${
+                    activeTab === tab ? 'bg-emerald-500 text-white' : 'text-slate-200 hover:bg-white/10'
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </nav>
+          </aside>
+
+          <main className="min-w-0 space-y-6">
+            <header className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-slate-500">{activeTab}</p>
+                <h2 className="text-2xl font-bold text-slate-900">Manage your home services</h2>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <NotificationCenter
+                  notifications={notifications}
+                  unreadCount={unreadNotifications}
+                  loading={notificationsState.loading}
+                  onMarkRead={handleMarkRead}
+                  onMarkAllRead={handleMarkAllRead}
+                />
+                <button type="button" onClick={handleLogout} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700">
+                  Log Out
+                </button>
+              </div>
+            </header>
+
+            {actionError ? <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{actionError}</div> : null}
+            {tabContent[activeTab]}
+          </main>
+        </div>
+      </div>
+
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 p-2 backdrop-blur lg:hidden">
+        <div className="flex gap-2 overflow-x-auto">
+          {TABS.map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className={`whitespace-nowrap rounded-full px-3 py-2 text-xs font-semibold ${
+                activeTab === tab ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+ + Number(selectedProject.totalCost || 0).toFixed(2)}
+                    {selectedProject.paidAt ? ' · Paid' : ' · Payment pending'}
+                  </p>
+                </div>
+              ) : null}
             </div>
             <ProjectTimeline events={selectedProject.timeline || selectedProject.events || []} />
           </>
