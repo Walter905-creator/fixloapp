@@ -144,16 +144,6 @@ export default function ServiceIntakeModal({
 
   const handleContinue = async () => {
     if (!validateStep(currentStep)) return;
-    if (currentStep === 6 && isCharlotteRequest && !paymentSessionId) {
-      setIsSubmitting(true);
-      try {
-        await startCharlotteCheckout();
-      } catch (error) {
-        setErrors({ submit: error.message || 'Unable to start secure payment.' });
-        setIsSubmitting(false);
-      }
-      return;
-    }
     nextStep();
   };
 
