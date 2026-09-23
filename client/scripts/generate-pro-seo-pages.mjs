@@ -28,8 +28,8 @@ function renderPage(tradeSlug, trade, citySlug, city) {
     ? `Handyman Jobs in ${location} | Local Handyman Leads | Fixlo`
     : `${trade.label} Jobs in ${location} | Local Leads | Fixlo Pro`;
   const description = tradeSlug === 'handyman'
-    ? `Looking for handyman jobs in ${location}? Join Fixlo Pro to receive local homeowner repair opportunities, choose the work you want, and grow your handyman business.`
-    : `Grow your ${trade.label.toLowerCase()} business in ${city.city}. Join Fixlo Pro to receive local homeowner opportunities and choose the work that fits your service area.`;
+    ? `Looking for handyman jobs in ${location}? Create a Fixlo Pro account and get your first 3 months free with no credit card required to start. Receive local homeowner repair opportunities and grow your handyman business.`
+    : `Grow your ${trade.label.toLowerCase()} business in ${city.city}. Create a Fixlo Pro account and get your first 3 months free with no credit card required to start. Receive local homeowner opportunities that fit your service area.`;
   const faq = [
     {
       q: `How do ${trade.label.toLowerCase()} professionals receive opportunities through Fixlo?`,
@@ -120,7 +120,8 @@ function renderPage(tradeSlug, trade, citySlug, city) {
         <div class="eyebrow">Fixlo for independent professionals</div>
         <h1>Get more ${escapeHtml(trade.label.toLowerCase())} opportunities in ${escapeHtml(location)}</h1>
         <p>Connect with homeowners looking for dependable ${escapeHtml(trade.plural)}. Choose opportunities that match your trade, schedule, and service area.</p>
-        <div class="actions"><a class="button primary" href="/pros/signup">Join Fixlo Pro</a><a class="button secondary" href="/pros">See how Fixlo works</a></div>
+        <div class="card" style="margin-top:22px"><strong>3 months free for new Fixlo Pros.</strong><br/>No credit card required to start. We’ll ask for a payment method 15 days before your free period ends.</div>
+        <div class="actions"><a class="button primary" href="/pros/signup">Start 3 Months Free</a><a class="button secondary" href="/pros">See how Fixlo works</a></div>
         <div class="fine">Independent professionals choose which opportunities to pursue. Lead availability varies by market and trade.</div>
         ${tradeSlug === "handyman" ? `<div class="links" style="margin-top:16px"><a href="/handyman-leads">Handyman leads</a><a href="/get-more-handyman-jobs">Get more handyman jobs</a><a href="/jobs-for-handymen">Jobs for handymen</a><a href="/contractor-leads">Contractor leads</a></div>` : `<div class="links" style="margin-top:16px"><a href="/contractor-leads">Contractor leads</a><a href="/home-service-leads">Home service leads</a></div>`}
       </div>
@@ -135,7 +136,7 @@ function renderPage(tradeSlug, trade, citySlug, city) {
           <p>Fixlo helps homeowners submit detailed service requests and helps professionals discover opportunities that fit their business. Keep lead notifications and activity organized in one place.</p>
           <div class="grid"><div class="feature">Local lead notifications</div><div class="feature">Flexible service area</div><div class="feature">Mobile-friendly access</div><div class="feature">Control over the work you accept</div></div>
         </div>
-        <div class="card steps"><h2>Start receiving matching opportunities</h2><p><strong>1.</strong> Create your pro account and select your trade.</p><p><strong>2.</strong> Set the locations you want to serve.</p><p><strong>3.</strong> Complete required onboarding and verification.</p><p><strong>4.</strong> Review matching homeowner requests.</p><a class="button primary" href="/pros/signup">Create a pro account</a></div>
+        <div class="card steps"><h2>Start receiving matching opportunities</h2><p><strong>1.</strong> Create your pro account and select your trade.</p><p><strong>2.</strong> Set the locations you want to serve.</p><p><strong>3.</strong> Complete required onboarding and verification.</p><p><strong>4.</strong> Review matching homeowner requests.</p><a class="button primary" href="/pros/signup">Create a Pro Account — 3 Months Free</a></div>
       </div>
     </section>
 
