@@ -111,6 +111,18 @@ export default function ServicesPage() {
               <a href="/book-a-handyman-online" className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-900 hover:bg-slate-50">
                 Book a Handyman Online
               </a>
+              <a href="/handyman-near-me" className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-900 hover:bg-slate-50">
+                Handyman Near Me
+              </a>
+              <a href="/same-day-handyman" className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-900 hover:bg-slate-50">
+                Same-Day Handyman
+              </a>
+              <a href="/small-home-repairs-near-me" className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-900 hover:bg-slate-50">
+                Small Home Repairs Near Me
+              </a>
+              <a href="/free-handyman-estimate" className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-900 hover:bg-slate-50">
+                Free Handyman Estimate
+              </a>
             </div>
           </section>
 
