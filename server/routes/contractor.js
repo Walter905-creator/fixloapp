@@ -2,8 +2,17 @@ const express = require('express');
 const router = express.Router();
 const JobRequest = require('../models/JobRequest');
 const Pro = require('../models/Pro');
+const Invoice = require('../models/Invoice');
 const auth = require('../middleware/auth');
 const smsService = require('../services/smsService');
+const { sendInvoiceEmail } = require('../services/emailService');
+
+const HOURLY_RATE = 75;
+
+let stripe = null;
+if (process.env.STRIPE_SECRET_KEY) {
+  stripe = require('stripe')(process.env.STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' });
+}
 
 // All routes require authentication
 router.use(auth);
@@ -131,7 +140,7 @@ router.post('/jobs/:id/clock-in', async (req, res) => {
   }
 });
 
-// POST /api/contractor/jobs/:id/clock-out - Clock out from job
+// POST /api/contractor/jobs/:id/clock-out - Clock out, calculate billing, charge saved card, and email invoice
 router.post('/jobs/:id/clock-out', async (req, res) => {
   try {
     const mongoose = require('mongoose');
@@ -139,63 +148,157 @@ router.post('/jobs/:id/clock-out', async (req, res) => {
       return res.status(503).json({ error: 'Database not connected' });
     }
 
-    // Verify job is assigned to this contractor
     const job = await JobRequest.findOne({
       _id: req.params.id,
       assignedTo: req.proId
     });
 
     if (!job) {
-      return res.status(404).json({ 
-        error: 'Job not found or not assigned to you' 
-      });
+      return res.status(404).json({ error: 'Job not found or not assigned to you' });
     }
-
     if (!job.clockInTime) {
-      return res.status(400).json({ 
-        error: 'Not clocked in to this job' 
-      });
+      return res.status(400).json({ error: 'Not clocked in to this job' });
     }
-
     if (job.clockOutTime) {
-      return res.status(400).json({ 
-        error: 'Already clocked out from this job' 
-      });
+      return res.status(400).json({ error: 'Already clocked out from this job' });
     }
 
-    // Calculate hours worked
     const clockOutTime = new Date();
-    const MILLISECONDS_PER_HOUR = 1000 * 60 * 60;
-    const totalHours = (clockOutTime - job.clockInTime) / MILLISECONDS_PER_HOUR;
+    const elapsedHours = Math.max((clockOutTime - job.clockInTime) / (1000 * 60 * 60), 0);
+    const totalHours = Math.round(elapsedHours * 100) / 100;
+    const billableHours = Math.max(elapsedHours, 1);
+    const hourlyRate = Number(job.hourlyRate || HOURLY_RATE);
+    const laborCost = Math.round(billableHours * hourlyRate * 100) / 100;
 
-    // Update job with clock-out
-    const updatedJob = await JobRequest.findByIdAndUpdate(
-      req.params.id,
-      {
-        clockOutTime,
-        totalHours: Math.round(totalHours * 100) / 100
-      },
-      { new: true }
-    );
+    const materials = Array.isArray(req.body?.materials)
+      ? req.body.materials
+          .map((item) => ({
+            description: String(item?.description || 'Material').trim().slice(0, 200),
+            cost: Math.max(Number(item?.cost || 0), 0)
+          }))
+          .filter((item) => item.cost > 0)
+      : (Array.isArray(job.materials) ? job.materials : []);
+    const materialsCost = Math.round(materials.reduce((sum, item) => sum + Number(item.cost || 0), 0) * 100) / 100;
+    const totalCost = Math.round((laborCost + materialsCost) * 100) / 100;
+    const prepaidAmount = Math.min(Math.max(Number(job.prepaidAmount || 0), 0), totalCost);
+    const amountDue = Math.round(Math.max(totalCost - prepaidAmount, 0) * 100) / 100;
 
-    // Update pro's status and total hours
+    let completionPaymentIntentId = '';
+    let amountChargedAtCompletion = 0;
+    let paymentSucceeded = amountDue === 0;
+
+    if (amountDue > 0 && stripe && job.stripeCustomerId && job.stripePaymentMethodId && job.paymentAuthConsent) {
+      try {
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: Math.round(amountDue * 100),
+          currency: 'usd',
+          customer: job.stripeCustomerId,
+          payment_method: job.stripePaymentMethodId,
+          off_session: true,
+          confirm: true,
+          description: `Fixlo final charge for ${job.trade || 'home service'}`,
+          metadata: {
+            jobId: String(job._id),
+            hours: totalHours.toFixed(2),
+            hourlyRate: hourlyRate.toFixed(2),
+            materialsCost: materialsCost.toFixed(2),
+            prepaidAmount: prepaidAmount.toFixed(2)
+          }
+        });
+        completionPaymentIntentId = paymentIntent.id;
+        amountChargedAtCompletion = amountDue;
+        paymentSucceeded = paymentIntent.status === 'succeeded';
+      } catch (paymentError) {
+        console.error('❌ Automatic clock-out charge failed:', paymentError.message);
+        paymentSucceeded = false;
+      }
+    }
+
+    job.clockOutTime = clockOutTime;
+    job.totalHours = totalHours;
+    job.hourlyRate = hourlyRate;
+    job.laborCost = laborCost;
+    job.materials = materials;
+    job.materialsCost = materialsCost;
+    job.totalCost = totalCost;
+    job.prepaidAmount = prepaidAmount;
+    job.amountChargedAtCompletion = amountChargedAtCompletion;
+    job.completionPaymentIntentId = completionPaymentIntentId;
+    job.status = 'completed';
+
+    if (paymentSucceeded) {
+      job.paymentStatus = 'captured';
+      job.paidAt = new Date();
+    } else if (amountDue > 0) {
+      job.paymentStatus = 'failed';
+    }
+    await job.save();
+
     await Pro.findByIdAndUpdate(req.proId, {
       isClockedIn: false,
       currentJobId: null,
-      $inc: { totalHoursWorked: totalHours }
+      $inc: { totalHoursWorked: elapsedHours }
     });
 
-    res.json({
+    let invoice = null;
+    if (job.email) {
+      invoice = await Invoice.create({
+        jobRequestId: job._id,
+        customerName: job.name,
+        customerEmail: job.email,
+        customerPhone: job.phone,
+        serviceAddress: job.address,
+        serviceType: job.trade,
+        laborHours: totalHours,
+        laborRate: hourlyRate,
+        laborCost,
+        materials,
+        materialsCost,
+        visitFee: 0,
+        visitFeeWaived: true,
+        subtotal: totalCost,
+        tax: 0,
+        taxRate: 0,
+        total: totalCost,
+        prepaidAmount,
+        amountChargedAtCompletion,
+        stripeChargeId: completionPaymentIntentId || job.stripePaymentIntentId || '',
+        paidAt: paymentSucceeded ? new Date() : null,
+        status: paymentSucceeded ? 'paid' : 'sent'
+      });
+
+      job.invoiceId = invoice.invoiceNumber;
+      try {
+        await sendInvoiceEmail(job.email, invoice, job);
+        job.invoiceEmailSentAt = new Date();
+      } catch (emailError) {
+        console.error('⚠️ Invoice email failed:', emailError.message);
+      }
+      await job.save();
+    }
+
+    return res.json({
       success: true,
-      message: 'Clocked out successfully',
-      job: updatedJob,
-      hoursWorked: Math.round(totalHours * 100) / 100
+      message: paymentSucceeded
+        ? 'Clocked out, payment processed, and invoice emailed.'
+        : 'Clocked out. Invoice created; payment needs attention.',
+      job,
+      hoursWorked: totalHours,
+      billableHours: Math.round(billableHours * 100) / 100,
+      hourlyRate,
+      laborCost,
+      materialsCost,
+      totalCost,
+      prepaidAmount,
+      amountChargedAtCompletion,
+      paymentSucceeded,
+      invoiceNumber: invoice?.invoiceNumber || null
     });
   } catch (error) {
     console.error('❌ Error clocking out:', error);
-    res.status(500).json({ 
+    return res.status(500).json({
       error: 'Failed to clock out',
-      message: error.message 
+      message: error.message
     });
   }
 });
