@@ -5,6 +5,7 @@ const { huntLeads } = require('./aiLeadHunter');
 const { processExpiredPremiumAssignments } = require('./leadAssignmentService');
 const { releaseApprovedCommissions, processWeeklyPayouts } = require('./recruiterCommissionEngine');
 const { sendWeeklySmsToAllRecruiters } = require('./recruiterSmsService');
+const { processProTrialBilling } = require('./proTrialBillingService');
 const {
   processFollowUpCycle,
   reconcileLeadRegistrations,
@@ -249,6 +250,28 @@ function startScheduledTasks() {
     description: 'Alert admins about stale Meta leads with no outreach'
   });
 
+  // Task: Pro trial billing reminders and expiry enforcement
+  // Runs daily at 10 AM Eastern.
+  const proTrialBillingTask = cron.schedule('0 10 * * *', async () => {
+    console.log('[PRO_TRIAL_BILLING] Started');
+    try {
+      const result = await processProTrialBilling();
+      console.log(`[PRO_TRIAL_BILLING] reminders=${result.remindersSent || 0}, errors=${result.reminderErrors || 0}, expired=${result.expiredWithoutBilling || 0}`);
+    } catch (error) {
+      console.error(`[PRO_TRIAL_BILLING] Failed: ${error.message}`);
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York'
+  });
+
+  scheduledTasks.push({
+    name: 'pro-trial-billing',
+    task: proTrialBillingTask,
+    schedule: '0 10 * * *',
+    description: 'Remind Pros 15 days before trial end and expire unpaid trials'
+  });
+
   // Task 4: SEO AI Engine
   // Runs daily at 3:30 AM
   const seoAITask = cron.schedule('30 3 * * *', async () => {
@@ -403,6 +426,8 @@ async function triggerTask(taskName) {
     case 'seo-ai-engine':
       const { runSEOAgent } = require('./seo/seoAgent');
       return await runSEOAgent({ maxPages: 20 });
+    case 'pro-trial-billing':
+      return await processProTrialBilling();
     case 'meta-lead-followup-cycle':
       return await processFollowUpCycle();
     case 'meta-lead-registration-reconcile':

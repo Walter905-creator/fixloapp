@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
 const axios = require('axios');
 const Pro = require('../models/Pro');
 const JobRequest = require('../models/JobRequest');
@@ -66,11 +67,111 @@ function getProfessionalPlanDetails(plan, unitAmount = null, priceId = null) {
 }
 
 function getStripeSubscriptionState(status) {
-  if (status === 'active') return { paymentStatus: 'active', subscriptionStatus: 'active', isActive: true };
+  if (status === 'active' || status === 'trialing') return { paymentStatus: 'active', subscriptionStatus: 'active', isActive: true };
   if (status === 'past_due' || status === 'unpaid') return { paymentStatus: 'failed', subscriptionStatus: 'past_due', isActive: false };
   if (status === 'canceled' || status === 'incomplete_expired') return { paymentStatus: 'cancelled', subscriptionStatus: 'cancelled', isActive: false };
   return { paymentStatus: 'pending', subscriptionStatus: 'inactive', isActive: false };
 }
+
+function getAuthenticatedProId(req) {
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  if (!token || !process.env.JWT_SECRET) return null;
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.role && decoded.role !== 'pro' && decoded.role !== 'admin') return null;
+    return decoded.id || decoded.proId || null;
+  } catch {
+    return null;
+  }
+}
+
+// Create a Stripe subscription checkout that collects a payment method now
+// but does not charge until the existing Fixlo free-access period ends.
+router.post('/pro-trial-checkout', async (req, res) => {
+  try {
+    const proId = getAuthenticatedProId(req);
+    if (!proId || !mongoose.Types.ObjectId.isValid(String(proId))) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    if (!stripe) {
+      return res.status(503).json({ error: 'Payment system not configured' });
+    }
+
+    const pro = await Pro.findById(proId);
+    if (!pro) return res.status(404).json({ error: 'Pro not found' });
+    if (!pro.freeAccessUntil || pro.inviteCodeUsed) {
+      return res.status(400).json({ error: 'This account does not have the standard Fixlo Pro free period.' });
+    }
+    if (new Date(pro.freeAccessUntil) <= new Date()) {
+      return res.status(400).json({ error: 'Your free period has ended. Please choose a paid plan.' });
+    }
+    if (pro.stripeSubscriptionId) {
+      return res.status(409).json({ error: 'A billing subscription is already linked to this account.' });
+    }
+
+    const planDetails = getProfessionalPlanDetails(pro.subscriptionPlan || 'pro');
+    if (!planDetails.stripePriceId) {
+      return res.status(500).json({ error: 'Fixlo Pro pricing is not configured.' });
+    }
+
+    let customerId = pro.stripeCustomerId;
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: pro.email || undefined,
+        phone: pro.phone || undefined,
+        name: pro.name || undefined,
+        metadata: { userId: String(pro._id), source: 'fixlo-pro-trial-billing' }
+      });
+      customerId = customer.id;
+      pro.stripeCustomerId = customerId;
+      await pro.save();
+    }
+
+    const clientUrl = process.env.YOUR_DOMAIN || process.env.CLIENT_URL || process.env.FRONTEND_URL || 'https://www.fixloapp.com';
+    const trialEnd = Math.floor(new Date(pro.freeAccessUntil).getTime() / 1000);
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      customer: customerId,
+      payment_method_collection: 'always',
+      line_items: [{ price: planDetails.stripePriceId, quantity: 1 }],
+      subscription_data: {
+        trial_end: trialEnd,
+        metadata: {
+          userId: String(pro._id),
+          service: 'fixlo-pro-subscription',
+          tier: 'PRO',
+          plan: planDetails.plan,
+          freeTrialConversion: 'true'
+        }
+      },
+      metadata: {
+        userId: String(pro._id),
+        customerId,
+        service: 'fixlo-pro-subscription',
+        tier: 'PRO',
+        plan: planDetails.plan,
+        freeTrialConversion: 'true'
+      },
+      success_url: `${clientUrl}/dashboard/pro?tab=Billing&billing=ready&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${clientUrl}/dashboard/pro?tab=Billing&billing=cancelled`
+    });
+
+    pro.stripeSessionId = session.id;
+    await pro.save();
+
+    return res.json({
+      sessionUrl: session.url,
+      trialEndsAt: pro.freeAccessUntil,
+      plan: planDetails.plan,
+      monthlyPrice: planDetails.subscriptionPrice
+    });
+  } catch (error) {
+    console.error('❌ Error creating Pro trial billing checkout:', error.message);
+    return res.status(500).json({ error: 'Unable to start secure billing setup.' });
+  }
+});
 
 // Create SetupIntent for payment method authorization
 router.post('/create-setup-intent', async (req, res) => {
@@ -666,6 +767,9 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
               );
               updateData.stripeSubscriptionId = session.subscription;
               updateData.paymentStatus = session.subscription ? 'active' : 'pending';
+              if (session.metadata?.freeTrialConversion === 'true') {
+                updateData.trialPaymentMethodAddedAt = new Date();
+              }
               updateData.subscriptionActive = true;
               updateData.subscriptionType = 'monthly';
               updateData.subscriptionStartDate = new Date();
