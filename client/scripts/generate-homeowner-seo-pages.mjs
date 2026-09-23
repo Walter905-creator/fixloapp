@@ -29,8 +29,17 @@ function renderFaq(service, city) {
 function renderPage(serviceSlug, service, citySlug, city) {
   const location = `${city.city}, ${city.state}`;
   const canonical = `${SITE}/services/${serviceSlug}/${citySlug}`;
-  const title = `${service.label} in ${location} | Request Service with Fixlo`;
-  const description = `Need ${service.label.toLowerCase()} in ${location}? Submit your project through Fixlo and connect with local professionals for estimates, repairs, installations, and home improvements.`;
+  const isHandyman = serviceSlug === 'handyman';
+  const requestHref = isHandyman
+    ? `/request?mode=handyman&city=${encodeURIComponent(citySlug)}`
+    : `/request?service=${encodeURIComponent(serviceSlug)}&city=${encodeURIComponent(citySlug)}`;
+  const requestLabel = isHandyman ? 'Book a $75/Hour Handyman' : 'Request Service';
+  const title = isHandyman
+    ? `Handyman in ${location} | $75/Hour Direct Booking | Fixlo`
+    : `${service.label} in ${location} | Request Service with Fixlo`;
+  const description = isHandyman
+    ? `Need a handyman in ${location}? Fixlo direct handyman booking uses a $75 labor rate per hour plus materials, with secure checkout, live work-time tracking, and a detailed invoice.`
+    : `Need ${service.label.toLowerCase()} in ${location}? Submit your project through Fixlo and connect with local professionals for estimates, repairs, installations, and home improvements.`;
   const faq = renderFaq(service, city);
   const relatedServices = Object.entries(HOMEOWNER_SERVICES)
     .filter(([slug]) => slug !== serviceSlug)
@@ -107,13 +116,16 @@ function renderPage(serviceSlug, service, citySlug, city) {
         <div class="eyebrow">Local home-service request</div>
         <h1>${escapeHtml(service.label)} in ${escapeHtml(location)}</h1>
         <p>${escapeHtml(service.intro)} Tell Fixlo what you need and connect with professionals serving ${escapeHtml(city.region)}.</p>
-        <div class="actions"><a class="button primary" href="/request?service=${encodeURIComponent(serviceSlug)}&city=${encodeURIComponent(citySlug)}">Request Service</a><a class="button secondary" href="/services/${serviceSlug}">Learn about this service</a></div>
+        <div class="actions"><a class="button primary" href="${requestHref}">${escapeHtml(requestLabel)}</a><a class="button secondary" href="/services/${serviceSlug}">Learn about this service</a></div>
         <div class="fine">Availability, pricing, licensing, and project terms vary by professional and location.</div>
+        ${isHandyman
+          ? '<div class="links" style="margin-top:16px"><a href="/handyman-75-per-hour">$75/hour handyman pricing</a><a href="/book-a-handyman-online">Book a handyman online</a><a href="/free-home-service-quote">Get a free home service quote</a></div>'
+          : '<div class="links" style="margin-top:16px"><a href="/free-home-service-quote">Get a free home service quote</a></div>'}
       </div>
       <aside class="card"><div class="eyebrow">Common requests</div><ul>${service.tasks.map((task) => `<li>${escapeHtml(task)}</li>`).join('')}</ul></aside>
     </section>
 
-    <section class="light"><div class="wrap grid"><div><div class="eyebrow">How Fixlo works</div><h2>Describe the project once</h2><p>Add the work needed, location, timing, photos, and project details. Clear requests make it easier for professionals to evaluate the job.</p><div class="grid"><div class="feature">Local service matching</div><div class="feature">Mobile-friendly request form</div><div class="feature">Project details in one place</div><div class="feature">No obligation to accept an estimate</div></div></div><div class="card steps"><h2>Request ${escapeHtml(service.label.toLowerCase())}</h2><p><strong>1.</strong> Describe the project.</p><p><strong>2.</strong> Add your location and contact details.</p><p><strong>3.</strong> Upload photos when helpful.</p><p><strong>4.</strong> Review responses from available professionals.</p><a class="button primary" href="/request?service=${encodeURIComponent(serviceSlug)}&city=${encodeURIComponent(citySlug)}">Start your request</a></div></div></section>
+    <section class="light"><div class="wrap grid"><div><div class="eyebrow">How Fixlo works</div><h2>Describe the project once</h2><p>Add the work needed, location, timing, photos, and project details. Clear requests make it easier for professionals to evaluate the job.</p><div class="grid"><div class="feature">Local service matching</div><div class="feature">Mobile-friendly request form</div><div class="feature">Project details in one place</div><div class="feature">No obligation to accept an estimate</div></div></div><div class="card steps"><h2>Request ${escapeHtml(service.label.toLowerCase())}</h2><p><strong>1.</strong> Describe the project.</p><p><strong>2.</strong> Add your location and contact details.</p><p><strong>3.</strong> Upload photos when helpful.</p><p><strong>4.</strong> Review responses from available professionals.</p><a class="button primary" href="${requestHref}">${isHandyman ? 'Book a Handyman' : 'Start your request'}</a></div></div></section>
 
     <section class="faq"><div class="wrap"><h2>Questions about ${escapeHtml(service.label.toLowerCase())}</h2><div class="faq-grid">${faq.map((item) => `<article><h3>${escapeHtml(item.q)}</h3><p>${escapeHtml(item.a)}</p></article>`).join('')}</div></div></section>
 
