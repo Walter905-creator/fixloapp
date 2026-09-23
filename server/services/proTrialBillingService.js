@@ -14,13 +14,31 @@ function isStandardFreeTrial(pro) {
   return !!pro.freeAccessUntil && !pro.inviteCodeUsed;
 }
 
+function getTrialBillingState(pro, now = new Date()) {
+  if (!isStandardFreeTrial(pro)) {
+    return { standardTrial: false, daysRemaining: null, shouldRemind: false, shouldExpire: false };
+  }
+  const end = new Date(pro.freeAccessUntil);
+  const remaining = daysUntil(end, now);
+  const hasBilling = !!pro.stripeSubscriptionId;
+  return {
+    standardTrial: true,
+    daysRemaining: remaining,
+    shouldRemind: end > now && remaining <= 15 && !pro.trialReminder15DaySentAt && !hasBilling,
+    shouldExpire: end <= now && !hasBilling && !pro.trialExpiredAt
+  };
+}
+
 async function sendTrialPaymentReminder(pro, now = new Date()) {
   const remaining = daysUntil(pro.freeAccessUntil, now);
   const billingUrl = `${FRONTEND_URL}/dashboard/pro?tab=Billing`;
   const price = Number(pro.subscriptionPrice || 59.99).toFixed(2);
 
+  let delivered = false;
+
   if (pro.email) {
-    await sendEmail(
+    try {
+      await sendEmail(
       pro.email,
       'Your Fixlo Pro free period ends soon',
       `
@@ -33,15 +51,26 @@ async function sendTrialPaymentReminder(pro, now = new Date()) {
           <p style="font-size:13px;color:#6b7280">If you do not add a payment method, paid billing will not start automatically and Pro access may end when the free period expires.</p>
         </div>
       `
-    );
+      );
+      delivered = true;
+    } catch (error) {
+      console.error(`[PRO_TRIAL_BILLING] Email reminder failed for ${pro._id}: ${error.message}`);
+    }
   }
 
   if (pro.phone && pro.smsConsent) {
-    await sendSms(
+    try {
+      await sendSms(
       pro.phone,
       `Fixlo: Your 3-month Pro free period ends in ${remaining} day${remaining === 1 ? '' : 's'}. Add a payment method in Billing to continue after the trial. No charge before it ends. Reply STOP to unsubscribe.`
-    );
+      );
+      delivered = true;
+    } catch (error) {
+      console.error(`[PRO_TRIAL_BILLING] SMS reminder failed for ${pro._id}: ${error.message}`);
+    }
   }
+
+  if (!delivered) throw new Error('No trial reminder channel could be delivered');
 }
 
 async function processProTrialBilling(now = new Date()) {
@@ -57,7 +86,7 @@ async function processProTrialBilling(now = new Date()) {
   let reminderErrors = 0;
 
   for (const pro of reminderCandidates) {
-    if (!isStandardFreeTrial(pro)) continue;
+    if (!getTrialBillingState(pro, now).shouldRemind) continue;
     try {
       await sendTrialPaymentReminder(pro, now);
       pro.trialReminder15DaySentAt = now;
@@ -78,9 +107,7 @@ async function processProTrialBilling(now = new Date()) {
   let expiredWithoutBilling = 0;
 
   for (const pro of expiryCandidates) {
-    if (!isStandardFreeTrial(pro)) continue;
-    if (pro.stripeSubscriptionId) continue;
-    if (pro.trialExpiredAt) continue;
+    if (!getTrialBillingState(pro, now).shouldExpire) continue;
 
     pro.isActive = false;
     pro.subscriptionActive = false;
@@ -102,6 +129,7 @@ async function processProTrialBilling(now = new Date()) {
 module.exports = {
   DAY_MS,
   daysUntil,
+  getTrialBillingState,
   processProTrialBilling,
   sendTrialPaymentReminder
 };
