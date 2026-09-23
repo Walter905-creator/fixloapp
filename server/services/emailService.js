@@ -152,85 +152,7 @@ async function sendJobEmailNotification(email, eventType, data = {}) {
 
 
 function money(value) {
-  return '
- * Tries SMS first, falls back to email if SMS fails
- * @param {object} job - Job object with phone and email
- * @param {string} eventType - Type of event
- * @param {object} data - Additional data for templates
- * @returns {Promise<object>} - Notification result
- */
-async function sendNotificationWithFallback(job, eventType, data = {}) {
-  const { sendJobNotification } = require('./smsService');
-  
-  const result = {
-    sms: { sent: false },
-    email: { sent: false },
-    method: null
-  };
-
-  // Try SMS first if phone and consent available
-  if (job.phone && job.smsConsent && !job.smsOptOut) {
-    try {
-      const smsResult = await sendJobNotification(
-        job.phone,
-        eventType,
-        data,
-        job.smsConsent,
-        job.smsOptOut
-      );
-      
-      if (!smsResult.disabled) {
-        result.sms = { sent: true, ...smsResult };
-        result.method = 'sms';
-        console.log(`✅ SMS notification sent successfully for ${eventType}`);
-        return result;
-      }
-    } catch (smsError) {
-      console.error(`❌ SMS failed for ${eventType}:`, smsError.message);
-      result.sms = { sent: false, error: smsError.message };
-      
-      // Log SMS failure
-      await logNotificationFailure({
-        notificationType: 'sms',
-        recipientId: job._id?.toString(),
-        recipientEmail: job.email,
-        errorMessage: smsError.message,
-        metadata: { eventType, phone: job.phone }
-      });
-    }
-  }
-
-  // Fallback to email if SMS failed or unavailable
-  if (job.email) {
-    try {
-      console.log(`📧 Falling back to email notification for ${eventType}`);
-      const emailResult = await sendJobEmailNotification(job.email, eventType, data);
-      
-      if (!emailResult.disabled) {
-        result.email = { sent: true, ...emailResult };
-        result.method = 'email_fallback';
-        console.log(`✅ Email fallback successful for ${eventType}`);
-        return result;
-      }
-    } catch (emailError) {
-      console.error(`❌ Email fallback also failed for ${eventType}:`, emailError.message);
-      result.email = { sent: false, error: emailError.message };
-    }
-  }
-
-  // Both methods failed
-  console.error(`❌ All notification methods failed for ${eventType}`);
-  result.method = 'failed';
-  return result;
-}
-
-module.exports = {
-  sendEmail,
-  sendJobEmailNotification,
-  sendInvoiceEmail,
-  sendNotificationWithFallback
-};
- + Number(value || 0).toFixed(2);
+  return '$' + Number(value || 0).toFixed(2);
 }
 
 async function sendInvoiceEmail(email, invoice, job) {
@@ -277,24 +199,10 @@ async function sendInvoiceEmail(email, invoice, job) {
  */
 async function sendNotificationWithFallback(job, eventType, data = {}) {
   const { sendJobNotification } = require('./smsService');
-  
-  const result = {
-    sms: { sent: false },
-    email: { sent: false },
-    method: null
-  };
-
-  // Try SMS first if phone and consent available
+  const result = { sms: { sent: false }, email: { sent: false }, method: null };
   if (job.phone && job.smsConsent && !job.smsOptOut) {
     try {
-      const smsResult = await sendJobNotification(
-        job.phone,
-        eventType,
-        data,
-        job.smsConsent,
-        job.smsOptOut
-      );
-      
+      const smsResult = await sendJobNotification(job.phone, eventType, data, job.smsConsent, job.smsOptOut);
       if (!smsResult.disabled) {
         result.sms = { sent: true, ...smsResult };
         result.method = 'sms';
@@ -304,24 +212,13 @@ async function sendNotificationWithFallback(job, eventType, data = {}) {
     } catch (smsError) {
       console.error(`❌ SMS failed for ${eventType}:`, smsError.message);
       result.sms = { sent: false, error: smsError.message };
-      
-      // Log SMS failure
-      await logNotificationFailure({
-        notificationType: 'sms',
-        recipientId: job._id?.toString(),
-        recipientEmail: job.email,
-        errorMessage: smsError.message,
-        metadata: { eventType, phone: job.phone }
-      });
+      await logNotificationFailure({ notificationType: 'sms', recipientId: job._id?.toString(), recipientEmail: job.email, errorMessage: smsError.message, metadata: { eventType, phone: job.phone } });
     }
   }
-
-  // Fallback to email if SMS failed or unavailable
   if (job.email) {
     try {
       console.log(`📧 Falling back to email notification for ${eventType}`);
       const emailResult = await sendJobEmailNotification(job.email, eventType, data);
-      
       if (!emailResult.disabled) {
         result.email = { sent: true, ...emailResult };
         result.method = 'email_fallback';
@@ -333,8 +230,6 @@ async function sendNotificationWithFallback(job, eventType, data = {}) {
       result.email = { sent: false, error: emailError.message };
     }
   }
-
-  // Both methods failed
   console.error(`❌ All notification methods failed for ${eventType}`);
   result.method = 'failed';
   return result;
@@ -343,5 +238,6 @@ async function sendNotificationWithFallback(job, eventType, data = {}) {
 module.exports = {
   sendEmail,
   sendJobEmailNotification,
+  sendInvoiceEmail,
   sendNotificationWithFallback
 };
