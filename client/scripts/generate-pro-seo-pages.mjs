@@ -136,7 +136,7 @@ function renderPage(tradeSlug, trade, citySlug, city) {
           <p>Fixlo helps homeowners submit detailed service requests and helps professionals discover opportunities that fit their business. Keep lead notifications and activity organized in one place.</p>
           <div class="grid"><div class="feature">Local lead notifications</div><div class="feature">Flexible service area</div><div class="feature">Mobile-friendly access</div><div class="feature">Control over the work you accept</div></div>
         </div>
-        <div class="card steps"><h2>Start receiving matching opportunities</h2><p><strong>1.</strong> Create your pro account and select your trade.</p><p><strong>2.</strong> Set the locations you want to serve.</p><p><strong>3.</strong> Complete required onboarding and verification.</p><p><strong>4.</strong> Review matching homeowner requests.</p><a class="button primary" href="/pros/signup">Create a Pro Account — 3 Months Free</a></div>
+        <div class="card steps"><h2>Start receiving matching opportunities</h2><p><strong>1.</strong> Create your pro account and select your trade.</p><p><strong>2.</strong> Set the locations you want to serve.</p><p><strong>3.</strong> Complete required onboarding and verification.</p><p><strong>4.</strong> Review matching homeowner requests.</p><a class="button primary" href="/pros#pro-signup-form">Create a Pro Account — 3 Months Free</a></div>
       </div>
     </section>
 
