@@ -177,6 +177,21 @@ const JobRequestSchema = new mongoose.Schema({
     default: 0
   },
   // Billing
+  hourlyRate: {
+    type: Number,
+    default: 75
+  },
+  prepaidAmount: {
+    type: Number,
+    default: 0
+  },
+  amountChargedAtCompletion: {
+    type: Number,
+    default: 0
+  },
+  invoiceEmailSentAt: {
+    type: Date
+  },
   laborCost: {
     type: Number,
     default: 0
@@ -191,7 +206,7 @@ const JobRequestSchema = new mongoose.Schema({
   },
   visitFee: {
     type: Number,
-    default: 150
+    default: 0
   },
   totalCost: {
     type: Number,
