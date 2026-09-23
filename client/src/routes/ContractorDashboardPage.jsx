@@ -126,7 +126,7 @@ export default function ContractorDashboardPage() {
 
     try {
       setActionLoading(true);
-      
+
       const token = localStorage.getItem('proToken');
       const response = await fetch(`${API_BASE}/api/contractor/jobs/${jobId}/clock-out`, {
         method: 'POST',
@@ -137,7 +137,11 @@ export default function ContractorDashboardPage() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to clock out');
+      }
+
+      const data = await response.json();
       alert(
         'Clocked out successfully.\n' +
         'Hours worked: ' + Number(data.hoursWorked || 0).toFixed(2) + '\n' +
