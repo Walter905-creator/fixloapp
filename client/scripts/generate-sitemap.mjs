@@ -10,7 +10,8 @@ const TODAY = new Date().toISOString().slice(0, 10);
 
 const STATIC_PATHS = [
   "/", "/pricing", "/services", "/terms", "/pros", "/pros/signup", "/request",
-  "/free-home-service-quote", "/handyman-75-per-hour", "/book-a-handyman-online"
+  "/free-home-service-quote", "/handyman-75-per-hour", "/book-a-handyman-online",
+  "/handyman-near-me", "/same-day-handyman", "/small-home-repairs-near-me", "/free-handyman-estimate"
 ];
 
 const url = (p) => `${SITE}${p.startsWith("/") ? "" : "/"}${p}`.replace(/\/+$/, "");
