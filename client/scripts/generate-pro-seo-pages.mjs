@@ -24,8 +24,12 @@ function titleCase(value = '') {
 function renderPage(tradeSlug, trade, citySlug, city) {
   const location = `${city.city}, ${city.state}`;
   const canonical = `${SITE}/${tradeSlug}-jobs/${citySlug}`;
-  const title = `${trade.label} Jobs in ${location} | Join Fixlo Pro`;
-  const description = `Grow your ${trade.label.toLowerCase()} business in ${city.city}. Join Fixlo Pro to receive local homeowner opportunities and choose the work that fits your service area.`;
+  const title = tradeSlug === 'handyman'
+    ? `Handyman Jobs in ${location} | Local Handyman Leads | Fixlo`
+    : `${trade.label} Jobs in ${location} | Local Leads | Fixlo Pro`;
+  const description = tradeSlug === 'handyman'
+    ? `Looking for handyman jobs in ${location}? Join Fixlo Pro to receive local homeowner repair opportunities, choose the work you want, and grow your handyman business.`
+    : `Grow your ${trade.label.toLowerCase()} business in ${city.city}. Join Fixlo Pro to receive local homeowner opportunities and choose the work that fits your service area.`;
   const faq = [
     {
       q: `How do ${trade.label.toLowerCase()} professionals receive opportunities through Fixlo?`,
@@ -118,6 +122,7 @@ function renderPage(tradeSlug, trade, citySlug, city) {
         <p>Connect with homeowners looking for dependable ${escapeHtml(trade.plural)}. Choose opportunities that match your trade, schedule, and service area.</p>
         <div class="actions"><a class="button primary" href="/pros/signup">Join Fixlo Pro</a><a class="button secondary" href="/pros">See how Fixlo works</a></div>
         <div class="fine">Independent professionals choose which opportunities to pursue. Lead availability varies by market and trade.</div>
+        ${tradeSlug === "handyman" ? `<div class="links" style="margin-top:16px"><a href="/handyman-leads">Handyman leads</a><a href="/get-more-handyman-jobs">Get more handyman jobs</a><a href="/jobs-for-handymen">Jobs for handymen</a><a href="/contractor-leads">Contractor leads</a></div>` : `<div class="links" style="margin-top:16px"><a href="/contractor-leads">Contractor leads</a><a href="/home-service-leads">Home service leads</a></div>`}
       </div>
       <aside class="card"><div class="eyebrow">Common homeowner requests</div><ul>${trade.services.map((service) => `<li>${escapeHtml(titleCase(service))}</li>`).join('')}</ul></aside>
     </section>
