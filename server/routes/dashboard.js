@@ -614,7 +614,7 @@ router.get('/pro', async (req, res) => {
     }
 
     const pro = await Pro.findById(requester.id)
-      .select('name role subscriptionStatus subscriptionType subscriptionActive backgroundCheckStatus verificationStatus notificationSettings smsConsent stripeCustomerId stripeSubscriptionId subscriptionEndDate')
+      .select('name role email phone subscriptionStatus subscriptionType subscriptionActive subscriptionPlan subscriptionPrice backgroundCheckStatus verificationStatus notificationSettings smsConsent stripeCustomerId stripeSubscriptionId subscriptionEndDate freeAccessUntil trialReminder15DaySentAt trialPaymentMethodAddedAt')
       .lean();
     if (!pro) return res.status(404).json({ error: 'Pro not found' });
 
@@ -689,10 +689,19 @@ router.get('/pro', async (req, res) => {
       || pro.subscriptionType
       || 'inactive';
 
+    const trialEndsAt = pro.freeAccessUntil || null;
+    const trialDaysRemaining = trialEndsAt
+      ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - now.getTime()) / (24 * 60 * 60 * 1000)))
+      : null;
+    const standardTrial = !!trialEndsAt && !pro.inviteCodeUsed;
+    const paymentMethodRequired = standardTrial && trialDaysRemaining !== null && trialDaysRemaining <= 15 && !pro.stripeSubscriptionId;
+
     return res.json({
       user: {
         id: String(pro._id),
         name: pro.name || '',
+        email: pro.email || '',
+        phone: pro.phone || '',
         role: 'pro'
       },
       summary: {
@@ -718,7 +727,15 @@ router.get('/pro', async (req, res) => {
       billing: {
         stripeCustomerId: pro.stripeCustomerId || '',
         subscriptionStatus,
-        currentPeriodEnd: pro.subscriptionEndDate || ''
+        subscriptionPlan: pro.subscriptionPlan || 'pro',
+        monthlyPrice: Number(pro.subscriptionPrice || 59.99),
+        currentPeriodEnd: pro.subscriptionEndDate || '',
+        freeAccessUntil: trialEndsAt,
+        trialDaysRemaining,
+        paymentMethodRequired,
+        paymentMethodAdded: !!pro.stripeSubscriptionId,
+        trialReminderSentAt: pro.trialReminder15DaySentAt || null,
+        trialPaymentMethodAddedAt: pro.trialPaymentMethodAddedAt || null
       }
     });
   } catch (error) {
