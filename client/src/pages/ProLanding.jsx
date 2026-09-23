@@ -240,7 +240,7 @@ export default function ProLanding() {
       <ExitIntentModal
         enabled
         title="Keep local jobs coming in"
-        description="Create your Fixlo Pro account today and get your first 3 months free. No credit card is required to start."
+        description="Create your Fixlo Pro account today and get your first 3 months free. No credit card is required to start; we’ll ask you to add a payment method 15 days before the free period ends."
         ctaHref="#pro-signup-form"
         ctaLabel="Join Fixlo Today"
       />
