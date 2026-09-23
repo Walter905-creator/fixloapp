@@ -759,6 +759,7 @@ export default function HomeownerDashboard() {
                 </div>
               ) : null}
               <ProjectTimeline events={selectedProject.timeline || selectedProject.events || []} />
+            </div>
           </>
         ) : (
           <EmptyState title="Select a project" message="Choose a project to view the full timeline." />
