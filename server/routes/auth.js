@@ -591,7 +591,7 @@ router.post('/signup/pro', requireDatabase, async (req, res) => {
     // If a valid invite code is provided, its duration replaces the default 3 months.
     const freeAccessUntil = inviteDoc
       ? InviteCode.calcFreeAccessUntil(inviteDoc.membershipDuration || '12months')
-      : InviteCode.calcFreeAccessUntil('3months');
+      : InviteCode.calcFreeAccessUntil('90days');
 
     const pro = await Pro.create({
       name: name.trim(),
