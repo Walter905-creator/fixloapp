@@ -429,6 +429,18 @@ const proSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  trialReminder15DaySentAt: {
+    type: Date,
+    default: null
+  },
+  trialPaymentMethodAddedAt: {
+    type: Date,
+    default: null
+  },
+  trialExpiredAt: {
+    type: Date,
+    default: null
+  },
 
   // Role-based access control
   role: {
