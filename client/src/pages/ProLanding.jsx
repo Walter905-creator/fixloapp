@@ -30,7 +30,7 @@ const BENEFITS = [
   'Flexible work area',
   'Build your reputation',
   'Manage jobs from anywhere',
-  '50% off membership — July only'
+  'Choose opportunities that fit your trade and service area'
 ];
 
 const TESTIMONIALS = [
@@ -230,7 +230,7 @@ export default function ProLanding() {
     <>
       <HelmetSEO
         title="Get More Local Jobs With Fixlo | Fixlo Pro"
-        description="Grow your business with verified local leads. Join Fixlo Pro — Limited-Time July Offer: 50% off your first month. Join before July 31 and save."
+        description="Grow your home service business with local homeowner opportunities. Join Fixlo Pro to receive matching leads, manage jobs, and choose work that fits your trade and service area."
         canonicalPathname="/pros"
         structuredData={structuredData}
       />
@@ -286,6 +286,23 @@ export default function ProLanding() {
           </div>
 
           <ProSignupForm />
+        </div>
+      </section>
+
+      <section className="border-y border-slate-200 bg-slate-50 py-14">
+        <div className="container-xl">
+          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-emerald-600">Grow your service business</p>
+          <h2 className="mt-3 text-3xl font-extrabold text-slate-950">Find local jobs and homeowner leads</h2>
+          <p className="mt-3 max-w-3xl text-slate-600">
+            Explore Fixlo resources for independent pros looking for handyman jobs, contractor leads, and home-service opportunities in their market.
+          </p>
+          <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <Link to="/handyman-leads" className="rounded-2xl border border-slate-200 bg-white p-4 font-bold text-slate-900 shadow-sm hover:border-emerald-300">Handyman Leads</Link>
+            <Link to="/contractor-leads" className="rounded-2xl border border-slate-200 bg-white p-4 font-bold text-slate-900 shadow-sm hover:border-emerald-300">Contractor Leads</Link>
+            <Link to="/home-service-leads" className="rounded-2xl border border-slate-200 bg-white p-4 font-bold text-slate-900 shadow-sm hover:border-emerald-300">Home Service Leads</Link>
+            <Link to="/get-more-handyman-jobs" className="rounded-2xl border border-slate-200 bg-white p-4 font-bold text-slate-900 shadow-sm hover:border-emerald-300">Get More Handyman Jobs</Link>
+            <Link to="/jobs-for-handymen" className="rounded-2xl border border-slate-200 bg-white p-4 font-bold text-slate-900 shadow-sm hover:border-emerald-300">Jobs for Handymen</Link>
+          </div>
         </div>
       </section>
 
