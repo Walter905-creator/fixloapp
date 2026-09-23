@@ -99,6 +99,12 @@ router.post('/jobs/:id/clock-in', async (req, res) => {
       });
     }
 
+    if (!job.paymentAuthConsent || !job.stripeCustomerId || !job.stripePaymentMethodId) {
+      return res.status(402).json({
+        error: 'Homeowner must confirm the booking and add a payment method before clock-in.'
+      });
+    }
+
     // Update job with clock-in
     const updatedJob = await JobRequest.findByIdAndUpdate(
       req.params.id,
