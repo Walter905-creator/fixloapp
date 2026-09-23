@@ -98,6 +98,23 @@ export default function ServicesPage() {
           </div>
 
           <section className="services-card mt-12 p-6 md:p-8">
+            <p className="services-gold text-sm font-black uppercase tracking-[0.18em]">Popular homeowner options</p>
+            <h2 className="mt-2 text-2xl font-black text-slate-900">Free Quotes and Direct Handyman Booking</h2>
+            <p className="mt-2 text-slate-600">
+              Start with a free home-service quote, or book direct handyman labor at $75/hour plus materials where direct booking is available.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <a href="/free-home-service-quote" className="services-button">Get a Free Quote</a>
+              <a href="/handyman-75-per-hour" className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-bold text-slate-900 hover:bg-amber-100">
+                $75/Hour Handyman
+              </a>
+              <a href="/book-a-handyman-online" className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-900 hover:bg-slate-50">
+                Book a Handyman Online
+              </a>
+            </div>
+          </section>
+
+          <section className="services-card mt-12 p-6 md:p-8">
             <p className="services-gold text-sm font-black uppercase tracking-[0.18em]">Local professionals</p>
             <h2 className="mt-2 text-2xl font-black text-slate-900">Popular Service Locations</h2>
             <p className="mb-6 mt-2 text-slate-600">
