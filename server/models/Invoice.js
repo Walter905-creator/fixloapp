@@ -8,7 +8,6 @@ const InvoiceSchema = new mongoose.Schema({
   },
   invoiceNumber: {
     type: String,
-    required: true,
     unique: true
   },
   customerName: {
@@ -35,11 +34,11 @@ const InvoiceSchema = new mongoose.Schema({
   laborHours: {
     type: Number,
     required: true,
-    min: 2 // 2-hour minimum
+    min: 0
   },
   laborRate: {
     type: Number,
-    default: 150
+    default: 75
   },
   laborCost: {
     type: Number,
@@ -63,7 +62,7 @@ const InvoiceSchema = new mongoose.Schema({
   // Visit Fee
   visitFee: {
     type: Number,
-    default: 150
+    default: 0
   },
   visitFeeWaived: {
     type: Boolean,
@@ -85,6 +84,14 @@ const InvoiceSchema = new mongoose.Schema({
   total: {
     type: Number,
     required: true
+  },
+  prepaidAmount: {
+    type: Number,
+    default: 0
+  },
+  amountChargedAtCompletion: {
+    type: Number,
+    default: 0
   },
   // Payment
   stripeChargeId: {
