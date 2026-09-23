@@ -81,6 +81,8 @@ router.post('/handyman-checkout', async (req, res) => {
       status: 'pending',
       paymentProvider: 'stripe',
       paymentStatus: 'none',
+      hourlyRate: 75,
+      prepaidAmount: 75,
       laborCost: 75,
       materialsCost: 0,
       totalCost: 75,
@@ -89,6 +91,8 @@ router.post('/handyman-checkout', async (req, res) => {
       termsAcceptedAt: new Date(),
       pricingAcceptance: true,
       pricingAcceptanceAt: new Date(),
+      paymentAuthConsent: true,
+      paymentAuthConsentAt: new Date(),
       smsConsent: Boolean(smsConsent),
       smsConsentAt: smsConsent ? new Date() : null
     });
@@ -98,6 +102,10 @@ router.post('/handyman-checkout', async (req, res) => {
       mode: 'payment',
       payment_method_types: ['card'],
       customer_email: normalizedEmail,
+      customer_creation: 'always',
+      payment_intent_data: {
+        setup_future_usage: 'off_session'
+      },
       line_items: [{
         price_data: {
           currency: 'usd',
@@ -143,7 +151,9 @@ router.get('/handyman-checkout/verify', async (req, res) => {
     const sessionId = clean(req.query.session_id, 255);
     if (!sessionId) return res.status(400).json({ verified: false, message: 'Missing payment session.' });
 
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ['payment_intent']
+    });
     const verified = session.mode === 'payment'
       && session.payment_status === 'paid'
       && Number(session.amount_total) === HANDYMAN_FIRST_HOUR_CENTS
@@ -161,7 +171,14 @@ router.get('/handyman-checkout/verify', async (req, res) => {
       job.paymentStatus = 'captured';
       job.paymentCapturedAt = new Date();
       job.paidAt = new Date();
-      job.stripePaymentIntentId = typeof session.payment_intent === 'string' ? session.payment_intent : '';
+      const paymentIntent = session.payment_intent;
+      job.stripePaymentIntentId = typeof paymentIntent === 'string' ? paymentIntent : (paymentIntent?.id || '');
+      job.stripeCustomerId = typeof session.customer === 'string' ? session.customer : (session.customer?.id || '');
+      job.stripePaymentMethodId = typeof paymentIntent?.payment_method === 'string'
+        ? paymentIntent.payment_method
+        : (paymentIntent?.payment_method?.id || '');
+      job.prepaidAmount = 75;
+      job.hourlyRate = 75;
       await job.save();
 
       try {
