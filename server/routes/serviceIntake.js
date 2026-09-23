@@ -430,7 +430,8 @@ router.post('/clock-out/:jobId', async (req, res) => {
 
     // Update job
     job.clockOutTime = clockOutTime;
-    job.totalHours = billableHours;
+    job.totalHours = Math.round(hoursWorked * 100) / 100;
+    job.hourlyRate = 75;
     job.laborCost = laborCost;
     job.materials = materialsArray;
     job.materialsCost = materialsCost;
@@ -442,13 +443,14 @@ router.post('/clock-out/:jobId', async (req, res) => {
 
     // Charge the customer via Stripe
     let chargeId = null;
-    if (stripe && job.stripePaymentMethodId && job.stripeCustomerId) {
-      // Prevent duplicate charges
-      if (job.stripePaymentIntentId && job.paidAt) {
-        console.log(`⚠️ Job ${jobId} already charged: ${job.stripePaymentIntentId}`);
+    const amountDue = Math.max(totalCost - Number(job.prepaidAmount || 0), 0);
+    if (stripe && job.stripePaymentMethodId && job.stripeCustomerId && amountDue > 0) {
+      // Prevent duplicate completion charges while preserving the first-hour payment record.
+      if (job.completionPaymentIntentId) {
+        console.log(`⚠️ Job ${jobId} already has completion charge: ${job.completionPaymentIntentId}`);
         return res.status(400).json({
           success: false,
-          message: 'This job has already been charged',
+          message: 'This job has already been charged at clock-out',
           invoiceNumber: job.invoiceId
         });
       }
@@ -456,7 +458,7 @@ router.post('/clock-out/:jobId', async (req, res) => {
       try {
         // Create and immediately confirm payment (off_session: true, confirm: true)
         const paymentIntent = await stripe.paymentIntents.create({
-          amount: Math.round(Math.max(totalCost - Number(job.prepaidAmount || 0), 0) * 100), // First-hour payment is credited
+          amount: Math.round(amountDue * 100), // First-hour payment is credited
           currency: 'usd',
           customer: job.stripeCustomerId,
           payment_method: job.stripePaymentMethodId,
@@ -474,7 +476,8 @@ router.post('/clock-out/:jobId', async (req, res) => {
         });
 
         chargeId = paymentIntent.id;
-        job.stripePaymentIntentId = chargeId;
+        job.completionPaymentIntentId = chargeId;
+        job.amountChargedAtCompletion = amountDue;
         job.paidAt = new Date();
         job.status = 'completed';
         await job.save();
@@ -503,7 +506,7 @@ router.post('/clock-out/:jobId', async (req, res) => {
       customerPhone: job.phone,
       serviceAddress: job.address,
       serviceType: job.trade,
-      laborHours: billableHours,
+      laborHours: Math.round(hoursWorked * 100) / 100,
       laborRate: 75,
       laborCost: laborCost,
       materials: materialsArray,
@@ -515,7 +518,7 @@ router.post('/clock-out/:jobId', async (req, res) => {
       taxRate: 0,
       total: totalCost,
       prepaidAmount: Number(job.prepaidAmount || 0),
-      amountChargedAtCompletion: Math.max(totalCost - Number(job.prepaidAmount || 0), 0),
+      amountChargedAtCompletion: chargeId ? amountDue : 0,
       stripeChargeId: chargeId,
       paidAt: chargeId ? new Date() : null,
       status: chargeId ? 'paid' : 'sent'
