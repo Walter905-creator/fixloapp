@@ -20,8 +20,8 @@ export default function ContactPage(){
             <div className="space-y-4">
               <div>
                 <div className="font-medium text-slate-900 mb-1">Email Support</div>
-                <a href="mailto:pro4u.improvements@gmail.com" className="text-brand hover:underline">
-                  pro4u.improvements@gmail.com
+                <a href="mailto:support@fixloapp.com" className="text-brand hover:underline">
+                  support@fixloapp.com
                 </a>
                 <p className="text-sm text-slate-600 mt-1">Response within 1 business day</p>
               </div>
