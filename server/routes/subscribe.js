@@ -6,7 +6,7 @@ const JobRequest = require('../models/JobRequest');
 const { routeLead } = require('../services/leadAssignmentService');
 const { notifyOwnerForLead } = require('../services/ownerLeadNotificationService');
 
-const HANDYMAN_FIRST_HOUR_CENTS = 12000;
+const HANDYMAN_FIRST_HOUR_CENTS = 7500;
 const HANDYMAN_CHECKOUT_KIND = 'handyman_first_hour';
 
 let stripe = null;
@@ -31,8 +31,8 @@ function clean(value, max = 1000) {
 
 /**
  * POST /api/subscribe/handyman-checkout
- * Creates a pending handyman request and a $120 Stripe Checkout session.
- * The $120 payment covers the first labor hour. Materials and later hours are separate.
+ * Creates a pending handyman request and a $75 Stripe Checkout session.
+ * The $75 payment covers the first labor hour. Materials and later hours are separate.
  */
 router.post('/handyman-checkout', async (req, res) => {
   try {
@@ -60,7 +60,7 @@ router.post('/handyman-checkout', async (req, res) => {
       return res.status(400).json({ error: 'Please provide at least 20 characters describing the work.' });
     }
     if (pricingAccepted !== true) {
-      return res.status(400).json({ error: 'The $120 hourly rate and materials policy must be accepted.' });
+      return res.status(400).json({ error: 'The $75 hourly rate and materials policy must be accepted.' });
     }
 
     const requestId = `handyman_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
@@ -81,9 +81,9 @@ router.post('/handyman-checkout', async (req, res) => {
       status: 'pending',
       paymentProvider: 'stripe',
       paymentStatus: 'none',
-      laborCost: 120,
+      laborCost: 75,
       materialsCost: 0,
-      totalCost: 120,
+      totalCost: 75,
       visitFee: 0,
       termsAccepted: true,
       termsAcceptedAt: new Date(),
@@ -104,7 +104,7 @@ router.post('/handyman-checkout', async (req, res) => {
           unit_amount: HANDYMAN_FIRST_HOUR_CENTS,
           product_data: {
             name: 'Fixlo Handyman — First Labor Hour',
-            description: '$120 covers the first labor hour. Additional labor is $120/hour and materials are billed separately with approval.'
+            description: '$75 covers the first labor hour. Additional labor is $75/hour and materials are billed separately with approval.'
           }
         },
         quantity: 1
@@ -150,7 +150,7 @@ router.get('/handyman-checkout/verify', async (req, res) => {
       && session.metadata?.kind === HANDYMAN_CHECKOUT_KIND;
 
     if (!verified) {
-      return res.status(402).json({ verified: false, message: 'The $120 payment has not been completed.' });
+      return res.status(402).json({ verified: false, message: 'The $75 payment has not been completed.' });
     }
 
     const job = await JobRequest.findOne({ stripeCheckoutSessionId: sessionId });
