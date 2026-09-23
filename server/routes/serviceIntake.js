@@ -520,8 +520,8 @@ router.post('/clock-out/:jobId', async (req, res) => {
       prepaidAmount: Number(job.prepaidAmount || 0),
       amountChargedAtCompletion: chargeId ? amountDue : 0,
       stripeChargeId: chargeId,
-      paidAt: chargeId ? new Date() : null,
-      status: chargeId ? 'paid' : 'sent'
+      paidAt: (chargeId || amountDue === 0) ? new Date() : null,
+      status: (chargeId || amountDue === 0) ? 'paid' : 'sent'
     });
 
     await invoice.save();
