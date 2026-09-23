@@ -96,6 +96,10 @@ const JobRequestSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  completionPaymentIntentId: {
+    type: String,
+    trim: true
+  },
   stripeCheckoutSessionId: {
     type: String,
     trim: true
