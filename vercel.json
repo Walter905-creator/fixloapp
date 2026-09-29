@@ -2,6 +2,46 @@
   "outputDirectory": ".",
   "redirects": [
     {
+      "source": "/ca/services/:service/:city",
+      "destination": "/services/:service/:city",
+      "permanent": true
+    },
+    {
+      "source": "/ca/services/:service",
+      "destination": "/services/:service",
+      "permanent": true
+    },
+    {
+      "source": "/uk/services/:service/:city",
+      "destination": "/services/:service/:city",
+      "permanent": true
+    },
+    {
+      "source": "/uk/services/:service",
+      "destination": "/services/:service",
+      "permanent": true
+    },
+    {
+      "source": "/au/services/:service/:city",
+      "destination": "/services/:service/:city",
+      "permanent": true
+    },
+    {
+      "source": "/au/services/:service",
+      "destination": "/services/:service",
+      "permanent": true
+    },
+    {
+      "source": "/ar/servicios/:service/:city",
+      "destination": "/services/:service/:city",
+      "permanent": true
+    },
+    {
+      "source": "/ar/servicios/:service",
+      "destination": "/services/:service",
+      "permanent": true
+    },
+    {
       "source": "/us/services/:service/:city",
       "destination": "/services/:service/:city",
       "permanent": true
