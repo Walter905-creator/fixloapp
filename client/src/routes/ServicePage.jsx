@@ -159,14 +159,8 @@ export default function ServicePage({ legacy = false }){
   const { country, service, city } = useParams();
   const location = useLocation();
   
-  // Handle legacy routes - redirect to US country path
-  if (legacy) {
-    const s = slugify(service || '');
-    const c = city ? slugify(city) : undefined;
-    const redirectPath = `/us/services/${s}${c ? '/' + c : ''}`;
-    return <Navigate to={redirectPath} replace />;
-  }
-  
+  // /services/... is the canonical US route. Legacy country-prefixed US URLs
+  // are normalized at the edge with permanent redirects in vercel.json.
   // Validate country parameter
   const countryCode = country ? country.toLowerCase() : 'us';
   if (!SUPPORTED_COUNTRIES.includes(countryCode)) {
@@ -181,7 +175,9 @@ export default function ServicePage({ legacy = false }){
   const c = city ? slugify(city) : undefined;
   const title = makeTitle({ service: s, city: c, country: countryCode });
   const desc = makeDescription({ service: s, city: c, country: countryCode });
-  const canonical = `/${countryCode}/${countryInfo.servicesPath}/${s}${c ? '/'+c : ''}`;
+  const canonical = legacy
+    ? `/services/${s}${c ? '/' + c : ''}`
+    : `/${countryCode}/${countryInfo.servicesPath}/${s}${c ? '/' + c : ''}`;
   
   // Format display names
   const serviceName = s ? s.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Home Services';
@@ -192,7 +188,7 @@ export default function ServicePage({ legacy = false }){
   
   return (<>
     <HelmetSEO title={title} description={desc} canonicalPathname={canonical} />
-    <HreflangTags service={s} city={c} />
+    <HreflangTags service={s} city={c} canonicalUS={legacy} />
     <ServiceSchema service={s} city={c} country={countryCode} />
     <div className="container-xl py-8">
       {/* Breadcrumb Navigation */}
@@ -207,7 +203,7 @@ export default function ServicePage({ legacy = false }){
           </li>
           <li>&rsaquo;</li>
           <li>
-            <Link to={`/${countryCode}/${countryInfo.servicesPath}/${s}`} className="hover:text-brand">{serviceName}</Link>
+            <Link to={legacy ? `/services/${s}` : `/${countryCode}/${countryInfo.servicesPath}/${s}`} className="hover:text-brand">{serviceName}</Link>
           </li>
           {c && (
             <>
