@@ -77,13 +77,26 @@ function generateServiceAlternates(service, city) {
  * @param {string} props.service - Service slug
  * @param {string} props.city - City slug (optional)
  */
-export default function HreflangTags({ service, city }) {
+export default function HreflangTags({ service, city, canonicalUS = false }) {
   // Only generate hreflang for service pages
   if (!service) {
     return null;
   }
 
-  const alternates = generateServiceAlternates(service, city);
+  // The canonical US service family is /services/... (without /us).
+  // Do not advertise the retired /us URLs as hreflang alternates.
+  const alternates = canonicalUS
+    ? [
+        {
+          hreflang: 'en-us',
+          href: `https://www.fixloapp.com/services/${service}${city ? '/' + city : ''}`
+        },
+        {
+          hreflang: 'x-default',
+          href: `https://www.fixloapp.com/services/${service}${city ? '/' + city : ''}`
+        }
+      ]
+    : generateServiceAlternates(service, city);
 
   return (
     <Helmet>
