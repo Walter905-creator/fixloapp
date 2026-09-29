@@ -6,7 +6,6 @@ import { HOMEOWNER_SERVICES } from "../src/seo/homeownerSeoData.js";
 
 const PUBLIC_DIR = path.join(process.cwd(), "public");
 const SITE = "https://www.fixloapp.com";
-const TODAY = new Date().toISOString().slice(0, 10);
 
 const STATIC_PATHS = [
   "/", "/pricing", "/services", "/terms", "/pros",
@@ -15,13 +14,15 @@ const STATIC_PATHS = [
   "/handyman-leads", "/contractor-leads", "/home-service-leads", "/get-more-handyman-jobs", "/jobs-for-handymen"
 ];
 
-const url = (p) => `${SITE}${p.startsWith("/") ? "" : "/"}${p}`.replace(/\/+$/, "");
+const url = (p) => {
+  const pathname = p.startsWith("/") ? p : `/${p}`;
+  return pathname === "/" ? `${SITE}/` : `${SITE}${pathname.replace(/\\/+$/, "")}`;
+};
 
 function makeURLEntry(loc, priority = "0.60", changefreq = "weekly") {
   return (
 `  <url>
     <loc>${loc}</loc>
-    <lastmod>${TODAY}</lastmod>
     <changefreq>${changefreq}</changefreq>
     <priority>${priority}</priority>
   </url>`
@@ -91,7 +92,6 @@ ${chunk.join("\n")}
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${parts.map((part) => `  <sitemap>
     <loc>${SITE}/${part}</loc>
-    <lastmod>${TODAY}</lastmod>
   </sitemap>`).join("\n")}
 </sitemapindex>
 `;
