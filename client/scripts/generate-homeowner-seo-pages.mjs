@@ -15,6 +15,70 @@ function escapeHtml(value = '') {
     .replaceAll("'", '&#039;');
 }
 
+const STATE_CONTEXT = {
+  AL: 'hot summers, seasonal storms, and year-round home maintenance',
+  AK: 'freeze-thaw cycles, snow, and cold-weather home maintenance',
+  AZ: 'extreme heat, sun exposure, dust, and cooling-season wear',
+  CA: 'sun exposure, dry seasons, coastal or inland climate conditions, and older housing stock in many neighborhoods',
+  CO: 'snow, hail, freeze-thaw cycles, and strong seasonal temperature changes',
+  CT: 'cold winters, humid summers, and seasonal exterior maintenance',
+  FL: 'heat, humidity, heavy rain, and tropical-storm preparation',
+  GA: 'heat, humidity, thunderstorms, and year-round exterior maintenance',
+  HI: 'salt air, humidity, sun exposure, and tropical weather',
+  IL: 'freeze-thaw cycles, summer humidity, storms, and seasonal maintenance',
+  LA: 'heat, humidity, heavy rain, and storm-related wear',
+  MA: 'snow, freeze-thaw cycles, humid summers, and older housing stock',
+  MI: 'snow, freezing temperatures, summer humidity, and seasonal exterior wear',
+  MN: 'severe winter cold, snow, freeze-thaw cycles, and short intense summers',
+  NC: 'humid summers, thunderstorms, seasonal pollen, and changing temperatures',
+  NJ: 'cold winters, humid summers, coastal weather, and dense older housing',
+  NM: 'dry air, strong sun, dust, and large daily temperature swings',
+  NV: 'dry heat, intense sun, dust, and large temperature swings',
+  NY: 'cold winters, humid summers, freeze-thaw cycles, and varied housing ages',
+  OH: 'freeze-thaw cycles, thunderstorms, humidity, and four-season maintenance',
+  OR: 'rain, moisture, moss-prone conditions, and seasonal exterior maintenance',
+  PA: 'cold winters, humid summers, rain, and older housing in many markets',
+  SC: 'heat, humidity, heavy rain, and coastal-storm exposure in parts of the state',
+  TN: 'humid summers, thunderstorms, rain, and four-season maintenance',
+  TX: 'extreme heat, strong sun, severe storms, and heavy cooling demand',
+  UT: 'dry air, strong sun, snow, and large seasonal temperature changes',
+  VA: 'humid summers, storms, rain, and four-season exterior maintenance',
+  WA: 'rain, moisture, moss-prone conditions, and cool-season maintenance',
+  WI: 'snow, severe cold, freeze-thaw cycles, and humid summers'
+};
+
+const SERVICE_LOCAL_CONTEXT = {
+  handyman: 'Common local requests can include punch-list repairs, doors, drywall, mounting, trim, fixtures, and maintenance items that accumulate as a home ages.',
+  remodeling: 'Renovation planning often starts with scope, measurements, finish selections, access, permits when required, and a realistic sequence for the trades involved.',
+  'bathroom-remodeling': 'Bathroom projects often combine moisture management, plumbing fixtures, tile, ventilation, cabinetry, lighting, and finish work.',
+  'kitchen-remodeling': 'Kitchen projects can involve cabinets, counters, backsplash, flooring, lighting, appliance clearances, plumbing, and electrical coordination.',
+  carpentry: 'Carpentry needs commonly include trim, doors, shelving, framing repairs, exterior woodwork, and custom adjustments to existing homes.',
+  painting: 'Paint preparation should account for substrate condition, moisture, sun exposure, previous coatings, and whether the work is interior or exterior.',
+  flooring: 'Flooring projects depend on subfloor condition, moisture, room use, transitions, material choice, and the amount of furniture or existing flooring to remove.',
+  drywall: 'Drywall repairs can range from small holes and cracks to water-damaged sections, texture matching, finishing, and larger replacement areas.',
+  'door-repair': 'Door problems can come from hardware wear, frame movement, weather exposure, damaged jambs, swelling, alignment, or an aging door unit.',
+  'deck-repair': 'Deck work should consider boards, railings, stairs, fasteners, framing, moisture exposure, finishes, and any signs of structural deterioration.',
+  'fence-repair': 'Fence repairs often involve posts, gates, panels, hardware, wind damage, rot, impact damage, or replacing only the affected sections.',
+  plumbing: 'Plumbing requests often involve leaks, fixtures, drains, toilets, faucets, water heaters, shutoffs, and diagnosing where a water problem begins.',
+  electrical: 'Electrical projects can include fixtures, fans, switches, receptacles, troubleshooting, dedicated circuits, and panel-related work where qualified licensing may be required.',
+  roofing: 'Roof requests often begin with leak location, shingle or surface condition, flashing, storm damage, drainage, roof age, and whether repair or replacement is appropriate.',
+  hvac: 'Heating and cooling requests can involve comfort problems, maintenance, thermostats, airflow, unusual system behavior, repairs, and replacement planning.',
+  landscaping: 'Outdoor projects can include cleanup, lawn care, planting, edging, drainage, mulch, pruning, and hardscape or yard-improvement work.',
+  'junk-removal': 'Removal projects are easier to plan when the item types, approximate volume, stairs, access, parking, and any heavy or restricted materials are described upfront.',
+  'house-cleaning': 'Cleaning requests can be tailored around home size, recurring versus one-time service, kitchens and bathrooms, move-outs, deep cleaning, and post-project cleanup.'
+};
+
+function localContext(serviceSlug, service, city) {
+  const climate = STATE_CONTEXT[city.state] || `the seasonal conditions common across ${city.region}`;
+  const serviceContext = SERVICE_LOCAL_CONTEXT[serviceSlug] || `${service.label} projects vary by property, scope, and timing.`;
+  return {
+    climate,
+    serviceContext,
+    market: `${city.city} is part of ${city.region}. Homes and properties across this market can face ${climate}. For ${service.label.toLowerCase()}, the useful first step is to document the exact problem, property conditions, timing, and photos so a professional can evaluate the real scope rather than relying on a generic estimate.`,
+    planning: `${serviceContext} In ${city.city}, include access details, approximate dimensions when relevant, material preferences, and whether the issue is urgent or part of planned maintenance.`
+  };
+}
+
 function renderFaq(service, city) {
   return service.questions.map((question, index) => {
     const answers = [
@@ -49,6 +113,7 @@ function renderPage(serviceSlug, service, citySlug, city) {
         ? `Need door repair near you in ${location}? Request help for sticking doors, damaged frames, hardware, alignment, replacement, and installation through Fixlo.`
         : `Need ${service.label.toLowerCase()} in ${location}? Submit your project through Fixlo and connect with local professionals for estimates, repairs, installations, and home improvements.`;
   const faq = renderFaq(service, city);
+  const local = localContext(serviceSlug, service, city);
   const relatedServices = Object.entries(HOMEOWNER_SERVICES)
     .filter(([slug]) => slug !== serviceSlug)
     .slice(0, 8)
@@ -139,7 +204,9 @@ function renderPage(serviceSlug, service, citySlug, city) {
 
     <section class="light"><div class="wrap grid"><div><div class="eyebrow">How Fixlo works</div><h2>Describe the project once</h2><p>Add the work needed, location, timing, photos, and project details. Clear requests make it easier for professionals to evaluate the job.</p><div class="grid"><div class="feature">Local service matching</div><div class="feature">Mobile-friendly request form</div><div class="feature">Project details in one place</div><div class="feature">No obligation to accept an estimate</div></div></div><div class="card steps"><h2>Request ${escapeHtml(service.label.toLowerCase())}</h2><p><strong>1.</strong> Describe the project.</p><p><strong>2.</strong> Add your location and contact details.</p><p><strong>3.</strong> Upload photos when helpful.</p><p><strong>4.</strong> Review responses from available professionals.</p><a class="button primary" href="${requestHref}">${isHandyman ? 'Book a Handyman' : 'Start your request'}</a><div class="fine"><a href="/signup/homeowner">Create a free Fixlo homeowner account</a> to keep your requests and service activity organized.</div></div></div></section>
 
-    <section class="faq"><div class="wrap"><h2>Questions about ${escapeHtml(service.label.toLowerCase())}</h2><div class="faq-grid">${faq.map((item) => `<article><h3>${escapeHtml(item.q)}</h3><p>${escapeHtml(item.a)}</p></article>`).join('')}</div></div></section>
+    <section class="light"><div class="wrap grid"><article><div class="eyebrow">${escapeHtml(city.region)}</div><h2>Planning ${escapeHtml(service.label.toLowerCase())} in ${escapeHtml(city.city)}</h2><p>${escapeHtml(local.market)}</p></article><article><div class="eyebrow">Before you request service</div><h2>What to include for a more useful response</h2><p>${escapeHtml(local.planning)}</p><p>Fixlo does not assume that every property in ${escapeHtml(city.city)} has the same needs. Project scope, building conditions, licensing requirements, materials, and professional availability can differ by address.</p></article></div></section>
+
+    <section class="faq"><div class="wrap"><h2>Questions about ${escapeHtml(service.label.toLowerCase())} in ${escapeHtml(city.city)}</h2><div class="faq-grid">${faq.map((item) => `<article><h3>${escapeHtml(item.q)}</h3><p>${escapeHtml(item.a)}</p></article>`).join('')}</div></div></section>
 
     <section class="light"><div class="wrap grid"><div><h2>Other services in ${escapeHtml(city.city)}</h2><div class="links">${relatedServices}</div></div><div><h2>${escapeHtml(service.label)} in nearby markets</h2><div class="links">${nearbyCities || `<a href="/services/${serviceSlug}">View all ${escapeHtml(service.label.toLowerCase())} information</a>`}</div></div></div></section>
   </main>
