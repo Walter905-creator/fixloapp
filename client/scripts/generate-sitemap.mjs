@@ -14,7 +14,10 @@ const STATIC_PATHS = [
   "/handyman-leads", "/contractor-leads", "/home-service-leads", "/get-more-handyman-jobs", "/jobs-for-handymen"
 ];
 
-const url = (p) => `${SITE}${p.startsWith("/") ? "" : "/"}${p}`.replace(/\/+$/, "");
+const url = (p) => {
+  const pathname = p.startsWith("/") ? p : `/${p}`;
+  return pathname === "/" ? `${SITE}/` : `${SITE}${pathname.replace(/\\/+$/, "")}`;
+};
 
 function makeURLEntry(loc, priority = "0.60", changefreq = "weekly") {
   return (
