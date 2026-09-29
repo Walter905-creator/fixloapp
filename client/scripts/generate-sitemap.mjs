@@ -9,7 +9,7 @@ const SITE = "https://www.fixloapp.com";
 const TODAY = new Date().toISOString().slice(0, 10);
 
 const STATIC_PATHS = [
-  "/", "/pricing", "/services", "/terms", "/pros", "/pros/signup", "/request",
+  "/", "/pricing", "/services", "/terms", "/pros",
   "/free-home-service-quote", "/handyman-75-per-hour", "/book-a-handyman-online",
   "/handyman-near-me", "/same-day-handyman", "/small-home-repairs-near-me", "/free-handyman-estimate",
   "/handyman-leads", "/contractor-leads", "/home-service-leads", "/get-more-handyman-jobs", "/jobs-for-handymen"
