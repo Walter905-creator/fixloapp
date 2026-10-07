@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { API_BASE } from '../../utils/config';
@@ -14,6 +14,28 @@ export default function HomeownerSignup() {
     password: '',
     confirmPassword: ''
   });
+  const [invitationCode, setInvitationCode] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const supplied = params.get('invite');
+    try { return (supplied || sessionStorage.getItem('fixlo_homeowner_invite') || '').trim().toUpperCase(); }
+    catch { return (supplied || '').trim().toUpperCase(); }
+  });
+  const [invitationStatus, setInvitationStatus] = useState('');
+  useEffect(() => {
+    let active = true;
+    try {
+      if (invitationCode) sessionStorage.setItem('fixlo_homeowner_invite', invitationCode);
+      else sessionStorage.removeItem('fixlo_homeowner_invite');
+    } catch { /* Invitations still work without browser storage. */ }
+    if (!invitationCode) { setInvitationStatus(''); return; }
+    setInvitationStatus('Checking invitation…');
+    const controller = new AbortController();
+    fetch(`${API_BASE}/api/homeowner-referrals/invitation/${encodeURIComponent(invitationCode)}`, { signal: controller.signal })
+      .then(async res => { const data = await res.json(); if (!res.ok) throw new Error(data.error || 'Unable to check invitation.'); return data; })
+      .then(() => { if (active) setInvitationStatus('Invitation found: verify your phone after signup to activate 10% off one project total.'); })
+      .catch(err => { if (active && err.name !== 'AbortError') setInvitationStatus(err.message); });
+    return () => { active = false; controller.abort(); };
+  }, [invitationCode]);
   const [smsOptIn, setSmsOptIn] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -38,7 +60,8 @@ export default function HomeownerSignup() {
           phone: form.phone,
           password: form.password,
           confirmPassword: form.confirmPassword,
-          smsOptIn
+          smsOptIn,
+          invitationCode
         })
       });
       const data = await res.json();
@@ -50,6 +73,7 @@ export default function HomeownerSignup() {
         email: data.homeowner.email,
         phone: data.homeowner.phone
       });
+      try { sessionStorage.removeItem('fixlo_homeowner_invite'); } catch { /* No storage available. */ }
       navigate('/dashboard/homeowner');
     } catch {
       setError('Network error. Please try again.');
@@ -91,6 +115,7 @@ export default function HomeownerSignup() {
               <input
                 name="phone"
                 type="tel"
+                required={!!invitationCode}
                 value={form.phone}
                 onChange={handleChange}
                 disabled={loading}
@@ -137,6 +162,12 @@ export default function HomeownerSignup() {
                 className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2.5 text-white placeholder-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 placeholder="Repeat password"
               />
+            </div>
+
+            <div>
+              <label htmlFor="homeowner-invitation" className="block text-blue-100 text-sm font-medium mb-1">Invitation code (optional)</label>
+              <input id="homeowner-invitation" value={invitationCode} onChange={e => setInvitationCode(e.target.value.trim().toUpperCase())} maxLength={20} disabled={loading} className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2.5 text-white" placeholder="Code from your invitation" />
+              {invitationStatus && <p role="status" className="mt-2 text-sm text-blue-100">{invitationStatus}</p>}
             </div>
 
             <div className="bg-white/5 border border-white/10 rounded-lg p-3">

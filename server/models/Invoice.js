@@ -69,6 +69,7 @@ const InvoiceSchema = new mongoose.Schema({
     default: false
   },
   // Totals
+  discountAmount: { type: Number, default: 0 },
   subtotal: {
     type: Number,
     required: true

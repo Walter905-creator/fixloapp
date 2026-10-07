@@ -176,6 +176,7 @@ async function sendInvoiceEmail(email, invoice, job) {
         <tr><td style="padding:6px 0;"><strong>Hourly rate</strong></td><td style="padding:6px 0;text-align:right;">${money(invoice.laborRate)}/hr</td></tr>
         <tr><td style="padding:6px 0;"><strong>Labor</strong></td><td style="padding:6px 0;text-align:right;">${money(invoice.laborCost)}</td></tr>
         ${materials}
+        ${invoice.discountAmount ? `<tr><td style="padding:6px 0;"><strong>Welcome discount (10%)</strong></td><td style="padding:6px 0;text-align:right;">-${money(invoice.discountAmount)}</td></tr>` : ''}
         <tr><td style="padding:10px 0;border-top:1px solid #e5e7eb;"><strong>First-hour payment / credit</strong></td><td style="padding:10px 0;border-top:1px solid #e5e7eb;text-align:right;">-${money(invoice.prepaidAmount)}</td></tr>
         <tr><td style="padding:6px 0;"><strong>Charged at clock-out</strong></td><td style="padding:6px 0;text-align:right;">${money(invoice.amountChargedAtCompletion)}</td></tr>
         <tr><td style="padding:12px 0;border-top:2px solid #111827;font-size:18px;"><strong>Total service amount</strong></td><td style="padding:12px 0;border-top:2px solid #111827;text-align:right;font-size:18px;"><strong>${money(invoice.total)}</strong></td></tr>

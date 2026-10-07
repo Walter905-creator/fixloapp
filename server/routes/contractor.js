@@ -7,6 +7,8 @@ const auth = require('../middleware/auth');
 const smsService = require('../services/smsService');
 const { sendInvoiceEmail } = require('../services/emailService');
 
+const { reserveJobDiscount, completeJobDiscount } = require('../services/homeownerReferralService');
+
 const HOURLY_RATE = 75;
 
 let stripe = null;
@@ -185,7 +187,9 @@ router.post('/jobs/:id/clock-out', async (req, res) => {
           .filter((item) => item.cost > 0)
       : (Array.isArray(job.materials) ? job.materials : []);
     const materialsCost = Math.round(materials.reduce((sum, item) => sum + Number(item.cost || 0), 0) * 100) / 100;
-    const totalCost = Math.round((laborCost + materialsCost) * 100) / 100;
+    const grossTotal = Math.round((laborCost + materialsCost) * 100) / 100;
+    const amounts = await reserveJobDiscount(job, grossTotal);
+    const totalCost = amounts.total;
     const prepaidAmount = Math.min(Math.max(Number(job.prepaidAmount || 0), 0), totalCost);
     const amountDue = Math.round(Math.max(totalCost - prepaidAmount, 0) * 100) / 100;
 
@@ -210,10 +214,10 @@ router.post('/jobs/:id/clock-out', async (req, res) => {
             materialsCost: materialsCost.toFixed(2),
             prepaidAmount: prepaidAmount.toFixed(2)
           }
-        });
+        }, { idempotencyKey: `homeowner-completion-${job._id}` });
         completionPaymentIntentId = paymentIntent.id;
-        amountChargedAtCompletion = amountDue;
         paymentSucceeded = paymentIntent.status === 'succeeded';
+        amountChargedAtCompletion = paymentSucceeded ? amountDue : 0;
       } catch (paymentError) {
         console.error('❌ Automatic clock-out charge failed:', paymentError.message);
         paymentSucceeded = false;
@@ -233,6 +237,7 @@ router.post('/jobs/:id/clock-out', async (req, res) => {
     job.status = 'completed';
 
     if (paymentSucceeded) {
+      await completeJobDiscount(job).catch(error => console.error('Discount settlement pending:', error.message));
       job.paymentStatus = 'captured';
       job.paidAt = new Date();
     } else if (amountDue > 0) {
@@ -262,7 +267,8 @@ router.post('/jobs/:id/clock-out', async (req, res) => {
         materialsCost,
         visitFee: 0,
         visitFeeWaived: true,
-        subtotal: totalCost,
+        subtotal: amounts.grossTotal,
+        discountAmount: amounts.discountAmount,
         tax: 0,
         taxRate: 0,
         total: totalCost,

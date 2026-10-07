@@ -6,6 +6,7 @@ const { sign } = require('../utils/jwt');
 const Pro = require("../models/Pro");
 const InviteCode = require("../models/InviteCode");
 const Homeowner = require("../models/Homeowner");
+const homeownerReferrals = require("../services/homeownerReferralService");
 const RecruiterProfile = require("../models/RecruiterProfile");
 const mongoose = require("mongoose");
 const { requireDatabase } = require('../config/database');
@@ -483,7 +484,7 @@ router.post('/login/recruiter', requireDatabase, async (req, res) => {
 
 // ── Homeowner Signup ──────────────────────────────────────────────────────────
 router.post('/signup/homeowner', requireDatabase, async (req, res) => {
-  const { name, email, phone, password, confirmPassword, smsOptIn } = req.body || {};
+  const { name, email, phone, password, confirmPassword, smsOptIn, invitationCode } = req.body || {};
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'Name, email, and password are required' });
   }
@@ -498,11 +499,17 @@ router.post('/signup/homeowner', requireDatabase, async (req, res) => {
     if (existing) {
       return res.status(409).json({ error: 'An account with that email already exists' });
     }
+    const invitation = await homeownerReferrals.validateInvitation(invitationCode, { email, phone });
+    const normalizedPhone = phone ? homeownerReferrals.phoneNumber(phone) : null;
+    if ((phone || invitation) && !normalizedPhone) return res.status(400).json({ error: 'A valid phone number is required for an invitation.' });
     const hashed = await bcrypt.hash(password, 12);
     const homeowner = await Homeowner.create({
       name: name.trim(),
       email: email.toLowerCase().trim(),
-      phone: phone ? phone.trim() : undefined,
+      phone: normalizedPhone || undefined,
+      referralCode: homeownerReferrals.createCode(),
+      invitationCode: invitation?.code || undefined,
+      referredBy: invitation?.referrerId || null,
       password: hashed,
       smsOptIn: !!smsOptIn,
       smsOptInDate: smsOptIn ? new Date() : null
@@ -528,6 +535,7 @@ router.post('/signup/homeowner', requireDatabase, async (req, res) => {
       }
     });
   } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
     console.error('Homeowner signup error:', err);
     if (err.code === 11000) {
       return res.status(409).json({ error: 'An account with that email already exists' });
