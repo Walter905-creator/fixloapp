@@ -240,6 +240,7 @@ export default function InternalDashboardPage() {
             <>
               {/* Primary stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <StatCard label="Total Homeowners" value={overview.totalHomeowners} color="text-emerald-700" />
                 <StatCard label="Total Pros" value={overview.totalPros} />
                 <StatCard label="Active Pros" value={overview.activePros} color="text-green-700" />
                 <StatCard label="Leads Today" value={overview.leadsToday} color="text-blue-700" />

@@ -5,6 +5,7 @@ const requireAuth = require('../middleware/requireAuth');
 const requireAdmin = require('../middleware/requireAdmin');
 const requirePermission = require('../middleware/requirePermission');
 const Pro = require('../models/Pro');
+const Homeowner = require('../models/Homeowner');
 const JobRequest = require('../models/JobRequest');
 const LeadAssignment = require('../models/LeadAssignment');
 const AdminSettings = require('../models/AdminSettings');
@@ -63,8 +64,9 @@ router.get('/overview', async (req, res) => {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    const [totalPros, activePros, lifetimePros, monthRevenue, leadsToday, smsSentToday, proPlans, assignmentStats, recentAssignments, leadAnalytics] = await Promise.all([
+    const [totalPros, totalHomeowners, activePros, lifetimePros, monthRevenue, leadsToday, smsSentToday, proPlans, assignmentStats, recentAssignments, leadAnalytics] = await Promise.all([
       Pro.countDocuments(),
+      Homeowner.countDocuments(),
       // "Active and approved": only pros who have completed Stripe payment are counted here.
       // isActive:true is set by the invoice.payment_succeeded webhook; paymentStatus:'active'
       // is set at the same time. invite-code pros may have isActive:true via manual activation
@@ -172,6 +174,7 @@ router.get('/overview', async (req, res) => {
 
     res.json({
       totalPros,
+      totalHomeowners,
       activePros,
       lifetimePros,
       totalRevenueMonth: monthRevenue[0]?.total || 0,

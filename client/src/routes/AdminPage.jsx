@@ -113,7 +113,11 @@ export default function AdminPage() {
         <div className="text-center py-6 text-gray-400">Loading metrics…</div>
       ) : overview ? (
         <div className="mb-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+            <div className="bg-white rounded-lg border border-emerald-200 bg-emerald-50 p-4" aria-label="Total homeowner accounts">
+              <div className="text-xs text-emerald-800 mb-1">Total Homeowners</div>
+              <div className="text-2xl font-bold text-emerald-900">{overview.totalHomeowners ?? '–'}</div>
+            </div>
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="text-xs text-gray-500 mb-1">Total Pros</div>
               <div className="text-2xl font-bold">{overview.totalPros ?? '–'}</div>
