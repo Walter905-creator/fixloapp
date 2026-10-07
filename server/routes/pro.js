@@ -10,7 +10,6 @@ const { requireDatabase } = require('../config/database');
 const { normalizePhoneToE164 } = require('../utils/phoneNormalizer');
 const { isUSPhoneNumber } = require('../utils/twilio');
 const { processExpiredPremiumAssignments } = require('../services/leadAssignmentService');
-const { sendOwnerAlert } = require('../utils/sendOwnerAlert');
 const { getProLeadMetrics } = require('../services/leadTrackingService');
 const { notify: ownerNotify } = require('../services/ownerNotificationService');
 
@@ -122,16 +121,6 @@ router.post('/register', async (req, res) => {
     );
 
     // Fire-and-forget owner SMS alert — must not block signup or throw
-    sendOwnerAlert(
-      'pro_signup',
-      {
-        name: pro.name,
-        trade: pro.trade,
-        location: 'United States',
-        phone: pro.phone
-      },
-      `pro_signup:${pro._id}`
-    ).catch((err) => console.warn('[OwnerAlert] Unexpected error:', err.message));
 
     // Fire-and-forget owner email notification
     ownerNotify('pro_registered', {

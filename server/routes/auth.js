@@ -214,15 +214,13 @@ router.post('/register', async (req, res) => {
       throw saveError;
     }
 
-    const token = jwt.sign(
-      {
-        id: savedPro._id,
-        email: savedPro.email,
-        role: 'professional'
-      },
-      process.env.JWT_SECRET || 'fallback-secret',
-      { expiresIn: '24h' }
-    );
+    ownerNotify('pro_registered', {
+      name: savedPro.name, email: savedPro.email, phone: savedPro.phone,
+      trade: savedPro.trade, signupDate: new Date().toISOString()
+    }).catch(() => {});
+    const token = sign({
+      id: savedPro._id, email: savedPro.email, role: 'professional'
+    });
 
     console.log(`✅ New Pro registered: ${savedPro.email}`);
 

@@ -1,5 +1,5 @@
 /**
- * ownerNotificationService — Centralized Owner Email Notification System
+ * ownerNotificationService — Centralized Owner Email and Signup SMS Notifications
  *
  * Sends professional HTML email alerts to the Fixlo owner (OWNER_EMAIL) via
  * SendGrid whenever important platform events occur.
@@ -38,11 +38,15 @@
  * Optional env vars:
  *   SENDGRID_FROM_EMAIL   (default: noreply@fixloapp.com)
  *   NODE_ENV              (shown in email footer)
+ *   OWNER_PHONE_NUMBER    (signup SMS recipient; falls back to FIXLO_OWNER_PHONE / OWNER_PHONE)
+ *   TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER (signup SMS)
+ *   ENABLE_OWNER_SMS_ALERTS=true (enable SMS outside production)
  */
 
 'use strict';
 
 const sgMail = require('@sendgrid/mail');
+const { sendSms } = require('../utils/twilio');
 
 // ── SendGrid initialisation ───────────────────────────────────────────────────
 let _sgReady = false;
@@ -372,64 +376,91 @@ async function _sendEmail(subject, html) {
  * @param {object} payload    - Event data (see template builders above)
  * @returns {Promise<void>}   - Always resolves; never rejects
  */
-async function notify(eventType, payload = {}) {
-  // ── Build template ────────────────────────────────────────────────────────
-  const builder = _TEMPLATES[eventType];
-  if (!builder) {
-    console.warn(`[OwnerNotify] ⚠️  Unknown event type: "${eventType}" — skipping`);
-    return;
-  }
-
-  let template;
-  try {
-    template = builder(payload);
-  } catch (buildErr) {
-    console.error(`[OwnerNotify] ❌ Template build error for "${eventType}":`, buildErr.message);
-    return;
-  }
-
-  // ── Log the notification attempt ─────────────────────────────────────────
-  console.log(`[OwnerNotify] 📧 Sending owner notification — event: ${eventType}`);
-
-  // ── Send email (with one retry) ─────────────────────────────────────────
+async function _notifyEmail(template, eventType) {
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       const result = await _sendEmail(template.subject, template.html);
       if (result?.disabled) {
         return { success: false, skipped: true, reason: 'owner_email_not_configured' };
       }
-      console.log(`[OwnerNotify] ✅ Email sent — event: ${eventType} (attempt ${attempt})`);
-      return {
-        success: true,
-        providerId: result?.providerId || null
-      };
-    } catch (sendErr) {
-      if (attempt === 1) {
-        console.warn(
-          `[OwnerNotify] ⚠️  Email failed (attempt 1), retrying — event: ${eventType} | error: ${sendErr.message}`
-        );
-      } else {
-        console.error(
-          `[OwnerNotify] ❌ Email failed after retry — event: ${eventType} | error: ${sendErr.message}`
-        );
-        return { success: false, error: sendErr.message };
-      }
+      console.log(`[OwnerNotify] Email accepted — event: ${eventType} (attempt ${attempt})`);
+      return { success: true, providerId: result?.providerId || null };
+    } catch (err) {
+      console.error(`[OwnerNotify] Email failed — event: ${eventType} (attempt ${attempt}):`, err.message);
+      if (attempt === 2) return { success: false, error: err.message };
     }
   }
+}
 
-  // ── Fan out to additional registered channels (SMS, Push, etc.) ────────
-  for (const channel of _channels) {
+async function _notifySignupSms(eventType, payload) {
+  if (!['homeowner_signup', 'pro_registered'].includes(eventType)) {
+    return { skipped: true, reason: 'not_signup' };
+  }
+  if (process.env.NODE_ENV !== 'production' && process.env.ENABLE_OWNER_SMS_ALERTS !== 'true') {
+    return { skipped: true, reason: 'non_production' };
+  }
+  const ownerPhone = String(
+    process.env.OWNER_PHONE_NUMBER || process.env.FIXLO_OWNER_PHONE || process.env.OWNER_PHONE || ''
+  ).trim();
+  if (!ownerPhone) {
+    console.warn('[OwnerNotify] Owner phone not configured — signup SMS skipped');
+    return { success: false, skipped: true, reason: 'owner_phone_not_configured' };
+  }
+  // Only explicitly selected fields; never include credentials from the payload.
+  const field = (value) => String(value || 'N/A').replace(/\\s+/g, ' ').slice(0, 100);
+  const kind = eventType === 'homeowner_signup' ? 'homeowner' : 'pro';
+  const message = [
+    `Fixlo: New ${kind} account created.`,
+    `Name: ${field(payload.name)}`,
+    `Email: ${field(payload.email)}`,
+    `Phone: ${field(payload.phone)}`,
+    ...(kind === 'pro' ? [`Trade: ${field(payload.trade)}`] : []),
+    'Dashboard: https://www.fixloapp.com/dashboard/admin',
+    'Reply STOP to opt out.'
+  ].join('\\n');
+  try {
+    // Do not retry SMS automatically: an ambiguous timeout could duplicate a text.
+    const result = await sendSms(ownerPhone, message);
+    console.log(`[OwnerNotify] Signup SMS accepted — event: ${eventType}`);
+    return { success: true, providerId: result.sid || null };
+  } catch (err) {
+    console.error(`[OwnerNotify] Signup SMS failed — event: ${eventType}:`, err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+async function notify(eventType, payload = {}) {
+  const builder = _TEMPLATES[eventType];
+  if (!builder) {
+    console.warn(`[OwnerNotify] Unknown event type: "${eventType}" — skipping`);
+    return;
+  }
+
+  const emailTask = async () => {
     try {
-      await channel.handler(eventType, payload);
-      console.log(`[OwnerNotify] ✅ Channel "${channel.name}" notified — event: ${eventType}`);
-    } catch (channelErr) {
-      console.error(
-        `[OwnerNotify] ❌ Channel "${channel.name}" failed — event: ${eventType} | error: ${channelErr.message}`
-      );
+      return await _notifyEmail(builder(payload), eventType);
+    } catch (err) {
+      console.error(`[OwnerNotify] Template failed — event: ${eventType}:`, err.message);
+      return { success: false, error: err.message };
     }
+  };
 
-    return { success: false, error: 'unknown_send_failure' };
-  }
+  // Each channel runs independently, even if another is disabled or fails.
+  const [email, sms, ...channels] = await Promise.all([
+    emailTask(),
+    _notifySignupSms(eventType, payload),
+    ..._channels.map(async (channel) => {
+      try {
+        await channel.handler(eventType, payload);
+        return { name: channel.name, success: true };
+      } catch (err) {
+        console.error(`[OwnerNotify] Channel "${channel.name}" failed:`, err.message);
+        return { name: channel.name, success: false, error: err.message };
+      }
+    })
+  ]);
+  // Preserve the legacy email result used by ownerLeadNotificationService.
+  return { ...email, sms, channels };
 }
 
 /**

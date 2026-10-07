@@ -6,6 +6,7 @@ const mongoose = require("mongoose");
 const Stripe = require("stripe");
 
 const Pro = require("../models/Pro");
+const { notify: ownerNotify } = require("../services/ownerNotificationService");
 const Review = require("../models/Review");
 const JobRequest = require("../models/JobRequest");
 const auth = require("../middleware/auth");
@@ -144,6 +145,11 @@ router.post("/register", async (req, res) => {
       whatsappOptIn: finalWhatsAppOptIn,
       country: detectedCountry,
     });
+
+    ownerNotify('pro_registered', {
+      name: newPro.name, email: newPro.email, phone: newPro.phone,
+      trade: newPro.trade, signupDate: new Date().toISOString()
+    }).catch(() => {});
 
     console.log(`✅ Pro registered: ${newPro.email} (Country: ${detectedCountry}, WhatsApp: ${finalWhatsAppOptIn})`);
 
@@ -580,6 +586,11 @@ async function forwardToProSignup(req, res) {
       termsConsent: !!(termsConsent?.given ?? termsConsent),
       paymentStatus: "pending",
     });
+
+    ownerNotify('pro_registered', {
+      name: pro.name, email: pro.email, phone: pro.phone,
+      trade: pro.trade, city: pro.city, signupDate: new Date().toISOString()
+    }).catch(() => {});
 
     return res
       .status(201)
