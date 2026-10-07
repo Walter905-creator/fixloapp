@@ -16,7 +16,7 @@ const STATIC_PATHS = [
 
 const url = (p) => {
   const pathname = p.startsWith("/") ? p : `/${p}`;
-  return pathname === "/" ? `${SITE}/` : `${SITE}${pathname.replace(/\\/+$/, "")}`;
+  return pathname === "/" ? `${SITE}/` : `${SITE}${pathname.replace(/\/+$/, "")}`;
 };
 
 function makeURLEntry(loc, priority = "0.60", changefreq = "weekly") {
