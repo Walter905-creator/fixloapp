@@ -96,7 +96,7 @@ export default function ClockInSystem({ jobId, onComplete }) {
     try {
       const response = await fetch(`${API_URL}/api/service-intake/clock-out/${jobId}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('fixlo_pro_token') || localStorage.getItem('fixlo_token') || ''}` },
         body: JSON.stringify({
           materials: validMaterials,
           jobApproved: jobApproved

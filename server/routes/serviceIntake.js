@@ -1,8 +1,10 @@
 const express = require('express');
 const router = express.Router();
+const requireAuth = require('../middleware/requireAuth');
 const mongoose = require('mongoose');
 const JobRequest = require('../models/JobRequest');
 const Invoice = require('../models/Invoice');
+const { reserveJobDiscount, completeJobDiscount } = require('../services/homeownerReferralService');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const { normalizeE164, isUSPhoneNumber } = require('../utils/twilio');
@@ -377,7 +379,7 @@ router.post('/clock-in/:jobId', async (req, res) => {
 });
 
 // Clock out and auto-bill
-router.post('/clock-out/:jobId', async (req, res) => {
+router.post('/clock-out/:jobId', requireAuth, async (req, res) => {
   try {
     const { jobId } = req.params;
     const { materials, jobApproved } = req.body;
@@ -389,6 +391,12 @@ router.post('/clock-out/:jobId', async (req, res) => {
         message: 'Job not found'
       });
     }
+
+    const isAdmin = req.user.role === 'admin' || req.user.isAdmin === true;
+    const proId = String(req.user.proId || req.user.id || '');
+    const isAssignedPro = ['pro', 'professional'].includes(req.user.role) &&
+      [job.assignedTo, job.assignedProId].some(id => id && String(id) === proId);
+    if (!isAdmin && !isAssignedPro) return res.status(403).json({ success: false, message: 'Only the assigned professional or administrator can complete this project.' });
 
     if (!job.clockInTime) {
       return res.status(400).json({
@@ -426,7 +434,8 @@ router.post('/clock-out/:jobId', async (req, res) => {
 
     // Calculate total
     const subtotal = laborCost + materialsCost + visitFee;
-    const totalCost = subtotal;
+    const amounts = await reserveJobDiscount(job, subtotal);
+    const totalCost = amounts.total;
 
     // Update job
     job.clockOutTime = clockOutTime;
@@ -444,7 +453,7 @@ router.post('/clock-out/:jobId', async (req, res) => {
     // Charge the customer via Stripe
     let chargeId = null;
     const amountDue = Math.max(totalCost - Number(job.prepaidAmount || 0), 0);
-    if (stripe && job.stripePaymentMethodId && job.stripeCustomerId && amountDue > 0) {
+    if (stripe && job.stripePaymentMethodId && job.stripeCustomerId && job.paymentAuthConsent && amountDue > 0) {
       // Prevent duplicate completion charges while preserving the first-hour payment record.
       if (job.completionPaymentIntentId) {
         console.log(`⚠️ Job ${jobId} already has completion charge: ${job.completionPaymentIntentId}`);
@@ -471,11 +480,13 @@ router.post('/clock-out/:jobId', async (req, res) => {
             laborCost: laborCost.toFixed(2),
             materialsCost: materialsCost.toFixed(2),
             visitFee: visitFee.toFixed(2),
-            timestamp: new Date().toISOString()
+            timestamp: new Date(job.clockInTime).toISOString()
           }
-        });
+        }, { idempotencyKey: `homeowner-completion-${job._id}` });
+        if (paymentIntent.status !== 'succeeded') throw new Error('Completion payment has not succeeded.');
 
         chargeId = paymentIntent.id;
+        await completeJobDiscount(job).catch(error => console.error('Discount settlement pending:', error.message));
         job.completionPaymentIntentId = chargeId;
         job.amountChargedAtCompletion = amountDue;
         job.paidAt = new Date();
@@ -498,6 +509,8 @@ router.post('/clock-out/:jobId', async (req, res) => {
       await job.save();
     }
 
+    if (amountDue === 0) await completeJobDiscount(job).catch(error => console.error('Discount settlement pending:', error.message));
+
     // Create invoice
     const invoice = new Invoice({
       jobRequestId: job._id,
@@ -513,7 +526,8 @@ router.post('/clock-out/:jobId', async (req, res) => {
       materialsCost: materialsCost,
       visitFee: 0,
       visitFeeWaived: visitFeeWaived,
-      subtotal: subtotal,
+      subtotal: amounts.grossTotal,
+      discountAmount: amounts.discountAmount,
       tax: 0,
       taxRate: 0,
       total: totalCost,

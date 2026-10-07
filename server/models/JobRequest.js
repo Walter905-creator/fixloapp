@@ -180,6 +180,10 @@ const JobRequestSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  // One-time homeowner invitation discount, frozen before the payment attempt.
+  homeownerDiscountPhone: { type: String },
+  discountGrossTotal: { type: Number },
+  discountAmount: { type: Number, default: 0 },
   // Billing
   hourlyRate: {
     type: Number,

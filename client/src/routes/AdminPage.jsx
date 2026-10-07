@@ -13,6 +13,15 @@ export default function AdminPage() {
   const [testResult, setTestResult] = useState(null);
   const [testLoading, setTestLoading] = useState(false);
   const [testError, setTestError] = useState('');
+  const [invitationNotice, setInvitationNotice] = useState('');
+  const homeownerInviteLink = 'https://www.fixloapp.com/signup/homeowner?invite=FIXLO10';
+  async function copyHomeownerInvitation() {
+    try {
+      await navigator.clipboard.writeText(homeownerInviteLink);
+      setInvitationNotice('Invitation copied. Paste it into your text message.');
+    } catch { setInvitationNotice('Select and copy the link below to share it.'); }
+  }
+
 
   useEffect(() => {
     loadOverview();
@@ -88,6 +97,16 @@ export default function AdminPage() {
         <h1 className="text-2xl font-extrabold">Admin Dashboard</h1>
         <button onClick={loadOverview} className="text-sm text-blue-600 hover:underline">↻ Refresh</button>
       </div>
+
+      <section className="mb-8 rounded-2xl border border-emerald-200 bg-emerald-50 p-5" aria-label="Invite a homeowner">
+        <h2 className="text-xl font-bold text-slate-900">Invite a homeowner — 10% welcome discount</h2>
+        <p className="mt-2 text-sm text-slate-600">Send this link to your client. After signup and phone verification, they receive a one-time 10% discount and their own invitation link.</p>
+        <p className="mt-2 text-sm font-semibold text-emerald-800">Invitation code: FIXLO10</p>
+        <label className="sr-only" htmlFor="admin-homeowner-invitation">Homeowner invitation link</label>
+        <input id="admin-homeowner-invitation" readOnly value={homeownerInviteLink} onFocus={e => e.target.select()} className="mt-3 w-full rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm" />
+        <button type="button" onClick={copyHomeownerInvitation} className="mt-3 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white">Copy invitation link</button>
+        {invitationNotice && <p role="status" className="mt-3 text-sm text-emerald-800">{invitationNotice}</p>}
+      </section>
 
       {/* Overview Metrics */}
       {overviewLoading ? (

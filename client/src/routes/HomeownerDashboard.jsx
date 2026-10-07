@@ -13,6 +13,7 @@ import StatusBadge from '../components/dashboard/StatusBadge';
 import LoadingState from '../components/dashboard/LoadingState';
 import ErrorState from '../components/dashboard/ErrorState';
 import LiveWorkTimer from '../components/LiveWorkTimer';
+import HomeownerInvitationCard from '../components/HomeownerInvitationCard';
 import '../styles/dashboard.css';
 
 const TABS = [
@@ -559,6 +560,8 @@ export default function HomeownerDashboard() {
         <p className="mt-2 max-w-2xl text-sm text-emerald-50">Track every Fixlo project, message professionals, manage documents, and stay on top of upcoming appointments.</p>
       </section>
 
+      <HomeownerInvitationCard authFetch={authFetch} onRequestQuote={() => navigate('/request')} />
+
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <SummaryCard label="Active Projects" value={dashboard.summary?.activeProjects ?? projects.filter((project) => getStatusFilterMatch(project, 'Active')).length} />
         <SummaryCard label="Completed Projects" value={dashboard.summary?.completedProjects ?? projects.filter((project) => String(project.status).toLowerCase() === 'completed').length} />
@@ -750,6 +753,7 @@ export default function HomeownerDashboard() {
                   />
                 </div>
               ) : null}
+              {selectedProject.discountAmount > 0 ? <p className="mt-3 text-sm font-semibold text-emerald-700">Welcome discount: -${Number(selectedProject.discountAmount).toFixed(2)}</p> : null}
               {selectedProject.invoiceId ? (
                 <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm">
                   <p className="font-semibold text-slate-900">Invoice {selectedProject.invoiceId}</p>
