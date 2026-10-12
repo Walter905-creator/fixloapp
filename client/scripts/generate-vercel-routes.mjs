@@ -28,11 +28,13 @@ for (const name of ['vercel.json', '../vercel.json']) {
   // Keep redirects, response headers, and API proxy rules when regenerating.
   const transformed = config.routes ? { routes: config.routes } : getTransformedRoutes(config);
   if (transformed.error) throw new Error(JSON.stringify(transformed.error));
-  const preserved = transformed.routes.filter(route => route.headers || route.dest?.startsWith('https://'));
+  const preserved = transformed.routes.filter(route => route.headers);
+  const apiRoutes = transformed.routes.filter(route => route.dest?.startsWith('https://'));
   const spaRoutes = convertRewrites(sources.map(source => ({ source, destination: '/index.html' })));
   config.routes = [
     ...preserved,
     { handle: 'filesystem' },
+    ...apiRoutes,
     ...spaRoutes.map(({ check, ...route }) => route),
     { src: '/.*', dest: '/404.html', status: 404 }
   ];

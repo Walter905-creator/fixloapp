@@ -253,12 +253,12 @@
       "continue": true
     },
     {
+      "handle": "filesystem"
+    },
+    {
       "src": "^/api(?:/(.*))$",
       "dest": "https://fixloapp.onrender.com/api/$1",
       "check": true
-    },
-    {
-      "handle": "filesystem"
     },
     {
       "src": "^\\/services$",
