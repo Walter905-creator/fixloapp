@@ -1,14 +1,8 @@
 User-agent: *
 Allow: /
 
-# Block admin routes from indexing
-Disallow: /admin
-Disallow: /admin/
-Disallow: /dashboard/admin
-Disallow: /dashboard/admin/
-Disallow: /dashboard/pro
-Disallow: /dashboard/homeowner
-Disallow: /dashboard/recruiter
+# Private dashboards use X-Robots-Tag: noindex. Allow crawling so Google can read it.
+# Authentication routes remain excluded from crawling.
 Disallow: /pros/login
 Disallow: /pros/signup
 Disallow: /recruiter/login
