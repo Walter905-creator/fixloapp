@@ -25,7 +25,7 @@ for (const name of ['vercel.json', '../vercel.json']) {
   const file = path.join(clientDir, name);
   const config = JSON.parse(fs.readFileSync(file, 'utf8'));
   const apiRewrites = (config.rewrites || []).filter(rule => rule.source.startsWith('/api/'));
-  config.rewrites = [...apiRewrites, ...sources.map(source => ({ source, destination: '/index.html' }))];
+  config.rewrites = [...apiRewrites, ...sources.map(source => ({ source, destination: '/index.html' })), { source: '/(.*)', destination: '/api/not-found' }];
   fs.writeFileSync(file, JSON.stringify(config, null, 2) + '\n');
 }
 console.log(`[routing] Generated ${sources.length} explicit SPA rewrites; unknown URLs return 404`);
