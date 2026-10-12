@@ -1,572 +1,599 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/services",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/:country(us|ca|uk|au|ar)/services/:service/:city",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/:country(us|ca|uk|au|ar)/services/:service",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/:country(us|ca|uk|au|ar)/servicios/:service/:city",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/:country(us|ca|uk|au|ar)/servicios/:service",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/services/:service",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/services/:service/:city",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/:trend(christmas|navidad|new-year|spring-cleaning|thanksgiving|black-friday|storm|hurricane|flood|heat-wave|power-outage|frozen-pipes|same-day|emergency|24-hour|last-minute|near-me|move-out|rental-turnover|airbnb-cleaning|renovation|home-sale)/:service",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/alternatives-to-:competitor(angi|homeadvisor|thumbtack|taskrabbit|handy|porch)",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/:competitor(angi|homeadvisor|thumbtack|taskrabbit|handy|porch)-alternatives",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/:competitor(angi|homeadvisor|thumbtack|taskrabbit|handy|porch)-competitors",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/best-:competitor(angi|homeadvisor|thumbtack|taskrabbit|handy|porch)-alternative",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/how-it-works",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/assistant",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/ai-assistant",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/contact",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/pricing",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/request",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/lead/:token",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/charlotte",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/country/:countryCode",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/signup",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/homeowners",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/pros",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/pros/signup",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/pros/register",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/pros/login",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/pros/forgot-password",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/pros/reset-password",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/pros/pricing",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/pros/dashboard",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/pro",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/pro/signup",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/pro/register",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/pro/setup-account/:token",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/pro/sign-in",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/pro/login",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/pro-signin",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/signin",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/auth/login/pro",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/pros/signin",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/pro/forgot-password",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/pro/reset-password",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/admin",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/admin/jobs",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/admin/social",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/admin/settings",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/admin/lead-hunter",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/admin/seo-ai",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/admin/lead-automation",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/admin/lead-automation/:leadId",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/admin/invite-codes",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/admin/fge",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/admin/fge/marketing",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/admin/fge/seo",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/admin/fge/blog",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/admin/fge/email",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/admin/fge/sms",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/admin/fge/referral",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/admin/fge/analytics",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/admin/fge/insights",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/admin/fge/reviews",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/admin/fge/seasonal",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/admin/fge/queue",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/admin/fge/settings",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/services/admin",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/services/:path*/admin",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/my-jobs",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/pro/dashboard",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/contractor/dashboard",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/staff/jobs",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/join",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/earn",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/earn/start",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/earn/sign-in",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/earn/dashboard",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/recruiter/signup",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/recruiter/login",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/recruiter/forgot-password",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/recruiter/dashboard",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/recruiter",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/recruiter/referrals",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/recruiter/recruiters",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/recruiter/payments",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/recruiter/settings",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/recruiter",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/recruiters",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin/recruiters",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin/commissions",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin/payouts",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/for-homeowners",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/for-pros",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/for-professionals",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/terms",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/privacy-policy",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/privacy-settings",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/success",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/about",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/about-walter-arevalo",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/login/homeowner",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/login/pro",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/login/recruiter",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/signup/homeowner",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/signup/pro",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/signup/recruiter",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/forgot-password",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/homeowner",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/services",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/dashboard(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/admin/:path*",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/dashboard/:path*",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/pros/dashboard/:path*",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/pro/dashboard/:path*",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/contractor/dashboard/:path*",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/staff/:path*",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/my-jobs",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/earn/dashboard/:path*",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/recruiter/dashboard/:path*",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/recruiter/referrals/:path*",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/recruiter/recruiters/:path*",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/recruiter/payments/:path*",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/recruiter/settings/:path*",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    }
+  ],
   "installCommand": "npm ci",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "routes": [
-    {
-      "src": "^/$",
-      "headers": {
-        "Cache-Control": "no-cache, no-store, must-revalidate"
-      },
-      "continue": true
-    },
-    {
-      "src": "^/services$",
-      "headers": {
-        "Cache-Control": "no-cache, no-store, must-revalidate"
-      },
-      "continue": true
-    },
-    {
-      "src": "^/dashboard(.*)$",
-      "headers": {
-        "Cache-Control": "no-cache, no-store, must-revalidate"
-      },
-      "continue": true
-    },
-    {
-      "src": "^/admin(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?$",
-      "headers": {
-        "X-Robots-Tag": "noindex, nofollow"
-      },
-      "continue": true
-    },
-    {
-      "src": "^/dashboard(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?$",
-      "headers": {
-        "X-Robots-Tag": "noindex, nofollow"
-      },
-      "continue": true
-    },
-    {
-      "src": "^/pros/dashboard(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?$",
-      "headers": {
-        "X-Robots-Tag": "noindex, nofollow"
-      },
-      "continue": true
-    },
-    {
-      "src": "^/pro/dashboard(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?$",
-      "headers": {
-        "X-Robots-Tag": "noindex, nofollow"
-      },
-      "continue": true
-    },
-    {
-      "src": "^/contractor/dashboard(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?$",
-      "headers": {
-        "X-Robots-Tag": "noindex, nofollow"
-      },
-      "continue": true
-    },
-    {
-      "src": "^/staff(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?$",
-      "headers": {
-        "X-Robots-Tag": "noindex, nofollow"
-      },
-      "continue": true
-    },
-    {
-      "src": "^/my-jobs$",
-      "headers": {
-        "X-Robots-Tag": "noindex, nofollow"
-      },
-      "continue": true
-    },
-    {
-      "src": "^/earn/dashboard(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?$",
-      "headers": {
-        "X-Robots-Tag": "noindex, nofollow"
-      },
-      "continue": true
-    },
-    {
-      "src": "^/recruiter/dashboard(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?$",
-      "headers": {
-        "X-Robots-Tag": "noindex, nofollow"
-      },
-      "continue": true
-    },
-    {
-      "src": "^/recruiter/referrals(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?$",
-      "headers": {
-        "X-Robots-Tag": "noindex, nofollow"
-      },
-      "continue": true
-    },
-    {
-      "src": "^/recruiter/recruiters(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?$",
-      "headers": {
-        "X-Robots-Tag": "noindex, nofollow"
-      },
-      "continue": true
-    },
-    {
-      "src": "^/recruiter/payments(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?$",
-      "headers": {
-        "X-Robots-Tag": "noindex, nofollow"
-      },
-      "continue": true
-    },
-    {
-      "src": "^/recruiter/settings(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?$",
-      "headers": {
-        "X-Robots-Tag": "noindex, nofollow"
-      },
-      "continue": true
-    },
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "^\\/services$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^(?:\\/(us|ca|uk|au|ar))\\/services(?:\\/([^\\/]+?))(?:\\/([^\\/]+?))$",
-      "dest": "/index.html?country=$1&service=$2&city=$3"
-    },
-    {
-      "src": "^(?:\\/(us|ca|uk|au|ar))\\/services(?:\\/([^\\/]+?))$",
-      "dest": "/index.html?country=$1&service=$2"
-    },
-    {
-      "src": "^(?:\\/(us|ca|uk|au|ar))\\/servicios(?:\\/([^\\/]+?))(?:\\/([^\\/]+?))$",
-      "dest": "/index.html?country=$1&service=$2&city=$3"
-    },
-    {
-      "src": "^(?:\\/(us|ca|uk|au|ar))\\/servicios(?:\\/([^\\/]+?))$",
-      "dest": "/index.html?country=$1&service=$2"
-    },
-    {
-      "src": "^\\/services(?:\\/([^\\/]+?))$",
-      "dest": "/index.html?service=$1"
-    },
-    {
-      "src": "^\\/services(?:\\/([^\\/]+?))(?:\\/([^\\/]+?))$",
-      "dest": "/index.html?service=$1&city=$2"
-    },
-    {
-      "src": "^(?:\\/(christmas|navidad|new-year|spring-cleaning|thanksgiving|black-friday|storm|hurricane|flood|heat-wave|power-outage|frozen-pipes|same-day|emergency|24-hour|last-minute|near-me|move-out|rental-turnover|airbnb-cleaning|renovation|home-sale))(?:\\/([^\\/]+?))$",
-      "dest": "/index.html?trend=$1&service=$2"
-    },
-    {
-      "src": "^\\/alternatives-to-(angi|homeadvisor|thumbtack|taskrabbit|handy|porch)$",
-      "dest": "/index.html?competitor=$1"
-    },
-    {
-      "src": "^(?:\\/(angi|homeadvisor|thumbtack|taskrabbit|handy|porch))-alternatives$",
-      "dest": "/index.html?competitor=$1"
-    },
-    {
-      "src": "^(?:\\/(angi|homeadvisor|thumbtack|taskrabbit|handy|porch))-competitors$",
-      "dest": "/index.html?competitor=$1"
-    },
-    {
-      "src": "^\\/best-(angi|homeadvisor|thumbtack|taskrabbit|handy|porch)-alternative$",
-      "dest": "/index.html?competitor=$1"
-    },
-    {
-      "src": "^\\/how-it-works$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/assistant$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/ai-assistant$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/contact$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/pricing$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/request$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/lead(?:\\/([^\\/]+?))$",
-      "dest": "/index.html?token=$1"
-    },
-    {
-      "src": "^\\/charlotte$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/country(?:\\/([^\\/]+?))$",
-      "dest": "/index.html?countryCode=$1"
-    },
-    {
-      "src": "^\\/signup$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/homeowners$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/pros$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/pros\\/signup$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/pros\\/register$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/pros\\/login$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/pros\\/forgot-password$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/pros\\/reset-password$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/pros\\/pricing$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/pros\\/dashboard$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/dashboard\\/pro$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/pro\\/signup$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/pro\\/register$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/pro\\/setup-account(?:\\/([^\\/]+?))$",
-      "dest": "/index.html?token=$1"
-    },
-    {
-      "src": "^\\/pro\\/sign-in$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/pro\\/login$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/pro-signin$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/signin$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/auth\\/login\\/pro$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/pros\\/signin$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/pro\\/forgot-password$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/pro\\/reset-password$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/dashboard$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/dashboard\\/admin$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/dashboard\\/admin\\/jobs$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/dashboard\\/admin\\/social$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/dashboard\\/admin\\/settings$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/dashboard\\/admin\\/lead-hunter$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/dashboard\\/admin\\/seo-ai$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/dashboard\\/admin\\/lead-automation$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/dashboard\\/admin\\/lead-automation(?:\\/([^\\/]+?))$",
-      "dest": "/index.html?leadId=$1"
-    },
-    {
-      "src": "^\\/dashboard\\/admin\\/invite-codes$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/dashboard\\/admin\\/fge$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/dashboard\\/admin\\/fge\\/marketing$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/dashboard\\/admin\\/fge\\/seo$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/dashboard\\/admin\\/fge\\/blog$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/dashboard\\/admin\\/fge\\/email$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/dashboard\\/admin\\/fge\\/sms$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/dashboard\\/admin\\/fge\\/referral$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/dashboard\\/admin\\/fge\\/analytics$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/dashboard\\/admin\\/fge\\/insights$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/dashboard\\/admin\\/fge\\/reviews$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/dashboard\\/admin\\/fge\\/seasonal$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/dashboard\\/admin\\/fge\\/queue$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/dashboard\\/admin\\/fge\\/settings$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/admin$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/admin(?:\\/((?:[^\\/]+?)(?:\\/(?:[^\\/]+?))*))?$",
-      "dest": "/index.html?path=$1"
-    },
-    {
-      "src": "^\\/services\\/admin$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/services(?:\\/((?:[^\\/]+?)(?:\\/(?:[^\\/]+?))*))?\\/admin$",
-      "dest": "/index.html?path=$1"
-    },
-    {
-      "src": "^\\/my-jobs$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/pro\\/dashboard$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/contractor\\/dashboard$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/staff\\/jobs$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/join$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/earn$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/earn\\/start$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/earn\\/sign-in$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/earn\\/dashboard$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/recruiter\\/signup$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/recruiter\\/login$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/recruiter\\/forgot-password$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/recruiter\\/dashboard$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/dashboard\\/recruiter$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/recruiter\\/referrals$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/recruiter\\/recruiters$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/recruiter\\/payments$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/recruiter\\/settings$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/recruiter$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/recruiters$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/admin\\/recruiters$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/admin\\/commissions$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/admin\\/payouts$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/for-homeowners$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/for-pros$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/for-professionals$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/terms$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/privacy$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/privacy-policy$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/privacy-settings$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/success$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/about$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/about-walter-arevalo$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/login\\/homeowner$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/login\\/pro$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/login\\/recruiter$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/signup\\/homeowner$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/signup\\/pro$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/signup\\/recruiter$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/forgot-password$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^\\/dashboard\\/homeowner$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "/.*",
-      "dest": "/404.html",
-      "status": 404
-    }
-  ]
+  "framework": null
 }

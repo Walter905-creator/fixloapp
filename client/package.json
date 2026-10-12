@@ -48,7 +48,6 @@
     "vite-plugin-pwa": "^1.0.3"
   },
   "devDependencies": {
-    "@vercel/routing-utils": "^6.6.0",
     "typescript": "^5.9.3"
   }
 }

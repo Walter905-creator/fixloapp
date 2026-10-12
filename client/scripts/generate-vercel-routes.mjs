@@ -2,7 +2,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { TREND_TYPES } from '../src/data/trends.js';
-import { getTransformedRoutes, convertRewrites } from '@vercel/routing-utils';
 import { COMPETITORS } from '../src/data/competitors.js';
 
 const clientDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -25,22 +24,8 @@ const sources = [...new Set(routePaths.map(sourceFor).filter(Boolean))];
 for (const name of ['vercel.json', '../vercel.json']) {
   const file = path.join(clientDir, name);
   const config = JSON.parse(fs.readFileSync(file, 'utf8'));
-  // Keep redirects, response headers, and API proxy rules when regenerating.
-  const transformed = config.routes ? { routes: config.routes } : getTransformedRoutes(config);
-  if (transformed.error) throw new Error(JSON.stringify(transformed.error));
-  const preserved = transformed.routes.filter(route => route.headers);
-  const apiRoutes = transformed.routes.filter(route => route.dest?.startsWith('https://'));
-  const spaRoutes = convertRewrites(sources.map(source => ({ source, destination: '/index.html' })));
-  config.routes = [
-    ...preserved,
-    { handle: 'filesystem' },
-    ...apiRoutes,
-    ...spaRoutes.map(({ check, ...route }) => route),
-    { src: '/.*', dest: '/404.html', status: 404 }
-  ];
-  delete config.rewrites;
-  delete config.redirects;
-  delete config.headers;
+  const apiRewrites = (config.rewrites || []).filter(rule => rule.source.startsWith('/api/'));
+  config.rewrites = [...apiRewrites, ...sources.map(source => ({ source, destination: '/index.html' }))];
   fs.writeFileSync(file, JSON.stringify(config, null, 2) + '\n');
 }
 console.log(`[routing] Generated ${sources.length} explicit SPA rewrites; unknown URLs return 404`);
