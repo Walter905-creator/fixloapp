@@ -1,4 +1,5 @@
 import React from 'react';
+import NotFoundPage from './routes/NotFoundPage.jsx';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import PromoBanner from './components/PromoBanner';
 import CookieConsent from './components/CookieConsent';
@@ -341,7 +342,7 @@ export default function App(){
       {/* Homeowner dashboard */}
       <Route path="/dashboard/homeowner" element={<HomeownerDashboard/>}/>
       
-      <Route path="*" element={<Navigate to="/" replace/>}/>
+      <Route path="*" element={<NotFoundPage/>}/>
     </Routes>
     <footer className="border-t border-slate-200 mt-8 bg-white">
       <div className="container-xl py-8">
