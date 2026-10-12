@@ -560,6 +560,10 @@
     {
       "source": "/dashboard/homeowner",
       "destination": "/index.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/api/not-found"
     }
   ],
   "crons": [
