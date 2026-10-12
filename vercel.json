@@ -686,5 +686,7 @@
         }
       ]
     }
-  ]
+  ],
+  "framework": null,
+  "buildCommand": "npm run build"
 }
