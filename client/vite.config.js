@@ -9,7 +9,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "prompt",
-      includeAssets: ["fixlo-icon.svg"],
+      includeAssets: ["logo.png"],
       manifest: {
         name: "Fixlo — Home Services",
         short_name: "Fixlo",
@@ -20,7 +20,7 @@ export default defineConfig({
         background_color: "#ffffff",
         theme_color: "#059669",
         icons: [
-          { src: "/fixlo-icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" }
+          { src: "/logo.png", sizes: "any", type: "image/png", purpose: "any" }
         ]
       },
       workbox: {
