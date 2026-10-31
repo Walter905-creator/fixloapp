@@ -107,4 +107,32 @@ router.post('/:jobId/clock-out', ownerOnly, async(req,res,next)=>{
     res.json({session:s,draft,invoiceSent:false,charged:false});
   }catch(e){next(e);}
 });
+
+// A professional explicitly reviews and saves the draft. This does not send
+// notifications, create Stripe charges, or close the project.
+router.patch('/:jobId/sessions/:sessionId/review', ownerOnly, async(req,res,next)=>{
+  try {
+    const p=await projectFor(req);
+    if (!p) return res.status(404).json({error:'Project not found'});
+    const s=p.sessions.id(req.params.sessionId);
+    if (!s) return res.status(404).json({error:'Session not found'});
+    if (s.status !== 'draft' || !s.endedAt) return res.status(409).json({error:'Only completed draft sessions can be reviewed'});
+    const materials=req.body.materials === undefined ? s.materials.map(m=>({
+      description:m.description,amountCents:m.amountCents,receiptUrl:m.receiptUrl
+    })) : req.body.materials;
+    if (!Array.isArray(materials) || materials.length>100 || materials.some(m =>
+      !m || typeof m.description!=='string' || !m.description.trim() ||
+      m.description.length>500 || !Number.isSafeInteger(m.amountCents) ||
+      m.amountCents<0 || (m.receiptUrl && (!/^https:\/\//.test(m.receiptUrl) || m.receiptUrl.length>2048))
+    )) return res.status(400).json({error:'Invalid materials'});
+    const notes=req.body.notes===undefined?s.notes:String(req.body.notes);
+    if (notes && notes.length>5000) return res.status(400).json({error:'Notes too long'});
+    const draft=makeDraft({startedAt:s.startedAt,endedAt:s.endedAt,
+      hourlyRateCents:s.hourlyRateCents,materials});
+    s.materials=materials;s.notes=notes;s.reviewedAt=new Date();s.reviewedBy=req.actor;
+    p.audit.push({action:'draft_reviewed',actor:req.actor,detail:{sessionId:String(s._id),totalCents:draft.totalCents}});
+    await p.save();
+    res.json({session:s,draft,invoiceSent:false,charged:false});
+  }catch(e){next(e);}
+});
 module.exports=router;
