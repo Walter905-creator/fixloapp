@@ -117,7 +117,8 @@ export default function App(){
   return (<>
     <MetaPixelTracker />
     <PromoBanner />
-    <Navbar/>\n    <InstallFixloPrompt/>
+    <Navbar/>
+    <InstallFixloPrompt/>
     <Routes>
       <Route path="/" element={<HomePage/>}/>
       <Route path="/services" element={<ServicesPage/>}/>
