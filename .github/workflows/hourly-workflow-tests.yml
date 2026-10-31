@@ -17,6 +17,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node --test server/services/hourlyWorkflow.test.js
+      - run: node --test server/services/hourlyWorkflow.test.js server/services/testNotificationGuard.test.js
       - run: node --check server/routes/hourlyProjects.js
       - run: node --check server/models/HourlyProject.js
