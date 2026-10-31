@@ -1,4 +1,4 @@
-import React from 'react';
+import React from 'react';\nimport InstallFixloPrompt from './components/InstallFixloPrompt.jsx';
 import NotFoundPage from './routes/NotFoundPage.jsx';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import PromoBanner from './components/PromoBanner';
@@ -116,7 +116,7 @@ export default function App(){
   return (<>
     <MetaPixelTracker />
     <PromoBanner />
-    <Navbar/>
+    <Navbar/>\n    <InstallFixloPrompt/>
     <Routes>
       <Route path="/" element={<HomePage/>}/>
       <Route path="/services" element={<ServicesPage/>}/>
