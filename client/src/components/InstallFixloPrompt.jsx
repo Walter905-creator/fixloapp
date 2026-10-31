@@ -6,7 +6,7 @@ export default function InstallFixloPrompt() {
   const [event, setEvent] = React.useState(null);
   const [showHelp, setShowHelp] = React.useState(false);
   const [dismissed, setDismissed] = React.useState(() => {
-    try { return sessionStorage.getItem(DISMISSED_KEY) === 'yes'; } catch { return false; }
+    try { return localStorage.getItem(DISMISSED_KEY) === 'yes'; } catch { return false; }
   });
   const [installed, setInstalled] = React.useState(() =>
     window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true
@@ -36,17 +36,17 @@ export default function InstallFixloPrompt() {
 
   function dismiss() {
     setDismissed(true);
-    try { sessionStorage.setItem(DISMISSED_KEY, 'yes'); } catch { /* unavailable */ }
+    try { localStorage.setItem(DISMISSED_KEY, 'yes'); } catch { /* unavailable */ }
   }
 
   return (
     <aside aria-label="Instalar Fixlo" className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-sm rounded-2xl border border-slate-200 bg-white p-4 text-slate-900 shadow-xl">
       <button type="button" onClick={dismiss} aria-label="Cerrar" className="absolute right-3 top-2 text-xl">×</button>
-      <p className="pr-5 font-semibold">Add Fixlo to your home screen</p>
+      <div className="flex items-center gap-3"><img src="/logo.png" alt="Fixlo" className="h-10 w-10 rounded-lg object-contain" /><p className="pr-5 font-semibold">Add Fixlo to your home screen</p></div>
       <p className="mt-1 text-sm">Open Fixlo in one tap, like an app.</p>
       {showHelp ? (
         <p className="mt-2 text-sm">
-          {isiOS ? 'In Safari, tap Share, then Add to Home Screen, then Add. In Chrome on iPhone, open the Share menu and look for Add to Home Screen.' : 'Open your browser menu and select Install app or Add to Home screen.'}
+          {isiOS ? 'On iPhone, open Fixlo in Safari, tap Share, select Add to Home Screen, then tap Add. Apple requires you to confirm these steps.' : 'Open your browser menu and select Install app or Add to Home screen.'}
         </p>
       ) : null}
       <button type="button" onClick={install} className="mt-3 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">
