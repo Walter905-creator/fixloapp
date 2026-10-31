@@ -1,0 +1,22 @@
+name: Hourly workflow unit tests
+on:
+  push:
+    branches:
+      - feature/hourly-checklist-safe-workflow
+  pull_request:
+    paths:
+      - 'server/services/hourlyWorkflow*'
+      - 'server/models/HourlyProject.js'
+      - 'server/routes/hourlyProjects.js'
+      - '.github/workflows/hourly-workflow-tests.yml'
+jobs:
+  draft-billing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --test server/services/hourlyWorkflow.test.js server/services/testNotificationGuard.test.js
+      - run: node --check server/routes/hourlyProjects.js
+      - run: node --check server/models/HourlyProject.js
